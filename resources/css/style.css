@@ -1,0 +1,52 @@
+/* Application styles could go here */
+@media (min-width: 767px) {
+  #header {
+    background: #f3f3f3 url(../images/tls-tls.png) top right no-repeat;
+    width: 100%;
+  }
+
+  #header a#logo {
+    background: url(../images/hxwd.png) center left no-repeat;
+    display: block;
+    width: 220px;
+    height: 100px;
+    text-indent: -999em;
+    outline: 0;
+    margin: 10px 0;
+  }
+}
+
+@media (max-width: 767px) {
+  .navbar-default {
+    height: auto;
+    margin-bottom: 20px;
+    background: url(../images/existdb-web.svg) center left no-repeat;
+    border-bottom: 10px solid #2e2e2e;
+  }
+  .navbar-collapse.in {
+    z-index: 1000;
+    position: absolute;
+    left: 10px;
+    right: 10px;
+    background-color: #fafafa;
+    background-image: linear-gradient(to bottom, #ffffff, #f2f2f2);
+    background-repeat: repeat-x;
+    border: 1px solid #d4d4d4;
+    -moz-border-radius: 4px;
+    -webkit-border-radius: 4px;
+    border-radius: 4px;
+    -moz-box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+    -webkit-box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  }
+  .navbar .nav > li > a {
+    padding: 9px 15px;
+    color: #777;
+  }
+  #sidebar {
+    display: none;
+  }
+  #about {
+    display: none;
+  }
+}
