@@ -30,16 +30,19 @@
                         <div class="navbar-collapse collapse" id="navbar-collapse-1">
                             <ul class="nav navbar-nav">
                                 <li class="dropdown" id="about">
-                                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">Home</a>
+                                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">Menu</a>
                                     <ul class="dropdown-menu">
                                         <li>
                                             <a href="index.html">Home</a>
+                                        </li>
+                                        <li>
+                                            <a href="textview.html">List of available texts</a>
                                         </li>
                                     </ul>
                                 </li>
                             </ul>
                             <!-- example from the bootstrap docs -->
-                            <form class="navbar-form navbar-left" role="search" action="" method="post">
+                            <form class="navbar-form navbar-left" role="search" action="search.html" method="post">
                                 <div class="form-group">
                                     <input name="query" type="text" class="form-control" placeholder="Search" data-template="templates:form-control"/>
                                 </div>
@@ -49,10 +52,6 @@
                             </form>                            
                         </div>
                     </nav>
-                </div>
-                <div id="results" data-template="app:query">
-                    <p>Found: <span id="hit-count" data-template="app:hit-count"/> matches.</p>
-                    <div data-template="app:show-hits"/>
                 </div>
                 <div id="content" class="row"/>
             </div>
@@ -66,7 +65,7 @@
                     </li>
                 </ul>
                 <div id="copyright">
-                    <p>Copyright eXist-db Project 2013</p>
+                    <p>Copyright TLS Project 2018</p>
                 </div>
             </div>
         </div>

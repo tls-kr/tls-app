@@ -49,6 +49,8 @@ return
 </div>
 };
 
+(: search related functions :)
+
 declare 
     %templates:wrap
 function app:query($node as node()*, $model as map(*), $query as xs:string?, $mode as xs:string?)
@@ -63,7 +65,7 @@ function app:query($node as node()*, $model as map(*), $query as xs:string?, $mo
 declare function app:do-query($queryStr as xs:string?, $mode as xs:string?)
 {
     let $query := app:create-query($queryStr, $mode)
-    let $dataroot := "/db/apps/tls-data"   (: config:tls-data-root :)
+    let $dataroot := $config:tls-data-root   (: config:tls-data-root :)
     for $hit in collection($dataroot)//tei:div[ft:query(., $query)]
     order by ft:score($hit) descending
     return $hit
@@ -143,11 +145,69 @@ declare %private function app:filter($node as node(), $mode as xs:string?) as te
 declare
     %templates:wrap
 function app:hit-count($node as node()*, $model as map(*), $query as xs:string?) {
-    let $hits := app:do-query($query, 'any')
-    return
-    (count($hits),
-    <p>Model count: {count(session:get-attribute($app:SESSION))} <br/>Hits: {subsequence($hits, 1, 10)}</p>)
+   count($model("hits"))
 };
+
+(: textview related functions :)
+
+(: function textview 
+@param location  text location or text id for the text to display. If empty, display text list
+@param mode      for textlist: 'tls' texts or 'chant' texts or 'all' texts
+:)
+declare 
+    %templates:wrap
+function app:textview($node as node()*, $model as map(*), $location as xs:string?, $mode as xs:string?)
+{
+    let $dataroot := $config:tls-data-root
+    return
+    (session:create(),
+    if (string-length($location) > 0) then
+     if (contains($location, '_')) then
+      let $textid := tokenize($location, '_')[1]
+      let $firstseg := collection($config:tls-texts-root)//tei:*[@xml:id=$location]
+      return
+      <p>{$firstseg}</p>
+     else
+      let $firstdiv := (collection($config:tls-texts-root)//tei:*[@xml:id=$location]//tei:body/tei:div[1])
+      let $targetseg := ($firstdiv//tei:seg)[1]
+      let $p := $targetseg/ancestor::tei:p
+      let $seg := subsequence($targetseg/following::tei:seg, 1, 40),
+      $head := $targetseg/ancestor::tei:div[1]/tei:head[1]
+      return
+      (
+      <h2>{$head/text()}</h2>,
+      <p>{$p}</p>,
+      <p>{$targetseg, $seg}</p>
+      )
+    else 
+    let $titles := for $t in collection(concat($config:tls-texts-root, '/tls'))//tei:titleStmt/tei:title
+            let $textid := data($t/ancestor::tei:TEI/@xml:id)
+            where not (contains($textid, "-en"))
+            return $t
+    return
+    <div>
+    <h1>Available annotated texts: ({count($titles)})</h1>
+    <ul>
+    {
+    for $title in $titles
+    let $textid := data($title/ancestor::tei:TEI/@xml:id)
+    order by $textid
+    return 
+    <li><a href="?location={$textid}">{$textid, $title/text()}</a></li>
+    }
+    </ul>
+    </div>
+    )
+};
+
+(: concept display :)
+declare 
+    %templates:wrap
+function app:concept($node as node()*, $model as map(*), $query as xs:string?, $mode as xs:string?)
+{
+    session:create()
+};
+
 
 
 
