@@ -1,10 +1,10 @@
-xquery version "3.0";
+xquery version "3.1";
 
 (:~
  : A set of helper functions to access the application context from
  : within a module.
  :)
-module namespace config="http://tls.kanripo.org/config";
+module namespace config="http://hxwd.org/config";
 
 declare namespace templates="http://exist-db.org/xquery/templates";
 

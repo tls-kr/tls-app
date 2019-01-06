@@ -1,14 +1,15 @@
 xquery version "3.1";
 
-module namespace app="http://tls.kanripo.org/app";
+module namespace app="http://hxwd.org/app";
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
-declare namespace tls="http://tls.kanripo.org/ns/1.0";
+declare namespace tls="http://hxwd.org/ns/1.0";
 
 import module namespace templates="http://exist-db.org/xquery/templates" ;
-import module namespace config="http://tls.kanripo.org/config" at "config.xqm";
+import module namespace config="http://hxwd.org/config" at "config.xqm";
 import module namespace kwic="http://exist-db.org/xquery/kwic"
     at "resource:org/exist/xquery/lib/kwic.xql";
+import module namespace tlslib="http://hxwd.org/lib" at "tlslib.xql";
 
 declare variable $app:SESSION := "tls:results";
 
@@ -156,7 +157,9 @@ function app:hit-count($node as node()*, $model as map(*), $query as xs:string?)
 :)
 declare 
     %templates:wrap
-function app:textview($node as node()*, $model as map(*), $location as xs:string?, $mode as xs:string?)
+    %templates:default("prec", 0)
+    %templates:default("foll", 50)     
+function app:textview($node as node()*, $model as map(*), $location as xs:string?, $mode as xs:string?, $prec as xs:int?, $foll as xs:int?)
 {
     let $dataroot := $config:tls-data-root
     return
@@ -166,19 +169,12 @@ function app:textview($node as node()*, $model as map(*), $location as xs:string
       let $textid := tokenize($location, '_')[1]
       let $firstseg := collection($config:tls-texts-root)//tei:*[@xml:id=$location]
       return
-      <p>{$firstseg}</p>
+        tlslib:displayseg($firstseg, $prec, $foll)
      else
       let $firstdiv := (collection($config:tls-texts-root)//tei:*[@xml:id=$location]//tei:body/tei:div[1])
       let $targetseg := ($firstdiv//tei:seg)[1]
-      let $p := $targetseg/ancestor::tei:p
-      let $seg := subsequence($targetseg/following::tei:seg, 1, 40),
-      $head := $targetseg/ancestor::tei:div[1]/tei:head[1]
       return
-      (
-      <h2>{$head/text()}</h2>,
-      <p>{$p}</p>,
-      <p>{$targetseg, $seg}</p>
-      )
+       tlslib:displayseg($targetseg, $prec, $foll)
     else 
     let $titles := for $t in collection(concat($config:tls-texts-root, '/tls'))//tei:titleStmt/tei:title
             let $textid := data($t/ancestor::tei:TEI/@xml:id)
