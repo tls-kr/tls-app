@@ -169,12 +169,12 @@ function app:textview($node as node()*, $model as map(*), $location as xs:string
       let $textid := tokenize($location, '_')[1]
       let $firstseg := collection($config:tls-texts-root)//tei:*[@xml:id=$location]
       return
-        tlslib:displayseg($firstseg, $prec, $foll)
+        tlslib:displaychunk($firstseg, $prec, $foll)
      else
       let $firstdiv := (collection($config:tls-texts-root)//tei:*[@xml:id=$location]//tei:body/tei:div[1])
       let $targetseg := ($firstdiv//tei:seg)[1]
       return
-       tlslib:displayseg($targetseg, $prec, $foll)
+       tlslib:displaychunk($targetseg, $prec, $foll)
     else 
     let $titles := for $t in collection(concat($config:tls-texts-root, '/tls'))//tei:titleStmt/tei:title
             let $textid := data($t/ancestor::tei:TEI/@xml:id)
