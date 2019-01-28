@@ -1,11 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project default="xar" name="myapp1">
+<project default="xar" name="tls-app">
     <xmlproperty file="expath-pkg.xml"/>
     <property name="project.version" value="${package(version)}"/>
-    <property name="project.app" value="myapp1"/>
+    <property name="project.app" value="tls-app"/>
     <property name="build.dir" value="build"/>
-    <target name="xar">
-        <mkdir dir="${build.dir}"/>
+    <!-- Start it -->
+    <target name="init" description="create build directory">
+      <tstamp/>
+    <mkdir dir="${build.dir}"/>
+    </target>
+    <target name="xar"  depends="init">
+        <zip basedir="." destfile="${build.dir}/${project.app}-${project.version}.xar" excludes="${build.dir}/*"/>
+    </target>
+    <!-- just for fun, and to stay sane... -->
+    <target name="deploy"  depends="init">
         <zip basedir="." destfile="${build.dir}/${project.app}-${project.version}.xar" excludes="${build.dir}/*"/>
     </target>
 </project>

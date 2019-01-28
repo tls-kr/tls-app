@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <meta xmlns="http://exist-db.org/xquery/repo">
-    <description>MyApp1</description>
+    <description>Web App for TLS</description>
     <author/>
     <website/>
     <status>alpha</status>
     <license>GNU-LGPL</license>
     <copyright>true</copyright>
     <type>application</type>
-    <target>myapp1</target>
+    <target>tls-app</target>
     <prepare>pre-install.xql</prepare>
     <finish/>
 <deployed>2018-12-04T12:53:08.822+09:00</deployed>
