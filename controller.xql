@@ -1,4 +1,6 @@
 xquery version "3.0";
+import module namespace login="http://exist-db.org/xquery/login" at "resource:org/exist/xquery/modules/persistentlogin/login.xql";
+import module namespace config="http://hxwd.org/config" at "modules/config.xqm";
 
 declare variable $exist:path external;
 declare variable $exist:resource external;
@@ -16,6 +18,31 @@ else if ($exist:path eq "/") then
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
         <redirect url="index.html"/>
     </dispatch>
+(:
+ : Login a user via AJAX. Just returns a 401 if login fails.
+ :)
+else if ($exist:resource eq 'login') then (
+    let $loggedIn := login:set-user($config:login-domain, (), false())
+    let $user := request:get-attribute($config:login-domain || ".user")
+    return (
+        util:declare-option("exist:serialize", "method=json"),
+        try {
+            <status>
+                <user>{$user}</user>
+                {
+                    if ($user) then (
+                        <group>{sm:get-user-groups($user)}</group>,
+                        <dba>{sm:is-dba($user)}</dba>
+                    ) else
+                        ()
+                }
+            </status>
+        } catch * {
+            response:set-status-code(401),
+            <status>{$err:description}</status>
+        }
+    )
+)    
 else if (ends-with($exist:resource, ".html")) then
     (: the html page is run through view.xql to expand templates :)
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">

@@ -49,8 +49,14 @@ declare function tlslib:displaychunk($targetseg as node(), $prec as xs:int?, $fo
 declare function tlslib:displayseg($seg as node()*, $options as map(*) ){
 <span>
 <span class="zh">{$seg/text()}</span>　
-<span class="en">{collection($config:tls-texts-root)//tei:seg[@corresp=concat('#', $seg/@xml:id)]/text()}</span>
+<span class="en">{collection($config:tls-data-root)//tei:seg[@corresp=concat('#', $seg/@xml:id)]/text()}</span>
 
 <br/>
 </span>
 };
+
+(:
+declare function tlslib:getsynsem($type as xs:string, $string as xs:string, $map as map(*))
+{
+let 
+};:)
