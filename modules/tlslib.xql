@@ -55,8 +55,23 @@ declare function tlslib:displayseg($seg as node()*, $options as map(*) ){
 </span>
 };
 
-(:
+
 declare function tlslib:getsynsem($type as xs:string, $string as xs:string, $map as map(*))
 {
-let 
-};:)
+map:merge(
+let $file := if ($type = "sem-feat") then "semantic-features.xml" else 
+             if ($type = "syn-func") then "syntactic-functions.xml" else ""
+   for $s in doc(concat($config:tls-data-root, '/core/', $file))//tei:head[contains(., $string)]
+   return 
+   map:entry(string($s/parent::tei:div/@xml:id), string($s))
+ )
+};
+
+declare function tlslib:getwords($word as xs:string, $map as map(*))
+{
+map:merge(
+   for $s in collection(concat($config:tls-data-root, '/concepts/'))//tei:orth[. = $word]
+   return 
+   map:entry(string($s/ancestor::tei:entry/@xml:id), (string($s/ancestor::tei:div/@xml:id), string($s/ancestor::tei:div/tei:head)))
+ )
+};

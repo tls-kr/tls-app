@@ -199,7 +199,7 @@ function app:textview($node as node()*, $model as map(*), $location as xs:string
 (: concept display :)
 declare 
     %templates:wrap
-function app:concept($node as node()*, $model as map(*), $query as xs:string?, $mode as xs:string?)
+function app:concept($node as node()*, $model as map(*), $user as xs:string?, $mode as xs:string?)
 {
     session:create()
 };
