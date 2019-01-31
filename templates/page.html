@@ -7,7 +7,7 @@
         <link rel="shortcut icon" href="$shared/resources/images/exist_icon_16x16.ico"/>
         <link rel="stylesheet" type="text/css" href="$shared/resources/css/exist-2.2.css"/>
         <link rel="stylesheet" type="text/css" href="resources/css/style.css"/>
-        <script type="text/javascript" src="$shared/resources/scripts/jquery/jquery-1.7.1.min.js"/>
+        <script type="text/javascript" src="resources/scripts/jquery-3.3.1.min.js"/>
         <script type="text/javascript" src="resources/scripts/bootstrap-4.2.1.min.js"/>
         <script type="text/javascript" src="$shared/resources/scripts/loadsource.js"/>
     </head>
@@ -70,14 +70,15 @@
                 </div>
             </div>
         </div>
-        <div id="loginDialog" class="modal fade" tabindex="-1" style="display: none;">
-            <div class="modal-dialog" style="z-index: 1080;">
+        <div id="loginDialog" class="modal" tabindex="-1" role="dialog" style="display: none;">
+            <p>Login</p>
+            <div class="modal-dialog" style="z-index: 1080;" role="document">
                 <div class="modal-content">
                     <div class="modal-header">
                         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
                         <h4 class="modal-title">Login</h4>
                     </div>
-                    <form class="form form-horizontal" action="" method="POST">
+                    <form class="form form-horizontal" action="" method="post">
                         <div class="modal-body">
                             <div class="form-group">
                                 <label class="control-label col-sm-2">User:</label>
