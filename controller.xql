@@ -8,11 +8,8 @@ declare variable $exist:controller external;
 declare variable $exist:prefix external;
 declare variable $exist:root external;
 
-(:declare variable $logout := request:get-parameter("logout", ());
+declare variable $logout := request:get-parameter("logout", ());
 declare variable $login := request:get-parameter("user", ());
-:)
-declare variable  $login := login:set-user("org.exist.login", (), false());
-
 
 if ($exist:path eq '') then
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
@@ -24,9 +21,9 @@ else if ($exist:path eq "/") then
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
         <redirect url="index.html"/>
     </dispatch>
-(:else if ($logout or $login) then (
+else if ($logout or $login) then (
     login:set-user($config:login-domain, (), false()),
-    (\: redirect successful login attempts to the original page, but prevent redirection to non-local websites:\)
+    (: redirect successful login attempts to the original page, but prevent redirection to non-local websites:)
     let $referer := request:get-header("Referer")
     let $this-servers-scheme-and-domain := request:get-scheme() || "://" || request:get-server-name()
     return
@@ -39,7 +36,7 @@ else if ($exist:path eq "/") then
                 <redirect url="{replace(request:get-uri(), "^(.*)\?", "$1")}"/>
             </dispatch>
 )    
-:)
+
 else if (ends-with($exist:resource, ".html")) then
     (: the html page is run through view.xql to expand templates :)
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
@@ -58,6 +55,22 @@ else if (contains($exist:path, "/$app-root/")) then
                 <set-header name="Cache-Control" value="max-age=3600, must-revalidate"/>
             </forward>
         </dispatch>        
+
+(: Resource paths starting with $nav-base are resolved relative to app :)
+(:else if (contains($exist:path, "/$nav-base/")) then
+        <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+            <forward url="{concat($exist:controller,'/', substring-after($exist:path, '/$nav-base/'))}">
+                <set-header name="Cache-Control" value="max-age=3600, must-revalidate"/>
+            </forward>
+        </dispatch> :)
+(:temporarily disabling $nav-base, CW 2019-02-02 :)        
+else if (contains($exist:path, "$nav-base/")) then
+        <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+            <forward url="{replace($exist:path, '\$nav-base/', '/')}">
+                <set-header name="Cache-Control" value="max-age=3600, must-revalidate"/>
+            </forward>
+        </dispatch>
+
 
 (: Resource paths starting with $shared are loaded from the shared-resources app :)
 else if (contains($exist:path, "/$shared/")) then

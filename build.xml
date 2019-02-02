@@ -14,6 +14,6 @@
     </target>
     <!-- just for fun, and to stay sane... -->
     <target name="deploy" depends="init">
-        <zip basedir="." destfile="${build.dir}/${project.app}-${project.version}.xar" excludes="${build.dir}/*"/>
+        <zip basedir="." destfile="${build.dir}/${project.app}-${project.version}.xar" excludes="${build.dir}/* dosync.sh"/>
     </target>
 </project>

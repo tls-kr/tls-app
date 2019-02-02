@@ -28,6 +28,20 @@ declare function app:test($node as node(), $model as map(*)) {
         function was triggered by the data-template attribute <code>data-template="app:test"</code>.</p>
 };
 
+(: start here :)
+(:~
+ : Get app logo. Value passed from repo-config.xml  
+:)
+declare
+    %templates:wrap
+function app:logo($node as node(), $model as map(*)) {
+    if($config:get-config//repo:logo != '') then
+        <img class="app-logo img-fluid" src="{$config:nav-base || '/resources/images/' || $config:get-config//repo:logo/text() }" title="{$config:app-title}"/>
+    else ()
+};
+
+
+
 declare function app:tls-summary($node as node(), $model as map(*)) {
 (:let $tlsroot := $config:tls-data-root :)
 <div>
@@ -49,6 +63,44 @@ return
 </p>}
 </div>
 };
+
+(: browse :)
+
+declare 
+    %templates:wrap
+function app:browse($node as node()*, $model as map(*), $type as xs:string?, $filter as xs:string?)
+{
+    session:create(),
+    let $filterString := if (string-length($filter) > 0) then $filter else ""    
+    let $hits := if (("concept", "syn-func", "sem-feat") = $type) 
+      then app:do-browse($type, $filterString)
+      else if ($type = "word") then app:browse-word($type, $filterString)
+      else app:browse-char($type, $filter)
+    let $store := session:set-attribute("tls-browse", $hits)
+    return
+       map:entry("browse", $hits)
+};
+
+(: :)
+declare function app:browse-word($type as xs:string?, $filter as xs:string?)
+{
+};
+
+(: taxchar if available, otherwise look for words? :)
+declare function app:browse-char($type as xs:string?, $filter as xs:string?)
+{
+};
+
+declare function app:do-browse($type as xs:string?, $filter as xs:string?)
+{
+    for $hit in collection($config:tls-data-root)//tei:div[@type=$type]
+    let $head := data($hit/tei:head)
+    where starts-with($head, $filter)
+    order by $head
+    return $hit
+};
+
+
 
 (: search related functions :)
 

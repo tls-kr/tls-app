@@ -4,72 +4,88 @@
         <title data-template="config:app-title">App Title</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
         <meta data-template="config:app-meta"/>
-        <link rel="shortcut icon" href="$shared/resources/images/exist_icon_16x16.ico"/>
-        <link rel="stylesheet" type="text/css" href="$shared/resources/css/exist-2.2.css"/>
+        <link rel="stylesheet" type="text/css" href="resources/bootstrap-4.2.1/css/bootstrap.min.css"/>
         <link rel="stylesheet" type="text/css" href="resources/css/style.css"/>
-        <script type="text/javascript" src="resources/scripts/jquery-3.3.1.min.js"/>
-        <script type="text/javascript" src="resources/scripts/bootstrap-4.2.1.min.js"/>
-        <script type="text/javascript" src="$shared/resources/scripts/loadsource.js"/>
     </head>
-    <body id="grey-top">
-        <div class="grey-bot">
-            <div class="container" id="main-container">
-                <div class="row">
-                    <div class="col-md-12sea" id="header">
-                        <a href="/" id="logo">TLS</a>
+    <body id="body">
+        <div class="container">
+            <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
+                <span class="banner-icon" data-template="app:logo"/>
+                <a class="navbar-brand" href="index.html" data-template="config:app-title">App Title</a>
+                <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"/>
+                </button>
+                
+                <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                    <ul class="navbar-nav mr-auto">
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                Browse
+                            </a>
+                            <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                                <a class="dropdown-item" href="browse.html?type=concept">Concepts</a>
+                                <a class="dropdown-item" href="browse.html?type=char">Characters</a>
+                                <a class="dropdown-item" href="browse.html?type=word">Words</a>
+                                <a class="dropdown-item" href="browse.html?type=syn-func">Syntactical functions</a>
+                                <a class="dropdown-item" href="browse.html?type=sem-feat">Semantical features</a>
+                                <div class="dropdown-divider"/>
+                                <a class="dropdown-item" href="browse.html?type=texts">Texts</a>
+                            </div>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownDoc" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                Documentation
+                            </a>
+                            <div class="dropdown-menu" aria-labelledby="navbarDropdownDoc">
+                                <a class="dropdown-item" href="documentaion.html?section=overview">Overview</a>
+                                <a class="dropdown-item" href="#">Another action</a>
+                                <div class="dropdown-divider"/>
+                                <a class="dropdown-item" href="#">About this website</a>
+                            </div>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#">Link</a>
+                        </li>
+                        <!--
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                Dropdown
+                            </a>
+                            <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                                <a class="dropdown-item" href="#">Action</a>
+                                <a class="dropdown-item" href="#">Another action</a>
+                                <div class="dropdown-divider"></div>
+                                <a class="dropdown-item" href="#">Something else here</a>
+                            </div>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link disabled" href="#" tabindex="-1" aria-disabled="true">Disabled</a>
+                        </li>
+                        -->
+                    </ul>
+                    <form class="form-inline my-2 my-lg-0">
+                        <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search"/>
+                        <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>
+                    </form>
+                    <div class="btn-nav">
+                        <a href="#" class="btn btn-default navbar-btn" data-toggle="modal" data-target="#searchDialog">Advanced Search</a>
+                    </div>
+                    <div class="btn-nav">
+                            <a href="#" class="btn btn-default navbar-btn" data-toggle="modal" data-target="#loginDialog">Login</a>
                     </div>
                 </div>
-                <div class="row">
-                    <nav class="navbar navbar-default" role="navigation">
-                        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar-collapse-1">
-                            <span class="sr-only">Toggle navigation</span>
-                            <span class="icon-bar"/>
-                            <span class="icon-bar"/>
-                            <span class="icon-bar"/>
-                        </button>
-                        <div class="navbar-collapse collapse" id="navbar-collapse-1">
-                            <ul class="nav navbar-nav ml-auto">
-                                <li class="dropdown" id="about">
-                                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">Menu</a>
-                                    <ul class="dropdown-menu">
-                                        <li>
-                                            <a href="index.html">Home</a>
-                                        </li>
-                                        <li>
-                                            <a href="textview.html">List of available texts</a>
-                                        </li>
-                                    </ul>
-                                </li>
-                            </ul>
-                            <!-- example from the bootstrap docs -->
-                            <form class="navbar-form navbar-left" role="search" action="search.html" method="post">
-                                <div class="form-group">
-                                    <input name="query" type="text" class="form-control" placeholder="Search" data-template="templates:form-control"/>
-                                </div>
-                                <button type="submit" class="btn btn-default">
-                                    <span class="glyphicon glyphicon-search"/>
-                                </button>
-                            </form>                           
-                            <!-- login form dropdown -->
-                        </div>
-                    </nav>
-                </div>
-                <div id="content" class="row"/>
-            </div>
-        </div>
-        <a id="poweredby" href="http://exist-db.org"/>
-        <div id="footer">
+            </nav>
+           <div id="content" class="row"/> 
+           <div id="footer">
             <div class="container">
-                <ul>
-                    <li>
-                        <a href="http://exist-db.org">eXist-db.org</a>
-                    </li>
-                </ul>
-                <div id="copyright">
+                <span id="copyright"/>
                     <p>Copyright TLS Project 2018</p>
-                </div>
             </div>
+           </div>      
+            <a id="poweredby" href="http://exist-db.org"/>
+            <!-- end top level container div -->
         </div>
+    <!-- additional stuff -->
         <div id="loginDialog" class="modal" tabindex="-1" role="dialog" style="display: none;">
             <p>Login</p>
             <div class="modal-dialog" style="z-index: 1080;" role="document">
@@ -101,6 +117,11 @@
                 </div>
             </div>
         </div>
-        
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+        <script type="text/javascript" src="resources/scripts/jquery.slim.min.js"/>
+        <script type="text/javascript" src="resources/scripts/popper.min.js"/>
+        <script type="text/javascript" src="resources/bootstrap-4.2.1/js/bootstrap.min.js"/>
+        <script type="text/javascript" src="resources/scripts/loadsource.js"/>
     </body>
 </html>
