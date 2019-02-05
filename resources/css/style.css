@@ -20,9 +20,26 @@
 .navbar{
     min-height: 50px;
 }
+/*@media (min-width: 920px) {
 
-#content {
+  #content {
     padding-top: 50px;
+  }
+}
+
+@media (max-width: 792px) {
+
+  #content {
+    padding-top: 50px;
+  }
+}
+*/
+  #content {
+    padding-top: 100px;
+  }
+
+#content{
+   padding-left: 70px;
 }
 
 #copyright p {

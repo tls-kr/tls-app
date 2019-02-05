@@ -75,7 +75,8 @@ function app:browse($node as node()*, $model as map(*), $type as xs:string?, $fi
     let $hits := if (("concept", "syn-func", "sem-feat") = $type) 
       then app:do-browse($type, $filterString)
       else if ($type = "word") then app:browse-word($type, $filterString)
-      else app:browse-char($type, $filter)
+      else if ($type = "char") then app:browse-char($type, $filterString)
+      else ()
     let $store := session:set-attribute("tls-browse", $hits)
     return
        map:entry("browse", $hits)
@@ -84,11 +85,18 @@ function app:browse($node as node()*, $model as map(*), $type as xs:string?, $fi
 (: :)
 declare function app:browse-word($type as xs:string?, $filter as xs:string?)
 {
+    let $typeString := if (string-length($type) > 0) then $type else "word"    
+    for $hit in collection($config:tls-data-root)//tei:entry[@type=$type]
+    let $head := $hit/tei:orth
+    order by $head
+    return $hit
 };
 
 (: taxchar if available, otherwise look for words? :)
 declare function app:browse-char($type as xs:string?, $filter as xs:string?)
 {
+    for $hit in collection($config:tls-data-root)//tei:div[@type=$type]
+    return $hit
 };
 
 declare function app:do-browse($type as xs:string?, $filter as xs:string?)
@@ -257,6 +265,14 @@ function app:concept($node as node()*, $model as map(*), $user as xs:string?, $m
 };
 
 
+(: get words for new ann :)
 
+declare 
+    %templates:wrap
+function app:get_sw($node as node()*, $model as map(*), $word as xs:string?)
+{
+for $w in tlslib:getwords($word, $model)
+return $w
+};
 
 

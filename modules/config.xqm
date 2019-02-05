@@ -151,8 +151,8 @@ declare function config:app-info($node as node(), $model as map(*)) {
     return
         <table class="app-info">
         <tr><td>user</td><td>{$user}</td></tr>
-        <tr><td>user-req</td><td>{request:get-parameter("user", ())}</td></tr>
-        <tr><td>par</td><td>{request:get-data()}</td></tr>
+        <tr><td>user-req</td><td></td></tr>
+        <tr><td>session-atts</td><td>{session:get-attribute-names()}</td></tr>
         <tr><td>cookies</td><td>{request:get-cookie-names()}</td></tr>
         <tr>
         <td>tls-data</td>
