@@ -27,6 +27,9 @@ declare function tlslib:displaychunk($targetseg as node(), $prec as xs:int?, $fo
       (
       <h1>{$title}</h1>,
       <h2>{$head/text()}</h2>,
+       <button class="btn btn-primary" type="button" data-toggle="collapse" data-target=".swl">
+            Show SWL
+      </button>,
       <p>Debug: {$prec, $foll, sm:id()}</p>,
       <div id="chunkrow" class="row">
       <div id="chunkcol-left" class="col-sm-8">{for $d in $dseg return tlslib:displayseg($d, map{})}</div>
@@ -45,7 +48,7 @@ declare function tlslib:displaychunk($targetseg as node(), $prec as xs:int?, $fo
       <div class="form-group">
         <input  id="swl-query"/>
         <span id="swl-query-span">Word or char to annotate</span>
-        <select id="swl-select"><option>A</option></select>
+        <ul id="swl-select"></ul>
       </div>
         <input type="button" id="do-syn-func"/>
         <select id="syn-func-select"></select>
@@ -77,17 +80,20 @@ declare function tlslib:displaychunk($targetseg as node(), $prec as xs:int?, $fo
 
 :)
 
-declare function tlslib:format-swl($node as node()){
+declare function tlslib:format-swl($node as node(), $type as xs:string?){
 let $concept := data($node/@concept),
 $zi := $node/tei:form[1]/tei:orth[1]/text(),
-$py := $node/tei:form[1]/tei:pron[@xml:lang='zh-Latn']/text(),
+$py := $node/tei:form[1]/tei:pron[starts-with(@xml:lang, 'zh-Latn')]/text(),
 $sf := $node//tls:syn-func,
 $sm := $node//tls:sem-feat,
-$def := $node//tei:def
+$def := $node//tei:def[1]
+(:$pos := concat($sf, if ($sm) then (" ", $sm) else "")
+:)
 return
+if ($type = "row") then
 <div class="row">
 <div class="col-sm-1">&#160;</div>
-<div class="col-sm-2">{$zi} ({$py})</div>
+<div class="col-sm-2"><span class="zh">{$zi}</span> ({$py})</div>
 <div class="col-sm-2"><a href="concept.html?concept={$concept}">{$concept}</a></div>
 <div class="col-sm-6">
 <span><a href="browse.html?type=syn-func&amp;id={data($sf/@corresp)}">{$sf/text()}</a>&#160;</span>
@@ -96,6 +102,9 @@ return
 {$def/text()}
 </div>
 </div>
+else 
+<li class="list-group-item" id="{$concept}">{$py} {$concept} {$sf} {$sm} {
+if (string-length($def) > 10) then concat(substring($def, 10), "...") else $def}</li>
 };
 
 
@@ -106,11 +115,11 @@ return
 <div class="col-sm-3 zh" id="{$seg/@xml:id}">{$seg/text()}</div>　
 <div class="col-sm-8 tr" id="{$seg/@xml:id}-tr">{collection($config:tls-data-root)//tei:seg[@corresp=$link]/text()}</div>
 </div>,
-<div class="row swl">
+<div class="row swl collapse" data-toggle="collapse">
 <div class="col-sm-12">
 {for $swl in collection($config:tls-data-root|| "/notes")//tls:srcline[@target=$link]
 return
-tlslib:format-swl($swl/ancestor::tls:swl)}
+tlslib:format-swl($swl/ancestor::tls:swl, "row")}
 </div>
 </div>
 )
@@ -136,3 +145,9 @@ map:merge(
    map:entry(string($s/ancestor::tei:entry/@xml:id), (string($s/ancestor::tei:div/@xml:id), string($s/ancestor::tei:div/tei:head)))
  )
 };
+
+
+declare function tlslib:capitalize-first ( $arg as xs:string? )  as xs:string? {
+   concat(upper-case(substring($arg,1,1)),
+             substring($arg,2))
+ } ;

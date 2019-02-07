@@ -13,6 +13,25 @@ import module namespace tlslib="http://hxwd.org/lib" at "tlslib.xql";
 
 declare variable $app:SESSION := "tls:results";
 
+declare variable $app:lmap := map{
+"zh" : "Modern Chinese",
+"och" : "Old Chinese",
+"syn-func" : "Syntactic Functions",
+"sem-feat" : "Semantic Features",
+"word" : "Words",
+"char" : "Chars",
+"concept" : "Concepts",
+"definition" : "Definition",
+"notes" : "Notes",
+"old-chinese-criteria" : "Old Chinese Criteria",
+"modern-chinese-criteria" : "Modern Chinese Criteria",
+"taxonymy" : "Taxonoymy",
+"antonymy" : "Antonymy",
+"see" : "See also",
+"source-references" : "Bibliography",
+"warring-states-currency" : "Warring States Currency",
+"register" : "Register"
+};
 
 (:~
  : This is a sample templating function. It will be called by the templating module if
@@ -79,7 +98,37 @@ function app:browse($node as node()*, $model as map(*), $type as xs:string?, $fi
       else ()
     let $store := session:set-attribute("tls-browse", $hits)
     return
-       map:entry("browse", $hits)
+  <div class="card">
+    <div class="card-header" id="{$type}-card">
+      <div class="row mb-0">
+      <span class="col-3"><h4>{map:get($app:lmap, $type)}</h4></span>&#160;
+      <span class="col-3">
+      <input class="form-control" id="myInput" type="text" placeholder="Type to filter..."/>
+      </span>
+      </div>
+    </div>
+    <div class="card-body"><table class="table">
+    <thead><tr>
+    <th scope="col">Abbreviation</th>
+    <th scope="col">Definition</th>
+    <th scope="col">Remarks</th>    
+    </tr></thead><tbody class="table-striped">{
+    for $h in $hits
+    let $n := $h/tei:head/text(),
+    $id := $h/@xml:id,
+    $def := $h/tei:p
+    order by $n
+    return
+    <tr id="{$id}" class="abbr">
+    <td class="abbxr">{$n}</td>
+    <td>{$def}</td>
+    <td></td>
+    </tr>
+
+    }</tbody></table></div>
+  </div>
+    
+(:       map:entry("browse", $hits):)
 };
 
 (: :)
@@ -259,9 +308,129 @@ function app:textview($node as node()*, $model as map(*), $location as xs:string
 (: concept display :)
 declare 
     %templates:wrap
-function app:concept($node as node()*, $model as map(*), $user as xs:string?, $mode as xs:string?)
+function app:concept($node as node()*, $model as map(*), $concept as xs:string?, $uuid as xs:string?)
 {
-    session:create()
+    (session:create(),
+    let $key := replace($uuid, '#', '')
+    let $c :=  if (string-length($uuid) > 0) then
+       collection($config:tls-data-root || "/concepts")//tei:div[@xml:id = $key]    
+     else
+       collection($config:tls-data-root || "/concepts")//tei:div[tei:head[. = $concept]],
+    $tr := $c//tei:list[@type="translations"]//tei:item
+    return
+    <div class="card">
+    <div class="card-body">
+    <h4 class="card-title">{$c/tei:head/text()}&#160;&#160;{for $t in $tr return 
+      <span class="badge badge-light" title="{map:get($app:lmap, $t/@xml:lang)}">{$t/text()}</span>}</h4>
+    <h5 class="card-subtitle">{$c/tei:div[@type="definition"]//tei:p/text()}</h5>
+    <div id="concept-content" class="accordion">
+    <div class="card">
+    <div class="card-header" id="altnames-head">
+      <h5 class="mb-0">
+        <button class="btn" data-toggle="collapse" data-target="#altnames" >
+          Alternate names
+        </button>
+      </h5>
+      </div>
+      <div id="altnames" class="collapse" data-parent="#concept-content">{for $i in $c//tei:list[@type="altnames"]/tei:item/text()
+      return
+      <span class="badge badge-pill badge-light">{$i}</span>
+      }</div>
+    </div>
+    <!-- pointers -->
+    <div class="card">
+    <div class="card-header" id="pointers-head">
+      <h5 class="mb-0">
+        <button class="btn" data-toggle="collapse" data-target="#pointers" >
+          Pointers
+        </button>
+      </h5>
+      </div>
+     <div id="pointers" class="collapse" data-parent="#concept-content">
+     {for $p in $c//tei:div[@type="pointers"]//tei:list
+     return
+     (<h5>{data($p/@type)}{tlslib:capitalize-first(data($p/@type/text()))}</h5>,
+     <p>{for $r in $p//tei:ref return
+     <span class="badge badge-light"><a href="concept.html?uuid={replace($r/@target, "#", "")}">{$r/text()}</a></span>
+     }
+     
+     </p>)}
+     </div>
+    </div>
+    <!-- notes -->
+    <div class="card">
+    <div class="card-header" id="notes-head">
+      <h5 class="mb-0">
+        <button class="btn" data-toggle="collapse" data-target="#notes" >
+          Notes
+        </button>
+      </h5>
+      </div>
+     <div id="notes" class="collapse" data-parent="#concept-content">
+     {for $d in $c//tei:div[@type="notes"]//tei:div
+     return
+     (<h5>{data($d/@type)}</h5>,
+     <div>{for $p in $d//tei:p return
+     <p>{$p}</p>
+     }     
+     </div>)}
+     </div>
+    </div>
+    <!-- bibl -->
+    <div class="card">
+    <div class="card-header" id="bibl-head">
+      <h5 class="mb-0">
+        <button class="btn" data-toggle="collapse" data-target="#bibl" >
+          Source references
+        </button>
+      </h5>
+      </div>
+     <div id="bibl" class="collapse" data-parent="#concept-content">
+     {for $d in $c//tei:div[@type="source-references"]//tei:bibl
+     return
+     $d
+     }     
+     </div>
+    </div>
+    
+    <!-- -->
+    </div>
+    </div>
+    <div id="word-content" class="card">
+    <div class="card-body">
+    <h4 class="card-title">Words</h4>
+    <p class="card-text">
+    {for $e in $c/tei:div[@type="words"]//tei:entry
+    let $zi := $e/tei:form/tei:orth,
+    $pr := $e/tei:form/tei:pron
+    
+    order by $zi[1]
+(:    count $count :)
+    return 
+    <div><h5>{$zi/text()}&#160;&#160; {for $p in $pr return <span>{
+    if (ends-with($p/@xml:lang, "oc")) then "OC: " else 
+    if (ends-with($p/@xml:lang, "mc")) then "MC: " else (),
+    $p/text()}&#160;</span>}</h5>
+    <ul>{for $sw in $e//tei:sense
+    let $id := $sw/@xml:id,
+    $sf := $sw//tls:syn-func,
+    $sm := $sw/tls:sem-feat,
+    $def := $sw//tei:def
+    return
+    <li><span class="font-weight-bold">{$sf}</span>{$sm, $def} &#160;&#160;
+     <button class="btn badge badge-light" type="button" data-toggle="collapse" data-target="#{$sw/@xml:id}-resp" onclick="show_att('{$sw/@xml:id}')">
+           Attributions
+      </button>
+      <div id="{$sw/@xml:id}-resp" class="collapse"></div>
+    </li>
+    }</ul>
+    </div>
+    }
+    </p>
+    </div>
+    </div>
+    </div>
+    )
 };
 
 
