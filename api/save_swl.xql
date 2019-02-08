@@ -28,14 +28,15 @@ $title-en := $tr/ancestor::tei:TEI/tei:teiHeader/tei:fileDesc/tei:titleStmt/tei:
 $title := $line/ancestor::tei:TEI/tei:teiHeader/tei:fileDesc/tei:titleStmt/tei:title/text(),
 $sense := collection($config:tls-data-root)//tei:sense[@xml:id=$sense-id],
 $concept := $sense/ancestor::tei:div/tei:head/text(),
+$uid := util:uuid(),
 $newswl :=
-<tls:swl xmlns="http://www.tei-c.org/ns/1.0" concept="{$concept}">
+<tls:swl xmlns="http://www.tei-c.org/ns/1.0" concept="{$concept}" xml:id="{$uid}">
 <link target="#{$line-id} #{$sense-id}"/>
 <tls:text>
 <tls:srcline title="{$title}" target="#{$line-id}">{$line/text()}</tls:srcline>
 <tls:line title="{$title-en}">{$tr/text()}</tls:line>
 </tls:text>
-<form>
+<form corresp="{$sense/parent::tei:entry/tei:form/@corresp}">
 {$sense/parent::tei:entry/tei:form/tei:orth,
 $sense/parent::tei:entry/tei:form/tei:pron[starts-with(@xml:lang, 'zh-Latn')]}
 </form>
@@ -48,7 +49,6 @@ $sense/parent::tei:entry/tei:form/tei:pron[starts-with(@xml:lang, 'zh-Latn')]}
 </respStmt>
 </tls:metadata>
 </tls:swl>,
-$uid := util:uuid(),
 $path := concat($config:tls-data-root, "/notes/new/", substring($uid, 1, 2))
 return (
 if (xmldb:collection-available($path)) then () else

@@ -43,7 +43,7 @@ function show_att(uid){
 };
 
 function save_this_swl(sense_id){
-    var line_id=document.getElementById( "swl-line-id" );
+    var line_id=document.getElementById( "swl-line-id-span" ).innerText;
   $.ajax({
   type : "PUT",
   url : "api/save_swl.xql?line="+line_id+"&sense="+sense_id,
