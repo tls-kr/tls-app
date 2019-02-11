@@ -120,7 +120,7 @@ function app:browse($node as node()*, $model as map(*), $type as xs:string?, $fi
     order by $n
     return
     <tr id="{$id}" class="abbr">
-    <td class="abbxr">{$n}</td>
+    <td class="abbxr"><a href="concept.html?uuid={$id}">{$n}</a></td>
     <td>{$def}</td>
     <td></td>
     </tr>

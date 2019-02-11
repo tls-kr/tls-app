@@ -110,3 +110,24 @@
   -webkit-transform: rotate(-45deg);
    z-index: 1500;
 }
+
+.ann-dialog {
+  background: white;
+  position: fixed;
+  top: 55px;
+  right: 0;
+  max-width: 500px;
+  max-height: 600px;
+  display: none;
+}      
+
+
+.ui-autocomplete {
+    max-height: 200px;
+    overflow-y: auto;
+    /* prevent horizontal scrollbar */
+    overflow-x: hidden;
+    /* add padding to account for vertical scrollbar */
+    padding-right: 20px;
+    z-index:2147483647; 
+} 

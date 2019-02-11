@@ -43,7 +43,7 @@ $sense/parent::tei:entry/tei:form/tei:pron[starts-with(@xml:lang, 'zh-Latn')]}
 <sense corresp="#{$sense-id}">
 {$sense/*}
 </sense>
-<tls:metadata user="{$user}" created="{current-dateTime()}">
+<tls:metadata resp="#{$user}" created="{current-dateTime()}">
 <respStmt><resp>approved</resp>
 <name>{$user}</name>
 </respStmt>

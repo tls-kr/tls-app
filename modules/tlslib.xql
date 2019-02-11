@@ -25,39 +25,35 @@ declare function tlslib:displaychunk($targetseg as node(), $prec as xs:int?, $fo
       $dseg := ($pseg, $targetseg, $fseg)
       return
       (
-      <h1>{$title}</h1>,
-      <h2>{$head/text()}</h2>,
-       <button class="btn btn-primary" type="button" data-toggle="collapse" data-target=".swl">
+      <h1 class="bg-light ">{$title} <small class="ml-2">{$head/text()}</small> 
+      <a href="#" >TOC Dropdown</a> 
+      <button class="btn btn-primary ml-2" type="button" data-toggle="collapse" data-target=".swl">
             Show SWL
-      </button>,
-      <p>Debug: {$prec, $foll, sm:id()}</p>,
+      </button>
+      </h1>,
       <div id="chunkrow" class="row">
       <div id="chunkcol-left" class="col-sm-8">{for $d in $dseg return tlslib:displayseg($d, map{})}</div>
       <div id="chunkcol-right" class="col-sm-4">
-<div id="swl-form" >
-    <h2>New Attribution</h2>
-    <form >
-      <div class="form-group">
-        <input type="hidden" id="swl-line-id"/>
-        <span id="swl-line-id-span">Id of line</span>
-      </div>
-      <div class="form-group">
-        <input type="hidden" id="swl-line-text"/>
-        <span id="swl-line-text-span">Text of line</span>
-      </div>
-      <div class="form-group">
-        <input  id="swl-query"/>
-        <span id="swl-query-span">Word or char to annotate</span>
+<div id="swl-form" class="card ann-dialog overflow-auto">
+<div class="card-body">
+    <h5 class="card-title">New Attribution: <strong class="ml-2"><span id="swl-query-span">Word or char to annotate</span></strong>
+     <button type="button" class="close" onclick="hide_swl_form()" aria-label="Close">
+       &#215;
+     </button>
+</h5>
+    <h6 class="text-muted">At:  <span id="swl-line-id-span" class="ml-2">Id of line</span></h6>
+    <h6 class="text-muted">Line: <span id="swl-line-text-span" class="ml-2">Text of line</span></h6>
+    <div class="card-text">
+        <p><span class="badge badge-primary">Use</span> one of the following syntactic words (SW), 
+        create a <span class="mb-2 badge badge-secondary">New SW</span> 
+         or add a new concept to the word here: <span class="btn badge badge-light ml-2" data-toggle="modal" data-target="#new-concept">Concept</span> 
         <ul id="swl-select"></ul>
+        </p>
       </div>
-        <input type="button" id="do-syn-func"/>
-        <select id="syn-func-select"></select>
-        <input type="text" id="x" />
-    </form>
-        <button onclick="get_sw()">Look for existing definitions</button>
-</div>    
-      </div>
-      </div>,
+    </div>    
+    </div>
+    </div>
+    </div>,
       <div class="row">
       <div class="col-sm-2">
       {if ($dseg[1]/preceding::tei:seg[1]/@xml:id) then  
@@ -94,7 +90,7 @@ if ($type = "row") then
 <div class="row">
 <div class="col-sm-1">&#160;</div>
 <div class="col-sm-2"><span class="zh">{$zi}</span> ({$py})</div>
-<div class="col-sm-2"><a href="concept.html?concept={$concept}">{$concept}</a></div>
+<div class="col-sm-3"><a href="concept.html?concept={$concept}">{$concept}</a></div>
 <div class="col-sm-6">
 <span><a href="browse.html?type=syn-func&amp;id={data($sf/@corresp)}">{$sf/text()}</a>&#160;</span>
 {if ($sm) then 
@@ -113,10 +109,10 @@ let $link := concat('#', $seg/@xml:id)
 return
 (<div class="row">
 <div class="col-sm-3 zh" id="{$seg/@xml:id}">{$seg/text()}</div>　
-<div class="col-sm-8 tr" id="{$seg/@xml:id}-tr">{collection($config:tls-data-root)//tei:seg[@corresp=$link]/text()}</div>
+<div class="col-sm-8 tr" id="{$seg/@xml:id}-tr" contenteditable="true">{collection($config:tls-data-root)//tei:seg[@corresp=$link]/text()}</div>
 </div>,
 <div class="row swl collapse" data-toggle="collapse">
-<div class="col-sm-12">
+<div class="col-sm-12" id="{$seg/@xml:id}-swl">
 {for $swl in collection($config:tls-data-root|| "/notes")//tls:srcline[@target=$link]
 return
 tlslib:format-swl($swl/ancestor::tls:swl, "row")}

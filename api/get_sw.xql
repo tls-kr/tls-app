@@ -29,20 +29,23 @@ $zi := $w/parent::tei:form/tei:orth/text()
 order by $concept:)
 return
 <li>{$zi}&#160;({$py})&#160;{$concept} 
+<button class="btn badge badge-secondary ml-2" type="button">
+           New SW
+      </button>
 <ul>{for $s in $w/ancestor::tei:entry/tei:sense
 let $sf := $s//tls:syn-func/text(),
 $sm := $s//tls:sem-feat/text(),
 $def := $s//tei:def/text()
 return
 <li>{$sf}&#160;{$sm}: {$def}
-     <button class="btn badge badge-primary" type="button" onclick="save_this_swl('{$s/@xml:id}')">
+     <button class="btn badge badge-primary ml-2" type="button" onclick="save_this_swl('{$s/@xml:id}')">
            Use
       </button>
 </li>
 }
 </ul></li>
 else 
-<li class="list-group-item">New Word</li>
+<li class="list-group-item">No word selected or no existing syntactic word found.</li>
 
 
 
