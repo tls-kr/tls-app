@@ -4,8 +4,6 @@ xquery version "3.1";
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
-declare namespace ttm="http://tls.kanripo.org/ns/1.0";
-declare namespace t2= "http://tls.kanripo.org/ns/1.0";
 declare namespace output = "http://www.w3.org/2010/xslt-xquery-serialization";
 
 (:declare option output:method "html5";
@@ -28,16 +26,16 @@ $zi := $w/parent::tei:form/tei:orth/text()
 (:group by $concept
 order by $concept:)
 return
-<li>{$zi}&#160;({$py})&#160;{$concept} 
+<li class="mb-3"><strong>{$zi}</strong>&#160;({$py})&#160;<strong>{$concept}</strong> 
 <button class="btn badge badge-secondary ml-2" type="button">
            New SW
       </button>
-<ul>{for $s in $w/ancestor::tei:entry/tei:sense
+<ul class="list-unstyled" style="padding-inline-start: 22px;text-indent: -24px ;">{for $s in $w/ancestor::tei:entry/tei:sense
 let $sf := $s//tls:syn-func/text(),
 $sm := $s//tls:sem-feat/text(),
 $def := $s//tei:def/text()
 return
-<li>{$sf}&#160;{$sm}: {$def}
+<li><span id="pop-{$s/@xml:id}" class="small btn" data-toggle="popover" data-placement="left">●</span>{$sf}&#160;{$sm}: {$def}
      <button class="btn badge badge-primary ml-2" type="button" onclick="save_this_swl('{$s/@xml:id}')">
            Use
       </button>

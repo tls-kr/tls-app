@@ -174,12 +174,21 @@ function app:query($node as node()*, $model as map(*), $query as xs:string?, $mo
 
 declare function app:do-query($queryStr as xs:string?, $mode as xs:string?)
 {
-    let $query := app:create-query($queryStr, $mode)
-    let $dataroot := $config:tls-data-root   (: config:tls-data-root :)
+    let $dataroot := ("/db/apps/tls-texts", "/db/apps/tls-data")
+    let $query := app:create-query(lower-case($queryStr), $mode)
     for $hit in collection($dataroot)//tei:div[ft:query(., $query)]
     order by ft:score($hit) descending
     return $hit
 };
+
+declare function app:ngram-query($queryStr as xs:string?, $mode as xs:string?)
+{
+    let $dataroot := ("/db/apps/tls-texts", "/db/apps/tls-data")
+    for $hit in collection($dataroot)//tei:seg[ngram:contains(., $queryStr)]
+    return $hit 
+};
+
+
 
 declare
     %templates:wrap
@@ -305,15 +314,77 @@ function app:textview($node as node()*, $model as map(*), $location as xs:string
     )
 };
 
+(: taxchar display :)
+declare 
+    %templates:wrap
+function app:char($node as node()*, $model as map(*), $char as xs:string?, $id as xs:string?)
+{
+    (session:create(),
+    let $key := replace($id, '#', '')
+    let $n := if (string-length($id) > 0) then
+      doc(concat($config:tls-data-root, "/core/taxchar.xml"))//tei:div[@xml:id = $id]
+    else
+      doc(concat($config:tls-data-root, "/core/taxchar.xml"))//tei:div[tei:head[. = $char]]
+    return
+    <div class="card">
+    <div class="card-body">
+    <h4 class="card-title">{$n/tei:head/text()}</h4>
+    </div>
+    <div class="card-text">
+{local:proc_char($n/tei:list)}
+    </div>
+    </div>
+)};   
+   
+declare function local:proc_char($node as node())
+{ 
+typeswitch ($node)
+  case element(tei:div) return
+      <div>{for $n in $node/node() return local:proc_char($n)}</div>
+  case element(tei:head) return
+  <h4 class="card-title">{$node/text()}</h4>
+  case element(tei:list) return
+  <ul class="list-unstyled">{for $n in $node/node()
+       return
+       local:proc_char($n)
+  }</ul>
+  case element(tei:item) return
+    <li>{for $n in $node/node()
+        return
+            local:proc_char($n)
+    }</li>
+  case element(tei:ref) return
+     let $id := substring($node/@target, 2),
+     $char := $node/ancestor::tei:div[1]/tei:head/text(),
+     $swl := collection($config:tls-data-root)//tei:div[@xml:id=$id]//tei:entry[tei:form/tei:orth[. = $char]]//tei:sense
+     return
+      <span>
+      <a href="concept.html?uuid={$id}" class="mr-2 ml-2">{$node/text()}</a>
+      <button class="btn badge badge-light" type="button" 
+      data-toggle="collapse" data-target="#{$id}-swl">{count($swl)}</button>
+      <ul class="list-unstyled collapse" id="{$id}-swl"> 
+      {for $sw in $swl
+      return tlslib:display_sense($sw)}
+      </ul>
+      </span>
+  case text() return
+      $node
+  default
+  return 
+  <not-handled>{$node}</not-handled>
+};
+   
+   
+   
 (: concept display :)
 declare 
     %templates:wrap
 function app:concept($node as node()*, $model as map(*), $concept as xs:string?, $uuid as xs:string?)
 {
     (session:create(),
-    let $key := replace($uuid, '#', '')
-    let $c :=  if (string-length($uuid) > 0) then
-       collection($config:tls-data-root || "/concepts")//tei:div[@xml:id = $key]    
+    let $key := replace($uuid, '^#', '')
+    let $c :=  if (string-length($key) > 0) then
+       collection($config:tls-data-root || "/concepts")//tei:div[ends-with(@xml:id,$key)]    
      else
        collection($config:tls-data-root || "/concepts")//tei:div[tei:head[. = $concept]],
     $tr := $c//tei:list[@type="translations"]//tei:item
@@ -322,7 +393,7 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
     <div class="card-body">
     <h4 class="card-title">{$c/tei:head/text()}&#160;&#160;{for $t in $tr return 
       <span class="badge badge-light" title="{map:get($app:lmap, $t/@xml:lang)}">{$t/text()}</span>}</h4>
-    <h5 class="card-subtitle">{$c/tei:div[@type="definition"]//tei:p/text()}</h5>
+    <h5 class="card-subtitle" id="popover-test" data-toggle="popover">{$c/tei:div[@type="definition"]//tei:p/text()}</h5>
     <div id="concept-content" class="accordion">
     <div class="card">
     <div class="card-header" id="altnames-head">
@@ -349,7 +420,7 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
      <div id="pointers" class="collapse" data-parent="#concept-content">
      {for $p in $c//tei:div[@type="pointers"]//tei:list
      return
-     (<h5>{data($p/@type)}{tlslib:capitalize-first(data($p/@type/text()))}</h5>,
+     (<h5 class="ml-2">{map:get($app:lmap, data($p/@type))}{tlslib:capitalize-first(data($p/@type/text()))}</h5>,
      <p>{for $r in $p//tei:ref return
      <span class="badge badge-light"><a href="concept.html?uuid={replace($r/@target, "#", "")}">{$r/text()}</a></span>
      }
@@ -369,7 +440,7 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
      <div id="notes" class="collapse" data-parent="#concept-content">
      {for $d in $c//tei:div[@type="notes"]//tei:div
      return
-     (<h5>{data($d/@type)}</h5>,
+     (<h5 class="ml-2">{map:get($app:lmap, data($d/@type))}</h5>,
      <div>{for $p in $d//tei:p return
      <p>{$p}</p>
      }     
@@ -412,17 +483,8 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
     if (ends-with($p/@xml:lang, "mc")) then "MC: " else (),
     $p/text()}&#160;</span>}</h5>
     <ul>{for $sw in $e//tei:sense
-    let $id := $sw/@xml:id,
-    $sf := $sw//tls:syn-func,
-    $sm := $sw/tls:sem-feat,
-    $def := $sw//tei:def
     return
-    <li><span class="font-weight-bold">{$sf}</span>{$sm, $def} &#160;&#160;
-     <button class="btn badge badge-light" type="button" data-toggle="collapse" data-target="#{$sw/@xml:id}-resp" onclick="show_att('{$sw/@xml:id}')">
-           Attributions
-      </button>
-      <div id="{$sw/@xml:id}-resp" class="collapse"></div>
-    </li>
+    tlslib:display_sense($sw)
     }</ul>
     </div>
     }

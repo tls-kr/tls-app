@@ -12,6 +12,15 @@ declare function tlslib:expath-descriptor() as element() {
     <rl/>
 };
 
+(: helper functions :)
+declare function tlslib:iskanji($string as xs:string) as xs:boolean {
+let $kanji := '&#x3400;-&#x4DFF;&#x4e00;-&#x9FFF;&#xF900;-&#xFAFF;&#xFE30;-&#xFE4F;&#x00020000;-&#x0002A6DF;&#x0002A700;-&#x0002B73F;&#x0002B740;-&#x0002B81F;&#x0002B820;-&#x0002F7FF;',
+$pua := '&#xE000;-&#xF8FF;&#x000F0000;-&#x000FFFFD;&#x00100000;-&#x0010FFFD;'
+return 
+matches($string, concat("[", $kanji, $pua, "]+" ))
+};
+
+
 (: display $prec and $foll preceding and following segments of a given seg :)
 
 declare function tlslib:displaychunk($targetseg as node(), $prec as xs:int?, $foll as xs:int?){
@@ -47,7 +56,7 @@ declare function tlslib:displaychunk($targetseg as node(), $prec as xs:int?, $fo
         <p><span class="badge badge-primary">Use</span> one of the following syntactic words (SW), 
         create a <span class="mb-2 badge badge-secondary">New SW</span> 
          or add a new concept to the word here: <span class="btn badge badge-light ml-2" data-toggle="modal" data-target="#new-concept">Concept</span> 
-        <ul id="swl-select"></ul>
+        <ul id="swl-select" class="list-unstyled"></ul>
         </p>
       </div>
     </div>    
@@ -105,15 +114,18 @@ if (string-length($def) > 10) then concat(substring($def, 10), "...") else $def}
 
 
 declare function tlslib:displayseg($seg as node()*, $options as map(*) ){
-let $link := concat('#', $seg/@xml:id)
+let $link := concat('#', $seg/@xml:id),
+$ann := lower-case(map:get($options, "ann")),
+$loc := map:get($options, "loc"),
+$mark := if ($seg/@xml:id/text() = $loc) then "mark" else ()
 return
-(<div class="row">
+(<div class="row {$mark}">
 <div class="col-sm-3 zh" id="{$seg/@xml:id}">{$seg/text()}</div>　
 <div class="col-sm-8 tr" id="{$seg/@xml:id}-tr" contenteditable="true">{collection($config:tls-data-root)//tei:seg[@corresp=$link]/text()}</div>
 </div>,
 <div class="row swl collapse" data-toggle="collapse">
 <div class="col-sm-12" id="{$seg/@xml:id}-swl">
-{for $swl in collection($config:tls-data-root|| "/notes")//tls:srcline[@target=$link]
+{if ($ann = "false") then () else for $swl in collection($config:tls-data-root|| "/notes")//tls:srcline[@target=$link]
 return
 tlslib:format-swl($swl/ancestor::tls:swl, "row")}
 </div>
@@ -147,3 +159,19 @@ declare function tlslib:capitalize-first ( $arg as xs:string? )  as xs:string? {
    concat(upper-case(substring($arg,1,1)),
              substring($arg,2))
  } ;
+ 
+ 
+ declare function tlslib:display_sense($sw as node()){
+    let $id := $sw/@xml:id,
+    $sf := $sw//tls:syn-func,
+    $sm := $sw/tls:sem-feat,
+    $def := $sw//tei:def
+    return
+    <li><span class="font-weight-bold">{$sf}</span>{$sm, $def} &#160;&#160;
+     <button class="btn badge badge-light" type="button" data-toggle="collapse" data-target="#{$sw/@xml:id}-resp" onclick="show_att('{$sw/@xml:id}')">
+           Attributions
+      </button>
+      <div id="{$sw/@xml:id}-resp" class="collapse container"></div>
+    </li>
+ 
+ };

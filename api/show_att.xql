@@ -28,7 +28,7 @@ order by $when descending
 return
 <div class="row bg-light table-striped">
 <div class="col-sm-2"><a href="textview.html?location={$target}" class="font-weight-bold">{$src, $loc}</a></div>
-<div class="col-sm-3"><span>{$line}</span></div>
+<div class="col-sm-3"><span data-target="{$target}" data-toggle="popover">{$line}</span></div>
 <div class="col-sm-7"><span>{$tr}</span></div>
 </div>
 else 

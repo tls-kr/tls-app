@@ -157,6 +157,7 @@ $( ".zh" )
     $( "#swl-form" ).width(new_width);
     
    get_sw()
+   $('[data-toggle="popover"]').popover({'content' : get_atts})
   });
 //$(document).ready(function(){  
 
@@ -255,3 +256,31 @@ $( ".zh" )
       $(".mysticky").sticky({ topSpacing: 50 });
 //    });
 
+
+// popover
+
+$(document).ajaxComplete(function() {
+  $("[data-toggle='popover']").popover(
+  {'content' : function(){
+    var target=$(this).attr("data-target");
+    var div_id =  "tmp-id-" + $.now();
+    return get_atts(target, div_id);}, 
+  'html' : true});
+});
+
+/*
+$(function () {
+  $('[data-toggle="popover"]').popover({'content' : get_atts(this)})
+}) */
+
+function get_atts(target, div_id){
+   console.log(target)
+   $.ajax( {
+    url: "api/get_text_preview.xql?loc="+target,
+    dataType: "html",
+    success: function( data ) {
+    $('#'+div_id).html(data);    
+    }
+    });
+   return '<div id="'+ div_id +'">Loading...</div>';
+};
