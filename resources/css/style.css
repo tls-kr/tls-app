@@ -131,3 +131,16 @@
     padding-right: 20px;
     z-index:2147483647; 
 } 
+
+.popover {
+    max-width: 100%
+}
+
+.icon{
+    width : 22px;
+    height : 22px;
+}
+.icon-account-login {
+  fill: #f00;
+}
+

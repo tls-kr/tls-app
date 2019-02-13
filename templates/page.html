@@ -66,7 +66,9 @@
                     </ul>
                     <form action="search.html" class="form-inline my-2 my-lg-0">
                         <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search"/>
-                        <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Srch</button>
+                        <button class="btn btn-outline-success my-2 my-sm-0" type="submit">
+                            <img class="icon" src="resources/icons/open-iconic-master/svg/magnifying-glass.svg"/>
+                        </button>
                     </form>
                     <!--
                     <div class="btn-nav">
@@ -74,7 +76,9 @@
                     </div>
                     -->
                     <div class="btn-nav">
-                            <a href="#" class="btn btn-default navbar-btn" data-toggle="modal" data-target="#loginDialog">Login</a>
+                            <a href="#" class="btn btn-default navbar-btn" data-toggle="modal" data-target="#loginDialog">
+                                <img class="icon icon-account-login" src="resources/icons/open-iconic-master/svg/account-login.svg"/>
+                                Login</a>
                     </div>
                 </div>
             </nav>
@@ -94,10 +98,10 @@
             <div class="modal-dialog" style="z-index: 1080;" role="document">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
                         <h4 class="modal-title">Login</h4>
+                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
                     </div>
-                    <form class="form form-horizontal" action="" method="get">
+                    <form class="form form-horizontal" action="login" method="post">
                         <div class="modal-body">
                             <div class="form-group">
                                 <label class="control-label col-sm-2">User:</label>

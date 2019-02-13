@@ -265,7 +265,8 @@ $(document).ajaxComplete(function() {
     var target=$(this).attr("data-target");
     var div_id =  "tmp-id-" + $.now();
     return get_atts(target, div_id);}, 
-  'html' : true});
+  'html' : true,
+  container: 'body'});
 });
 
 /*

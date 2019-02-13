@@ -506,4 +506,87 @@ for $w in tlslib:getwords($word, $model)
 return $w
 };
 
+(: dialog functions :)
+declare
+    %templates:wrap
+function app:swl-form-dialog($node as node()*, $model as map(*)){
+<div id="swl-form" class="card ann-dialog overflow-auto">
+<div class="card-body">
+    <h5 class="card-title">New Attribution: <strong class="ml-2"><span id="swl-query-span">Word or char to annotate</span></strong>
+     <button type="button" class="close" onclick="hide_swl_form()" aria-label="Close">
+       &#215;
+     </button>
+</h5>
+    <h6 class="text-muted">At:  <span id="swl-line-id-span" class="ml-2">Id of line</span></h6>
+    <h6 class="text-muted">Line: <span id="swl-line-text-span" class="ml-2">Text of line</span></h6>
+    <div class="card-text">
+        <p><span class="badge badge-primary">Use</span> one of the following syntactic words (SW), 
+        create a <span class="mb-2 badge badge-secondary">New SW</span> 
+         or add a new concept to the word here: <span class="btn badge badge-light ml-2" data-toggle="modal" data-target="#new-concept">Concept</span> 
+        <ul id="swl-select" class="list-unstyled"></ul>
+        </p>
+      </div>
+    </div>    
+    </div>
+};
+
+declare
+    %templates:wrap
+function app:add-concept-dialog($node as node()*, $model as map(*)){
+<div id="new-concept" class="modal" tabindex="-1" role="dialog" style="display: none;">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Adding concept for <strong class="ml-2"><span id="concept-query-span">Word</span></strong>
+                    <button class="btn badge badge-primary ml-2" type="button" onclick="get_guangyun()">
+                        廣韻
+                    </button>
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    ×
+                </button>
+            </div>
+            <div class="modal-body">
+                <h6 class="text-muted">At:  <span id="concept-line-id-span" class="ml-2">Id of line</span></h6>
+                <h6 class="text-muted">Line: <span id="concept-line-text-span" class="ml-2">Text of line</span></h6>
+                <div>
+                    <span id="concept-id-span" style="display:none;">UUID of selected concept</span>
+                    <span id="synfunc-id-span" style="display:none;">UUID of selected syntactic funtion</span>
+                    <span id="semfeat-id-span" style="display:none;">UUID of selected semantic feature</span>
+                    
+                </div>
+                <div class="form-group" id="guangyun-group">
+                    <span class="text-muted" id="guangyun-group-pl"> Press the 廣韻 button above and select the pronounciation</span>
+                </div>
+                <div id="select-concept-group" class="form-group ui-widget">
+                    <label for="select-concept">Concept: </label>
+                    <input id="select-concept" class="form-control"/>
+                </div>
+                <div class="form-row">
+                <div id="select-synfunc-group" class="form-group ui-widget col-md-6">
+                    <label for="select-synfunc">Syntactic function: </label>
+                    <input id="select-synfunc" class="form-control"/>
+                </div>
+                <div id="select-semfeat-group" class="form-group ui-widget col-md-6">
+                    <label for="select-semfeat">Semantic feature: </label>
+                    <input id="select-semfeat" class="form-control"/>
+                </div>
+                </div>
+                <div id="input-def-group">
+                    <label for="select-semfeat">Definition </label>
+                    <textarea id="input-def" class="form-control"></textarea>                   
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="save_to_concept()">Save changes</button>
+            </div>
+        </div>
+    </div>    
+    <!-- temp -->
+    
+</div>    
+
+};
+
 

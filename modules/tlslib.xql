@@ -4,6 +4,7 @@ module namespace tlslib="http://hxwd.org/lib";
 import module namespace config="http://hxwd.org/config" at "config.xqm";
 
 import module namespace tpu="http://www.tei-c.org/tei-publisher/util" at "/db/apps/tei-publisher/modules/lib/util.xql";
+import module namespace app="http://hxwd.org/app" at "app.xql";
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
@@ -43,24 +44,7 @@ declare function tlslib:displaychunk($targetseg as node(), $prec as xs:int?, $fo
       <div id="chunkrow" class="row">
       <div id="chunkcol-left" class="col-sm-8">{for $d in $dseg return tlslib:displayseg($d, map{})}</div>
       <div id="chunkcol-right" class="col-sm-4">
-<div id="swl-form" class="card ann-dialog overflow-auto">
-<div class="card-body">
-    <h5 class="card-title">New Attribution: <strong class="ml-2"><span id="swl-query-span">Word or char to annotate</span></strong>
-     <button type="button" class="close" onclick="hide_swl_form()" aria-label="Close">
-       &#215;
-     </button>
-</h5>
-    <h6 class="text-muted">At:  <span id="swl-line-id-span" class="ml-2">Id of line</span></h6>
-    <h6 class="text-muted">Line: <span id="swl-line-text-span" class="ml-2">Text of line</span></h6>
-    <div class="card-text">
-        <p><span class="badge badge-primary">Use</span> one of the following syntactic words (SW), 
-        create a <span class="mb-2 badge badge-secondary">New SW</span> 
-         or add a new concept to the word here: <span class="btn badge badge-light ml-2" data-toggle="modal" data-target="#new-concept">Concept</span> 
-        <ul id="swl-select" class="list-unstyled"></ul>
-        </p>
-      </div>
-    </div>    
-    </div>
+      {app:swl-form-dialog($targetseg, map{})}
     </div>
     </div>,
       <div class="row">
