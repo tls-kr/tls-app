@@ -144,3 +144,7 @@
   fill: #f00;
 }
 
+.swl-bullet{
+    padding-inline-start: 22px;
+    text-indent: -24px ;    
+}

@@ -16,7 +16,7 @@ declare namespace expath="http://expath.org/ns/pkg";
     Determine the application root collection from the current module load path.
 :)
 declare variable $config:test := system:get-module-load-path();
-declare variable $config:login-domain := "org.exist.login";
+declare variable $config:login-domain := "org.hxwd.tls";
 
 declare variable $config:app-root := 
     let $rawPath := system:get-module-load-path()
@@ -148,13 +148,14 @@ declare function config:app-meta($node as node(), $model as map(*)) as element()
 declare function config:app-info($node as node(), $model as map(*)) {
     let $expath := config:expath-descriptor()
     let $repo := config:repo-descriptor()
-    let $user := session:get-attribute($config:login-domain)
+    let $user := session:get-attribute($config:login-domain || ".user")
     let $user1 := request:get-attribute($config:login-domain || ".user"),
     $cookie := request:get-cookie-value($config:login-domain)
     return
         <table class="app-info">
-        <tr><td>user</td><td>{if (sm:is-authenticated()) then sm:id() else "NO"}</td></tr>
-        <tr><td>user-req</td><td>{$cookie}</td></tr>
+        <tr><td>user</td><td>{$user}{if (sm:is-authenticated()) then sm:id() else ("NO")}
+        </td></tr>
+        <tr><td>user-req</td><td>{request:attribute-names()}</td></tr>
         <tr><td>session-atts</td><td>{session:get-attribute-names()}</td></tr>
         <tr><td>cookies</td><td>{request:get-cookie-names()}</td></tr>
         <tr>

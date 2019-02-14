@@ -94,6 +94,7 @@ function save_this_swl(sense_id){
 //  alert(resp);
   },
   error : function(resp){
+    console.log(resp)
     alert(resp);
   }
   });
@@ -119,6 +120,7 @@ function save_to_concept(){
     alert("OK");
   },
   error : function(resp){
+  console.log(resp)
     alert("PROBLEM"+resp);
   }
   });

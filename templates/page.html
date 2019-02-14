@@ -75,10 +75,8 @@
                         <a href="#" class="btn btn-default navbar-btn" data-toggle="modal" data-target="#searchDialog">Advanced Search</a>
                     </div>
                     -->
-                    <div class="btn-nav">
-                            <a href="#" class="btn btn-default navbar-btn" data-toggle="modal" data-target="#loginDialog">
-                                <img class="icon icon-account-login" src="resources/icons/open-iconic-master/svg/account-login.svg"/>
-                                Login</a>
+                    <div class="btn-nav" data-template="app:login">
+                        
                     </div>
                 </div>
             </nav>
@@ -101,7 +99,7 @@
                         <h4 class="modal-title">Login</h4>
                         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
                     </div>
-                    <form class="form form-horizontal" action="login" method="post">
+                    <form class="form form-horizontal" action="login" method="get">
                         <div class="modal-body">
                             <div class="form-group">
                                 <label class="control-label col-sm-2">User:</label>

@@ -506,6 +506,20 @@ for $w in tlslib:getwords($word, $model)
 return $w
 };
 
+(: login :)
+declare 
+    %templates:wrap
+function app:login($node as node()*, $model as map(*))
+{ if (sm:is-authenticated()) then 
+<a href="#" class="btn btn-default navbar-btn" data-toggle="modal" data-target="#loginDialog">
+<img class="icon mr-2" 
+src="resources/icons/open-iconic-master/svg/account-logout.svg"/>{sm:id()//sm:real/sm:username/text()}</a>
+else
+<a href="#" class="btn btn-default navbar-btn" data-toggle="modal" data-target="#loginDialog">
+<img class="icon icon-account-login" 
+src="resources/icons/open-iconic-master/svg/account-login.svg"/>Login</a>
+};
+
 (: dialog functions :)
 declare
     %templates:wrap

@@ -30,7 +30,7 @@ return
 <button class="btn badge badge-secondary ml-2" type="button">
            New SW
       </button>
-<ul class="list-unstyled" style="padding-inline-start: 22px;text-indent: -24px ;">{for $s in $w/ancestor::tei:entry/tei:sense
+<ul class="list-unstyled" style="swl-bullet">{for $s in $w/ancestor::tei:entry/tei:sense
 let $sf := $s//tls:syn-func/text(),
 $sm := $s//tls:sem-feat/text(),
 $def := $s//tei:def/text()

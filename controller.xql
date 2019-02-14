@@ -10,7 +10,17 @@ declare variable $exist:root external;
 
 declare variable $logout := request:get-parameter("logout", ());
 declare variable $login := request:get-parameter("user", ());
-declare variable $user := xmldb:login("/db/apps", "chris", "tls55");
+
+declare variable $local:HTTP_OK := xs:integer(200);
+declare variable $local:HTTP_CREATED := xs:integer(201);
+declare variable $local:HTTP_NO_CONTENT := xs:integer(204);
+declare variable $local:HTTP_BAD_REQUEST := xs:integer(400);
+declare variable $local:HTTP_UNAUTHORIZED := xs:integer(401);
+declare variable $local:HTTP_FORBIDDEN := xs:integer(403);
+declare variable $local:HTTP_NOT_FOUND := xs:integer(404);
+declare variable $local:HTTP_METHOD_NOT_ALLOWED := xs:integer(405);
+declare variable $local:HTTP_INTERNAL_SERVER_ERROR := xs:integer(500);
+
 if ($exist:path eq '') then
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
         <redirect url="{request:get-uri()}/"/>
@@ -21,23 +31,46 @@ else if ($exist:path eq "/") then
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
         <redirect url="index.html"/>
     </dispatch>
+else if (ends-with($exist:resource, ".xql")) then (
+        login:set-user($config:login-domain, (), false()),
+        <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+            <forward url="{$exist:controller}/{$exist:path}"/>
+            <cache-control cache="no"/>
+        </dispatch>
+)
 else if ($logout or $login) then (
     login:set-user($config:login-domain, (), false()),
-    (: redirect successful login attempts to the original page, but prevent redirection to non-local websites:)
-    let $referer := request:get-header("Referer")
-    let $this-servers-scheme-and-domain := request:get-scheme() || "://" || request:get-server-name()
-    return
-        if (starts-with($referer, $this-servers-scheme-and-domain)) then
-            <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
-                <redirect url="{request:get-header("Referer")}"/>
-            </dispatch>
-        else
-            <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
-                <redirect url="{replace(request:get-uri(), "^(.*)\?", "$1")}"/>
-            </dispatch>
-)    
-
-else if (ends-with($exist:resource, ".html")) then
+    <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+        <redirect url="{replace(request:get-uri(), "^(.*)\?", "$1")}"/>
+    </dispatch>
+)
+else if ($exist:resource = "login") then (
+    util:declare-option("exist:serialize", "method=json media-type=application/json"),
+    try {
+        login:set-user($config:login-domain, (), false()),
+        if ((sm:id()//sm:username/text()) != "guest") then (
+            response:set-status-code($local:HTTP_OK),
+            <response>
+                <user>{sm:id()//sm:username/text()}</user>
+            </response>
+        )
+        else (
+            response:set-status-code($local:HTTP_OK),
+            <response>
+                <fail>Authentication failed -- please check your credentials and try again.</fail>
+                <currentuser>{sm:id()//sm:username/text()}</currentuser>
+            </response>
+        )
+    } catch * {
+        response:set-status-code($local:HTTP_INTERNAL_SERVER_ERROR),
+        <response>
+            <fail>{$err:description}</fail>
+        </response>
+    }
+)
+    
+else if (ends-with($exist:resource, ".html")) then (
+    login:set-user($config:login-domain, (), false()),
     (: the html page is run through view.xql to expand templates :)
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
         <view>
@@ -48,6 +81,7 @@ else if (ends-with($exist:resource, ".html")) then
 			<forward url="{$exist:controller}/modules/view.xql"/>
 		</error-handler>
     </dispatch>
+)
 (: Resource paths starting with $app-root are resolved relative to app :)
 else if (contains($exist:path, "/$app-root/")) then
         <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
