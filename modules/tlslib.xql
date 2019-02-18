@@ -21,19 +21,34 @@ matches(replace($string, '\s', ''), concat("^[", $kanji, $pua, "]+$" ))
 };
 
 declare function tlslib:tv-header($node as node()*, $model as map(*)){
+    let $location := request:get-parameter("location", "xx")
+    ,$targetseg := 
+     if (string-length($location) > 0) then
+     if (contains($location, '_')) then
+      let $textid := tokenize($location, '_')[1]
+      return
+      collection($config:tls-texts-root)//tei:*[@xml:id=$location]
+     else
+      let $firstdiv := (collection($config:tls-texts-root)//tei:*[@xml:id=$location]//tei:body/tei:div[1])
+      return
+      ($firstdiv//tei:seg)[1]
+    else ()
     
-    let $head := $targetseg/ancestor::tei:div[1]/tei:head[1],
-    $title := $targetseg/ancestor::tei:TEI//tei:titleStmt/tei:title/text()
+    let $head := if ($targetseg) then $targetseg/ancestor::tei:div[1]/tei:head[1] else (),
+    $title := if ($targetseg) then $targetseg/ancestor::tei:TEI//tei:titleStmt/tei:title/text() else "No title"
     return
       (
-      <span class="navbar-text">{$title} <small class="ml-2">{$head/text()}</small></span> 
+      <span class="navbar-text ml-2 font-weight-bold">{$title} <small class="ml-2">{$head/text()}</small></span> 
       ,<li class="nav-item dropdown">
 
-      <a href="#" >TOC Dropdown</a> 
-      <button class="btn btn-primary ml-2" type="button" data-toggle="collapse" data-target=".swl">
-            Show SWL
-      </button>
+      <a href="#" class="nav-link dropdown-toggle">目次</a> 
       </li>
+      ,<button title="Show SWL" class="btn btn-primary ml-2" type="button" data-toggle="collapse" data-target=".swl">
+            
+     <img class="icon" src="resources/icons/open-iconic-master/svg/eye.svg"/>
+
+      </button>
+      
       )
 };
 
