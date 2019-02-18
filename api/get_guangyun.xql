@@ -10,9 +10,13 @@ import module namespace config="http://hxwd.org/config" at "../modules/config.xq
 declare option output:method "html";
 declare option output:media-type "text/html";
 
-declare variable $char := request:get-parameter("char", "xx");
+declare variable $chars := request:get-parameter("char", "xx");
 
-<div id="guangyun-input-dyn">{
+for $char at $cc in  analyze-string($chars, ".")//fn:match/text()
+return
+<div id="guangyun-input-dyn-{$cc}">
+<h5><strong class="ml-2">{$char}</strong></h5>
+{
 for $g at $count in collection(concat($config:tls-data-root, "/guangyun"))//tx:attested-graph/tx:graph[.=$char]
 let $e := $g/ancestor::tx:guangyun-entry,
 $p := for $s in $e//tx:mandarin/* 
@@ -21,9 +25,9 @@ $p := for $s in $e//tx:mandarin/*
 return
 
 <div class="form-check">
-   <input class="form-check-input" type="radio" name="guangyun-input" id="guangyun-input-{$count}" 
-   value="{$e/@xml:id}"/>
-   <label class="form-check-label" for="guangyun-input-{$count}">
+   <input class="form-check-input guangyun-input" type="radio" name="guangyun-input-{$cc}" id="guangyun-input-{$cc}-{$count}" 
+   value="{$e/@xml:id}" />
+   <label class="form-check-label" for="guangyun-input-{$cc}-{$count}">
      {$e/tx:gloss/text()} -  {normalize-space(string-join($p, ';'))}
    </label>
   </div>

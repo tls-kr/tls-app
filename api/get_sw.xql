@@ -21,13 +21,16 @@ for $w in $words
 let $concept := $w/ancestor::tei:div/tei:head/text(),
 $id := $w/ancestor::tei:div/@xml:id,
 $py := $w/parent::tei:form/tei:pron[starts-with(@xml:lang, 'zh-Latn')]/text(),
-$zi := $w/parent::tei:form/tei:orth/text()
+$zi := $w/parent::tei:form/tei:orth/text(),
+$wid := $w/ancestor::tei:entry/@xml:id,
+$form := $w/parent::tei:form/@corresp
 
 (:group by $concept
 order by $concept:)
 return
 <li class="mb-3"><strong>{$zi}</strong>&#160;({$py})&#160;<strong>{$concept}</strong> 
-<button class="btn badge badge-secondary ml-2" type="button">
+<button class="btn badge badge-secondary ml-2" type="button" onclick="show_newsw({{'wid':'{$wid}', 
+'concept' : '{$concept}', 'concept_id' : '{$id}'}})">
            New SW
       </button>
 <ul class="list-unstyled" style="swl-bullet">{for $s in $w/ancestor::tei:entry/tei:sense

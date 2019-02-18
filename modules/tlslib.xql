@@ -3,7 +3,6 @@ module namespace tlslib="http://hxwd.org/lib";
 
 import module namespace config="http://hxwd.org/config" at "config.xqm";
 
-import module namespace tpu="http://www.tei-c.org/tei-publisher/util" at "/db/apps/tei-publisher/modules/lib/util.xql";
 import module namespace app="http://hxwd.org/app" at "app.xql";
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
@@ -18,9 +17,25 @@ declare function tlslib:iskanji($string as xs:string) as xs:boolean {
 let $kanji := '&#x3400;-&#x4DFF;&#x4e00;-&#x9FFF;&#xF900;-&#xFAFF;&#xFE30;-&#xFE4F;&#x00020000;-&#x0002A6DF;&#x0002A700;-&#x0002B73F;&#x0002B740;-&#x0002B81F;&#x0002B820;-&#x0002F7FF;',
 $pua := '&#xE000;-&#xF8FF;&#x000F0000;-&#x000FFFFD;&#x00100000;-&#x0010FFFD;'
 return 
-matches($string, concat("^[", $kanji, $pua, "]+$" ))
+matches(replace($string, '\s', ''), concat("^[", $kanji, $pua, "]+$" ))
 };
 
+declare function tlslib:tv-header($node as node()*, $model as map(*)){
+    
+    let $head := $targetseg/ancestor::tei:div[1]/tei:head[1],
+    $title := $targetseg/ancestor::tei:TEI//tei:titleStmt/tei:title/text()
+    return
+      (
+      <span class="navbar-text">{$title} <small class="ml-2">{$head/text()}</small></span> 
+      ,<li class="nav-item dropdown">
+
+      <a href="#" >TOC Dropdown</a> 
+      <button class="btn btn-primary ml-2" type="button" data-toggle="collapse" data-target=".swl">
+            Show SWL
+      </button>
+      </li>
+      )
+};
 
 (: display $prec and $foll preceding and following segments of a given seg :)
 
@@ -35,12 +50,6 @@ declare function tlslib:displaychunk($targetseg as node(), $prec as xs:int?, $fo
       $dseg := ($pseg, $targetseg, $fseg)
       return
       (
-      <h1 class="bg-light ">{$title} <small class="ml-2">{$head/text()}</small> 
-      <a href="#" >TOC Dropdown</a> 
-      <button class="btn btn-primary ml-2" type="button" data-toggle="collapse" data-target=".swl">
-            Show SWL
-      </button>
-      </h1>,
       <div id="chunkrow" class="row">
       <div id="chunkcol-left" class="col-sm-8">{for $d in $dseg return tlslib:displayseg($d, map{})}</div>
       <div id="chunkcol-right" class="col-sm-4">

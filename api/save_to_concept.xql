@@ -7,8 +7,8 @@ declare namespace tls="http://hxwd.org/ns/1.0";
 declare namespace tx = "http://exist-db.org/tls";
 declare namespace output = "http://www.w3.org/2010/xslt-xquery-serialization";
 
-declare option output:method "html5";
-declare option output:media-type "text/html";
+declare option output:method "json";
+declare option output:media-type "application/json";
 
 
 import module namespace tlslib="http://hxwd.org/lib" at "../modules/tlslib.xql";
@@ -33,17 +33,22 @@ let $concept-id := request:get-parameter("concept", "xx"),
  $semfeat-val := request:get-parameter("semfeat-val", "xx"),
  $def := request:get-parameter("def", "xx")
  
+ let $gy :=    
+   for $gid in tokenize(normalize-space($guangyun-id), "xxx") 
+    for $p in collection(concat($config:tls-data-root, "/guangyun"))//tx:guangyun-entry[@xml:id=$gid]
+    return $p
+ 
  let $form :=
-   let $e := collection(concat($config:tls-data-root, "/guangyun"))//tx:guangyun-entry[@xml:id=$guangyun-id],
-   $oc := $e//tx:old-chinese/tx:pan-wuyun/tx:oc,
-   $mc := $e//tx:middle-chinese//tx:baxter,
-   $p := for $s in $e//tx:mandarin/* 
+(:   let $e := collection(concat($config:tls-data-root, "/guangyun"))//tx:guangyun-entry[@xml:id=$gid],:)
+   let $oc := $gy//tx:old-chinese/tx:pan-wuyun/tx:oc,
+   $mc := $gy//tx:middle-chinese//tx:baxter,
+   $p := for $s in $gy//tx:mandarin/* 
        return 
-       if (string-length(normalize-space($s)) > 0) then <pron xmlns="http://www.tei-c.org/ns/1.0" xml:lang="zh-Latn-x-pinyin" type="{local-name($s)}">{$s/text()}</pron> else ()
+       if (string-length(normalize-space($s)) > 0) then $s/text() else ()
 return
-    <form xmlns="http://www.tei-c.org/ns/1.0" corresp="#{$guangyun-id}">
-    <orth>{$e//tx:attested-graph/tx:graph/text()}</orth>
-    {$p}
+    <form xmlns="http://www.tei-c.org/ns/1.0" corresp="#{replace($guangyun-id, "xxx", " #")}">
+    <orth>{$gy//tx:attested-graph/tx:graph/text()}</orth>
+    <pron xml:lang="zh-Latn-x-pinyin">{string-join($p, " ")}</pron>
     <pron xml:lang="zh-x-mc" resp="rec:baxter">{$mc/text()}</pron>
     <pron xml:lang="zh-x-oc" resp="rec:pan-wuyun">{$oc/text()}</pron>
     </form>,
@@ -57,7 +62,7 @@ return
 xmlns:tls="http://hxwd.org/ns/1.0"
 type="word" xml:id="{$wuid}" resp="#{$user}" tls:created="{current-dateTime()}">
 {$form}
-<sense xml:id="{$suid}">
+<sense xml:id="{$suid}" resp="#{$user}" tls:created="{current-dateTime()}">
 <gramGrp><pos>{upper-case(substring($synfunc-val, 1,1))}</pos>
   <tls:syn-func corresp="#{$synfunc}">{$synfunc-val}</tls:syn-func>
   {if ($semfeat) then 
@@ -67,8 +72,9 @@ type="word" xml:id="{$wuid}" resp="#{$user}" tls:created="{current-dateTime()}">
   <def>{$def}</def></sense>
 </entry>
 return
-<div>
+<response>
 <user>{$user}</user>
-{update insert $newnode into $concept-doc}
-</div>
+<result>{update insert $newnode into $concept-doc}</result>
+<sense_id>{$suid}</sense_id>
+</response>
 

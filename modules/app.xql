@@ -207,9 +207,14 @@ declare function app:do-query($queryStr as xs:string?, $mode as xs:string?)
 declare function app:ngram-query($queryStr as xs:string?, $mode as xs:string?)
 {
     let $dataroot := ($config:tls-data-root, $config:tls-texts-root, $config:tls-user-root)
-    for $hit in collection($dataroot)//tei:seg[ngram:contains(., $queryStr)]
-    let $id := $hit/ancestor::tei:TEI/@xml:id     
-    order by $id
+    let $qs := tokenize($queryStr, "\s"),
+    $matches := if  (count($qs) > 1) then 
+      collection($dataroot)//tei:seg[ngram:contains(., $qs[1]) and ngram:contains(., $qs[2])]
+      else
+      collection($dataroot)//tei:seg[ngram:contains(., $qs[1])]
+    for $hit in $matches
+(:    let $id := $hit/ancestor::tei:TEI/@xml:id     
+    order by $id:)
     return $hit 
 };
 
@@ -245,10 +250,11 @@ declare function app:create-query($queryStr as xs:string?, $mode as xs:string?)
 
 declare 
 %templates:default("start", 1)
-function app:show-hits($node as node()*, $model as map(*),$start as xs:int)
+function app:show-hits($node as node()*, $model as map(*), $start as xs:int)
 {   let $query := map:get($model, "query")
     ,$iskanji := tlslib:iskanji($query) 
     ,$map := session:get-attribute($app:SESSION || ".types")
+    ,$qs := tokenize($query, "\s")
     return
     <div><h1>Searching for <mark>{$query}</mark></h1>
     {if ($iskanji) then
@@ -261,6 +267,7 @@ function app:show-hits($node as node()*, $model as map(*),$start as xs:int)
     {for $h at $c in subsequence(map:get($model, "hits"), $start, 10)
       let $head := $h/ancestor::tei:div[1]/tei:head[1],
       $title := $h/ancestor::tei:TEI//tei:titleStmt/tei:title/text(),
+(:      let $head :="head", $title := "title",:)
       $loc := $h/@xml:id
 (:              <td>{$h/preceding-sibling::tei:seg[1], 
         substring-before($h, $query) }
@@ -270,9 +277,14 @@ function app:show-hits($node as node()*, $model as map(*),$start as xs:int)
     return
       <tr>
         <td>{$c + $start -1}</td>
-        <td><a href="textview.html?location={$loc}&amp;query={$query}">{$title, " / ", $head}</a></td>
-        <td>{       substring-before($h, $query) }
-        <mark>{$query}</mark> {substring-after($h, $query)}</td>
+        <td><a href="textview.html?location={$loc}&amp;query={$query}">{$title, " / ", $head}</a>
+        </td>
+        <td>{ $h/preceding-sibling::tei:seg[1],
+        if (count($qs) > 1) then $h else
+        (substring-before($h, $query), 
+        <mark>{$query}</mark> 
+        ,substring-after($h, $query)), 
+        $h/following-sibling::tei:seg[1]}</td>
         </tr>
     }
     </table>
@@ -726,62 +738,80 @@ function app:swl-form-dialog($node as node()*, $model as map(*)){
 
 declare
     %templates:wrap
-function app:add-concept-dialog($node as node()*, $model as map(*)){
-<div id="new-concept" class="modal" tabindex="-1" role="dialog" style="display: none;">
+    %templates:default("type", "concept")
+function app:add-concept-dialog($node as node()*, $model as map(*), $type as xs:string){
+<div id="new-{$type}" class="modal" tabindex="-1" role="dialog" style="display: none;">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Adding concept for <strong class="ml-2"><span id="concept-query-span">Word</span></strong>
+                {if ($type = "concept") then
+                <h5 class="modal-title">Adding concept for <strong class="ml-2"><span id="{$type}-query-span">Word</span></strong>
                     <button class="btn badge badge-primary ml-2" type="button" onclick="get_guangyun()">
                         廣韻
                     </button>
                 </h5>
+                else 
+                <h5 class="modal-title">Adding SW to concept <strong class="ml-2"><span id="{$type}-query-span">Concept</span></strong></h5>
+                }
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     ×
                 </button>
             </div>
             <div class="modal-body">
-                <h6 class="text-muted">At:  <span id="concept-line-id-span" class="ml-2">Id of line</span></h6>
+                {if ($type = "concept") then
+                (<h6 class="text-muted">At:  <span id="concept-line-id-span" class="ml-2">Id of line</span></h6>,
                 <h6 class="text-muted">Line: <span id="concept-line-text-span" class="ml-2">Text of line</span></h6>
+                ) else () }
                 <div>
-                    <span id="concept-id-span" style="display:none;">UUID of selected concept</span>
-                    <span id="synfunc-id-span" style="display:none;">UUID of selected syntactic funtion</span>
-                    <span id="semfeat-id-span" style="display:none;">UUID of selected semantic feature</span>
+                   {if ($type = "concept") then
+                    <span id="concept-id-span" style="display:none;"/>
+                    else 
+                    <span id="word-id-span" style="display:none;"/>
+                    }
+                    <span id="synfunc-id-span-{$type}" style="display:none;"/>
+                    <span id="semfeat-id-span-{$type}" style="display:none;"/>
                     
                 </div>
+                   {if ($type = "concept") then (
                 <div class="form-group" id="guangyun-group">
                     <span class="text-muted" id="guangyun-group-pl"> Press the 廣韻 button above and select the pronounciation</span>
-                </div>
+                </div>,
                 <div id="select-concept-group" class="form-group ui-widget">
                     <label for="select-concept">Concept: </label>
-                    <input id="select-concept" class="form-control"/>
-                </div>
+                    <input id="select-concept" class="form-control" required="true"/>
+                </div>)
+                    else ()}                
                 <div class="form-row">
-                <div id="select-synfunc-group" class="form-group ui-widget col-md-6">
-                    <label for="select-synfunc">Syntactic function: </label>
-                    <input id="select-synfunc" class="form-control"/>
+                <div id="select-synfunc-group-{$type}" class="form-group ui-widget col-md-6">
+                    <label for="select-synfunc-{$type}">Syntactic function: </label>
+                    <input id="select-synfunc-{$type}" class="form-control" required="true"/>
                 </div>
-                <div id="select-semfeat-group" class="form-group ui-widget col-md-6">
-                    <label for="select-semfeat">Semantic feature: </label>
-                    <input id="select-semfeat" class="form-control"/>
+                <div id="select-semfeat-group-{$type}" class="form-group ui-widget col-md-6">
+                    <label for="select-semfeat-{$type}">Semantic feature: </label>
+                    <input id="select-semfeat-{$type}" class="form-control"/>
                 </div>
                 </div>
-                <div id="input-def-group">
-                    <label for="select-semfeat">Definition </label>
-                    <textarea id="input-def" class="form-control"></textarea>                   
+                <div id="input-def-group-{$type}">
+                    <label for="input-{$type}-def">Definition </label>
+                    <textarea id="input-{$type}-def" class="form-control"></textarea>                   
                 </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                   {if ($type = "concept") then 
                 <button type="button" class="btn btn-primary" onclick="save_to_concept()">Save changes</button>
+                else
+                <button type="button" class="btn btn-primary" onclick="save_newsw()">Save SW</button>
+                }
             </div>
         </div>
     </div>    
     <!-- temp -->
     
 </div>    
-
 };
+
+
 declare
     %templates:wrap
 function app:main-navbar($node as node()*, $model as map(*))
@@ -862,9 +892,69 @@ function app:main-navbar($node as node()*, $model as map(*))
 
 declare
     %templates:wrap
-function app:page-title($node as node()*, $model as map(*))
+function app:tv-navbar($node as node()*, $model as map(*))
 {
-"Title"
+<nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
+                <a href="index.html"><span class="banner-icon">
+                {app:logo($node, $model)}
+                </span></a>
+                <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"/>
+                </button>                
+                <a class="navbar-brand" href="#" id="mainDropdown"  data-toggle="xdropdown" >TLS</a>
+                <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                    <ul class="navbar-nav mr-auto">
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                Browse
+                            </a>
+                            <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                                <a class="dropdown-item" href="browse.html?type=concept">Concepts</a>
+                                <a class="dropdown-item" href="browse.html?type=taxchar">Characters</a>
+                                <a class="dropdown-item" href="browse.html?type=word">Words</a>
+                                <a class="dropdown-item" href="browse.html?type=syn-func">Syntactical functions</a>
+                                <a class="dropdown-item" href="browse.html?type=sem-feat">Semantical features</a>
+                                <div class="dropdown-divider"/>
+                                <a class="dropdown-item" href="textview.html">Texts</a>
+                            </div>
+                        </li>
+                        {tlslib:tv-header($node, $model)}
+                        <!--
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownDoc" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                Documentation
+                            </a>
+                            <div class="dropdown-menu" aria-labelledby="navbarDropdownDoc">
+                                <a class="dropdown-item" href="documentation.html?section=overview">Overview</a>
+                                <a class="dropdown-item" href="#">Another action</a>
+                                <div class="dropdown-divider"/>
+                                <a class="dropdown-item" href="#">About this website</a>
+                            </div>
+                        </li>
+                        -->
+                    </ul>
+                    
+                </div>
+                    <form action="search.html" class="form-inline my-2 my-lg-0" method="get">
+                        <input name="query" class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search"/>
+                        <button class="btn btn-outline-success my-2 my-sm-0" type="submit">
+                            <img class="icon" src="resources/icons/open-iconic-master/svg/magnifying-glass.svg"/>
+                        </button>
+                    </form>
+                <div class="btn-nav">
+                        {app:login($node, $model)}
+                </div>
+   
+            </nav>
+};
+
+
+declare
+    %templates:wrap
+function app:page-title($node as node()*, $model as map(*))
+{ (: the html file accessed, without the extension :) 
+let $context := substring-before(tokenize(request:get-uri(), "/")[last()], ".html")
+return concat ("TLS: ", $context)
 };
 
 declare
@@ -901,4 +991,45 @@ function app:settings($node as node()*, $model as map(*))
                     </form>
                 </div>
             </div>
+};
+
+declare
+    %templates:wrap
+function app:dialogs($node as node()*, $model as map(*))
+{<div>
+        <div id="loginDialog" class="modal" tabindex="-1" role="dialog" style="display: none;">
+            <p>Login</p>
+            <div class="modal-dialog" style="z-index: 1080;" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h4 class="modal-title">Login</h4>
+                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                    </div>
+                    <form id="login-form" class="form form-horizontal" method="post">
+                        <div class="modal-body">
+                            <div class="form-group">
+                                <label class="control-label col-sm-2">User:</label>
+                                <div class="col-sm-10">
+                                    <input type="text" name="user" class="form-control"/>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="control-label col-sm-2">Password:</label>
+                                <div class="col-sm-10">
+                                    <input type="password" name="password" class="form-control"/>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="submit" class="btn btn-primary">Login</button>
+                        </div>
+                        <input type="hidden" name="duration" value="P7D"/>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div id="settingsDialog" class="modal" tabindex="-1" role="dialog" style="display: none;">
+        {app:settings($node, $model)}
+        </div>
+   </div>
 };

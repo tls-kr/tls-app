@@ -48,10 +48,14 @@ var word = $("#swl-query-span").text();
 function hide_swl_form(){
     $( "#swl-form" ).hide();    
     console.log("Clearing SWL form");
-    $("#select-synfunc" ).val("");
-    $("#select-semfeat").val("");
+    $("#select-synfunc-concept" ).val("");
+    $("#select-semfeat-concept").val("");
+    $("#select-synfunc-newsw" ).val("");
+    $("#select-semfeat-newsw").val("");
     $("#select-concept" ).val("");
- 
+    $("#input-concept-def" ).val("");
+    $("#input-newsw-def" ).val("");
+    $("#guangyun-group").html('<span class="text-muted" id="guangyun-group-pl"> Press the 廣韻 button above and select the pronounciation</span>');
 };
 
 // show attributions for a certain swl
@@ -97,27 +101,82 @@ function save_this_swl(sense_id){
     console.log(resp)
     alert(resp);
   }
-  });
-    
-}
+  });   
+};
 
-function save_to_concept(){
-    var guangyun_id = $("input[name='guangyun-input']:checked").val();
+// save one sw
+function show_newsw(word){
+  var line_id=document.getElementById( "swl-line-id-span" ).innerText;
+  $("#newsw-query-span").html(word.concept);
+  $("#word-id-span").html(word.wid);
+  $("#concept-id-span" ).html(word.concept_id);
+  $("#new-newsw").modal('show');
+};
+
+function save_newsw(){
     var line_id= $( "#swl-line-id-span" ).text();
     var word = $("#swl-query-span").text();
-    var synfunc_val = $("#select-synfunc" ).val();
-    var semfeat_val = $("#select-semfeat").val();
-    var concept_val = $("#select-concept" ).val();
-    var synfunc_id = $("#synfunc-id-span" ).text();     
-    var semfeat_id = $("#semfeat-id-span" ).text();
+    var word_id = $("#word-id-span").text();
+    var synfunc_val = $("#select-synfunc-newsw" ).val();
+    var semfeat_val = $("#select-semfeat-newsw").val();
+    var concept_val = $("#newsw-query-span" ).val();
+    var synfunc_id = $("#synfunc-id-span-newsw" ).text();     
+    var semfeat_id = $("#semfeat-id-span-newsw" ).text();
     var concept_id = $("#concept-id-span" ).text();
-    var def_val = $("#input-def" ).val();
+    var def_val = $("#input-newsw-def" ).val();
+
   $.ajax({
   type : "PUT",
-  dataType : "html",
-  url : "api/save_to_concept.xql?line="+line_id+"&word="+word+"&concept="+concept_id+"&concept-val="+concept_val+"&synfunc="+synfunc_id+"&synfunc-val="+synfunc_val+"&semfeat="+semfeat_id+"&semfeat-val="+semfeat_val+"&guangyun="+guangyun_id+"&def="+def_val,
+  dataType : "json",
+  async : false,
+  url : "api/save_newsw.xql?concept="+concept_id+"&wid="+word_id+"&concept-val="+concept_val+"&synfunc="+synfunc_id+"&synfunc-val="+synfunc_val+"&semfeat="+semfeat_id+"&semfeat-val="+semfeat_val+"&def="+def_val,
   success : function(resp){
-    alert("OK");
+    console.log(resp);
+    var strconfirm = confirm("Saved SW. Do you want to save attribution now?"+resp.sense_id);
+    if (strconfirm == true) {
+        save_this_swl(resp.sense_id)
+    }
+  
+  hide_swl_form();
+  console.log("Hiding form");
+  show_swls_for_line(line_id);
+//  alert(resp);
+  },
+  error : function(resp){
+    console.log(resp)
+    alert(resp);
+  }
+  });
+ 
+    
+};
+
+
+function save_to_concept(){
+    var guangyun_id = $(".guangyun-input:checked").map(function(){
+    return $(this).val();
+    }).get().join("xxx");
+    var line_id= $( "#swl-line-id-span" ).text();
+    var word = $("#swl-query-span").text();
+    var synfunc_val = $("#select-synfunc-concept" ).val();
+    var semfeat_val = $("#select-semfeat-concept").val();
+    var concept_val = $("#select-concept" ).val();
+    var synfunc_id = $("#synfunc-id-span-concept" ).text();     
+    var semfeat_id = $("#semfeat-id-span-concept" ).text();
+    var concept_id = $("#concept-id-span" ).text();
+    var def_val = $("#input-concept-def" ).val();
+  if (typeof guangyun_id !== 'undefined'){
+  console.log(guangyun_id);
+  $.ajax({
+  type : "PUT",
+  dataType : "json",
+  url : "api/save_to_concept.xql?line="+line_id+"&word="+word+"&concept="+concept_id+"&concept-val="+concept_val+"&synfunc="+synfunc_id+"&synfunc-val="+synfunc_val+"&semfeat="+semfeat_id+"&semfeat-val="+semfeat_val+"&def="+def_val+"&guangyun="+guangyun_id,
+  success : function(resp){
+    var strconfirm = confirm("Saved concept. Do you want to save attribution now?");
+    if (strconfirm == true) {
+        save_this_swl(resp.sense_id)
+    }
+//    alert(resp.sense_id);
   },
   error : function(resp){
   console.log(resp)
@@ -125,7 +184,9 @@ function save_to_concept(){
   }
   });
 
-
+} else {
+  alert("Guangyun has not been selected!");    
+}
 
 };
 
@@ -180,7 +241,7 @@ $( ".zh" )
           url: "api/autocomplete.xql",
           dataType: "jsonp",
           data: {
-            term: request.term,
+            term: request.term.toUpperCase(),
 	        type: "concept"
           },
           success: function( data ) {
@@ -195,8 +256,8 @@ $( ".zh" )
       }
     } );
 // mighty stupid, works now, TODO: rework later
-    $( "#select-synfunc" ).autocomplete({
-      appendTo: "#select-synfunc-group",
+    $( "#select-synfunc-concept" ).autocomplete({
+      appendTo: "#select-synfunc-group-concept",
       source: function( request, response ) {
         $.ajax( {
           url: "api/autocomplete.xql",
@@ -212,13 +273,36 @@ $( ".zh" )
       },
       minLength: 1,
       select: function( event, ui ) {
-        $("#synfunc-id-span" ).html(ui.item.id);     
+        $("#synfunc-id-span-concept" ).html(ui.item.id);     
         console.log( "Selected: " + ui.item.value + " aka " + ui.item.id );
       }
     } );
 
-    $( "#select-semfeat" ).autocomplete({
-      appendTo: "#select-semfeat-group",
+    $( "#select-synfunc-newsw" ).autocomplete({
+      appendTo: "#select-synfunc-group-newsw",
+      source: function( request, response ) {
+        $.ajax( {
+          url: "api/autocomplete.xql",
+          dataType: "jsonp",
+          data: {
+            term: request.term,
+	        type: "syn-func"
+          },
+          success: function( data ) {
+            response( data );
+          }
+        } );
+      },
+      minLength: 1,
+      select: function( event, ui ) {
+        $("#synfunc-id-span-newsw" ).html(ui.item.id);     
+        console.log( "Selected: " + ui.item.value + " aka " + ui.item.id );
+      }
+    } );
+
+
+    $( "#select-semfeat-concept" ).autocomplete({
+      appendTo: "#select-semfeat-group-concept",
       source: function( request, response ) {
         $.ajax( {
           url: "api/autocomplete.xql",
@@ -234,11 +318,33 @@ $( ".zh" )
       },
       minLength: 1,
       select: function( event, ui ) {
-        $("#semfeat-id-span" ).html(ui.item.id);     
+        $("#semfeat-id-span-concept" ).html(ui.item.id);     
         console.log( "Selected: " + ui.item.value + " aka " + ui.item.id );
       }
     } );
-    
+
+    $( "#select-semfeat-newsw" ).autocomplete({
+      appendTo: "#select-semfeat-group-newsw",
+      source: function( request, response ) {
+        $.ajax( {
+          url: "api/autocomplete.xql",
+          dataType: "jsonp",
+          data: {
+            term: request.term,
+	        type: "sem-feat"
+          },
+          success: function( data ) {
+            response( data );
+          }
+        } );
+      },
+      minLength: 1,
+      select: function( event, ui ) {
+        $("#semfeat-id-span-newsw" ).html(ui.item.id);     
+        console.log( "Selected: " + ui.item.value + " aka " + ui.item.id );
+      }
+    } );
+
 // clear the modal form
 
     $('#new-concept').on('hidden.bs.modal', function(e){
@@ -313,12 +419,12 @@ $('#login-form').submit(function (){
                 }
                 else {
                 console.log(data);
-                    alert(data.status, data.currentuser);
+//                    alert(data.currentuser);
                 }
             },
             error: function(data, status){
                 console.log(data);
-                alert(status);
+                alert("Something went wrong: " + status);
             }
         });
 });
