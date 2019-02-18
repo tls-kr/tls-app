@@ -19,6 +19,7 @@ let $callback := request:get-parameter("callback", "xx")
 let $payload := 
   for $t in collection($config:tls-data-root)//tei:div[@type=$type]/tei:head
   where contains($t/text(), $term)
+  order by string-length($t/text()) ascending
   return
   concat('{"id": "', $t/ancestor::tei:div[1]/@xml:id, '", "label": "', $t/text(), '"}')
 return 

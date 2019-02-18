@@ -30,7 +30,18 @@ declare variable $app:lmap := map{
 "see" : "See also",
 "source-references" : "Bibliography",
 "warring-states-currency" : "Warring States Currency",
-"register" : "Register"
+"register" : "Register",
+"words" : "Words",
+"none" : "Texts or Translation",
+"old-chinese-contrasts" : "Old Chinese Contrasts",
+"pointers" : "Pointers",
+"huang-jingui" : "黄金貴：古漢語同義詞辨釋詞典",
+"KR1" : "經部",
+"KR2" : "史部",
+"KR3" : "子部",
+"KR4" : "集部",
+"KR5" : "道部",
+"KR6" : "佛部"
 };
 
 (:~
@@ -94,7 +105,7 @@ function app:browse($node as node()*, $model as map(*), $type as xs:string?, $fi
     let $hits := if (("concept", "syn-func", "sem-feat") = $type) 
       then app:do-browse($type, $filterString)
       else if ($type = "word") then app:browse-word($type, $filterString)
-      else if ($type = "char") then app:browse-char($type, $filterString)
+      else if ($type = "taxchar") then app:browse-char($type, $filterString)
       else ()
     let $store := session:set-attribute("tls-browse", $hits)
     return
@@ -135,17 +146,19 @@ function app:browse($node as node()*, $model as map(*), $type as xs:string?, $fi
 declare function app:browse-word($type as xs:string?, $filter as xs:string?)
 {
     let $typeString := if (string-length($type) > 0) then $type else "word"    
-    for $hit in collection($config:tls-data-root)//tei:entry[@type=$type]
+    for $hit at $c in collection($config:tls-data-root)//tei:entry[@type=$type]
     let $head := $hit/tei:orth
     order by $head
+    where $c < 100
     return $hit
 };
 
 (: taxchar if available, otherwise look for words? :)
 declare function app:browse-char($type as xs:string?, $filter as xs:string?)
-{
-    for $hit in collection($config:tls-data-root)//tei:div[@type=$type]
-    return $hit
+{<div><h4>Characters</h4>
+   { for $hit in collection($config:tls-data-root)//tei:div[@type=$type]
+    return $hit}
+</div>    
 };
 
 declare function app:do-browse($type as xs:string?, $filter as xs:string?)
@@ -166,25 +179,37 @@ declare
 function app:query($node as node()*, $model as map(*), $query as xs:string?, $mode as xs:string?)
 {
     session:create(),
-    let $hits := app:do-query($query, $mode)
+    let $hits := if (tlslib:iskanji($query)) 
+      then app:ngram-query($query, $mode) else 
+      app:do-query($query, $mode)
     let $store := session:set-attribute($app:SESSION, $hits)
     return
-       map:entry("hits", $hits)
+    map:merge((
+       map:entry("hits", $hits), map:entry("query", $query)))
 };
 
 declare function app:do-query($queryStr as xs:string?, $mode as xs:string?)
 {
-    let $dataroot := ("/db/apps/tls-texts", "/db/apps/tls-data")
-    let $query := app:create-query(lower-case($queryStr), $mode)
-    for $hit in collection($dataroot)//tei:div[ft:query(., $query)]
+    let $dataroot := ($config:tls-data-root, $config:tls-texts-root, $config:tls-user-root),
+    $query := app:create-query(lower-case($queryStr), $mode),
+    $hits := for $h in collection($dataroot)//tei:div[ft:query(., $query)]
+            where $h/@type != "swl" return $h,
+    $types := map:merge(for $hit in $hits
+        let $type := if ($hit/@type) then data($hit/@type) else "none"
+        group by $type
+        return map:entry($type, $hit)),
+    $store := session:set-attribute($app:SESSION || ".types", $types)
+    for $hit in $hits
     order by ft:score($hit) descending
     return $hit
 };
 
 declare function app:ngram-query($queryStr as xs:string?, $mode as xs:string?)
 {
-    let $dataroot := ("/db/apps/tls-texts", "/db/apps/tls-data")
+    let $dataroot := ($config:tls-data-root, $config:tls-texts-root, $config:tls-user-root)
     for $hit in collection($dataroot)//tei:seg[ngram:contains(., $queryStr)]
+    let $id := $hit/ancestor::tei:TEI/@xml:id     
+    order by $id
     return $hit 
 };
 
@@ -219,18 +244,115 @@ declare function app:create-query($queryStr as xs:string?, $mode as xs:string?)
 };
 
 declare 
-    %templates:default("start", 1)
-    function app:show-hits($node as node()*, $model as map(*),$start as xs:int)
-{
-    for $hit at $p in subsequence($model("hits"), $start, 10)
-    let $kwic := kwic:summarize($hit, <config width="40" table="yes"/>, app:filter#2)
+%templates:default("start", 1)
+function app:show-hits($node as node()*, $model as map(*),$start as xs:int)
+{   let $query := map:get($model, "query")
+    ,$iskanji := tlslib:iskanji($query) 
+    ,$map := session:get-attribute($app:SESSION || ".types")
+    return
+    <div><h1>Searching for <mark>{$query}</mark></h1>
+    {if ($iskanji) then
+    <h4>Found {count($model("hits"))} matches, showing {$start} to {$start + 10 -1}</h4>
+    else
+    <h4>Found {count($model("hits"))} matches</h4>}    
+    {if ($iskanji) then
+    <div>
+    <table class="table">
+    {for $h at $c in subsequence(map:get($model, "hits"), $start, 10)
+      let $head := $h/ancestor::tei:div[1]/tei:head[1],
+      $title := $h/ancestor::tei:TEI//tei:titleStmt/tei:title/text(),
+      $loc := $h/@xml:id
+(:              <td>{$h/preceding-sibling::tei:seg[1], 
+        substring-before($h, $query) }
+        <mark>{$query}</mark> {substring-after($h, $query),
+        $h/following-sibling::tei:seg[1]}</td>
+:)
+    return
+      <tr>
+        <td>{$c + $start -1}</td>
+        <td><a href="textview.html?location={$loc}&amp;query={$query}">{$title, " / ", $head}</a></td>
+        <td>{       substring-before($h, $query) }
+        <mark>{$query}</mark> {substring-after($h, $query)}</td>
+        </tr>
+    }
+    </table>
+    <nav aria-label="Page navigation">
+  <ul class="pagination">
+    <li class="page-item"><a class="page-link {if ($start = 1) then "disabled" else ()}" href="search.html?query={$query}&amp;start={$start - 10}">&#171;</a></li>
+    <li class="page-item"><a class="page-link" href="search.html?query={$query}&amp;start={$start + 10}">&#187;</a></li>
+  </ul>
+</nav>
+    </div>
+    else
+    <div>
+    <ul>{
+      for $t in map:keys($map)
+     order by $t
+      return <li><a href="#{data($t)}-link" title="{data($t)}">{map:get($app:lmap, $t)}</a>, {count(map:get($map, $t))}</li>}</ul>
+    {for $t in map:keys($map)
+     order by $t
+     return
+     <div id="{data($t)}-link"><h4>{map:get($app:lmap, $t)} <span class="badge badge-light">{count(map:get($map, $t))}</span></h4>
+     <ul>{for $h at $c in map:get($map, $t) where $c < 4 
+(:      let $kwic := kwic:summarize($h, <config width="40"/>, app:filter#2),:)
+    let $expanded := util:expand($h, "add-exist-id=all")
+    return
+    for $match in subsequence($expanded//exist:match, 1, 3)
+(:    let $kwic := kwic:summarize($hit, <config width="40"/>, app:filter#2):)
+     let $kwic := app:get-kwic($match, <config width="40"/>, <a></a>),
+      $root := $h/ancestor-or-self::tei:div[@type="concept"],
+      $uplink := if ($root) then $root/@xml:id else (),
+      $head := $root/tei:head/text()
+      (: $h is a div element, so this does not seem to work... :)
+     return
+         <li>{if ($root) 
+         then <strong><a href="concept.html?uuid={$uplink}#{$t}" title="{substring-after(document-uri(root($h)), $config:tls-data-root)}
+">{$head}</a></strong> 
+         else <strong>{substring-after(document-uri(root($h)), $config:tls-data-root)}</strong>}
+         {$kwic}</li>
+     }
+     </ul>
+     <span class="btn">Show more...</span>
+     </div>
+     }
+    </div>
+    }
+    </div>
+};    
+
+declare %private function app:get-kwic($node as element(), $config as element(config), $link) {
+  <tr>
+    <td class="previous">...{$node/preceding::text()[fn:position() < 10]}</td>
+    <td class="hi"><mark>
+    {
+      if ($link) then
+        <a href="{$config/@link}">{$node/text()}</a>
+      else
+        $node/text()
+    }
+    </mark></td>
+    <td class="following">{$node/following::text()[fn:position() < 10]}...</td>
+  </tr>
+};
+
+
+declare 
+%templates:default("start", 1)
+function app:show-hits-short($node as node()*, $model as map(*),$start as xs:int)
+{   <div>
+    {for $hit at $p in subsequence($model("hits"), $start, 10)
+(:    let $kwic := kwic:summarize($hit, <config width="40"/>, app:filter#2):)
+    let $kwic := app:get-kwic($hit, <config width="40"/>, <a></a>)
     return
     <div class="tls-concept" xmlns="http://www.w3.org/1999/xhtml">
       <h3>{$hit/ancestor::tei:head/text()}</h3>
       <span class="number">{$start + $p - 1}</span>
-      <table>{ $kwic }</table>
+      <span>{data($hit/@type)}</span>
+      { $kwic }
     </div>
+    }</div>
 };    
+
 
 
 (:
@@ -294,24 +416,81 @@ function app:textview($node as node()*, $model as map(*), $location as xs:string
       return
        tlslib:displaychunk($targetseg, $prec, $foll)
     else 
-    let $titles := for $t in collection(concat($config:tls-texts-root, '/tls'))//tei:titleStmt/tei:title
+    app:textlist()
+    )
+};
+
+declare function app:textlist(){
+    let $titles := map:merge(for $t in collection(concat("/db/apps/tls-texts", '/tls'))//tei:titleStmt/tei:title
             let $textid := data($t/ancestor::tei:TEI/@xml:id)
-            where not (contains($textid, "-en"))
-            return $t
+            return map:entry($textid, $t/text()))
+    let $fv := function($k, $v){$v}
+    let $bc := map:merge(for $c in map:keys($titles)
+         let $bu := substring($c, 1, 3)
+         group by $bu
+         return map:entry($bu, count($c)))
+    let $count :=  sum(map:for-each($bc, $fv)),
+    $chantcount := 1184,
+    $starredcount := 0
     return
     <div>
-    <h1>Available annotated texts: ({count($titles)})</h1>
-    <ul>
-    {
-    for $title in $titles
-    let $textid := data($title/ancestor::tei:TEI/@xml:id)
-    order by $textid
+    <h1>Available texts: <span class="badge badge-pill badge-light">{$count + $chantcount}</span></h1>
+    <ul class="nav nav-tabs" id="textTab" role="tablist">
+    <li class="nav-item"> <a class="nav-link" id="coretext-tab" role="tab" 
+    href="#coretexts" data-toggle="tab">Core Texts
+    <span class="badge badge-pill badge-light">{$count}</span></a></li>
+    <li class="nav-item"> <a class="nav-link" id="moretext-tab" role="tab" 
+    href="#moretexts" data-toggle="tab">More Texts
+    <span class="badge badge-pill badge-light">{$chantcount}</span></a></li>
+    <li class="nav-item"> <a class="nav-link {if (sm:is-authenticated()) then () else "disabled"}" id="starredtext-tab" role="tab" 
+    href="#starredtexts" data-toggle="tab">Starred Texts
+    <span class="badge badge-pill badge-light">{$starredcount}</span></a></li>
+    </ul>    
+    <div class="tab-content" id="textsContent">    
+    <div class="tab-pane" id="coretexts" role="tabpanel">    
+    <ul class="nav nav-tabs" id="buTab" role="tablist">
+    {for $b in map:keys($bc)
     return 
-    <li><a href="?location={$textid}">{$textid, $title/text()}</a></li>
+    <li class="nav-item">
+    <a class="nav-link" id="{$b}-tab" role="tab" 
+    href="#{$b}" data-toggle="tab">{map:get($app:lmap, $b)}
+    <span class="badge badge-pill badge-light">{map:get($bc, $b)}</span></a></li>
     }
     </ul>
+    <div class="tab-content" id="buTabContent">
+    {
+    for $tit in map:keys($titles)
+     let $b := substring($tit, 1, 3)
+     group by $b    
+    return
+    <div class="tab-pane" id="{$b}" role="tabpanel">
+    <ul class="list">
+    {for $t in $tit
+    order by $t
+    return
+    <li class="list-group-itemx">
+    <a href="textview.html?location={$t}">{map:get($titles, $t)}
+    { if (sm:is-authenticated()) then
+    <input id="input-{$t}" name="input-name" type="number" class="rating" 
+    min="1" max="10" step="2" data-theme="krajee-svg" data-size="xs"/>    
+    else ()}
+    </a></li>
+    }
+    </ul>
+    
     </div>
-    )
+    }
+    </div>
+    </div>
+    <div class="tab-pane" id="moretexts" role="tabpanel">    
+    More texts
+    </div>
+    <div class="tab-pane" id="starredtexts" role="tabpanel">    
+    Starred texts
+    </div>
+    
+    </div>
+    </div>
 };
 
 (: taxchar display :)
@@ -331,7 +510,8 @@ function app:char($node as node()*, $model as map(*), $char as xs:string?, $id a
     <h4 class="card-title">{$n/tei:head/text()}</h4>
     </div>
     <div class="card-text">
-{local:proc_char($n/tei:list)}
+    {$n/tei:list}, {$n}, {string-length($id)}, {$char}
+(: local:proc_char($n/tei:list) :)
     </div>
     </div>
 )};   
@@ -511,12 +691,12 @@ declare
     %templates:wrap
 function app:login($node as node()*, $model as map(*))
 { if (sm:is-authenticated()) then 
-<a href="#" class="btn btn-default navbar-btn" data-toggle="modal" data-target="#loginDialog">
+<a href="#" class="btn btn-default navbar-btn" data-toggle="modal" data-target="#settingsDialog">
 <img class="icon mr-2" 
-src="resources/icons/open-iconic-master/svg/account-logout.svg"/>{sm:id()//sm:real/sm:username/text()}</a>
+src="resources/icons/open-iconic-master/svg/person.svg"/>{sm:id()//sm:real/sm:username/text()}</a>
 else
 <a href="#" class="btn btn-default navbar-btn" data-toggle="modal" data-target="#loginDialog">
-<img class="icon icon-account-login" 
+<img class="icon icon-account-login mr-2" 
 src="resources/icons/open-iconic-master/svg/account-login.svg"/>Login</a>
 };
 
@@ -602,5 +782,123 @@ function app:add-concept-dialog($node as node()*, $model as map(*)){
 </div>    
 
 };
+declare
+    %templates:wrap
+function app:main-navbar($node as node()*, $model as map(*))
+{
+<nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
+                <span class="banner-icon">
+                {app:logo($node, $model)}
+                </span>
+                <a class="navbar-brand" href="index.html">{$config:app-title}</a>
+                <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"/>
+                </button>
+                
+                <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                    <ul class="navbar-nav mr-auto">
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                Browse
+                            </a>
+                            <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                                <a class="dropdown-item" href="browse.html?type=concept">Concepts</a>
+                                <a class="dropdown-item" href="browse.html?type=taxchar">Characters</a>
+                                <a class="dropdown-item" href="browse.html?type=word">Words</a>
+                                <a class="dropdown-item" href="browse.html?type=syn-func">Syntactical functions</a>
+                                <a class="dropdown-item" href="browse.html?type=sem-feat">Semantical features</a>
+                                <div class="dropdown-divider"/>
+                                <a class="dropdown-item" href="textview.html">Texts</a>
+                            </div>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownDoc" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                Documentation
+                            </a>
+                            <div class="dropdown-menu" aria-labelledby="navbarDropdownDoc">
+                                <a class="dropdown-item" href="documentation.html?section=overview">Overview</a>
+                                <a class="dropdown-item" href="#">Another action</a>
+                                <div class="dropdown-divider"/>
+                                <a class="dropdown-item" href="#">About this website</a>
+                            </div>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#">Link</a>
+                        </li>
+                        <!--
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                Dropdown
+                            </a>
+                            <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                                <a class="dropdown-item" href="#">Action</a>
+                                <a class="dropdown-item" href="#">Another action</a>
+                                <div class="dropdown-divider"></div>
+                                <a class="dropdown-item" href="#">Something else here</a>
+                            </div>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link disabled" href="#" tabindex="-1" aria-disabled="true">Disabled</a>
+                        </li>
+                        -->
+                    </ul>
+                    <form action="search.html" class="form-inline my-2 my-lg-0" method="get">
+                        <input name="query" class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search"/>
+                        <button class="btn btn-outline-success my-2 my-sm-0" type="submit">
+                            <img class="icon" src="resources/icons/open-iconic-master/svg/magnifying-glass.svg"/>
+                        </button>
+                    </form>
+                    <!--
+                    <div class="btn-nav">
+                        <a href="#" class="btn btn-default navbar-btn" data-toggle="modal" data-target="#searchDialog">Advanced Search</a>
+                    </div>
+                    -->
+                    <div class="btn-nav">
+                        {app:login($node, $model)}
+                    </div>
+                </div>
+            </nav>
+};
 
+declare
+    %templates:wrap
+function app:page-title($node as node()*, $model as map(*))
+{
+"Title"
+};
 
+declare
+    %templates:wrap
+function app:settings($node as node()*, $model as map(*))
+{
+<div class="modal-dialog" style="z-index: 1080;" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h4 class="modal-title">Settings for user {sm:id()//sm:username/text()}</h4>
+                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                    </div>
+                    <form id="settings-form" class="form form-horizontal" method="get">
+                        <div class="modal-body">
+                        <!--
+                            <div class="form-group">
+                                <label class="control-label col-sm-2">Username:</label>
+                                <div class="col-sm-10">
+                                    <input type="text" name="userx" class="form-control"/>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="control-label col-sm-2">Password:</label>
+                                <div class="col-sm-10">
+                                    <input type="password" name="passwordx" class="form-control"/>
+                                </div>
+                            </div> -->
+                        </div>
+                        <div class="modal-footer">
+                            <button onclick="logout()" class="btn btn-danger">Logout</button>
+                            <button type="submit" class="btn btn-primary">Save</button>
+                        </div>
+                        <input type="hidden" name="duration" value="P7D"/>
+                    </form>
+                </div>
+            </div>
+};

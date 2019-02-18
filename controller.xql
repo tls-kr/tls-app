@@ -9,7 +9,6 @@ declare variable $exist:prefix external;
 declare variable $exist:root external;
 
 declare variable $logout := request:get-parameter("logout", ());
-declare variable $login := request:get-parameter("user", ());
 
 declare variable $local:HTTP_OK := xs:integer(200);
 declare variable $local:HTTP_CREATED := xs:integer(201);
@@ -38,35 +37,22 @@ else if (ends-with($exist:resource, ".xql")) then (
             <cache-control cache="no"/>
         </dispatch>
 )
-else if ($logout or $login) then (
+else if ($logout) then (
     login:set-user($config:login-domain, (), false()),
+    session:invalidate(),
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
         <redirect url="{replace(request:get-uri(), "^(.*)\?", "$1")}"/>
     </dispatch>
 )
 else if ($exist:resource = "login") then (
-    util:declare-option("exist:serialize", "method=json media-type=application/json"),
-    try {
+(:    util:declare-option("exist:serialize", "method=json media-type=application/json"),:)
+(:    util:declare-option("exist:serialize", "method=text media-type=text/plain"),:)
         login:set-user($config:login-domain, (), false()),
-        if ((sm:id()//sm:username/text()) != "guest") then (
-            response:set-status-code($local:HTTP_OK),
-            <response>
-                <user>{sm:id()//sm:username/text()}</user>
-            </response>
-        )
-        else (
-            response:set-status-code($local:HTTP_OK),
-            <response>
-                <fail>Authentication failed -- please check your credentials and try again.</fail>
-                <currentuser>{sm:id()//sm:username/text()}</currentuser>
-            </response>
-        )
-    } catch * {
-        response:set-status-code($local:HTTP_INTERNAL_SERVER_ERROR),
-        <response>
-            <fail>{$err:description}</fail>
-        </response>
-    }
+(:        need to redirect to the referring page, not the current one! :)
+    <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+        <redirect url="{replace(request:get-uri(), "^(.*)\?", "$1")}"/>
+    </dispatch>
+
 )
     
 else if (ends-with($exist:resource, ".html")) then (

@@ -16,6 +16,6 @@ import module namespace config="http://hxwd.org/config" at "../modules/config.xq
 let $line-id := request:get-parameter("line", "xx"),
  $link := concat('#', $line-id)
 
-for $swl in collection($config:tls-data-root|| "/notes")//tls:srcline[@target=$link]
+for $swl in collection($config:tls-data-root|| "/notes")//tls:ann[.//tls:srcline[@target=$link]]
 return
-tlslib:format-swl($swl/ancestor::tls:swl, "row")
+tlslib:format-swl($swl, "row")

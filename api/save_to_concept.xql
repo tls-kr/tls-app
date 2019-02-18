@@ -14,8 +14,7 @@ declare option output:media-type "text/html";
 import module namespace tlslib="http://hxwd.org/lib" at "../modules/tlslib.xql";
 import module namespace config="http://hxwd.org/config" at "../modules/config.xqm";
 declare variable $user := sm:id()//sm:real/sm:username/text();
-(:declare variable $login := xmldb:login("/db/apps", $user, "tls55");
-:)
+
 (:  url : "api/save_to_concept.xql?line="+line_id+
 "&word="+word+"&concept="+concept_id+"&concept-val="+concept_val+"
 &synfunc="+synfunc_id+"&synfunc-val="+synfunc_val+"&semfeat="+semfeat_id+"

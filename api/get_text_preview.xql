@@ -15,16 +15,20 @@ import module namespace config="http://hxwd.org/config" at "../modules/config.xq
 (:let $loc := "KR1e0001_tls_001-5a.2",:)
 let $loc := request:get-parameter("loc", "xx"),
 $seg := collection($config:tls-texts-root)//tei:seg[@xml:id = $loc],
-
+$title := $seg/ancestor::tei:TEI//tei:titleStmt/tei:title/text(),
 $pseg := subsequence($seg/preceding::tei:seg, 1, 5),
 $fseg := subsequence($seg/following::tei:seg, 1, 5),
 $dseg := ($pseg, $seg, $fseg)
 return
-<div>
+<div class="popover" role="tooltip">
+<div class="arrow"></div>
+<h3 class="popover-header">
+<a href="textview.html?location={$loc}">{$title}</a></h3>
+<div class="popover-body">
     {
 for $d in $dseg 
-
 return 
     tlslib:displayseg($d, map{"ann": "false", "log": $loc})
     }
+</div>
 </div>

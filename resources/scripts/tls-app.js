@@ -210,7 +210,7 @@ $( ".zh" )
           }
         } );
       },
-      minLength: 2,
+      minLength: 1,
       select: function( event, ui ) {
         $("#synfunc-id-span" ).html(ui.item.id);     
         console.log( "Selected: " + ui.item.value + " aka " + ui.item.id );
@@ -232,7 +232,7 @@ $( ".zh" )
           }
         } );
       },
-      minLength: 2,
+      minLength: 1,
       select: function( event, ui ) {
         $("#semfeat-id-span" ).html(ui.item.id);     
         console.log( "Selected: " + ui.item.value + " aka " + ui.item.id );
@@ -282,8 +282,74 @@ function get_atts(target, div_id){
     url: "api/get_text_preview.xql?loc="+target,
     dataType: "html",
     success: function( data ) {
+    $('#'+div_id).css("width", "400px");
     $('#'+div_id).html(data);    
     }
     });
    return '<div id="'+ div_id +'">Loading...</div>';
 };
+
+function logout(){
+  $.ajax({
+  type : "GET",
+  dataType : "html",  
+  url : "logout?logout=logout", 
+  success : function(resp){
+      //$('#'+uid+'-resp').html(resp)
+  }
+  });
+}
+
+$('#login-form').submit(function (){
+        $.ajax({
+            dataType: "json",
+            method: "post",
+            url: 'login',
+            success: function(data)
+            {
+                if (data.status === 'OK') {
+                console.log(data);
+             //       window.location.replace('index.html');
+                }
+                else {
+                console.log(data);
+                    alert(data.status, data.currentuser);
+                }
+            },
+            error: function(data, status){
+                console.log(data);
+                alert(status);
+            }
+        });
+});
+
+$('#settings-form').submit(function (){
+    this.preventDefault();
+    alert("This button does nothing.");
+/*        $.ajax({
+            dataType: "json",
+            method: "post",
+            url: 'login',
+            success: function(data)
+            {
+                if (data.status === 'OK') {
+                console.log(data);
+             //       window.location.replace('index.html');
+                }
+                else {
+                console.log(data);
+                    alert(data.status, data.currentuser);
+                }
+            },
+            error: function(data, status){
+                console.log(data);
+                alert(status);
+            }
+        });
+*/});
+
+
+    $('.rating').on('rating:change', function(event, value, caption) {
+        console.log(value);
+        console.log(this.id);
+    });

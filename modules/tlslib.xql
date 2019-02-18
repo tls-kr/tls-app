@@ -18,7 +18,7 @@ declare function tlslib:iskanji($string as xs:string) as xs:boolean {
 let $kanji := '&#x3400;-&#x4DFF;&#x4e00;-&#x9FFF;&#xF900;-&#xFAFF;&#xFE30;-&#xFE4F;&#x00020000;-&#x0002A6DF;&#x0002A700;-&#x0002B73F;&#x0002B740;-&#x0002B81F;&#x0002B820;-&#x0002F7FF;',
 $pua := '&#xE000;-&#xF8FF;&#x000F0000;-&#x000FFFFD;&#x00100000;-&#x0010FFFD;'
 return 
-matches($string, concat("[", $kanji, $pua, "]+" ))
+matches($string, concat("^[", $kanji, $pua, "]+$" ))
 };
 
 
@@ -105,13 +105,14 @@ $mark := if ($seg/@xml:id/text() = $loc) then "mark" else ()
 return
 (<div class="row {$mark}">
 <div class="col-sm-3 zh" id="{$seg/@xml:id}">{$seg/text()}</div>　
-<div class="col-sm-8 tr" id="{$seg/@xml:id}-tr" contenteditable="true">{collection($config:tls-data-root)//tei:seg[@corresp=$link]/text()}</div>
+<div class="col-sm-8 tr" id="{$seg/@xml:id}-tr" 
+contenteditable="{if (sm:has-access(xs:anyURI($config:tls-translation-root), "r")) then 'true' else 'false'}">{collection($config:tls-data-root)//tei:seg[@corresp=$link]/text()}</div>
 </div>,
 <div class="row swl collapse" data-toggle="collapse">
 <div class="col-sm-12" id="{$seg/@xml:id}-swl">
 {if ($ann = "false") then () else for $swl in collection($config:tls-data-root|| "/notes")//tls:srcline[@target=$link]
 return
-tlslib:format-swl($swl/ancestor::tls:swl, "row")}
+tlslib:format-swl($swl/ancestor::tls:ann, "row")}
 </div>
 </div>
 )

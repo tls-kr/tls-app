@@ -14,7 +14,7 @@ import module namespace config="http://hxwd.org/config" at "../modules/config.xq
 
 declare variable $uid := request:get-parameter("uid", "xx");
 let $key := "#" || $uid
-let $atts := collection(concat($config:tls-data-root, '/notes/'))//tls:swl[tei:sense/@corresp = $key]
+let $atts := collection(concat($config:tls-data-root, '/notes/'))//tls:ann[tei:sense/@corresp = $key]
 return
 if (count($atts) > 0) then
 for $a in $atts
