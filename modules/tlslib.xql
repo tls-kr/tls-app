@@ -56,9 +56,9 @@ declare function tlslib:tv-header($node as node()*, $model as map(*)){
 
 declare function tlslib:displaychunk($targetseg as node(), $prec as xs:int?, $foll as xs:int?){
 
-      let $fseg := if ($foll > 0) then subsequence($targetseg/following::tei:seg, 1, $foll) 
+      let $fseg := if ($foll > 0) then $targetseg/following::tei:seg[fn:position() < $foll] 
         else (),
-      $pseg := if ($prec > 0) then subsequence($targetseg/preceding::tei:seg, 1, $prec) 
+      $pseg := if ($prec > 0) then $targetseg/preceding::tei:seg[fn:position() < $prec] 
         else (),
       $head := $targetseg/ancestor::tei:div[1]/tei:head[1],
       $title := $targetseg/ancestor::tei:TEI//tei:titleStmt/tei:title/text(),
@@ -66,7 +66,7 @@ declare function tlslib:displaychunk($targetseg as node(), $prec as xs:int?, $fo
       return
       (
       <div id="chunkrow" class="row">
-      <div id="chunkcol-left" class="col-sm-8">{for $d in $dseg return tlslib:displayseg($d, map{})}</div>
+      <div id="chunkcol-left" class="col-sm-8">{for $d in $dseg return tlslib:displayseg($d, map{'loc' : data($targetseg/@xml:id) })}</div>
       <div id="chunkcol-right" class="col-sm-4">
       {app:swl-form-dialog($targetseg, map{})}
     </div>
@@ -75,13 +75,13 @@ declare function tlslib:displaychunk($targetseg as node(), $prec as xs:int?, $fo
       <div class="col-sm-2">
       {if ($dseg[1]/preceding::tei:seg[1]/@xml:id) then  
       (: currently the 0 is hardcoded -- do we need to make this customizable? :)
-       <a href="?location={$dseg[1]/preceding::tei:seg[1]/@xml:id}&amp;prec={$foll+$prec}&amp;foll=0">Previous</a>
+       <a href="?location={$dseg[1]/preceding::tei:seg[1]/@xml:id}&amp;prec={$foll+$prec -2}&amp;foll=2">Previous</a>
        else ()}
        </div>
        <div class="col-sm-2">
        {
        if ($dseg[last()]/following::tei:seg[1]/@xml:id) then
-      <a href="?location={$dseg[last()]/following::tei:seg[1]/@xml:id}&amp;prec=0&amp;foll={$foll+$prec}">Next</a>
+      <a href="?location={$dseg[last()]/following::tei:seg[1]/@xml:id}&amp;prec=2&amp;foll={$foll+$prec -2}">Next</a>
        else ()}
        </div> 
       </div>
@@ -104,7 +104,7 @@ $def := $node//tei:def[1]
 :)
 return
 if ($type = "row") then
-<div class="row">
+<div class="row bg-light ">
 <div class="col-sm-1">&#160;</div>
 <div class="col-sm-2"><span class="zh">{$zi}</span> ({$py})</div>
 <div class="col-sm-3"><a href="concept.html?concept={$concept}">{$concept}</a></div>
@@ -125,11 +125,11 @@ declare function tlslib:displayseg($seg as node()*, $options as map(*) ){
 let $link := concat('#', $seg/@xml:id),
 $ann := lower-case(map:get($options, "ann")),
 $loc := map:get($options, "loc"),
-$mark := if ($seg/@xml:id/text() = $loc) then "mark" else ()
+$mark := if (data($seg/@xml:id) = $loc) then "mark" else $loc
 return
 (<div class="row {$mark}">
-<div class="col-sm-3 zh" id="{$seg/@xml:id}">{$seg/text()}</div>　
-<div class="col-sm-8 tr" id="{$seg/@xml:id}-tr" 
+<div class="col-sm-4 zh" id="{$seg/@xml:id}">{$seg/text()}</div>　
+<div class="col-sm-7 tr" id="{$seg/@xml:id}-tr" 
 contenteditable="{if (sm:has-access(xs:anyURI($config:tls-translation-root), "r")) then 'true' else 'false'}">{collection($config:tls-data-root)//tei:seg[@corresp=$link]/text()}</div>
 </div>,
 <div class="row swl collapse" data-toggle="collapse">

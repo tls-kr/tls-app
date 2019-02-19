@@ -16,8 +16,8 @@ import module namespace config="http://hxwd.org/config" at "../modules/config.xq
 let $loc := request:get-parameter("loc", "xx"),
 $seg := collection($config:tls-texts-root)//tei:seg[@xml:id = $loc],
 $title := $seg/ancestor::tei:TEI//tei:titleStmt/tei:title/text(),
-$pseg := subsequence($seg/preceding::tei:seg, 1, 5),
-$fseg := subsequence($seg/following::tei:seg, 1, 5),
+$pseg := $seg/preceding::tei:seg[fn:position() < 5],
+$fseg := $seg/following::tei:seg[fn:position() < 5],
 $dseg := ($pseg, $seg, $fseg)
 return
 <div class="popover" role="tooltip">
