@@ -10,7 +10,7 @@
     <mkdir dir="${build.dir}"/>
     </target>
     <target name="xar" depends="init">
-        <zip basedir="." destfile="${build.dir}/${project.app}-${project.version}.xar" excludes="${build.dir}/* dosync.sh"/>
+        <zip basedir="." destfile="${build.dir}/${project.app}-${project.version}.xar" excludes="${build.dir}/*"/>
     </target>
     <!-- just for fun, and to stay sane... -->
     <target name="deploy" depends="init">

@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <meta xmlns="http://exist-db.org/xquery/repo">
     <!-- 
-        Application configuration file for the Srophe application. 
+        Application configuration file for the TLS application. 
     -->
     <config>
-        <!-- Application title -->
-        <title>TLS Web Application</title>
+        <!-- Application title  - 漢學文典 -->
+        <title>TLS</title>
         <!-- App description -->
         <description>An Historical and Comparative Encyclopaedia of Chinese Conceptual Schemes 
             General Editor: Christoph Harbsmeier 何莫邪; Associate Editor: Jiang Shaoyu 蔣紹愚.</description>
@@ -14,7 +14,7 @@
         <!-- Logo name (assumes path to logo is $app-root/resources/images/) -->
         <logo>hxwd.png</logo>
         <!-- Web Site URL -->
-        <url>http://hxwd.org/</url>
+        <url>https://hxwd.org/</url>
         <!-- Root of app for building dynamic links. Default is eXist app root -->
         <nav-base>/exist/apps/tls-app</nav-base>
         <!-- eXist app root for app deployment-->
@@ -66,10 +66,6 @@
                 record-URI-pattern="URI for building links to record views."
                 app-root="folder name in app" 
                 data-root="folder name in data"/>-->
-            <collection name="places" title="The Syriac Gazetteer" app-root="/geo/" data-root="places" record-URI-pattern="http://syriaca.org/place/"/>
-            <collection name="persons" title="SBD" app-root="/" data-root="persons" record-URI-pattern="http://syriaca.org/person/"/>
-            <collection name="works" title="NHSL" app-root="/" data-root="works" record-URI-pattern="http://syriaca.org/work/"/>
-            <collection name="bibl" title="Works Cited" app-root="/" data-root="bibl" record-URI-pattern="http://syriaca.org/bibl/"/>
         </collections>
     </config>
 </meta>

@@ -9,25 +9,7 @@ declare variable $dir external;
 (: the target collection into which the app is deployed :)
 declare variable $target external;
 
-declare function local:mkcol-recursive($collection, $components) {
-    if (exists($components)) then
-        let $newColl := concat($collection, "/", $components[1])
-        return (
-            xdb:create-collection($collection, $components[1]),
-            local:mkcol-recursive($newColl, subsequence($components, 2))
-        )
-    else
-        ()
-};
-
-(: Helper function to recursively create a collection hierarchy. :)
-declare function local:mkcol($collection, $path) {
-    local:mkcol-recursive($collection, tokenize($path, "/"))
-};
-
-
-
-
+(: set perm on api :) 
 declare function local:proc($uri as xs:string, $perm as xs:string)
 { 
   sm:chmod(xs:anyURI($uri), $perm),
@@ -51,23 +33,7 @@ return
 
 (
 (: execute api :)
-sm:group-exists("tls-user") or sm:create-group("tls-user"),
-sm:group-exists("tls-editor") or sm:create-group("tls-editor"),
-sm:group-exists("tls-admin") or sm:create-group("tls-admin"),
+local:proc($target || "/api", "rwxr-xr-x"),
 
-sm:create-account("test", "test", "tls-user"),
 
-for $m in sm:get-group-members("tls-user")
-let $path := concat("/db/user/", $m)
-return
-	(
-	local:mkcol("/db", concat("user/", $m)),
-	sm:chown(xs:anyURI($path), $m),
-	sm:chgrp(xs:anyURI($path), $m)
-	)
 
-,
-
-local:proc($target || "/api", "rwxr-xr-x")
-
-)

@@ -66,7 +66,7 @@ declare
     %templates:wrap
 function app:logo($node as node(), $model as map(*)) {
     if($config:get-config//repo:logo != '') then
-        <img class="app-logo img-fluid" src="{$config:nav-base || '/resources/images/' || $config:get-config//repo:logo/text() }" title="{$config:app-title}"/>
+        <img class="app-logo img-fluid" src="/resources/images/{$config:get-config//repo:logo/text() }" title="{$config:app-title}"/>
     else ()
 };
 
@@ -816,11 +816,11 @@ declare
     %templates:wrap
 function app:main-navbar($node as node()*, $model as map(*))
 {
-<nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
+<nav class="navbar navbar-expand-sm navbar-light bg-light fixed-top">
                 <span class="banner-icon">
                 {app:logo($node, $model)}
                 </span>
-                <a class="navbar-brand" href="index.html">{$config:app-title}</a>
+                <a class="navbar-brand ml-2" href="index.html">{$config:app-title}</a>
                 <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"/>
                 </button>
@@ -894,7 +894,7 @@ declare
     %templates:wrap
 function app:tv-navbar($node as node()*, $model as map(*))
 {
-<nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
+<nav class="navbar navbar-expand-md navbar-light bg-light fixed-top">
                 <a href="index.html"><span class="banner-icon">
                 {app:logo($node, $model)}
                 </span></a>
@@ -957,6 +957,13 @@ let $context := substring-before(tokenize(request:get-uri(), "/")[last()], ".htm
 return concat ("TLS: ", $context)
 };
 
+declare function app:recent-activity(){
+  let $userref := concat('#', sm:id()//sm:username/text())
+  for $r in collection($config:tls-data-root)//*/@tls:resp=$userref
+  return $r
+};
+
+
 declare
     %templates:wrap
 function app:settings($node as node()*, $model as map(*))
@@ -969,25 +976,15 @@ function app:settings($node as node()*, $model as map(*))
                     </div>
                     <form id="settings-form" class="form form-horizontal" method="get">
                         <div class="modal-body">
-                        <!--
-                            <div class="form-group">
-                                <label class="control-label col-sm-2">Username:</label>
-                                <div class="col-sm-10">
-                                    <input type="text" name="userx" class="form-control"/>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label class="control-label col-sm-2">Password:</label>
-                                <div class="col-sm-10">
-                                    <input type="password" name="passwordx" class="form-control"/>
-                                </div>
-                            </div> -->
+                        <p>Recent Activity</p>
+                        <ul class="list-unstyled">
+                        <!-- app:recent-activity() -->
+                        </ul>
                         </div>
                         <div class="modal-footer">
                             <button onclick="logout()" class="btn btn-danger">Logout</button>
                             <button type="submit" class="btn btn-primary">Save</button>
                         </div>
-                        <input type="hidden" name="duration" value="P7D"/>
                     </form>
                 </div>
             </div>
