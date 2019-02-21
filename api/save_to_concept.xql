@@ -33,24 +33,32 @@ let $concept-id := request:get-parameter("concept", "xx"),
  $semfeat-val := request:get-parameter("semfeat-val", "xx"),
  $def := request:get-parameter("def", "xx")
  
- let $gy :=    
+ let $gys :=    
    for $gid in tokenize(normalize-space($guangyun-id), "xxx") 
-    for $p in collection(concat($config:tls-data-root, "/guangyun"))//tx:guangyun-entry[@xml:id=$gid]
-    return $p
+   return
+    collection(concat($config:tls-data-root, "/guangyun"))//tx:guangyun-entry[@xml:id=$gid]
+
  
  let $form :=
 (:   let $e := collection(concat($config:tls-data-root, "/guangyun"))//tx:guangyun-entry[@xml:id=$gid],:)
-   let $oc := $gy//tx:old-chinese/tx:pan-wuyun/tx:oc,
-   $mc := $gy//tx:middle-chinese//tx:baxter,
-   $p := for $s in $gy//tx:mandarin/* 
+    let $oc := for $gy in $gys
+        let $rec := $gy//tx:old-chinese/tx:pan-wuyun/tx:oc/text()
+        return if ($rec) then $rec else "--"
+    ,$mc := for $gy in $gys 
+        let $rec := $gy//tx:middle-chinese//tx:baxter/text()
+        return if ($rec) then $rec else "--"
+    ,$p := for $gy in $gys for $s in $gy//tx:mandarin/*
        return 
-       if (string-length(normalize-space($s)) > 0) then $s/text() else ()
+       if (string-length(normalize-space($s)) > 0) then $s/text() else (),
+    $gr := for $gy in $gys return 
+      normalize-space($gy//tx:attested-graph/tx:graph/text())
+    
 return
     <form xmlns="http://www.tei-c.org/ns/1.0" corresp="#{replace($guangyun-id, "xxx", " #")}">
-    <orth>{$gy//tx:attested-graph/tx:graph/text()}</orth>
+    <orth>{string-join($gr, "")}</orth>
     <pron xml:lang="zh-Latn-x-pinyin">{string-join($p, " ")}</pron>
-    <pron xml:lang="zh-x-mc" resp="rec:baxter">{$mc/text()}</pron>
-    <pron xml:lang="zh-x-oc" resp="rec:pan-wuyun">{$oc/text()}</pron>
+    <pron xml:lang="zh-x-mc" resp="rec:baxter">{string-join($mc, " ")}</pron>
+    <pron xml:lang="zh-x-oc" resp="rec:pan-wuyun">{string-join($oc, " ")}</pron>
     </form>,
 
  

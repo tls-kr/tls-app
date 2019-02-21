@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <config>
-    <!-- Configuration for Github webhooks sync feature -->
+    <!-- Configuration for Github webhooks sync feature  -->
     <git-config>
         <!-- github secret key can be stored here or as a environment variable. (prefered)  -->
         <private-key/>

@@ -20,6 +20,15 @@ return
 matches(replace($string, '\s', ''), concat("^[", $kanji, $pua, "]+$" ))
 };
 
+declare function tlslib:is-first-in-p($seg as node()){
+    $seg/@xml:id = $seg/parent::tei:p/tei:seg[1]/@xml:id    
+};
+
+declare function tlslib:is-first-in-div($seg as node()){
+    $seg/@xml:id = $seg/ancestor::tei:div/tei:p[1]/tei:seg[1]/@xml:id    
+};
+
+
 declare function tlslib:tv-header($node as node()*, $model as map(*)){
     let $location := request:get-parameter("location", "xx")
     ,$targetseg := 
@@ -40,8 +49,10 @@ declare function tlslib:tv-header($node as node()*, $model as map(*)){
       (
       <span class="navbar-text ml-2 font-weight-bold">{$title} <small class="ml-2">{$head/text()}</small></span> 
       ,<li class="nav-item dropdown">
-
-      <a href="#" class="nav-link dropdown-toggle">目次</a> 
+       <a id="navbar-mulu" role="button" data-toggle="dropdown" href="#" class="nav-link dropdown-toggle">目錄</a> 
+       <div class="dropdown-menu">
+       {tlslib:generate-toc($targetseg/ancestor::tei:body)}
+       </div>
       </li>
       ,<button title="Show SWL" class="btn btn-primary ml-2" type="button" data-toggle="collapse" data-target=".swl">
             
@@ -50,6 +61,14 @@ declare function tlslib:tv-header($node as node()*, $model as map(*)){
       </button>
       
       )
+};
+
+declare function tlslib:generate-toc($node){
+ if ($node/tei:head) then
+  <a class="dropdown-item" href="textview.html?location={($node//tei:seg/@xml:id)[1]}&amp;prec=0&amp;foll=30">{$node/tei:head/text()}</a>
+  else (),
+ for $d in $node/child::tei:div
+ return tlslib:generate-toc($d)
 };
 
 (: display $prec and $foll preceding and following segments of a given seg :)
@@ -125,8 +144,24 @@ declare function tlslib:displayseg($seg as node()*, $options as map(*) ){
 let $link := concat('#', $seg/@xml:id),
 $ann := lower-case(map:get($options, "ann")),
 $loc := map:get($options, "loc"),
-$mark := if (data($seg/@xml:id) = $loc) then "mark" else $loc
+$mark := if (data($seg/@xml:id) = $loc) then "mark" else ()
 return
+(
+if (tlslib:is-first-in-p($seg)) then
+ if (tlslib:is-first-in-div($seg)) then 
+  let $hx := $seg/ancestor::tei:div[1]/tei:head/text()
+  return
+ <div class="row"><!-- head! -->
+ <div class="col-sm-12"><h5>{$hx}　　　</h5></div>
+ </div>
+ else
+ <div class="row">
+ <!-- p --> 
+ <div class="col-sm-12 my-6">　　　</div>
+ </div> 
+ else
+ (),
+if (string-length(string-join($seg/text(), "")) > 0) then
 (<div class="row {$mark}">
 <div class="col-sm-4 zh" id="{$seg/@xml:id}">{$seg/text()}</div>　
 <div class="col-sm-7 tr" id="{$seg/@xml:id}-tr" 
@@ -139,6 +174,7 @@ return
 tlslib:format-swl($swl/ancestor::tls:ann, "row")}
 </div>
 </div>
+) else ()
 )
 };
 
@@ -171,16 +207,23 @@ declare function tlslib:capitalize-first ( $arg as xs:string? )  as xs:string? {
  
  
  declare function tlslib:display_sense($sw as node()){
-    let $id := $sw/@xml:id,
-    $sf := $sw//tls:syn-func,
-    $sm := $sw/tls:sem-feat,
-    $def := $sw//tei:def
+    let $id := data($sw/@xml:id),
+    $sf := $sw//tls:syn-func/text(),
+    $sm := $sw//tls:sem-feat/text(),
+    $def := $sw//tei:def/text()
     return
-    <li><span class="font-weight-bold">{$sf}</span>{$sm, $def} &#160;&#160;
-     <button class="btn badge badge-light" type="button" data-toggle="collapse" data-target="#{$sw/@xml:id}-resp" onclick="show_att('{$sw/@xml:id}')">
+    <li><span class="font-weight-bold">{$sf}</span>
+    <em class="ml-2">{$sm}</em> 
+    <span class="ml-2">{$def}</span>
+     <button class="btn badge badge-light ml-2" type="button" 
+     data-toggle="collapse" data-target="#{$id}-resp" onclick="show_att('{$id}')">
            Attributions
       </button>
-      <div id="{$sw/@xml:id}-resp" class="collapse container"></div>
+     <button title="Search for this word" class="btn badge btn-outline-success ml-2" type="button" 
+     data-toggle="collapse" data-target="#{$id}-resp" onclick="search_and_att('{$id}')">
+      <img class="icon-small" src="resources/icons/open-iconic-master/svg/magnifying-glass.svg"/>
+      </button>
+      <div id="{$id}-resp" class="collapse container"></div>
     </li>
  
  };

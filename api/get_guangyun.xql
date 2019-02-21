@@ -17,7 +17,7 @@ return
 <div id="guangyun-input-dyn-{$cc}">
 <h5><strong class="ml-2">{$char}</strong></h5>
 {
-for $g at $count in collection(concat($config:tls-data-root, "/guangyun"))//tx:attested-graph/tx:graph[.=$char]
+for $g at $count in collection(concat($config:tls-data-root, "/guangyun"))//tx:attested-graph/tx:graph[contains(.,$char)]
 let $e := $g/ancestor::tx:guangyun-entry,
 $p := for $s in $e//tx:mandarin/* 
        return 
