@@ -1,0 +1,10 @@
+#+TITLE: TLS app
+
+This is the eXist-db application for presenting the TLS on the Web. To install, create the xar files and upload to eXist-db.  In addition to this app, there are two dependencies:
+
+- tls-data:  The lexical part of the database, including attributions and translations
+- tls-texts: The source texts
+
+There are submodules for both repositories which contain restricted
+data that can't be distributed.
+
