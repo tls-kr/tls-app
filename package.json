@@ -1,0 +1,38 @@
+{
+  "name": "tls-app",
+  "version": "0.6.0",
+  "description": "TLS - 漢學文典",
+  "scripts": {
+    "test": "mocha",
+    "build": "gulp && ant"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tls-kr/tls-app.git"
+  },
+  "keywords": [
+    "XQuery",
+    "Chinese",
+    "Linguistic",
+    "exist-db",
+    "Conceptual-Schemes"
+  ],
+  "author": "Christian Wittern, Duncan Paterson",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/tls-kr/tls-app/issues"
+  },
+  "homepage": "https://hxwd.org",
+  "devDependencies": {
+    "cypress": "^3.1.5",
+    "gulp": "^4.0.0",
+    "mocha": "^6.0.2"
+  },
+  "dependencies": {
+    "bootstrap": "^4.3.1",
+    "bootstrap-grid": "^3.0.1",
+    "jquery": "^3.3.1",
+    "popper.js": "^1.14.7",
+    "toastr": "^2.1.4"
+  }
+}
