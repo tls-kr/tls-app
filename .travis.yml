@@ -12,7 +12,7 @@ env:
   - img=existdb/existdb:release
 
 install:
-  - ant develop
+  - ant
 
 before_script:
   - docker cp ./build/*-dev.xar exist-ci:exist/autodeploy

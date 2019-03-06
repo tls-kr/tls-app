@@ -10,10 +10,10 @@
     <mkdir dir="${build.dir}"/>
     </target>
     <target name="xar" depends="init">
-        <zip basedir="." destfile="${build.dir}/${project.app}-${project.version}.xar" excludes="${build.dir}/*  dosync.sh controller.xql.old"/>
+        <zip basedir="." destfile="${build.dir}/${project.app}-${project.version}.xar" excludes="${build.dir}/*  dosync.sh controller.xql.old node_modules/*"/>
     </target>
     <!-- just for fun, and to stay sane... -->
     <target name="deploy" depends="init">
-        <zip basedir="." destfile="${build.dir}/${project.app}-${project.version}.xar" excludes="${build.dir}/* dosync.sh controller.xql.old"/>
+        <zip basedir="." destfile="${build.dir}/${project.app}-${project.version}.xar" excludes="${build.dir}/* dosync.sh controller.xql.old node_modules/*"/>
     </target>
 </project>
