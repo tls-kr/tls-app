@@ -3,7 +3,8 @@
   "version": "0.6.0",
   "description": "TLS - 漢學文典",
   "scripts": {
-    "test": "mocha",
+    "test": "mocha test/mocha/ --recursive --exit",
+    "cypress": "cypress open",
     "build": "gulp && ant"
   },
   "repository": {
@@ -25,8 +26,11 @@
   "homepage": "https://hxwd.org",
   "devDependencies": {
     "browser-sync": "^2.26.3",
+    "chai": "^4.2.0",
+    "chai-xml": "^0.3.2",
     "cypress": "^3.1.5",
     "del": "^4.0.0",
+    "fs-extra": "^7.0.1",
     "gulp": "^4.0.0",
     "gulp-autoprefixer": "^6.0.0",
     "gulp-concat": "^2.6.1",
@@ -39,9 +43,12 @@
     "gulp-sass": "^4.0.2",
     "gulp-svgmin": "^2.1.0",
     "gulp-uglify": "^3.0.2",
+    "jshint": "^2.10.1",
     "jshint-stylish": "^2.2.1",
     "lazypipe": "^1.0.2",
-    "mocha": "^6.0.2"
+    "mocha": "^6.0.2",
+    "supertest": "^3.4.2",
+    "xmldoc": "^1.1.2"
   },
   "dependencies": {
     "bootstrap": "^4.3.1",
