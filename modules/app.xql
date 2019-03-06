@@ -41,7 +41,11 @@ declare variable $app:lmap := map{
 "KR3" : "子部",
 "KR4" : "集部",
 "KR5" : "道部",
-"KR6" : "佛部"
+"KR6" : "佛部",
+"CH1" : "先秦兩漢",
+"CH2" : "魏晉南北朝",
+"CH7" : "類書",
+"CH8" : "竹簡帛書"
 };
 
 (:~
@@ -70,6 +74,14 @@ function app:logo($node as node(), $model as map(*)) {
     else ()
 };
 
+declare
+    %templates:wrap
+function app:doc($node as node(), $model as map(*), $section as xs:string) {
+switch($section)
+ case "overview" return doc(concat($config:app-root, "/documentation/overview.html"))
+ default return (<h1>About the TLS project</h1>,
+        <p>Under construction</p>)
+};
 
 
 declare function app:tls-summary($node as node(), $model as map(*)) {
@@ -101,15 +113,15 @@ declare
 function app:browse($node as node()*, $model as map(*), $type as xs:string?, $filter as xs:string?)
 {
     session:create(),
-    let $filterString := if (string-length($filter) > 0) then $filter else ""    
-    let $hits := if (("concept", "syn-func", "sem-feat") = $type) 
-      then app:do-browse($type, $filterString)
-      else if ($type = "word") then app:browse-word($type, $filterString)
-      else if ($type = "taxchar") then app:browse-char($type, $filterString)
-      else ()
+    let $filterString := if (string-length($filter) > 0) then $filter else ""
+    return
+    if ($type = "word") then app:browse-word($type, $filterString)
+    else if ($type = "taxchar") then app:browse-char($type, $filterString)
+    else if (("concept", "syn-func", "sem-feat") = $type) then    
+    let $hits :=  app:do-browse($type, $filterString)      
     let $store := session:set-attribute("tls-browse", $hits)
     return
-  <div class="card">
+   <div class="card">
     <div class="card-header" id="{$type}-card">
       <div class="row mb-0">
       <span class="col-3"><h4>{map:get($app:lmap, $type)}</h4></span>&#160;
@@ -125,21 +137,25 @@ function app:browse($node as node()*, $model as map(*), $type as xs:string?, $fi
     <th scope="col">Remarks</th>    
     </tr></thead><tbody class="table-striped">{
     for $h in $hits
-    let $n := $h/tei:head/text(),
-    $id := $h/@xml:id,
-    $def := $h/tei:p
+    let $n := $h/tei:head/text()
+    ,$id := $h/@xml:id
+    ,$def := $h/tei:p
     order by $n
     return
+    (
     <tr id="{$id}" class="abbr">
-    <td class="abbxr"><a href="concept.html?uuid={$id}">{$n}</a></td>
+    <td>{
+    switch ($type) 
+        case  "concept" return <a href="concept.html?uuid={$id}">{$n}</a>
+        default return <a onclick="show_use_of('{$type}', '{$id}')">{$n}</a>
+    }</td>
     <td>{$def}</td>
-    <td></td>
-    </tr>
-
+    <td><ul id="{$id}-resp"/></td>
+    </tr>)
     }</tbody></table></div>
   </div>
-    
-(:       map:entry("browse", $hits):)
+  (: unknown type :)
+  else ()  
 };
 
 (: :)
@@ -147,17 +163,22 @@ declare function app:browse-word($type as xs:string?, $filter as xs:string?)
 {
     let $typeString := if (string-length($type) > 0) then $type else "word"    
     for $hit at $c in collection($config:tls-data-root)//tei:entry[@type=$type]
-    let $head := $hit/tei:orth
-    order by $head
-    where $c < 100
-    return $hit
+     let $head := $hit/tei:orth/text()
+     order by $head
+     where $c < 100
+     return $hit
 };
 
 (: taxchar if available, otherwise look for words? :)
 declare function app:browse-char($type as xs:string?, $filter as xs:string?)
-{<div><h4>Characters</h4>
-   { for $hit in collection($config:tls-data-root)//tei:div[@type=$type]
-    return $hit}
+{<div><h4>Analyzed characters by frequency</h4><small>1</small>
+   { for $hit at $pos in collection($config:tls-data-root)//tei:div[@type=$type]
+     let $head := $hit/tei:head
+     ,$id := $hit/@xml:id
+    return 
+    (<a class="ml-2" href="char.html?id={$id}">{$head}</a>,
+    if ($pos mod 30 = 0) then (<br/>,<small>{$pos}</small>) else () )
+   }
 </div>    
 };
 
@@ -409,8 +430,8 @@ function app:hit-count($node as node()*, $model as map(*), $query as xs:string?)
 :)
 declare 
     %templates:wrap
-    %templates:default("prec", 0)
-    %templates:default("foll", 50)     
+    %templates:default("prec", 15)
+    %templates:default("foll", 15)     
 function app:textview($node as node()*, $model as map(*), $location as xs:string?, $mode as xs:string?, $prec as xs:int?, $foll as xs:int?)
 {
     let $dataroot := $config:tls-data-root
@@ -426,14 +447,14 @@ function app:textview($node as node()*, $model as map(*), $location as xs:string
       let $firstdiv := (collection($config:tls-texts-root)//tei:*[@xml:id=$location]//tei:body/tei:div[1])
       let $targetseg := ($firstdiv//tei:seg)[1]
       return
-       tlslib:displaychunk($targetseg, $prec, $foll)
+       tlslib:displaychunk($targetseg, 0, $prec + $foll)
     else 
     app:textlist()
     )
 };
 
 declare function app:textlist(){
-    let $titles := map:merge(for $t in collection(concat("/db/apps/tls-texts", '/tls'))//tei:titleStmt/tei:title
+    let $titles := map:merge(for $t in collection(concat($config:tls-texts-root, '/tls'))//tei:titleStmt/tei:title
             let $textid := data($t/ancestor::tei:TEI/@xml:id)
             return map:entry($textid, $t/text()))
     let $fv := function($k, $v){$v}
@@ -495,7 +516,47 @@ declare function app:textlist(){
     </div>
     </div>
     <div class="tab-pane" id="moretexts" role="tabpanel">    
-    More texts
+    
+    { if (sm:is-authenticated()) then
+    (: first create the tab links for sub catetories :)
+    (
+    <ul class="nav nav-tabs" id="more-buTab" role="tablist">
+    {for $b in xmldb:get-child-collections(concat($config:tls-texts-root, '/chant'))
+    let $coll := concat($config:tls-texts-root, '/chant/', $b)
+    let $c := xmldb:get-child-resources($coll)
+    order by $b
+    return 
+    <li class="nav-item">
+    <a class="nav-link" id="{$b}-more-tab" role="tab" 
+    href="#{$b}" data-toggle="tab">{map:get($app:lmap, $b)}
+    <span class="badge badge-pill badge-light">{count($c)}</span></a></li>
+    }
+    </ul>
+,    <div class="tab-content" id="more-buTabContent">
+    {for $b in xmldb:get-child-collections(concat($config:tls-texts-root, '/chant'))
+    let $coll := concat($config:tls-texts-root, '/chant/', $b)
+    return    
+    <div class="tab-pane" id="{$b}" role="tabpanel">
+    <ul>{
+    for $title in collection($coll)//tei:titleStmt/tei:title
+     let $textid := data($title/ancestor::tei:TEI/@xml:id)
+     where string-length($title/text()) > 0
+    return
+    <li class="list-group-itemx">
+    <a href="textview.html?location={$textid}">{$title/text()}
+    <!--
+    <input id="input-{$textid}" name="input-name" type="number" class="rating" 
+    min="1" max="10" step="2" data-theme="krajee-svg" data-size="xs"/>    -->
+    </a></li>    
+    }</ul>
+    </div>
+    }
+    </div>
+     )    
+    else 
+    "More texts available.  Login to see a list."   
+    }
+    
     </div>
     <div class="tab-pane" id="starredtexts" role="tabpanel">    
     Starred texts
@@ -518,12 +579,26 @@ function app:char($node as node()*, $model as map(*), $char as xs:string?, $id a
       doc(concat($config:tls-data-root, "/core/taxchar.xml"))//tei:div[tei:head[. = $char]]
     return
     <div class="card">
-    <div class="card-body">
-    <h4 class="card-title">{$n/tei:head/text()}</h4>
+    <div class="card-header">
+    <h4 class="card-title">Analysis of {$n/tei:head/text()}:</h4>
     </div>
     <div class="card-text">
-    {$n/tei:list}, {$n}, {string-length($id)}, {$char}
-(: local:proc_char($n/tei:list) :)
+     {for $l in $n/tei:list return local:proc_char($l)}
+    </div>
+    <div class="card-footer">
+    <ul class="pagination">
+    {for $c in $n/preceding::tei:div[position()< 6]
+    return
+    <li class="page-item"><a class="page-link" href="char.html?id={$c/@xml:id}">{$c/tei:head/text()}</a></li>
+    }    
+    <li class="page-item disabled"><a class="page-link">&#171;</a></li>
+    <li class="page-item disabled"><a class="page-link">{$n/tei:head/text()}</a></li>
+    <li class="page-item disabled"><a class="page-link">&#187;</a></li>
+    {for $c in $n/following::tei:div[position()< 6]
+    return
+    <li class="page-item"><a class="page-link" href="char.html?id={$c/@xml:id}">{$c/tei:head/text()}</a></li>
+    }
+    </ul>
     </div>
     </div>
 )};   
@@ -536,7 +611,7 @@ typeswitch ($node)
   case element(tei:head) return
   <h4 class="card-title">{$node/text()}</h4>
   case element(tei:list) return
-  <ul class="list-unstyled">{for $n in $node/node()
+  <ul >{for $n in $node/node()
        return
        local:proc_char($n)
   }</ul>
@@ -547,12 +622,12 @@ typeswitch ($node)
     }</li>
   case element(tei:ref) return
      let $id := substring($node/@target, 2),
-     $char := $node/ancestor::tei:div[1]/tei:head/text(),
+     $char := tokenize($node/ancestor::tei:div[1]/tei:head/text(), "\s")[1],
      $swl := collection($config:tls-data-root)//tei:div[@xml:id=$id]//tei:entry[tei:form/tei:orth[. = $char]]//tei:sense
      return
       <span>
       <a href="concept.html?uuid={$id}" class="mr-2 ml-2">{$node/text()}</a>
-      <button class="btn badge badge-light" type="button" 
+      <button title="click to reveal {count($swl)} syntactic words" class="btn badge badge-light" type="button" 
       data-toggle="collapse" data-target="#{$id}-swl">{count($swl)}</button>
       <ul class="list-unstyled collapse" id="{$id}-swl"> 
       {for $sw in $swl
@@ -603,7 +678,7 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
     <!-- pointers -->
     <div class="card">
     <div class="card-header" id="pointers-head">
-      <h5 class="mb-0">
+      <h5 class="mb-0 mt-2">
         <button class="btn" data-toggle="collapse" data-target="#pointers" >
           Pointers
         </button>
@@ -623,7 +698,7 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
     <!-- notes -->
     <div class="card">
     <div class="card-header" id="notes-head">
-      <h5 class="mb-0">
+      <h5 class="mb-0 mt-2">
         <button class="btn" data-toggle="collapse" data-target="#notes" >
           Notes
         </button>
@@ -632,7 +707,7 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
      <div id="notes" class="collapse" data-parent="#concept-content">
      {for $d in $c//tei:div[@type="notes"]//tei:div
      return
-     (<h5 class="ml-2">{map:get($app:lmap, data($d/@type))}</h5>,
+     (<h5 class="ml-2 mt-2">{map:get($app:lmap, data($d/@type))}</h5>,
      <div>{for $p in $d//tei:p return
      <p>{$p}</p>
      }     
@@ -642,7 +717,7 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
     <!-- bibl -->
     <div class="card">
     <div class="card-header" id="bibl-head">
-      <h5 class="mb-0">
+      <h5 class="mb-0 mt-2">
         <button class="btn" data-toggle="collapse" data-target="#bibl" >
           Source references
         </button>
@@ -838,7 +913,7 @@ function app:main-navbar($node as node()*, $model as map(*))
                                 <a class="dropdown-item" href="browse.html?type=syn-func">Syntactical functions</a>
                                 <a class="dropdown-item" href="browse.html?type=sem-feat">Semantical features</a>
                                 <div class="dropdown-divider"/>
-                                <a class="dropdown-item" href="textview.html">Texts</a>
+                                <a class="dropdown-item" href="textlist.html">Texts</a>
                             </div>
                         </li>
                         <li class="nav-item dropdown">
@@ -915,7 +990,7 @@ function app:tv-navbar($node as node()*, $model as map(*))
                                 <a class="dropdown-item" href="browse.html?type=syn-func">Syntactical functions</a>
                                 <a class="dropdown-item" href="browse.html?type=sem-feat">Semantical features</a>
                                 <div class="dropdown-divider"/>
-                                <a class="dropdown-item" href="textview.html">Texts</a>
+                                <a class="dropdown-item" href="textlist.html">Texts</a>
                             </div>
                         </li>
                         {tlslib:tv-header($node, $model)}
@@ -948,6 +1023,23 @@ function app:tv-navbar($node as node()*, $model as map(*))
             </nav>
 };
 
+declare
+    %templates:wrap
+function app:footer($node as node()*, $model as map(*)){
+            <div class="container">
+                <span id="copyright"/>
+                    <p>Copyright TLS Project 2019</p>
+                <p>Support by <strong>Princeton 
+                    University Dean for Research</strong>, 
+                    <strong>Department of East Asian Studies - Princeton University</strong>,
+                    <strong>Heidelberg University - Cluster of Excellence - Asia and Europe in a Global Context</strong>
+                    and <strong>IKOS - University of Oslo</strong>
+                    gratefully acknowledged.
+                </p>
+                <p class="small text-right">This site uses cookies to maintain login state. The cookies are not used for any other purposes. By using this site you agree to this.</p>
+            </div>
+
+};
 
 declare
     %templates:wrap

@@ -71,6 +71,19 @@ function show_att(uid){
   });
 };
 
+// show use for sem-feat and syn-func
+function show_use_of(type, uid){
+  $.ajax({
+  type : "GET",
+  dataType : "html",  
+  url : "api/show_use_of.xql?uid=" + uid + "&type=" + type, 
+  success : function(resp){
+  $('#'+uid+'-resp').html(resp)
+  }
+  });
+};
+
+
 function show_swls_for_line(line_id){
   $.ajax({
   type : "GET",
@@ -95,7 +108,7 @@ function save_this_swl(sense_id){
   hide_swl_form();
   console.log("Hiding form");
   show_swls_for_line(line_id);
-//  alert(resp);
+  toastr.info("Attribution has been saved. Thank you for your contribution. Reload page to see new attributions.", "HXWD says:")
   },
   error : function(resp){
     console.log(resp)
@@ -459,3 +472,23 @@ $('#settings-form').submit(function (){
         console.log(value);
         console.log(this.id);
     });
+
+
+function search_and_att(sense_id){
+    toastr.info("Not ready yet :-(", "HXWD says:");
+}
+
+$('body').on('focus', '[contenteditable]', function() {
+    const $this = $(this);
+    $this.data('before', $this.html());
+}).on('blur keyup paste input', '[contenteditable]', function() {
+    const $this = $(this);
+    if ($this.data('before') !== $this.html()) {
+        $this.data('before', $this.html());
+        $this.trigger('change');
+    }
+});
+
+$(".tr").change(
+ console.log("Content changed.")
+);
