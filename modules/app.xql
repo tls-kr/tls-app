@@ -70,7 +70,7 @@ declare
     %templates:wrap
 function app:logo($node as node(), $model as map(*)) {
     if($config:get-config//repo:logo != '') then
-        <img class="app-logo img-fluid" src="/resources/images/{$config:get-config//repo:logo/text() }" title="{$config:app-title}"/>
+        <img class="app-logo img-fluid" src="resources/images/{$config:get-config//repo:logo/text() }" title="{$config:app-title}"/>
     else ()
 };
 
@@ -1120,5 +1120,6 @@ function app:dialogs($node as node()*, $model as map(*))
         <div id="settingsDialog" class="modal" tabindex="-1" role="dialog" style="display: none;">
         {app:settings($node, $model)}
         </div>
+        <div id="remoteDialog"/>
    </div>
 };

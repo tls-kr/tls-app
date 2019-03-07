@@ -489,6 +489,18 @@ $('body').on('focus', '[contenteditable]', function() {
     }
 });
 
+function edit_swl(uid){
+  $.ajax({
+  type : "GET",
+  dataType : "html",  
+  url : "api/get_swl.xql?uid=" + uid, 
+  success : function(resp){
+  $('#remoteDialog').html(resp)
+  $('#editSWLDialog').modal('show');
+  }
+  });
+}
+
 $(".tr").change(
  console.log("Content changed.")
 );
