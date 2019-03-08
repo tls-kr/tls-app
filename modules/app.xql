@@ -803,7 +803,8 @@ function app:swl-form-dialog($node as node()*, $model as map(*)){
     <div class="card-text">
         <p><span class="badge badge-primary">Use</span> one of the following syntactic words (SW), 
         create a <span class="mb-2 badge badge-secondary">New SW</span> 
-         or add a new concept to the word here: <span class="btn badge badge-light ml-2" data-toggle="modal" data-target="#new-concept">Concept</span> 
+         or add a new concept to the word here: 
+         <span class="btn badge badge-light ml-2" data-toggle="modal" onclick="show_new_concept()">Concept</span> 
         <ul id="swl-select" class="list-unstyled"></ul>
         </p>
       </div>

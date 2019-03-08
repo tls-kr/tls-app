@@ -57,11 +57,11 @@ if (xmldb:collection-available($path)) then () else
 sm:chmod(xs:anyURI($path), "rwxrwxr--"),
 sm:chgrp(xs:anyURI($path), "tls-user")
 ),
-let $res := (xmldb:store($path, $uid, $newswl)) 
+let $res := (xmldb:store($path, concat($uid, ".xml"), $newswl)) 
 return
 if ($res) then (
 sm:chmod(xs:anyURI($res), "rwxrwxr--"),
-sm:chgrp(xs:anyURI($res), "tls-user"),
+sm:chgrp(xs:anyURI($res), "tls-editor"),
 "OK")
 else
 "Some error occurred, could not save resource")

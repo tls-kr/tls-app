@@ -117,13 +117,55 @@ function save_this_swl(sense_id){
   });   
 };
 
+/* 
+ * function edit_swl(uid){
+  $.ajax({
+  type : "GET",
+  dataType : "html",  
+  url : "api/get_swl.xql?uid=" + uid, 
+  success : function(resp){
+  $('#remoteDialog').html(resp);
+  console.log("Initializing autocomplete functions");
+  // lets see if this works better
+  initialize_autocomplete();
+  $('#editSWLDialog').modal('show');
+  }
+  });
+}
+
+ */
+
+// save one sw
+function show_new_concept(){
+  var word = $("#swl-query-span").text();
+  $.ajax({
+  type : "GET",
+  dataType : "html",  
+  url : "api/get_swl.xql?type=concept&word="+word, 
+  success : function(resp){
+  $('#remoteDialog').html(resp);
+  console.log("Initializing autocomplete functions");
+  // lets see if this works better
+  initialize_autocomplete();
+  $('#editSWLDialog').modal('show');
+  }
+  });
+};
+
 // save one sw
 function show_newsw(word){
-  var line_id=document.getElementById( "swl-line-id-span" ).innerText;
-  $("#newsw-query-span").html(word.concept);
-  $("#word-id-span").html(word.wid);
-  $("#concept-id-span" ).html(word.concept_id);
-  $("#new-newsw").modal('show');
+  $.ajax({
+  type : "GET",
+  dataType : "html",  
+  url : "api/get_swl.xql?type=word&concept="+word.concept+"&wid="+word.wid+"&concept_id="+word.concept_id, 
+  success : function(resp){
+  $('#remoteDialog').html(resp);
+  console.log("Initializing autocomplete functions");
+  // lets see if this works better
+  initialize_autocomplete();
+  $('#editSWLDialog').modal('show');
+  }
+  });
 };
 
 function save_newsw(){
@@ -144,14 +186,10 @@ function save_newsw(){
   async : false,
   url : "api/save_newsw.xql?concept="+concept_id+"&wid="+word_id+"&concept-val="+concept_val+"&synfunc="+synfunc_id+"&synfunc-val="+synfunc_val+"&semfeat="+semfeat_id+"&semfeat-val="+semfeat_val+"&def="+def_val,
   success : function(resp){
-    console.log(resp);
-    var strconfirm = confirm("Saved SW. Do you want to save attribution now?"+resp.sense_id);
-    if (strconfirm == true) {
-        save_this_swl(resp.sense_id)
-    }
-  
-  hide_swl_form();
-  console.log("Hiding form");
+    save_this_swl(resp.sense_id)
+    toastr.info("Concept has been saved.", "HXWD says:")
+    hide_swl_form();
+//  console.log("Hiding form");
   show_swls_for_line(line_id);
 //  alert(resp);
   },
@@ -247,6 +285,7 @@ $( ".zh" )
     });
   });
 //});
+  function initialize_autocomplete(){
     $( "#select-concept" ).autocomplete({
       appendTo: "#select-concept-group",
       source: function( request, response ) {
@@ -269,8 +308,8 @@ $( ".zh" )
       }
     } );
 // mighty stupid, works now, TODO: rework later
-    $( "#select-synfunc-concept" ).autocomplete({
-      appendTo: "#select-synfunc-group-concept",
+    $( "#select-synfunc" ).autocomplete({
+      appendTo: "#select-synfunc-group",
       source: function( request, response ) {
         $.ajax( {
           url: "api/autocomplete.xql",
@@ -286,11 +325,11 @@ $( ".zh" )
       },
       minLength: 1,
       select: function( event, ui ) {
-        $("#synfunc-id-span-concept" ).html(ui.item.id);     
+        $("#synfunc-id-span" ).html(ui.item.id);     
         console.log( "Selected: " + ui.item.value + " aka " + ui.item.id );
       }
     } );
-
+/* 
     $( "#select-synfunc-newsw" ).autocomplete({
       appendTo: "#select-synfunc-group-newsw",
       source: function( request, response ) {
@@ -312,10 +351,10 @@ $( ".zh" )
         console.log( "Selected: " + ui.item.value + " aka " + ui.item.id );
       }
     } );
+ */
 
-
-    $( "#select-semfeat-concept" ).autocomplete({
-      appendTo: "#select-semfeat-group-concept",
+    $( "#select-semfeat" ).autocomplete({
+      appendTo: "#select-semfeat-group",
       source: function( request, response ) {
         $.ajax( {
           url: "api/autocomplete.xql",
@@ -331,11 +370,11 @@ $( ".zh" )
       },
       minLength: 1,
       select: function( event, ui ) {
-        $("#semfeat-id-span-concept" ).html(ui.item.id);     
+        $("#semfeat-id-span" ).html(ui.item.id);     
         console.log( "Selected: " + ui.item.value + " aka " + ui.item.id );
       }
     } );
-
+/* 
     $( "#select-semfeat-newsw" ).autocomplete({
       appendTo: "#select-semfeat-group-newsw",
       source: function( request, response ) {
@@ -357,7 +396,8 @@ $( ".zh" )
         console.log( "Selected: " + ui.item.value + " aka " + ui.item.id );
       }
     } );
-
+ */
+};
 // clear the modal form
 
     $('#new-concept').on('hidden.bs.modal', function(e){
@@ -436,8 +476,8 @@ $('#login-form').submit(function (){
                 }
             },
             error: function(data, status){
-                console.log(data);
-                alert("Something went wrong: " + status);
+                console.log("Something went wrong" + data + "status:" + status);
+//                alert("Something went wrong: " + status);
             }
         });
 });
@@ -493,9 +533,12 @@ function edit_swl(uid){
   $.ajax({
   type : "GET",
   dataType : "html",  
-  url : "api/get_swl.xql?uid=" + uid, 
+  url : "api/get_swl.xql?type=swl&uid=" + uid, 
   success : function(resp){
-  $('#remoteDialog').html(resp)
+  $('#remoteDialog').html(resp);
+  console.log("Initializing autocomplete functions");
+  // lets see if this works better
+  initialize_autocomplete();
   $('#editSWLDialog').modal('show');
   }
   });
