@@ -55,12 +55,14 @@ return (
 if (xmldb:collection-available($path)) then () else
 (xmldb:create-collection($notes-path, substring($uid, 1, 2)),
 sm:chmod(xs:anyURI($path), "rwxrwxr--"),
+sm:chown(xs:anyURI($path), $user),
 sm:chgrp(xs:anyURI($path), "tls-user")
 ),
 let $res := (xmldb:store($path, concat($uid, ".xml"), $newswl)) 
 return
 if ($res) then (
 sm:chmod(xs:anyURI($res), "rwxrwxr--"),
+sm:chown(xs:anyURI($res), $user),
 sm:chgrp(xs:anyURI($res), "tls-editor"),
 "OK")
 else

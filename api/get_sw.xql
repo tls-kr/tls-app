@@ -29,8 +29,8 @@ $form := $w/parent::tei:form/@corresp
 order by $concept:)
 return
 <li class="mb-3"><strong>{$zi}</strong>&#160;({$py})&#160;<strong>{$concept}</strong> 
-<button class="btn badge badge-secondary ml-2" type="button" onclick="show_newsw({{'wid':'{$wid}', 
-'concept' : '{$concept}', 'concept_id' : '{$id}'}})">
+<button class="btn badge badge-secondary ml-2" type="button" 
+onclick="show_newsw({{'wid':'{$wid}','concept' : '{$concept}', 'concept_id' : '{$id}'}})">
            New SW
       </button>
 <ul class="list-unstyled" style="swl-bullet">{for $s in $w/ancestor::tei:entry/tei:sense

@@ -46,15 +46,12 @@ var word = $("#swl-query-span").text();
 };
 
 function hide_swl_form(){
-    $( "#swl-form" ).hide();    
+    $( "#editSWLDialog" ).modal('hide');    
     console.log("Clearing SWL form");
-    $("#select-synfunc-concept" ).val("");
-    $("#select-semfeat-concept").val("");
-    $("#select-synfunc-newsw" ).val("");
-    $("#select-semfeat-newsw").val("");
+    $("#select-synfunc" ).val("");
+    $("#select-semfeat").val("");
     $("#select-concept" ).val("");
-    $("#input-concept-def" ).val("");
-    $("#input-newsw-def" ).val("");
+    $("#input-def" ).val("");
     $("#guangyun-group").html('<span class="text-muted" id="guangyun-group-pl"> Press the 廣韻 button above and select the pronounciation</span>');
 };
 
@@ -117,31 +114,20 @@ function save_this_swl(sense_id){
   });   
 };
 
-/* 
- * function edit_swl(uid){
-  $.ajax({
-  type : "GET",
-  dataType : "html",  
-  url : "api/get_swl.xql?uid=" + uid, 
-  success : function(resp){
-  $('#remoteDialog').html(resp);
-  console.log("Initializing autocomplete functions");
-  // lets see if this works better
-  initialize_autocomplete();
-  $('#editSWLDialog').modal('show');
-  }
-  });
-}
-
- */
+// save edited swl
+function save_swl(){
+  //not sure what to do here... what kind of changes to we want to allow?  
+};
 
 // save one sw
 function show_new_concept(){
   var word = $("#swl-query-span").text();
+  var line_id= $( "#swl-line-id-span" ).text();  
+  var line = $( "#swl-line-text-span" ).text();
   $.ajax({
   type : "GET",
   dataType : "html",  
-  url : "api/get_swl.xql?type=concept&word="+word, 
+  url : "api/get_swl.xql?type=concept&word="+word+"&line-id="+line_id+"&line="+line, 
   success : function(resp){
   $('#remoteDialog').html(resp);
   console.log("Initializing autocomplete functions");
@@ -153,11 +139,14 @@ function show_new_concept(){
 };
 
 // save one sw
-function show_newsw(word){
+function show_newsw(para){
+  var word = $("#swl-query-span").text();
+  var line_id= $( "#swl-line-id-span" ).text();  
+  var line = $( "#swl-line-text-span" ).text();
   $.ajax({
   type : "GET",
   dataType : "html",  
-  url : "api/get_swl.xql?type=word&concept="+word.concept+"&wid="+word.wid+"&concept_id="+word.concept_id, 
+  url : "api/get_swl.xql?type=word&concept="+para.concept+"&word="+word+"&wid="+para.wid+"&concept-id="+para.concept_id+"&line-id="+line_id+"&line="+line, 
   success : function(resp){
   $('#remoteDialog').html(resp);
   console.log("Initializing autocomplete functions");
@@ -172,13 +161,13 @@ function save_newsw(){
     var line_id= $( "#swl-line-id-span" ).text();
     var word = $("#swl-query-span").text();
     var word_id = $("#word-id-span").text();
-    var synfunc_val = $("#select-synfunc-newsw" ).val();
-    var semfeat_val = $("#select-semfeat-newsw").val();
-    var concept_val = $("#newsw-query-span" ).val();
-    var synfunc_id = $("#synfunc-id-span-newsw" ).text();     
-    var semfeat_id = $("#semfeat-id-span-newsw" ).text();
+    var synfunc_val = $("#select-synfunc" ).val();
+    var semfeat_val = $("#select-semfeat").val();
+    var concept_val = $("#newsw-concept-span" ).text();
+    var synfunc_id = $("#synfunc-id-span" ).text();     
+    var semfeat_id = $("#semfeat-id-span" ).text();
     var concept_id = $("#concept-id-span" ).text();
-    var def_val = $("#input-newsw-def" ).val();
+    var def_val = $("#input-def" ).val();
 
   $.ajax({
   type : "PUT",
@@ -209,13 +198,13 @@ function save_to_concept(){
     }).get().join("xxx");
     var line_id= $( "#swl-line-id-span" ).text();
     var word = $("#swl-query-span").text();
-    var synfunc_val = $("#select-synfunc-concept" ).val();
-    var semfeat_val = $("#select-semfeat-concept").val();
+    var synfunc_val = $("#select-synfunc" ).val();
+    var semfeat_val = $("#select-semfeat").val();
     var concept_val = $("#select-concept" ).val();
-    var synfunc_id = $("#synfunc-id-span-concept" ).text();     
-    var semfeat_id = $("#semfeat-id-span-concept" ).text();
+    var synfunc_id = $("#synfunc-id-span" ).text();     
+    var semfeat_id = $("#semfeat-id-span" ).text();
     var concept_id = $("#concept-id-span" ).text();
-    var def_val = $("#input-concept-def" ).val();
+    var def_val = $("#input-def" ).val();
   if (typeof guangyun_id !== 'undefined'){
   console.log(guangyun_id);
   $.ajax({
@@ -257,12 +246,12 @@ $( ".zh" )
     console.log(xid);
     console.log(new_width);
     $( "#swl-line-id-span" ).html(xid);
-    $( "#concept-line-id-span" ).html(xid);
+//    $( "#concept-line-id-span" ).html(xid);
 //    $( "#swl-line-text" ).val(line);      
     $( "#swl-line-text-span" ).html(line);      
-    $( "#concept-line-text-span" ).html(line);      
+//    $( "#concept-line-text-span" ).html(line);      
     $( "#swl-query" ).val( sel.toString());
-    $( "#concept-query-span" ).html( sel.toString());
+//    $( "#concept-query-span" ).html( sel.toString());
     $( "#swl-query-span" ).html( sel.toString());
     $( "#swl-form" ).removeAttr("style");
     $( "#swl-form" ).show();
