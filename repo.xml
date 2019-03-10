@@ -10,5 +10,5 @@
     <target>tls-app</target>
     <prepare>pre-install.xql</prepare>
     <finish>post-install.xql</finish>
-    <permissions password="tls" user="tls-editor" group="tls-editor" mode="rwxrwxr--"/>
+    <permissions password="tls" user="tls" group="tls-user" mode="rwxrwxr--"/>
 </meta>
