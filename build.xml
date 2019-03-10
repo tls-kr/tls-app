@@ -9,11 +9,13 @@
       <tstamp/>
     <mkdir dir="${build.dir}"/>
     </target>
-    <target name="xar" depends="init">
-        <zip basedir="." destfile="${build.dir}/${project.app}-${project.version}.xar" excludes="${build.dir}/*  dosync.sh controller.xql.old node_modules/*"/>
+    <target name="dev" depends="init">
+        <zip basedir="." destfile="${build.dir}/${project.app}-${project.version}-dev.xar" excludes="${build.dir}/*  dosync.sh controller.xql.old node_modules/*"/>
     </target>
-    <!-- just for fun, and to stay sane... -->
-    <target name="deploy" depends="init">
+    <target name="prod" depends="init">
         <zip basedir="." destfile="${build.dir}/${project.app}-${project.version}.xar" excludes="${build.dir}/* dosync.sh controller.xql.old node_modules/*"/>
+    </target>
+    <target name="all" depends="dev, prod">
+      <tstamp/>
     </target>
 </project>
