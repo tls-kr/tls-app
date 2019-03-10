@@ -10,10 +10,10 @@
     <mkdir dir="${build.dir}"/>
     </target>
     <target name="dev" depends="init">
-        <zip basedir="." destfile="${build.dir}/${project.app}-${project.version}-dev.xar" excludes="${build.dir}/*, node_modules/*"/>
+        <zip basedir="." description="unoptimized sources for development" destfile="${build.dir}/${project.app}-${project.version}-dev.xar" excludes="${build.dir}/**, node_modules/**"/>
     </target>
     <target name="prod" depends="init">
-        <zip basedir="." destfile="${build.dir}/${project.app}-${project.version}.xar" excludes="${build.dir}/*, node_modules/*"/>
+        <zip basedir="." description="optimized sources for production" destfile="${build.dir}/${project.app}-${project.version}.xar" excludes="${build.dir}/**, node_modules/**"/>
     </target>
     <target name="all" depends="dev, prod">
       <tstamp/>
