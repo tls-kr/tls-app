@@ -1,4 +1,11 @@
-xquery version "3.0";
+xquery version "3.1";
+(:~ The post-install runs after contents are copied to db.
+ :
+ : @version 1.0.0
+ : @see http://www.adamretter.org.uk/presentations/security-in-existdb_xml-prague_existdb_20120210.pdf
+ : @see http://localhost:8080/exist/apps/doc/security.xml?field=all&id=D3.21.11#permissions
+ :)
+
 
 (: The following external variables are set by the repo:deploy function :)
 
@@ -9,31 +16,18 @@ declare variable $dir external;
 (: the target collection into which the app is deployed :)
 declare variable $target external;
 
-(: set perm on api :) 
-declare function local:proc($uri as xs:string, $perm as xs:string)
-{ 
-  sm:chmod(xs:anyURI($uri), $perm),
-  sm:chgrp(xs:anyURI($uri), "tls-user"),
-  sm:chown(xs:anyURI($uri), "tls"),
+declare variable $api := $target || "/api";
 
-for $u in xmldb:get-child-collections($uri)
-let $t := $uri || "/" || $u
-return 
-  local:proc($t, $perm)
-  ,
-for $u in xmldb:get-child-resources($uri)
-let $t := $uri || "/" || $u
+(: set perm on api :)
+declare function local:special-permission($uri as xs:string, $perm as xs:string) as empty-sequence() {
+for $res in xmldb:get-child-resources($uri)
+let $path := $uri || "/" || $res
 return
-(
-  sm:chmod(xs:anyURI($t), $perm),
-  sm:chgrp(xs:anyURI($t), "tls-user"),
-  sm:chown(xs:anyURI($t), "tls")
-)
+  ( sm:chown(xs:anyURI($path), "admin"),
+    sm:chgrp(xs:anyURI($path), "dba"),
+    sm:chmod(xs:anyURI($path), $perm) )
 };
 
-(
-(: execute api :)
-local:proc($target || "/api", "rwxr-xr-x"),
 
-
-
+(: set execute on api for world :)
+local:special-permission($api, "rwxrwxr-x")
