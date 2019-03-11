@@ -29,19 +29,23 @@ $form := $w/parent::tei:form/@corresp
 order by $concept:)
 return
 <li class="mb-3"><strong>{$zi}</strong>&#160;({$py})&#160;<strong>{$concept}</strong> 
+     { if (sm:is-authenticated()) then 
 <button class="btn badge badge-secondary ml-2" type="button" 
 onclick="show_newsw({{'wid':'{$wid}','concept' : '{$concept}', 'concept_id' : '{$id}'}})">
            New SW
       </button>
+      else ()}
 <ul class="list-unstyled" style="swl-bullet">{for $s in $w/ancestor::tei:entry/tei:sense
 let $sf := $s//tls:syn-func/text(),
 $sm := $s//tls:sem-feat/text(),
 $def := $s//tei:def/text()
 return
 <li><span id="pop-{$s/@xml:id}" class="small btn" data-toggle="popover" data-placement="left">●</span>{$sf}&#160;{$sm}: {$def}
+     { if (sm:is-authenticated()) then 
      <button class="btn badge badge-primary ml-2" type="button" onclick="save_this_swl('{$s/@xml:id}')">
            Use
       </button>
+      else () }
 </li>
 }
 </ul></li>

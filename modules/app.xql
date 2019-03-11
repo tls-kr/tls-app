@@ -463,7 +463,8 @@ declare function app:textlist(){
          group by $bu
          return map:entry($bu, count($c)))
     let $count :=  sum(map:for-each($bc, $fv)),
-    $chantcount := 1184,
+    $chantpath := concat($config:tls-texts-root, '/chant'),
+    $chantcount := if (xmldb:collection-available($chantpath)) then 1184 else 0,
     $starredcount := 0
     return
     <div>
@@ -519,10 +520,10 @@ declare function app:textlist(){
     
     { if (sm:is-authenticated()) then
     (: first create the tab links for sub catetories :)
-    (
+    if (xmldb:collection-available($chantpath)) then (
     <ul class="nav nav-tabs" id="more-buTab" role="tablist">
-    {for $b in xmldb:get-child-collections(concat($config:tls-texts-root, '/chant'))
-    let $coll := concat($config:tls-texts-root, '/chant/', $b)
+    {for $b in xmldb:get-child-collections($chantpath)
+    let $coll := concat($chantpath, $b)
     let $c := xmldb:get-child-resources($coll)
     order by $b
     return 
@@ -533,8 +534,8 @@ declare function app:textlist(){
     }
     </ul>
 ,    <div class="tab-content" id="more-buTabContent">
-    {for $b in xmldb:get-child-collections(concat($config:tls-texts-root, '/chant'))
-    let $coll := concat($config:tls-texts-root, '/chant/', $b)
+    {for $b in xmldb:get-child-collections($chantpath)
+    let $coll := concat($chantpath, $b)
     return    
     <div class="tab-pane" id="{$b}" role="tabpanel">
     <ul>{
@@ -552,7 +553,7 @@ declare function app:textlist(){
     </div>
     }
     </div>
-     )    
+     ) else "Additional texts are not installed."   
     else 
     "More texts available.  Login to see a list."   
     }
@@ -793,7 +794,7 @@ declare
 function app:swl-form-dialog($node as node()*, $model as map(*)){
 <div id="swl-form" class="card ann-dialog overflow-auto">
 <div class="card-body">
-    <h5 class="card-title">New Attribution: <strong class="ml-2"><span id="swl-query-span">Word or char to annotate</span></strong>
+    <h5 class="card-title">{if (sm:is-authenticated()) then "New Attribution:" else "Existing SW for " }<strong class="ml-2"><span id="swl-query-span">Word or char to annotate</span>:</strong>
      <button type="button" class="close" onclick="hide_swl_form()" aria-label="Close">
        &#215;
      </button>
@@ -801,10 +802,15 @@ function app:swl-form-dialog($node as node()*, $model as map(*)){
     <h6 class="text-muted">At:  <span id="swl-line-id-span" class="ml-2">Id of line</span></h6>
     <h6 class="text-muted">Line: <span id="swl-line-text-span" class="ml-2">Text of line</span></h6>
     <div class="card-text">
-        <p><span class="badge badge-primary">Use</span> one of the following syntactic words (SW), 
+       
+        <p> { if (sm:is-authenticated()) then <span>
+        <span class="badge badge-primary">Use</span> one of the following syntactic words (SW), 
         create a <span class="mb-2 badge badge-secondary">New SW</span> 
          or add a new concept to the word here: 
          <span class="btn badge badge-light ml-2" data-toggle="modal" onclick="show_new_concept()">Concept</span> 
+         </span>
+         else <span>Log in if you want to add attribution.</span>
+         }
         <ul id="swl-select" class="list-unstyled"></ul>
         </p>
       </div>
