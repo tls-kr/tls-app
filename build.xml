@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project default="xar" name="tls-app">
+<project default="all" name="tls-app">
     <xmlproperty file="expath-pkg.xml"/>
     <property name="project.version" value="${package(version)}"/>
     <property name="project.app" value="tls-app"/>
@@ -9,11 +9,13 @@
       <tstamp/>
     <mkdir dir="${build.dir}"/>
     </target>
-    <target name="xar" depends="init">
-        <zip basedir="." destfile="${build.dir}/${project.app}-${project.version}.xar" excludes="${build.dir}/*  dosync.sh controller.xql.old"/>
+    <target name="dev" depends="init">
+        <zip basedir="." description="unoptimized sources for development" destfile="${build.dir}/${project.app}-${project.version}-dev.xar" excludes="${build.dir}/**, node_modules/**"/>
     </target>
-    <!-- just for fun, and to stay sane... -->
-    <target name="deploy" depends="init">
-        <zip basedir="." destfile="${build.dir}/${project.app}-${project.version}.xar" excludes="${build.dir}/* dosync.sh controller.xql.old"/>
+    <target name="prod" depends="init">
+        <zip basedir="." description="optimized sources for production" destfile="${build.dir}/${project.app}-${project.version}.xar" excludes="${build.dir}/**, node_modules/**"/>
+    </target>
+    <target name="all" depends="dev, prod">
+      <tstamp/>
     </target>
 </project>

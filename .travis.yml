@@ -1,0 +1,22 @@
+language: java
+
+jdk:
+  - oraclejdk8
+  - oraclejdk11
+
+services:
+  - docker
+
+env:
+  - img=existdb/existdb:latest
+  - img=existdb/existdb:release
+
+install:
+  - ant
+
+before_script:
+  - docker cp ./build/*-dev.xar exist-ci:exist/autodeploy
+  - docker start exist-ci
+  # exist needs time
+  - sleep 30
+  - docker ps
