@@ -740,9 +740,9 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
     <h4 class="card-title">Words</h4>
     <p class="card-text">
     {for $e in $c/tei:div[@type="words"]//tei:entry
-    let $zi := $e/tei:form/tei:orth,
-    $pr := $e/tei:form/tei:pron
-    
+    let $zi := $e/tei:form/tei:orth
+    ,$pr := $e/tei:form/tei:pron
+    ,$def := $e/tei:def/text()
     order by $zi[1]
 (:    count $count :)
     return 
@@ -750,6 +750,7 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
     if (ends-with($p/@xml:lang, "oc")) then "OC: " else 
     if (ends-with($p/@xml:lang, "mc")) then "MC: " else (),
     $p/text()}&#160;</span>}</h5>
+    {if ($def) then <p class="ml-4">{$def}</p> else ()}
     <ul>{for $sw in $e//tei:sense
     return
     tlslib:display_sense($sw)
