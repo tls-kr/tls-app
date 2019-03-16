@@ -796,7 +796,7 @@ function app:swl-form-dialog($node as node()*, $model as map(*)){
 <div id="swl-form" class="card ann-dialog overflow-auto">
 <div class="card-body">
     <h5 class="card-title">{if (sm:is-authenticated()) then "New Attribution:" else "Existing SW for " }<strong class="ml-2"><span id="swl-query-span">Word or char to annotate</span>:</strong>
-     <button type="button" class="close" onclick="hide_swl_form()" aria-label="Close">
+     <button type="button" class="close" onclick="hide_new_att()" aria-label="Close">
        &#215;
      </button>
 </h5>

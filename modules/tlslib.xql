@@ -134,10 +134,12 @@ if ($type = "row") then
 {$def/text()}
 {if (sm:has-access(document-uri(fn:root($node)), "w") and $node/@xml:id) then 
 <div style="height:13px;position:absolute; top:0; right:0;">
+ <!-- for the time being removing the button, don't really now what I want to edit here:-)
  <button type="button" class="btn" onclick="edit_swl('{$node/@xml:id}')" style="width:10px;height:20px;" 
  title="Edit Attribution">
  <img class="icon" onclick="edit_swl('{$node/@xml:id}')" style="width:10px;height:13px;top:0;align:top" src="resources/icons/open-iconic-master/svg/pencil.svg"/>
- </button>
+ </button> 
+ -->
  <button type="button" class="btn" onclick="delete_swl('{$node/@xml:id}')" style="width:10px;height:20px;" 
  title="Delete Attribution">
  <img class="icon" onclick="delete_swl('{$node/@xml:id}')" style="width:10px;height:13px;top:0;align:top" src="resources/icons/open-iconic-master/svg/x.svg"/>

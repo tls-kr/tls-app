@@ -397,3 +397,12 @@ else
 <p class="font-weight-bold">No attributions found</p>
 
 };
+
+declare function tlsapi:delete-swl($uid as xs:string) {
+let $swl := collection($config:tls-data-root|| "/notes")//tls:ann[@xml:id=$uid]
+,$path := fn:base-uri($swl)
+,$doc := tokenize($path, "/")[last()]
+,$coll := substring-before($path, $doc)
+return xmldb:remove($coll, $doc)
+};
+

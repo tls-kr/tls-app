@@ -45,6 +45,10 @@ var word = $("#swl-query-span").text();
   });
 };
 
+function hide_new_att(){
+  $("#swl-form").hide()  
+};
+
 function hide_swl_form(){
     $( "#editSWLDialog" ).modal('hide');    
     console.log("Clearing SWL form");
@@ -532,6 +536,17 @@ function edit_swl(uid){
   }
   });
 }
+
+function delete_swl(uid){
+  $.ajax({
+  type : "GET",
+  dataType : "html",  
+  url : "api/delete_swl.xql?type=swl&uid=" + uid, 
+  success : function(resp){
+     toastr.info("Attribution deleted.", "HXWD says:");
+  }
+  });    
+};
 
 $(".tr").change(
  console.log("Content changed.")

@@ -1,0 +1,15 @@
+xquery version "3.1";
+
+
+declare namespace output = "http://www.w3.org/2010/xslt-xquery-serialization";
+
+declare option output:method "json";
+declare option output:media-type "application/json";
+
+import module namespace tlsapi="http://hxwd.org/tlsapi" at "tlsapi.xql";
+
+let $uid := request:get-parameter("uid", "xx")
+
+return
+
+tlsapi:delete-swl($uid)
