@@ -9,14 +9,14 @@ xquery version "3.1";
 
 module namespace tests = "http://hxwd.org/apps/tls-app/tests";
 
-  import module namespace app = "http://hxwd.org/apps/tls-app/templates" at "app.xql";
+import module namespace app = "http://hxwd.org/app" at "app.xql";
 declare namespace test="http://exist-db.org/xquery/xqsuite";
 
 declare variable $tests:map := map {1: 1};
 
 declare
     %test:arg('n', 'div')
-    %test:assertEquals("<p>Dummy templating function.</p>")
-    function tests:templating-foo($n as xs:string) as node(){
-        app:foo(element {$n} {}, $tests:map)
+    %test:assertEquals('<img class="app-logo img-fluid" src="resources/images/hxwd.png" title="TLS"/>')
+    function tests:templating-logo($n as xs:string) as node(){
+        app:logo(element {$n} {}, $tests:map)
 };
