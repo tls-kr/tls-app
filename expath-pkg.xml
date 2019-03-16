@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<package xmlns="http://expath.org/ns/pkg" name="http://hxwd.org/apps/tls-app" abbrev="tls-app" version="0.6.1" spec="1.0">
+<package xmlns="http://expath.org/ns/pkg" name="http://hxwd.org/apps/tls-app" abbrev="tls-app" version="0.6.2" spec="1.0">
     <title>TLS - 漢學文典</title>
     <dependency processor="http://exist-db.org" semver-min="3.6.1"/>
     <dependency package="http://exist-db.org/apps/shared" semver-min="0.6.0"/>
