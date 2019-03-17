@@ -16,5 +16,5 @@ declare function functx:index-of-string
           $other +
           string-length(substring-before($arg, $substring)) +
           string-length($substring))
-  else -1
+  else ()
 };

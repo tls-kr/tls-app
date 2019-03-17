@@ -91,8 +91,10 @@ function show_swls_for_line(line_id){
   dataType : "html",
   url : "api/show_swl_for_line.xql?line=" + line_id, 
   success : function(resp){
-  console.log("Displaying response"+resp);
-  $('#'+line_id+'-swl').append(resp)
+  console.log("Displaying response at: " + '#'+line_id+'-swl');
+//  $('#swl-select').html(resp)
+  $('#'+line_id+'-swl').html(resp);
+  $('#'+line_id+'-swl').show();
   }
   });
     
@@ -543,7 +545,11 @@ function delete_swl(uid){
   dataType : "html",  
   url : "api/delete_swl.xql?type=swl&uid=" + uid, 
   success : function(resp){
-     toastr.info("Attribution deleted.", "HXWD says:");
+    var strconfirm = confirm("Do you really want to delete this attribution?");
+    if (strconfirm == true) {
+      save_this_swl(resp.sense_id)
+      toastr.info("Attribution deleted.", "HXWD says:");
+    }
   }
   });    
 };

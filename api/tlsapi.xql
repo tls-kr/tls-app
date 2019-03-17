@@ -21,11 +21,8 @@ let $payload :=
 return 
 concat($callback, "([", string-join($payload, ","), "]);")
 };
-
-declare function tlsapi:save-swl($line-id as xs:string, $sense-id as xs:string){
-let $notes-path := concat($config:tls-data-root, "/notes/new/")
-let $user := sm:id()//sm:real/sm:username/text()
-return
+declare function tlsapi:save-swl-with-path($line-id as xs:string, $sense-id as xs:string, 
+$notes-path as xs:string, $user as xs:string){
 if (($line-id != "xx") and ($sense-id != "xx")) then
 let $line := collection($config:tls-texts-root)//tei:seg[@xml:id=$line-id],
 $tr := collection($config:tls-translation-root)//tei:*[@corresp=concat('#', $line-id)],
@@ -33,13 +30,18 @@ $title-en := $tr/ancestor::tei:TEI/tei:teiHeader/tei:fileDesc/tei:titleStmt/tei:
 $title := $line/ancestor::tei:TEI/tei:teiHeader/tei:fileDesc/tei:titleStmt/tei:title/text(),
 $sense := collection($config:tls-data-root)//tei:sense[@xml:id=$sense-id],
 $concept := $sense/ancestor::tei:div/tei:head/text(),
-$word := $sense/parent::tei:entry/tei:form/tei:orth/text(),
+$concept-id := $sense/ancestor::tei:div/@xml:id, 
+$wordtmp := $sense/parent::tei:entry/tei:form/tei:orth/text(),
+(:$word := string-join(if (count($wordtmp) = 1) then $wordtmp else 
+        for $w in $wordtmp
+         return if (contains($line, $w)) then $w else "", ""),:)
+$word := $wordtmp[1],
 $uid := util:uuid(),
 $newswl :=
-<tls:ann xmlns="http://www.tei-c.org/ns/1.0" concept="{$concept}" xml:id="{$uid}">
+<tls:ann xmlns="http://www.tei-c.org/ns/1.0" concept="{$concept}" concept-id="{$concept-id}" xml:id="{$uid}">
 <link target="#{$line-id} #{$sense-id}"/>
 <tls:text>
-<tls:srcline title="{$title}" target="#{$line-id}" pos="{functx:index-of-string($line/text(), $word)}">{$line/text()}</tls:srcline>
+<tls:srcline title="{$title}" target="#{$line-id}" pos="{functx:index-of-string(string-join($line/text(), ""), $word)}">{$line/text()}</tls:srcline>
 <tls:line title="{$title-en}">{$tr/text()}</tls:line>
 </tls:text>
 <form  corresp="{$sense/parent::tei:entry/tei:form/@corresp}">
@@ -57,7 +59,7 @@ $sense/parent::tei:entry/tei:form/tei:pron[starts-with(@xml:lang, 'zh-Latn')]}
 </respStmt>
 </tls:metadata>
 </tls:ann>,
-$path := concat($config:tls-data-root, "/notes/new/", substring($uid, 1, 2))
+$path := concat($notes-path, substring($uid, 1, 2))
 return (
 if (xmldb:collection-available($path)) then () else
 (xmldb:create-collection($notes-path, substring($uid, 1, 2)),
@@ -79,6 +81,16 @@ else
 
 };
 
+
+declare function tlsapi:save-swl($line-id as xs:string, $sense-id as xs:string){
+let $notes-path := concat($config:tls-data-root, "/notes/new/")
+let $user := sm:id()//sm:real/sm:username/text()
+return
+tlsapi:save-swl-with-path($line-id, $sense-id, $notes-path, $user)
+};
+
+
+
 (: so this is now the xquery that displays the dialog for 
  - new concept for character:  type=concept
  - new word within concept for character: type=word
@@ -88,7 +100,6 @@ else
  the name is now slightly misleading, but I'll keep it for now:-)
  
 :)
-
 declare function tlsapi:get-swl($rpara as map(*)){
 
 let $swl:= if ($rpara?uuid = "xx") then <empty/> else collection($config:tls-data-root|| "/notes")//tls:ann[@xml:id=$rpara?uuid]
@@ -406,3 +417,21 @@ let $swl := collection($config:tls-data-root|| "/notes")//tls:ann[@xml:id=$uid]
 return xmldb:remove($coll, $doc)
 };
 
+declare function tlsapi:show-use-of($uid as xs:string){
+let $key := "#" || $uid
+let $res := for $r in collection($config:tls-data-root)//tls:*[@corresp = $key]
+     where exists($r/ancestor::tei:sense)
+     return $r
+
+return
+
+if (count($res) > 0) then
+for $r in subsequence($res, 1, 10)
+  let $sw := $r/ancestor::tei:sense
+  return
+  tlslib:display_sense($sw)
+else 
+
+concat("No usage examples found for key: ", $key)
+
+};

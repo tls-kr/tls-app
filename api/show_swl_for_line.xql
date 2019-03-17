@@ -6,7 +6,7 @@ declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
 declare namespace output = "http://www.w3.org/2010/xslt-xquery-serialization";
 
-declare option output:method "html5";
+(:declare option output:method "html5";:)
 declare option output:media-type "text/html";
 
 
