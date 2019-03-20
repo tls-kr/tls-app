@@ -1,468 +1,1200 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <listBibl xmlns="http://www.tei-c.org/ns/1.0" xmlns:tls="http://hxwd.org/ns/1.0">
-    <bibl><title tls:sigle="XC" tls:textid="KR1a0001">繫辭</title><creation><date>ca. -250 -
-                -200</date></creation><note type="Source">SSJZS</note><note type="Translation"
-            >[Lynn, Columbia Unversity Press]</note><note type="Input"><ref
-                target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref></note><note
-            type="Bibliography"> </note></bibl>
-    <bibl><title tls:sigle="SHU" tls:textid="KR1b0001">尚書</title><creation><date>ca. -800 -
-                -100</date></creation><note type="Source">SSJZS</note><note type="Translation"
-            >Karlgren</note><note type="Input"><ref target="../acknowledgements/ack_linder.lasso"
-                >Christian Linder</ref></note><note type="Bibliography"><ref
-                target="bibliography.html#shangshu">Bibliography</ref>
-        </note></bibl>
-    <bibl><title tls:sigle="SHI" tls:textid="KR1c0001">詩經</title><creation><date>ca. -900 -
-                -600</date></creation><note type="Source">SSJZS</note><note type="Translation"
-            >Karlgren, BMFEA</note><note type="Input"><ref
-                target="../acknowledgements/ack_linder.lasso">Christian Linder</ref></note><note
-            type="Bibliography"><ref target="bibliography.html#shijing">Bibliography</ref>
-        </note></bibl>
-    <bibl><title tls:sigle="DAXU" tls:textid="KR1c0003">詩。大序</title><creation><date>-1st
-                cent.</date></creation><note type="Source">SSJZS</note><note type="Translation"
-            >Stephen Owen 1992</note><note type="Input"><ref
-                target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref></note><note
-            type="Bibliography"> </note></bibl>
-    <bibl><title tls:sigle="HSWZ" tls:textid="KR1c0066">韓詩外傳</title><creation><date>ca. -150 - -100
-            </date></creation><note type="Source">LAI YANYUAN 1991</note><note type="Translation"
-            >Hightower</note><note type="Input"><ref target="../acknowledgements/ack_yu.lasso">Yu
-                Jing</ref></note><note type="Bibliography"><ref
-                target="bibliography.html#hanshiwaizhuan">Bibliography</ref>
-        </note></bibl>
-    <bibl><title tls:sigle="LJ" tls:textid="KR1d0052">禮記</title><creation><date>ca. -300 -
-                -200</date></creation><note type="Source">SSJZS</note><note type="Translation"
-            >Legge</note><note type="Input"><ref target="../acknowledgements/ack_sandoy.lasso">Tone
-                Sandøy</ref></note><note type="Bibliography"><ref target="bibliography.html#liji"
-                >Bibliography</ref>
-        </note></bibl>
-    <bibl><title tls:sigle="ZUO" tls:textid="KR1e0001">左傳</title><creation><date>ca. -400 -
-                -300</date></creation><note type="Source">SSJZS</note><note type="Translation"
-            >Legge</note><note type="Input"><ref target="../acknowledgements/ack_denecke.lasso"
-                >Wiebke Denecke</ref></note><note type="Bibliography"><ref
-                target="bibliography.html#zuozhuan">Bibliography</ref>
-        </note></bibl>
-    <bibl><title tls:sigle="CQGL" tls:textid="KR1e0008">穀梁傳</title><creation><date>ca. -200 - -100
-            </date></creation><note type="Source">SSJZS</note><note type="Translation">MALMQVIST
-            1972ff</note><note type="Input"><ref target="../acknowledgements/ack_anderl.lasso"
-                >Christoph Anderl</ref></note><note type="Bibliography"><ref
-                target="bibliography.html#guliangzhuan">Bibliography</ref>
-        </note></bibl>
-    <bibl><title tls:sigle="XJ" tls:textid="KR1f0001">孝經</title><creation><date>ca. -200 -
-                -100</date></creation><note type="Source">SSJZS </note><note type="Translation">L.
-            Zádrapa</note><note type="Input"><ref target="../acknowledgements/ack_zadrapa.lasso"
-                >Lukáš Zádrapa</ref></note><note type="Bibliography"><ref
-                target="bibliography.html#xiaojing">Bibliography</ref>
-        </note></bibl>
-    <bibl><title tls:sigle="MENG" tls:textid="KR1h0001">孟子</title><creation><date>ca. -350 -
-                -300</date></creation><note type="Source">SSJZS</note><note type="Translation">David
-            Sehnal; D.C. Lau</note><note type="Input"><ref
-                target="../acknowledgements/ack_sandoy.lasso">Tone Sandøy</ref> / <ref
-                target="../acknowledgements/ack_sehnal.lasso">David Sehnal</ref></note><note
-            type="Bibliography"><ref target="bibliography.html#mengzi">Bibliography</ref>
-        </note></bibl>
-    <bibl><title tls:sigle="LY" tls:textid="KR1h0004">論語</title><creation><date>ca. -450 -
-                -250</date></creation><note type="Source">SSJZS</note><note type="Translation"><ref
-                target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref></note><note
-            type="Input"><ref target="../acknowledgements/ack_harbsmeier.lasso">C.
-            Harbsmeier</ref></note><note type="Bibliography"><ref target="bibliography.html#lunyu"
-                >Bibliography</ref>
-        </note></bibl>
-    <bibl><title tls:sigle="SJ" tls:textid="KR2a0001">史記</title><creation><date>ca. -100 -
-                +30</date></creation><note type="Source">ZHONGHUASHUJU </note><note
-            type="Translation">Watson</note><note type="Input"><ref
-                target="../acknowledgements/ack_anderl.lasso">Christoph Anderl</ref>, <ref
-                target="../acknowledgements/ack_linder.lasso">Christian Linder</ref>, <ref
-                target="../acknowledgements/ack_harbsmeier_i.lasso">Ingeborg
-            Harbsmeier</ref></note><note type="Bibliography"><ref target="bibliography.html#shiji"
-                >Bibliography</ref>
-        </note></bibl>
-    <bibl><title tls:sigle="GY" tls:textid="KR2e0001">國語</title><creation><date>ca. -400 - -300
-            </date></creation><note type="Source">SHANGHAI GUJI CHUBANSHE, 1978 (test selection
-            only)</note><note type="Translation">none</note><note type="Input"><ref
-                target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref></note><note
-            type="Bibliography"><ref target="bibliography.html#guoyu">Bibliography</ref>
-        </note></bibl>
-    <bibl><title tls:sigle="ZGC" tls:textid="KR2e0003">戰國策</title><creation><date>ca. -300 -
-                -30</date></creation><note type="Source">SHANGHAI GUJI CHUBANSHE, 1978</note><note
-            type="Translation">Crump, Oxford University Press</note><note type="Input"><ref
-                target="../acknowledgements/ack_yu.lasso">Yu Jing</ref> / <ref
-                target="../acknowledgements/ack_harbsmeier_i.lasso">Ingeborg
-            Harbsmeier</ref></note><note type="Bibliography"><ref
-                target="bibliography.html#zhanguoce">Bibliography</ref>
-        </note></bibl>
-    <bibl><title tls:sigle="YAN" tls:textid="KR2g0003">晏子春秋</title><creation><date>ca. -300 -
-                -200</date></creation><note type="Source">TAIBEI: DINGWENSHUJU, 1977</note><note
-            type="Translation">none</note><note type="Input"><ref
-                target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref></note><note
-            type="Bibliography"><ref target="bibliography.html#yanzichunqiu">Bibliography</ref>
-        </note></bibl>
-    <bibl><title tls:sigle="LNZ" tls:textid="KR2g0017">列女傳</title><creation><date>ca. +50 -
-                +100</date></creation><note type="Source">CHANT</note><note type="Translation"
-            >O'HARA 1945</note><note type="Input"><ref
-                target="../acknowledgements/ack_harbsmeier_i.lasso">Ingeborg
-            Harbsmeier</ref></note><note type="Bibliography"><ref
-                target="bibliography.html#lienuzhuan">Bibliography</ref>
-        </note></bibl>
-    <bibl><title tls:sigle="KJ" tls:textid="KR3a0001">孔子家語</title><creation><date>ca. +300 -
-                +400</date></creation><note type="Source">TAIBEI: WORLD BOOK COMPANY,
-            1978</note><note type="Translation">KRAMER 1950</note><note type="Input"><ref
-                target="../acknowledgements/ack_yu.lasso">Yu Jing</ref>; chapters 1-10</note><note
-            type="Bibliography"><ref target="bibliography.html#kongzijiayu">Bibliography</ref>
-        </note></bibl>
-    <bibl><title tls:sigle="XUN" tls:textid="KR3a0002">荀子</title><creation><date>ca. -300 -
-                -200</date></creation><note type="Source">LI TIAOSHENG 1981 </note><note
-            type="Translation">Knoblock and Riegel</note><note type="Input"><ref
-                target="../acknowledgements/ack_harbsmeier_i.lasso">Ingeborg
-            Harbsmeier</ref></note><note type="Bibliography"><ref target="bibliography.html#xunzi"
-                >Bibliography</ref>
-        </note></bibl>
-    <bibl><title tls:sigle="YTL" tls:textid="KR3a0006">鹽鐵論</title><creation><date>ca. -100 -
-                -20</date></creation><note type="Source">TIANJIN GUJI, 1993</note><note
-            type="Translation">GALE 1931</note><note type="Input"><ref
-                target="../acknowledgements/ack_yu.lasso">Yu Jing</ref></note><note
-            type="Bibliography"><ref target="bibliography.html#yantielun">Bibliography</ref>
-        </note></bibl>
-    <bibl><title tls:sigle="YULEI" tls:textid="KR3a0047">朱子語類</title><creation><date>After
-                +1200</date></creation><note type="Source">Ed. Zhonghuashuju, ch. 10 and
-            11</note><note type="Translation"><ref target="../acknowledgements/ack_harbsmeier.lasso"
-                >C. Harbsmeier</ref></note><note type="Input"><ref
-                target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref></note><note
-            type="Bibliography"> </note></bibl>
-    <bibl><title tls:sigle="GUAN" tls:textid="KR3c0001">管子</title><creation><date>ca. -300 - -100
-            </date></creation><note type="Source">TAIPEI: COMMERCIAL PRESS, 1993</note><note
-            type="Translation">Rickett, Princeton University Press</note><note type="Input"><ref
-                target="../acknowledgements/ack_sandoy.lasso">Tone Sandøy</ref> / <ref
-                target="../acknowledgements/ack_yu.lasso">Yu Jing</ref></note><note
-            type="Bibliography"><ref target="bibliography.html#guanzi">Bibliography</ref>
-        </note></bibl>
-    <bibl><title tls:sigle="HF" tls:textid="KR3c0005">韓非子</title><creation><date>ca. -260 - -200
-            </date></creation><note type="Source">Shao Yonghai, based on Zhou Zhongling
-            1982</note><note type="Translation"><ref
-                target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref></note><note
-            type="Input"><ref target="../acknowledgements/ack_harbsmeier.lasso">C.
-            Harbsmeier</ref></note><note type="Bibliography"><ref
-                target="bibliography.html#hanfeizi">Bibliography</ref>
-        </note></bibl>
-    <bibl><title tls:sigle="SUWEN" tls:textid="KR3e0001">素問</title><creation><date>ca. -200 -
-                -100</date></creation><note type="Source">ROCHAT 1993</note><note type="Translation"
-                ><ref target="../acknowledgements/ack_harbsmeier.lasso">C.
-            Harbsmeier</ref></note><note type="Input"><ref
-                target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref></note><note
-            type="Bibliography"> </note></bibl>
-    <bibl><title tls:sigle="MOZI" tls:textid="KR3j0002">墨子</title><creation><date>-4th to -3rd
-                cent.</date></creation><note type="Source">CHANT</note><note type="Translation">Mei
-            Yi Pao</note><note type="Input">Jon Dalby</note><note type="Bibliography"><ref
-                target="bibliography.html#mojing">Bibliography</ref>
-        </note></bibl>
-    <bibl><title tls:sigle="HEGUAN" tls:textid="KR3j0006">鶡冠子</title><creation><date>ca. -300 - -200
-            </date></creation><note type="Source">CONGSHUJICHENG</note><note type="Translation"
-            >Wells</note><note type="Input"><ref target="../acknowledgements/ack_wells.lasso">Marnix
-                Wells</ref></note><note type="Bibliography"><ref target="bibliography.html#heguanzi"
-                >Bibliography</ref>
-        </note></bibl>
-    <bibl><title tls:sigle="LS" tls:textid="KR3j0009">呂氏春秋</title><creation><date>239
-            B.C.</date></creation><note type="Source">CHANT</note><note type="Translation">Knoblock
-            &amp; Riegel</note><note type="Input"><ref
-                target="../acknowledgements/ack_harbsmeier_i.lasso">Ingeborg
-            Harbsmeier</ref></note><note type="Bibliography"><ref
-                target="bibliography.html#lushichunqiu">Bibliography</ref>
-        </note></bibl>
-    <bibl><title tls:sigle="HNZ" tls:textid="KR3j0010">淮南子</title><creation><date>-139
-            </date></creation><note type="Source">CHEN GUANGZHONG 1982, modifications based on ZHANG
-            SHUANGDI 1991.</note><note type="Translation">Wallacker, Ames, LeBlanc, Kraft,
-            Morgan</note><note type="Input"><ref target="../acknowledgements/ack_yu.lasso">Yu
-                Jing</ref>; chapters 1,2,6,9,11</note><note type="Bibliography"><ref
-                target="bibliography.html#huainanzi">Bibliography</ref>
-        </note></bibl>
-    <bibl><title tls:sigle="LH" tls:textid="KR3j0080">論衡</title><creation><date>ca. +50 -
-                +100</date></creation><note type="Source">HUANG HUI 1990</note><note
-            type="Translation">Hu Chirui and Michael Nylan</note><note type="Input"><ref
-                target="../acknowledgements/ack_hu_c.lasso">Hu Chirui</ref></note><note
-            type="Bibliography"><ref target="bibliography.html#lunheng">Bibliography</ref>
-        </note></bibl>
-    <bibl><title tls:sigle="SSXY" tls:textid="KR3l0002"
-            >世說新語</title><creation><date> </date></creation><note type="Source"> </note><note
-            type="Translation">Mather</note><note type="Input"><ref
-                target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref></note><note
-            type="Bibliography"> </note></bibl>
-    <bibl><title tls:sigle="SHJ" tls:textid="KR3l0090">山海經</title><creation><date>ca. -300 -
-                -100</date></creation><note type="Source">YUAN KE 1993</note><note
-            type="Translation">Anne Birrell</note><note type="Input"><ref
-                target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref></note><note
-            type="Bibliography"><ref target="bibliography.html#shanhaijing">Bibliography</ref>
-        </note></bibl>
-    <bibl><title tls:sigle="CC" tls:textid="KR4a0001">楚辭</title><creation><date>ca. -300 - -50
-            </date></creation><note type="Source">SBBY</note><note type="Translation">HAWKES 1985
-            </note><note type="Input"><ref target="../acknowledgements/ack_sandoy.lasso">Tone
-                Sandøy</ref></note><note type="Bibliography"><ref target="bibliography.html#chuci"
-                >Bibliography</ref>
-        </note></bibl>
-    <bibl><title tls:sigle="LAO" tls:textid="KR5c0057">道德經</title><creation><date>4th cent.
-                BC.</date></creation><note type="Source">SBBY</note><note type="Translation"
-            >Karlgren 1975</note><note type="Input"><ref
-                target="../acknowledgements/ack_sandoy.lasso">Tone Sandøy</ref></note><note
-            type="Bibliography"><ref target="bibliography.html#laozi">Bibliography</ref>
-        </note></bibl>
-    <bibl><title tls:sigle="LIE" tls:textid="KR5c0124">列子</title><creation><date>ca. -300 -
-                +500</date></creation><note type="Source">YANG BOJUN 1957</note><note
-            type="Translation">GRAHAM 1960</note><note type="Input"><ref
-                target="../acknowledgements/ack_harbsmeier_i.lasso">Ingeborg
-            Harbsmeier</ref></note><note type="Bibliography"><ref target="bibliography.html#liezi"
-                >Bibliography</ref>
-        </note></bibl>
-    <bibl><title tls:sigle="ZHUANG" tls:textid="KR5c0126">莊子</title><creation><date>ca. -400 -
-                -230</date></creation><note type="Source">GUO QINGFAN 1961</note><note
-            type="Translation">[Watson 1969]</note><note type="Input"><ref
-                target="../acknowledgements/ack_sandoy.lasso">Tone Sandøy</ref></note><note
-            type="Bibliography"><ref target="bibliography.html#zhuangzi">Bibliography</ref>
-        </note></bibl>
-    <bibl><title tls:sigle="MOJ" tls:textid="KR5f0010">墨經</title><creation><date>ca. -300 -
-                -200</date></creation><note type="Source">GRAHAM 1978 / Chris Fraser</note><note
-            type="Translation">Graham 1998</note><note type="Input"><ref
-                target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref></note><note
-            type="Bibliography"><ref target="bibliography.html#mojing">Bibliography</ref>
-        </note></bibl>
-    <bibl><title tls:sigle="XYJ" tls:textid="KR6b0059"
-            >賢愚經</title><creation><date>+445</date></creation><note type="Source">TAISHO
-            TRIPITAKA</note><note type="Translation">Sun Xixin and Victor Mair</note><note
-            type="Input"><ref target="../acknowledgements/ack_harbsmeier.lasso">C.
-            Harbsmeier</ref></note><note type="Bibliography"> </note></bibl>
-    <bibl><title tls:sigle="BAIYU" tls:textid="KR6b0066">百喻經</title><creation><date>+492
-            </date></creation><note type="Source">JINLING SHUHUASHE 1981</note><note
-            type="Translation"><ref target="../acknowledgements/ack_harbsmeier.lasso">C.
+    <bibl>
+        <title tls:sigle="XC" tls:textid="KR1a0001">繫辭</title>
+        <creation>
+            <date>ca. -250 -
+                -200</date>
+        </creation>
+        <note type="Source">SSJZS</note>
+        <note type="Translation">[Lynn, Columbia Unversity Press]</note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref>
+        </note>
+        <note type="Bibliography"> </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="SHU" tls:textid="KR1b0001">尚書</title>
+        <creation>
+            <date>ca. -800 -
+                -100</date>
+        </creation>
+        <note type="Source">SSJZS</note>
+        <note type="Translation">Karlgren</note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_linder.lasso">Christian Linder</ref>
+        </note>
+        <note type="Bibliography">
+            <ref target="bibliography.html#shangshu">Bibliography</ref>
+        </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="SHI" tls:textid="KR1c0001">詩經</title>
+        <creation>
+            <date>ca. -900 -
+                -600</date>
+        </creation>
+        <note type="Source">SSJZS</note>
+        <note type="Translation">Karlgren, BMFEA</note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_linder.lasso">Christian Linder</ref>
+        </note>
+        <note type="Bibliography">
+            <ref target="bibliography.html#shijing">Bibliography</ref>
+        </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="DAXU" tls:textid="KR1c0003">詩。大序</title>
+        <creation>
+            <date>-1st
+                cent.</date>
+        </creation>
+        <note type="Source">SSJZS</note>
+        <note type="Translation">Stephen Owen 1992</note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref>
+        </note>
+        <note type="Bibliography"> </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="HSWZ" tls:textid="KR1c0066">韓詩外傳</title>
+        <creation>
+            <date>ca. -150 - -100
+            </date>
+        </creation>
+        <note type="Source">LAI YANYUAN 1991</note>
+        <note type="Translation">Hightower</note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_yu.lasso">Yu
+                Jing</ref>
+        </note>
+        <note type="Bibliography">
+            <ref target="bibliography.html#hanshiwaizhuan">Bibliography</ref>
+        </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="LJ" tls:textid="KR1d0052">禮記</title>
+        <creation>
+            <date>ca. -300 -
+                -200</date>
+        </creation>
+        <note type="Source">SSJZS</note>
+        <note type="Translation">Legge</note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_sandoy.lasso">Tone
+                Sandøy</ref>
+        </note>
+        <note type="Bibliography">
+            <ref target="bibliography.html#liji">Bibliography</ref>
+        </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="ZUO" tls:textid="KR1e0001">左傳</title>
+        <creation>
+            <date>ca. -400 -
+                -300</date>
+        </creation>
+        <note type="Source">SSJZS</note>
+        <note type="Translation">Legge</note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_denecke.lasso">Wiebke Denecke</ref>
+        </note>
+        <note type="Bibliography">
+            <ref target="bibliography.html#zuozhuan">Bibliography</ref>
+        </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="CQGL" tls:textid="KR1e0008">穀梁傳</title>
+        <creation>
+            <date>ca. -200 - -100
+            </date>
+        </creation>
+        <note type="Source">SSJZS</note>
+        <note type="Translation">MALMQVIST
+            1972ff</note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_anderl.lasso">Christoph Anderl</ref>
+        </note>
+        <note type="Bibliography">
+            <ref target="bibliography.html#guliangzhuan">Bibliography</ref>
+        </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="XJ" tls:textid="KR1f0001">孝經</title>
+        <creation>
+            <date>ca. -200 -
+                -100</date>
+        </creation>
+        <note type="Source">SSJZS </note>
+        <note type="Translation">L.
+            Zádrapa</note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_zadrapa.lasso">Lukáš Zádrapa</ref>
+        </note>
+        <note type="Bibliography">
+            <ref target="bibliography.html#xiaojing">Bibliography</ref>
+        </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="MENG" tls:textid="KR1h0001">孟子</title>
+        <creation>
+            <date>ca. -350 -
+                -300</date>
+        </creation>
+        <note type="Source">SSJZS</note>
+        <note type="Translation">David
+            Sehnal; D.C. Lau</note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_sandoy.lasso">Tone Sandøy</ref> / <ref target="../acknowledgements/ack_sehnal.lasso">David Sehnal</ref>
+        </note>
+        <note type="Bibliography">
+            <ref target="bibliography.html#mengzi">Bibliography</ref>
+        </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="LY" tls:textid="KR1h0004">論語</title>
+        <creation>
+            <date>ca. -450 -
+                -250</date>
+        </creation>
+        <note type="Source">SSJZS</note>
+        <note type="Translation">
+            <ref target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref>
+        </note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_harbsmeier.lasso">C.
+            Harbsmeier</ref>
+        </note>
+        <note type="Bibliography">
+            <ref target="bibliography.html#lunyu">Bibliography</ref>
+        </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="SJ" tls:textid="KR2a0001">史記</title>
+        <creation>
+            <date>ca. -100 -
+                +30</date>
+        </creation>
+        <note type="Source">ZHONGHUASHUJU </note>
+        <note type="Translation">Watson</note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_anderl.lasso">Christoph Anderl</ref>, <ref target="../acknowledgements/ack_linder.lasso">Christian Linder</ref>, <ref target="../acknowledgements/ack_harbsmeier_i.lasso">Ingeborg
+            Harbsmeier</ref>
+        </note>
+        <note type="Bibliography">
+            <ref target="bibliography.html#shiji">Bibliography</ref>
+        </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="GY" tls:textid="KR2e0001">國語</title>
+        <creation>
+            <date>ca. -400 - -300
+            </date>
+        </creation>
+        <note type="Source">SHANGHAI GUJI CHUBANSHE, 1978 (test selection
+            only)</note>
+        <note type="Translation">none</note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref>
+        </note>
+        <note type="Bibliography">
+            <ref target="bibliography.html#guoyu">Bibliography</ref>
+        </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="ZGC" tls:textid="KR2e0003">戰國策</title>
+        <creation>
+            <date>ca. -300 -
+                -30</date>
+        </creation>
+        <note type="Source">SHANGHAI GUJI CHUBANSHE, 1978</note>
+        <note type="Translation">Crump, Oxford University Press</note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_yu.lasso">Yu Jing</ref> / <ref target="../acknowledgements/ack_harbsmeier_i.lasso">Ingeborg
+            Harbsmeier</ref>
+        </note>
+        <note type="Bibliography">
+            <ref target="bibliography.html#zhanguoce">Bibliography</ref>
+        </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="YAN" tls:textid="KR2g0003">晏子春秋</title>
+        <creation>
+            <date>ca. -300 -
+                -200</date>
+        </creation>
+        <note type="Source">TAIBEI: DINGWENSHUJU, 1977</note>
+        <note type="Translation">none</note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref>
+        </note>
+        <note type="Bibliography">
+            <ref target="bibliography.html#yanzichunqiu">Bibliography</ref>
+        </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="LNZ" tls:textid="KR2g0017">列女傳</title>
+        <creation>
+            <date>ca. +50 -
+                +100</date>
+        </creation>
+        <note type="Source">CHANT</note>
+        <note type="Translation">O'HARA 1945</note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_harbsmeier_i.lasso">Ingeborg
+            Harbsmeier</ref>
+        </note>
+        <note type="Bibliography">
+            <ref target="bibliography.html#lienuzhuan">Bibliography</ref>
+        </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="KJ" tls:textid="KR3a0001">孔子家語</title>
+        <creation>
+            <date>ca. +300 -
+                +400</date>
+        </creation>
+        <note type="Source">TAIBEI: WORLD BOOK COMPANY,
+            1978</note>
+        <note type="Translation">KRAMER 1950</note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_yu.lasso">Yu Jing</ref>; chapters 1-10</note>
+        <note type="Bibliography">
+            <ref target="bibliography.html#kongzijiayu">Bibliography</ref>
+        </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="XUN" tls:textid="KR3a0002">荀子</title>
+        <creation>
+            <date>ca. -300 -
+                -200</date>
+        </creation>
+        <note type="Source">LI TIAOSHENG 1981 </note>
+        <note type="Translation">Knoblock and Riegel</note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_harbsmeier_i.lasso">Ingeborg
+            Harbsmeier</ref>
+        </note>
+        <note type="Bibliography">
+            <ref target="bibliography.html#xunzi">Bibliography</ref>
+        </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="YTL" tls:textid="KR3a0006">鹽鐵論</title>
+        <creation>
+            <date>ca. -100 -
+                -20</date>
+        </creation>
+        <note type="Source">TIANJIN GUJI, 1993</note>
+        <note type="Translation">GALE 1931</note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_yu.lasso">Yu Jing</ref>
+        </note>
+        <note type="Bibliography">
+            <ref target="bibliography.html#yantielun">Bibliography</ref>
+        </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="YULEI" tls:textid="KR3a0047">朱子語類</title>
+        <creation>
+            <date>After
+                +1200</date>
+        </creation>
+        <note type="Source">Ed. Zhonghuashuju, ch. 10 and
+            11</note>
+        <note type="Translation">
+            <ref target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref>
+        </note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref>
+        </note>
+        <note type="Bibliography"> </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="GUAN" tls:textid="KR3c0001">管子</title>
+        <creation>
+            <date>ca. -300 - -100
+            </date>
+        </creation>
+        <note type="Source">TAIPEI: COMMERCIAL PRESS, 1993</note>
+        <note type="Translation">Rickett, Princeton University Press</note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_sandoy.lasso">Tone Sandøy</ref> / <ref target="../acknowledgements/ack_yu.lasso">Yu Jing</ref>
+        </note>
+        <note type="Bibliography">
+            <ref target="bibliography.html#guanzi">Bibliography</ref>
+        </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="HF" tls:textid="KR3c0005">韓非子</title>
+        <creation>
+            <date>ca. -260 - -200
+            </date>
+        </creation>
+        <note type="Source">Shao Yonghai, based on Zhou Zhongling
+            1982</note>
+        <note type="Translation">
+            <ref target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref>
+        </note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_harbsmeier.lasso">C.
+            Harbsmeier</ref>
+        </note>
+        <note type="Bibliography">
+            <ref target="bibliography.html#hanfeizi">Bibliography</ref>
+        </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="SUWEN" tls:textid="KR3e0001">素問</title>
+        <creation>
+            <date>ca. -200 -
+                -100</date>
+        </creation>
+        <note type="Source">ROCHAT 1993</note>
+        <note type="Translation">
+            <ref target="../acknowledgements/ack_harbsmeier.lasso">C.
+            Harbsmeier</ref>
+        </note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref>
+        </note>
+        <note type="Bibliography"> </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="MOZI" tls:textid="KR3j0002">墨子</title>
+        <creation>
+            <date>-4th to -3rd
+                cent.</date>
+        </creation>
+        <note type="Source">CHANT</note>
+        <note type="Translation">Mei
+            Yi Pao</note>
+        <note type="Input">Jon Dalby</note>
+        <note type="Bibliography">
+            <ref target="bibliography.html#mojing">Bibliography</ref>
+        </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="HEGUAN" tls:textid="KR3j0006">鶡冠子</title>
+        <creation>
+            <date>ca. -300 - -200
+            </date>
+        </creation>
+        <note type="Source">CONGSHUJICHENG</note>
+        <note type="Translation">Wells</note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_wells.lasso">Marnix
+                Wells</ref>
+        </note>
+        <note type="Bibliography">
+            <ref target="bibliography.html#heguanzi">Bibliography</ref>
+        </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="LS" tls:textid="KR3j0009">呂氏春秋</title>
+        <creation>
+            <date>239
+            B.C.</date>
+        </creation>
+        <note type="Source">CHANT</note>
+        <note type="Translation">Knoblock
+            &amp; Riegel</note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_harbsmeier_i.lasso">Ingeborg
+            Harbsmeier</ref>
+        </note>
+        <note type="Bibliography">
+            <ref target="bibliography.html#lushichunqiu">Bibliography</ref>
+        </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="HNZ" tls:textid="KR3j0010">淮南子</title>
+        <creation>
+            <date>-139
+            </date>
+        </creation>
+        <note type="Source">CHEN GUANGZHONG 1982, modifications based on ZHANG
+            SHUANGDI 1991.</note>
+        <note type="Translation">Wallacker, Ames, LeBlanc, Kraft,
+            Morgan</note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_yu.lasso">Yu
+                Jing</ref>; chapters 1,2,6,9,11</note>
+        <note type="Bibliography">
+            <ref target="bibliography.html#huainanzi">Bibliography</ref>
+        </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="LH" tls:textid="KR3j0080">論衡</title>
+        <creation>
+            <date>ca. +50 -
+                +100</date>
+        </creation>
+        <note type="Source">HUANG HUI 1990</note>
+        <note type="Translation">Hu Chirui and Michael Nylan</note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_hu_c.lasso">Hu Chirui</ref>
+        </note>
+        <note type="Bibliography">
+            <ref target="bibliography.html#lunheng">Bibliography</ref>
+        </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="SSXY" tls:textid="KR3l0002">世說新語</title>
+        <creation>
+            <date> </date>
+        </creation>
+        <note type="Source"> </note>
+        <note type="Translation">Mather</note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref>
+        </note>
+        <note type="Bibliography"> </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="SHJ" tls:textid="KR3l0090">山海經</title>
+        <creation>
+            <date>ca. -300 -
+                -100</date>
+        </creation>
+        <note type="Source">YUAN KE 1993</note>
+        <note type="Translation">Anne Birrell</note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref>
+        </note>
+        <note type="Bibliography">
+            <ref target="bibliography.html#shanhaijing">Bibliography</ref>
+        </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="CC" tls:textid="KR4a0001">楚辭</title>
+        <creation>
+            <date>ca. -300 - -50
+            </date>
+        </creation>
+        <note type="Source">SBBY</note>
+        <note type="Translation">HAWKES 1985
+            </note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_sandoy.lasso">Tone
+                Sandøy</ref>
+        </note>
+        <note type="Bibliography">
+            <ref target="bibliography.html#chuci">Bibliography</ref>
+        </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="LAO" tls:textid="KR5c0057">道德經</title>
+        <creation>
+            <date>4th cent.
+                BC.</date>
+        </creation>
+        <note type="Source">SBBY</note>
+        <note type="Translation">Karlgren 1975</note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_sandoy.lasso">Tone Sandøy</ref>
+        </note>
+        <note type="Bibliography">
+            <ref target="bibliography.html#laozi">Bibliography</ref>
+        </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="LIE" tls:textid="KR5c0124">列子</title>
+        <creation>
+            <date>ca. -300 -
+                +500</date>
+        </creation>
+        <note type="Source">YANG BOJUN 1957</note>
+        <note type="Translation">GRAHAM 1960</note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_harbsmeier_i.lasso">Ingeborg
+            Harbsmeier</ref>
+        </note>
+        <note type="Bibliography">
+            <ref target="bibliography.html#liezi">Bibliography</ref>
+        </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="ZHUANG" tls:textid="KR5c0126">莊子</title>
+        <creation>
+            <date>ca. -400 -
+                -230</date>
+        </creation>
+        <note type="Source">GUO QINGFAN 1961</note>
+        <note type="Translation">[Watson 1969]</note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_sandoy.lasso">Tone Sandøy</ref>
+        </note>
+        <note type="Bibliography">
+            <ref target="bibliography.html#zhuangzi">Bibliography</ref>
+        </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="MOJ" tls:textid="KR5f0010">墨經</title>
+        <creation>
+            <date>ca. -300 -
+                -200</date>
+        </creation>
+        <note type="Source">GRAHAM 1978 / Chris Fraser</note>
+        <note type="Translation">Graham 1998</note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref>
+        </note>
+        <note type="Bibliography">
+            <ref target="bibliography.html#mojing">Bibliography</ref>
+        </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="XYJ" tls:textid="KR6b0059">賢愚經</title>
+        <creation>
+            <date>+445</date>
+        </creation>
+        <note type="Source">TAISHO
+            TRIPITAKA</note>
+        <note type="Translation">Sun Xixin and Victor Mair</note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_harbsmeier.lasso">C.
+            Harbsmeier</ref>
+        </note>
+        <note type="Bibliography"> </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="BAIYU" tls:textid="KR6b0066">百喻經</title>
+        <creation>
+            <date>+492
+            </date>
+        </creation>
+        <note type="Source">JINLING SHUHUASHE 1981</note>
+        <note type="Translation">
+            <ref target="../acknowledgements/ack_harbsmeier.lasso">C.
                 Harbsmeier</ref>
-        </note><note type="Input"><ref target="../acknowledgements/ack_harbsmeier.lasso">C.
-                Harbsmeier</ref></note><note type="Bibliography"> </note></bibl>
-    <bibl><title tls:sigle="FAJU" tls:textid="KR6b0067"
-            >法句經</title><creation><date>+224</date></creation><note type="Source">CBETA</note><note
-            type="Translation">DHARMAJOTI 1990</note><note type="Input"><ref
-                target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref></note><note
-            type="Bibliography"> </note></bibl>
-    <bibl><title tls:sigle="SONGJING" tls:textid="KR6b0070">法集要頌經</title><creation><date>3rd cent.
-                A.D.</date></creation><note type="Source"> </note><note type="Translation"
-            > </note><note type="Input"><ref target="../acknowledgements/ack_harbsmeier.lasso">C.
-                Harbsmeier</ref></note><note type="Bibliography"> </note></bibl>
-    <bibl><title tls:sigle="FAHUA" tls:textid="KR6d0001">法華經</title><creation><date>ca. +380 - +417
-            </date></creation><note type="Source">TAISHO TRIPITAKA</note><note type="Translation"
-            >WATSON 1993 </note><note type="Input">Zhang Bin</note><note type="Bibliography"
-        > </note></bibl>
-    <bibl><title tls:sigle="ZTJ" tls:textid="KR6q0002">祖堂集</title><creation><date>ca. +890 -
-                +1000</date></creation><note type="Source">TAISHO TRIPITAKA</note><note
-            type="Translation"><ref target="../acknowledgements/ack_anderl.lasso">Christoph
-                Anderl</ref></note><note type="Input"><ref
-                target="../acknowledgements/ack_anderl.lasso">Christoph Anderl</ref></note><note
-            type="Bibliography"> </note></bibl>
-    <bibl><title tls:sigle="LINJILU" tls:textid="KR6q0053"
-            >臨濟錄</title><creation><date> </date></creation><note type="Source"> </note><note
-            type="Translation"><ref target="../acknowledgements/ack_anderl.lasso">Christoph
-                Anderl</ref></note><note type="Input"><ref
-                target="../acknowledgements/ack_anderl.lasso">Christoph Anderl</ref></note><note
-            type="Bibliography"> </note></bibl>
-    <bibl><title tls:sigle="TANJING" tls:textid="KR6q0082">六祖壇經</title><creation><date>+9th
-                cent.</date></creation><note type="Source">YAMPOLSKY 1996, with
-            revisions</note><note type="Translation">YAMPOLSKY 1996</note><note type="Input"><ref
-                target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref></note><note
-            type="Bibliography">N/A</note></bibl>
-    <bibl><title tls:sigle="BHT" tls:textid="None">白虎通</title><creation><date>+80
-            </date></creation><note type="Source">CHANT</note><note type="Translation"><ref
-                target="../bibliography.lasso#tjan">TJAN TJOE SOM 1949FF</ref></note><note
-            type="Input"><ref target="../acknowledgements/ack_yu.lasso">Yu Jing</ref></note><note
-            type="Bibliography"><ref target="bibliography.html#baihutong">Bibliography</ref>
-        </note></bibl>
-    <bibl><title tls:sigle="CEN SHEN" tls:textid="None"
-            >岑參</title><creation><date>715？-770</date></creation><note type="Source">(test selection
-            only)</note><note type="Translation">Stephen Owen</note><note type="Input"><ref
-                target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref></note><note
-            type="Bibliography"/></bibl>
-    <bibl><title tls:sigle="CHEN ZIANG" tls:textid="None"
-            >陳子昂</title><creation><date>659-700</date></creation><note type="Source">(test selection
-            only)</note><note type="Translation">Stephen Owen</note><note type="Input"><ref
-                target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref></note><note
-            type="Bibliography"/></bibl>
-    <bibl><title tls:sigle="CQ" tls:textid="None">春秋</title><creation><date>ca. -5th cent.
-            </date></creation><note type="Source">SSJZS</note><note type="Translation"
-            >Legge</note><note type="Input"><ref target="../acknowledgements/ack_anderl.lasso"
-                >Christoph Anderl</ref></note><note type="Bibliography"> </note></bibl>
-    <bibl><title tls:sigle="XINXINGLUN" tls:textid="None">大乘心行論</title><creation><date>ca. +670 -
-                +750</date></creation><note type="Source">TAISHO TRIPITAKA</note><note
-            type="Translation"><ref target="../acknowledgements/ack_anderl.lasso">Christoph
-                Anderl</ref></note><note type="Input"><ref
-                target="../acknowledgements/ack_anderl.lasso">Christoph Anderl</ref></note><note
-            type="Bibliography"> </note></bibl>
-    <bibl><title tls:sigle="DU FU" tls:textid="None"
-            >杜甫</title><creation><date>712年-770</date></creation><note type="Source">(test selection
-            only)</note><note type="Translation">Stephen Owen</note><note type="Input"><ref
-                target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref></note><note
-            type="Bibliography"/></bibl>
-    <bibl><title tls:sigle="XIAOFUXU" tls:textid="None"
-            >馮夢龍笑府序</title><creation><date> </date></creation><note type="Source"> </note><note
-            type="Translation"> </note><note type="Input"><ref
-                target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref></note><note
-            type="Bibliography"> </note></bibl>
-    <bibl><title tls:sigle="GD.XZMC" tls:textid="None">郭店。性自命出</title><creation><date>-4th
-                cent.</date></creation><note type="Source">CHANT</note><note type="Translation"><ref
-                target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref>, based on Dirk
-            Meier</note><note type="Input"><ref target="../acknowledgements/ack_harbsmeier.lasso">C.
-                Harbsmeier</ref></note><note type="Bibliography"> </note></bibl>
-    <bibl><title tls:sigle="GD.YUCONG" tls:textid="None">郭店語叢</title><creation><date>-4th
-                cent.</date></creation><note type="Source">CHANT</note><note type="Translation"><ref
-                target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref></note><note
-            type="Input"><ref target="../acknowledgements/ack_harbsmeier.lasso">C.
-            Harbsmeier</ref></note><note type="Bibliography"><ref
-                target="bibliography.html#guodianyucong">Bibliography</ref>
-        </note></bibl>
-    <bibl><title tls:sigle="GD.ZHONGXIN" tls:textid="None">郭店.忠信之道</title><creation><date>-4th
-                cent.</date></creation><note type="Source">CHANT</note><note type="Translation">Dirk
-            Meier</note><note type="Input"><ref target="../acknowledgements/ack_harbsmeier.lasso">C.
-                Harbsmeier</ref></note><note type="Bibliography"> </note></bibl>
-    <bibl><title tls:sigle="HANSHAN" tls:textid="None">寒山詩</title><creation><date>ca. +620 - +650
-            </date></creation><note type="Source">XIANG CHU 2000(?)</note><note type="Translation"
-            >PINE 2000</note><note type="Input"><ref target="../acknowledgements/ack_anderl.lasso"
-                >Christoph Anderl</ref></note><note type="Bibliography"> </note></bibl>
-    <bibl><title tls:sigle="HEYINYANG" tls:textid="None">合陰陽</title><creation><date>ca. -250 - -200
-            </date></creation><note type="Source">DON HARPER 1998</note><note type="Translation"
-            >HARPER 1998</note><note type="Input"><ref
-                target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref></note><note
-            type="Bibliography"> </note></bibl>
-    <bibl><title tls:sigle="HUAZAN" tls:textid="None">畫贊</title><creation><date>(check
-            date!)</date></creation><note type="Source">SKQS</note><note type="Translation"><ref
-                target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref></note><note
-            type="Input"><ref target="../acknowledgements/ack_harbsmeier.lasso">C.
-            Harbsmeier</ref></note><note type="Bibliography"> </note></bibl>
-    <bibl><title tls:sigle="HEJI" tls:textid="None">甲骨文字合集</title><creation><date>ca. -1200 - -900
-            </date></creation><note type="Source">CHANT</note><note type="Translation">Keightley,
-            Takashima, Qiu</note><note type="Input"><ref
-                target="../acknowledgements/ack_ostergaard_petersen.lasso">Jens Oystergaard
-                Petersen</ref></note><note type="Bibliography"> </note></bibl>
-    <bibl><title tls:sigle="KQ" tls:textid="None">孔雀東南飛</title><creation><date>ca. +300 -
-                +500</date></creation><note type="Source">FRANKEL 1969</note><note
-            type="Translation"><ref target="../acknowledgements/ack_harbsmeier.lasso">C.
-                Harbsmeier</ref></note><note type="Input"><ref
-                target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref></note><note
-            type="Bibliography"> </note></bibl>
-    <bibl><title tls:sigle="Li Bai" tls:textid="None">李白</title><creation><date>
-            701-762</date></creation><note type="Source">(test selection only)</note><note
-            type="Translation">Stephen Owen</note><note type="Input"><ref
-                target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref></note><note
-            type="Bibliography"/></bibl>
-    <bibl><title tls:sigle="LISHIMIN" tls:textid="None"
-            >李世民</title><creation><date> </date></creation><note type="Source"> </note><note
-            type="Translation">Stephen Owen</note><note type="Input"> </note><note
-            type="Bibliography"> </note></bibl>
-    <bibl><title tls:sigle="MOUZI" tls:textid="None">牟子：理惑論</title><creation><date>+4th
-            cent.</date></creation><note type="Source">CBETA</note><note type="Translation"><ref
-                target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref>, based on
-            Pelliot 1920 and Keenan 1994</note><note type="Input"><ref
-                target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref></note><note
-            type="Bibliography"> </note></bibl>
-    <bibl><title tls:sigle="NJ" tls:textid="None">女戒</title><creation><date>+1st
-            cent.</date></creation><note type="Source">SKQS</note><note type="Translation"><ref
-                target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref>, based on
-            SWANN 1960</note><note type="Input"><ref
-                target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref></note><note
-            type="Bibliography"> </note></bibl>
-    <bibl><title tls:sigle="QYX" tls:textid="None"
-            >切韻序</title><creation><date>+601</date></creation><note type="Source">N/A</note><note
-            type="Translation"><ref target="../acknowledgements/ack_harbsmeier.lasso">C.
-                Harbsmeier</ref></note><note type="Input"><ref
-                target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref></note><note
-            type="Bibliography"> </note></bibl>
-    <bibl><title tls:sigle="STELAE" tls:textid="None">秦刻石</title><creation><date>second half -3rd
-                century</date></creation><note type="Source">MARTIN KERN 2000 (test selection
-            only)</note><note type="Translation">Martin Kern, modified by <ref
-                target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref></note><note
-            type="Input"><ref target="../acknowledgements/ack_harbsmeier.lasso">C.
-            Harbsmeier</ref></note><note type="Bibliography"> </note></bibl>
-    <bibl><title tls:sigle="RENJING" tls:textid="None"
-            >吳亮：忍經</title><creation><date>+1306</date></creation><note type="Source"
-            >SKQS</note><note type="Translation"><ref
-                target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref></note><note
-            type="Input"><ref target="../acknowledgements/ack_harbsmeier.lasso">C.
-            Harbsmeier</ref></note><note type="Bibliography"> </note></bibl>
-    <bibl><title tls:sigle="SHANG" tls:textid="None">商君書</title><creation><date>ca. -300 -
-                -200</date></creation><note type="Source">TAIBEI: COMMERCIAL PRESS, 1988</note><note
-            type="Translation">Duyvendak</note><note type="Input"><ref
-                target="../acknowledgements/ack_spira.lasso">Ivo Spira</ref></note><note
-            type="Bibliography"><ref target="bibliography.html#shangjunshu">Bibliography</ref>
-        </note></bibl>
-    <bibl><title tls:sigle="SHENDAO" tls:textid="None">慎到</title><creation><date>ca. -300 -
-                -200</date></creation><note type="Source">THOMPSON 1979</note><note
-            type="Translation">P. Thompson</note><note type="Input"><ref
-                target="../acknowledgements/ack_wells.lasso">Marnix Wells</ref></note><note
-            type="Bibliography"> </note></bibl>
-    <bibl><title tls:sigle="SIKUNGTU.SHIPIN" tls:textid="None">司空圖:二十四詩品</title><creation><date>+900
-                (lived 837-908)</date></creation><note type="Source">SKQS</note><note
-            type="Translation">Owen 1992</note><note type="Input"><ref
-                target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref></note><note
-            type="Bibliography"> </note></bibl>
-    <bibl><title tls:sigle="SHUIHUDI" tls:textid="None">睡虎地</title><creation><date>ca. -250 -
-                -200</date></creation><note type="Source">WENWU 2001 (test selection
-            only)</note><note type="Translation">HULSEWE</note><note type="Input"><ref
-                target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref></note><note
-            type="Bibliography"><ref target="bibliography.html#shuihudi">Bibliography</ref>
-        </note></bibl>
-    <bibl><title tls:sigle="SHUOWEN XU" tls:textid="None"
-            >説文解字序</title><creation><date>+100</date></creation><note type="Source">SKQS</note><note
-            type="Translation"><ref target="../acknowledgements/ack_harbsmeier.lasso">C.
-                Harbsmeier</ref></note><note type="Input"><ref
-                target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref></note><note
-            type="Bibliography"> </note></bibl>
-    <bibl><title tls:sigle="SUMMA" tls:textid="None"
-            >SUMMA.THEOL</title><creation><date>+1670</date></creation><note type="Source"
-            >Patrologia Latina</note><note type="Translation"><ref
-                target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref></note><note
-            type="Input"><ref target="../acknowledgements/ack_harbsmeier.lasso">C.
-            Harbsmeier</ref></note><note type="Bibliography"> </note></bibl>
-    <bibl><title tls:sigle="SB" tls:textid="None">孫臏</title><creation><date>ca.
-            -300</date></creation><note type="Source">D.C. LAU AND R. AMES 1996 (selected text
-            passages only)</note><note type="Translation">LAU AND AMES 1996</note><note type="Input"
-                ><ref target="../acknowledgements/ack_harbsmeier.lasso">C.
-            Harbsmeier</ref></note><note type="Bibliography"><ref target="bibliography.html#sunbin"
-                >Bibliography</ref>
-        </note></bibl>
-    <bibl><title tls:sigle="SUN" tls:textid="None">孫子</title><creation><date>ca. -300 -
-            -200</date></creation><note type="Source">TAIBEI: COMMERCIAL PRESS, 1999 (selected
-            passages only)</note><note type="Translation">Ralph D. Sawyer</note><note type="Input"
-                ><ref target="../acknowledgements/ack_harbsmeier.lasso">C.
-            Harbsmeier</ref></note><note type="Bibliography"><ref target="bibliography.html#sunzi"
-                >Bibliography</ref>
-        </note></bibl>
-    <bibl><title tls:sigle="TYM" tls:textid="None">陶淵明詩</title><creation><date>ca. -200 -
-                -100</date></creation><note type="Source">N/A</note><note type="Translation"
-            >Hightower</note><note type="Input"><ref target="../acknowledgements/ack_lomova.lasso"
-                >Olga Lomova</ref></note><note type="Bibliography"> </note></bibl>
-    <bibl><title tls:sigle="Wang Ji" tls:textid="None">王績</title><creation><date
-            > </date></creation><note type="Source">(test selection only)</note><note
-            type="Translation">Stephen Owen</note><note type="Input"><ref
-                target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref></note><note
-            type="Bibliography"/></bibl>
-    <bibl><title tls:sigle="WEN" tls:textid="None">文子</title><creation><date>ca. -250 -
-            -100</date></creation><note type="Source">N/A (test selection only)</note><note
-            type="Translation">none</note><note type="Input"><ref
-                target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref></note><note
-            type="Bibliography"><ref target="bibliography.html#wenzi">Bibliography</ref>
-        </note></bibl>
-    <bibl><title tls:sigle="WXP" tls:textid="None">五行篇</title><creation><date>ca. -300 -
-            -200</date></creation><note type="Source">PANG PU </note><note type="Translation">Pang
-            Pu et al.</note><note type="Input"><ref
-                target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref></note><note
-            type="Bibliography"> </note></bibl>
-    <bibl><title tls:sigle="XIAOLIN" tls:textid="None">笑林</title><creation><date>+4th
-            cent.</date></creation><note type="Source">WANG LIQI 1962</note><note type="Translation"
-                ><ref target="../acknowledgements/ack_harbsmeier.lasso">C.
-            Harbsmeier</ref></note><note type="Input"><ref
-                target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref></note><note
-            type="Bibliography"> </note></bibl>
-    <bibl><title tls:sigle="XINLUN" tls:textid="None">新論</title><creation><date>ca. -60 -
-            0</date></creation><note type="Source">ZHANG PEIHENG </note><note type="Translation"
-            >Pokora, Michigan University Press</note><note type="Input"><ref
-                target="../acknowledgements/ack_yu.lasso">Yu Jing</ref></note><note
-            type="Bibliography"><ref target="bibliography.html#xinlun">Bibliography</ref>
-        </note></bibl>
-    <bibl><title tls:sigle="ZHONGJING" tls:textid="None"
-            >忠經</title><creation><date> </date></creation><note type="Source"> </note><note
-            type="Translation"><ref target="../acknowledgements/ack_harbsmeier.lasso">C.
-                Harbsmeier</ref></note><note type="Input"><ref
-                target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref></note><note
-            type="Bibliography"> </note></bibl>
+        </note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_harbsmeier.lasso">C.
+                Harbsmeier</ref>
+        </note>
+        <note type="Bibliography"> </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="FAJU" tls:textid="KR6b0067">法句經</title>
+        <creation>
+            <date>+224</date>
+        </creation>
+        <note type="Source">CBETA</note>
+        <note type="Translation">DHARMAJOTI 1990</note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref>
+        </note>
+        <note type="Bibliography"> </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="SONGJING" tls:textid="KR6b0070">法集要頌經</title>
+        <creation>
+            <date>3rd cent.
+                A.D.</date>
+        </creation>
+        <note type="Source"> </note>
+        <note type="Translation"> </note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_harbsmeier.lasso">C.
+                Harbsmeier</ref>
+        </note>
+        <note type="Bibliography"> </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="FAHUA" tls:textid="KR6d0001">法華經</title>
+        <creation>
+            <date>ca. +380 - +417
+            </date>
+        </creation>
+        <note type="Source">TAISHO TRIPITAKA</note>
+        <note type="Translation">WATSON 1993 </note>
+        <note type="Input">Zhang Bin</note>
+        <note type="Bibliography"> </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="ZTJ" tls:textid="KR6q0002">祖堂集</title>
+        <creation>
+            <date>ca. +890 -
+                +1000</date>
+        </creation>
+        <note type="Source">TAISHO TRIPITAKA</note>
+        <note type="Translation">
+            <ref target="../acknowledgements/ack_anderl.lasso">Christoph
+                Anderl</ref>
+        </note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_anderl.lasso">Christoph Anderl</ref>
+        </note>
+        <note type="Bibliography"> </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="LINJILU" tls:textid="KR6q0053">臨濟錄</title>
+        <creation>
+            <date> </date>
+        </creation>
+        <note type="Source"> </note>
+        <note type="Translation">
+            <ref target="../acknowledgements/ack_anderl.lasso">Christoph
+                Anderl</ref>
+        </note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_anderl.lasso">Christoph Anderl</ref>
+        </note>
+        <note type="Bibliography"> </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="TANJING" tls:textid="KR6q0082">六祖壇經</title>
+        <creation>
+            <date>+9th
+                cent.</date>
+        </creation>
+        <note type="Source">YAMPOLSKY 1996, with
+            revisions</note>
+        <note type="Translation">YAMPOLSKY 1996</note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref>
+        </note>
+        <note type="Bibliography">N/A</note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="BHT" tls:textid="None">白虎通</title>
+        <creation>
+            <date>+80
+            </date>
+        </creation>
+        <note type="Source">CHANT</note>
+        <note type="Translation">
+            <ref target="../bibliography.lasso#tjan">TJAN TJOE SOM 1949FF</ref>
+        </note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_yu.lasso">Yu Jing</ref>
+        </note>
+        <note type="Bibliography">
+            <ref target="bibliography.html#baihutong">Bibliography</ref>
+        </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="CEN SHEN" tls:textid="None">岑參</title>
+        <creation>
+            <date>715？-770</date>
+        </creation>
+        <note type="Source">(test selection
+            only)</note>
+        <note type="Translation">Stephen Owen</note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref>
+        </note>
+        <note type="Bibliography"/>
+    </bibl>
+    <bibl>
+        <title tls:sigle="CHEN ZIANG" tls:textid="None">陳子昂</title>
+        <creation>
+            <date>659-700</date>
+        </creation>
+        <note type="Source">(test selection
+            only)</note>
+        <note type="Translation">Stephen Owen</note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref>
+        </note>
+        <note type="Bibliography"/>
+    </bibl>
+    <bibl>
+        <title tls:sigle="CQ" tls:textid="None">春秋</title>
+        <creation>
+            <date>ca. -5th cent.
+            </date>
+        </creation>
+        <note type="Source">SSJZS</note>
+        <note type="Translation">Legge</note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_anderl.lasso">Christoph Anderl</ref>
+        </note>
+        <note type="Bibliography"> </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="XINXINGLUN" tls:textid="None">大乘心行論</title>
+        <creation>
+            <date>ca. +670 -
+                +750</date>
+        </creation>
+        <note type="Source">TAISHO TRIPITAKA</note>
+        <note type="Translation">
+            <ref target="../acknowledgements/ack_anderl.lasso">Christoph
+                Anderl</ref>
+        </note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_anderl.lasso">Christoph Anderl</ref>
+        </note>
+        <note type="Bibliography"> </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="DU FU" tls:textid="None">杜甫</title>
+        <creation>
+            <date>712年-770</date>
+        </creation>
+        <note type="Source">(test selection
+            only)</note>
+        <note type="Translation">Stephen Owen</note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref>
+        </note>
+        <note type="Bibliography"/>
+    </bibl>
+    <bibl>
+        <title tls:sigle="XIAOFUXU" tls:textid="None">馮夢龍笑府序</title>
+        <creation>
+            <date> </date>
+        </creation>
+        <note type="Source"> </note>
+        <note type="Translation"> </note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref>
+        </note>
+        <note type="Bibliography"> </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="GD.XZMC" tls:textid="None">郭店。性自命出</title>
+        <creation>
+            <date>-4th
+                cent.</date>
+        </creation>
+        <note type="Source">CHANT</note>
+        <note type="Translation">
+            <ref target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref>, based on Dirk
+            Meier</note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_harbsmeier.lasso">C.
+                Harbsmeier</ref>
+        </note>
+        <note type="Bibliography"> </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="GD.YUCONG" tls:textid="None">郭店語叢</title>
+        <creation>
+            <date>-4th
+                cent.</date>
+        </creation>
+        <note type="Source">CHANT</note>
+        <note type="Translation">
+            <ref target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref>
+        </note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_harbsmeier.lasso">C.
+            Harbsmeier</ref>
+        </note>
+        <note type="Bibliography">
+            <ref target="bibliography.html#guodianyucong">Bibliography</ref>
+        </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="GD.ZHONGXIN" tls:textid="None">郭店.忠信之道</title>
+        <creation>
+            <date>-4th
+                cent.</date>
+        </creation>
+        <note type="Source">CHANT</note>
+        <note type="Translation">Dirk
+            Meier</note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_harbsmeier.lasso">C.
+                Harbsmeier</ref>
+        </note>
+        <note type="Bibliography"> </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="HANSHAN" tls:textid="None">寒山詩</title>
+        <creation>
+            <date>ca. +620 - +650
+            </date>
+        </creation>
+        <note type="Source">XIANG CHU 2000(?)</note>
+        <note type="Translation">PINE 2000</note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_anderl.lasso">Christoph Anderl</ref>
+        </note>
+        <note type="Bibliography"> </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="HEYINYANG" tls:textid="None">合陰陽</title>
+        <creation>
+            <date>ca. -250 - -200
+            </date>
+        </creation>
+        <note type="Source">DON HARPER 1998</note>
+        <note type="Translation">HARPER 1998</note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref>
+        </note>
+        <note type="Bibliography"> </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="HUAZAN" tls:textid="None">畫贊</title>
+        <creation>
+            <date>(check
+            date!)</date>
+        </creation>
+        <note type="Source">SKQS</note>
+        <note type="Translation">
+            <ref target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref>
+        </note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_harbsmeier.lasso">C.
+            Harbsmeier</ref>
+        </note>
+        <note type="Bibliography"> </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="HEJI" tls:textid="None">甲骨文字合集</title>
+        <creation>
+            <date>ca. -1200 - -900
+            </date>
+        </creation>
+        <note type="Source">CHANT</note>
+        <note type="Translation">Keightley,
+            Takashima, Qiu</note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_ostergaard_petersen.lasso">Jens Oystergaard
+                Petersen</ref>
+        </note>
+        <note type="Bibliography"> </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="KQ" tls:textid="None">孔雀東南飛</title>
+        <creation>
+            <date>ca. +300 -
+                +500</date>
+        </creation>
+        <note type="Source">FRANKEL 1969</note>
+        <note type="Translation">
+            <ref target="../acknowledgements/ack_harbsmeier.lasso">C.
+                Harbsmeier</ref>
+        </note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref>
+        </note>
+        <note type="Bibliography"> </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="Li Bai" tls:textid="None">李白</title>
+        <creation>
+            <date>
+            701-762</date>
+        </creation>
+        <note type="Source">(test selection only)</note>
+        <note type="Translation">Stephen Owen</note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref>
+        </note>
+        <note type="Bibliography"/>
+    </bibl>
+    <bibl>
+        <title tls:sigle="LISHIMIN" tls:textid="None">李世民</title>
+        <creation>
+            <date> </date>
+        </creation>
+        <note type="Source"> </note>
+        <note type="Translation">Stephen Owen</note>
+        <note type="Input"> </note>
+        <note type="Bibliography"> </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="MOUZI" tls:textid="None">牟子：理惑論</title>
+        <creation>
+            <date>+4th
+            cent.</date>
+        </creation>
+        <note type="Source">CBETA</note>
+        <note type="Translation">
+            <ref target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref>, based on
+            Pelliot 1920 and Keenan 1994</note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref>
+        </note>
+        <note type="Bibliography"> </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="NJ" tls:textid="None">女戒</title>
+        <creation>
+            <date>+1st
+            cent.</date>
+        </creation>
+        <note type="Source">SKQS</note>
+        <note type="Translation">
+            <ref target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref>, based on
+            SWANN 1960</note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref>
+        </note>
+        <note type="Bibliography"> </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="QYX" tls:textid="None">切韻序</title>
+        <creation>
+            <date>+601</date>
+        </creation>
+        <note type="Source">N/A</note>
+        <note type="Translation">
+            <ref target="../acknowledgements/ack_harbsmeier.lasso">C.
+                Harbsmeier</ref>
+        </note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref>
+        </note>
+        <note type="Bibliography"> </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="STELAE" tls:textid="None">秦刻石</title>
+        <creation>
+            <date>second half -3rd
+                century</date>
+        </creation>
+        <note type="Source">MARTIN KERN 2000 (test selection
+            only)</note>
+        <note type="Translation">Martin Kern, modified by <ref target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref>
+        </note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_harbsmeier.lasso">C.
+            Harbsmeier</ref>
+        </note>
+        <note type="Bibliography"> </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="RENJING" tls:textid="None">吳亮：忍經</title>
+        <creation>
+            <date>+1306</date>
+        </creation>
+        <note type="Source">SKQS</note>
+        <note type="Translation">
+            <ref target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref>
+        </note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_harbsmeier.lasso">C.
+            Harbsmeier</ref>
+        </note>
+        <note type="Bibliography"> </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="SHANG" tls:textid="None">商君書</title>
+        <creation>
+            <date>ca. -300 -
+                -200</date>
+        </creation>
+        <note type="Source">TAIBEI: COMMERCIAL PRESS, 1988</note>
+        <note type="Translation">Duyvendak</note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_spira.lasso">Ivo Spira</ref>
+        </note>
+        <note type="Bibliography">
+            <ref target="bibliography.html#shangjunshu">Bibliography</ref>
+        </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="SHENDAO" tls:textid="None">慎到</title>
+        <creation>
+            <date>ca. -300 -
+                -200</date>
+        </creation>
+        <note type="Source">THOMPSON 1979</note>
+        <note type="Translation">P. Thompson</note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_wells.lasso">Marnix Wells</ref>
+        </note>
+        <note type="Bibliography"> </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="SIKUNGTU.SHIPIN" tls:textid="None">司空圖:二十四詩品</title>
+        <creation>
+            <date>+900
+                (lived 837-908)</date>
+        </creation>
+        <note type="Source">SKQS</note>
+        <note type="Translation">Owen 1992</note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref>
+        </note>
+        <note type="Bibliography"> </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="SHUIHUDI" tls:textid="None">睡虎地</title>
+        <creation>
+            <date>ca. -250 -
+                -200</date>
+        </creation>
+        <note type="Source">WENWU 2001 (test selection
+            only)</note>
+        <note type="Translation">HULSEWE</note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref>
+        </note>
+        <note type="Bibliography">
+            <ref target="bibliography.html#shuihudi">Bibliography</ref>
+        </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="SHUOWEN XU" tls:textid="None">説文解字序</title>
+        <creation>
+            <date>+100</date>
+        </creation>
+        <note type="Source">SKQS</note>
+        <note type="Translation">
+            <ref target="../acknowledgements/ack_harbsmeier.lasso">C.
+                Harbsmeier</ref>
+        </note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref>
+        </note>
+        <note type="Bibliography"> </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="SUMMA" tls:textid="None">SUMMA.THEOL</title>
+        <creation>
+            <date>+1670</date>
+        </creation>
+        <note type="Source">Patrologia Latina</note>
+        <note type="Translation">
+            <ref target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref>
+        </note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_harbsmeier.lasso">C.
+            Harbsmeier</ref>
+        </note>
+        <note type="Bibliography"> </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="SB" tls:textid="None">孫臏</title>
+        <creation>
+            <date>ca.
+            -300</date>
+        </creation>
+        <note type="Source">D.C. LAU AND R. AMES 1996 (selected text
+            passages only)</note>
+        <note type="Translation">LAU AND AMES 1996</note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_harbsmeier.lasso">C.
+            Harbsmeier</ref>
+        </note>
+        <note type="Bibliography">
+            <ref target="bibliography.html#sunbin">Bibliography</ref>
+        </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="SUN" tls:textid="None">孫子</title>
+        <creation>
+            <date>ca. -300 -
+            -200</date>
+        </creation>
+        <note type="Source">TAIBEI: COMMERCIAL PRESS, 1999 (selected
+            passages only)</note>
+        <note type="Translation">Ralph D. Sawyer</note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_harbsmeier.lasso">C.
+            Harbsmeier</ref>
+        </note>
+        <note type="Bibliography">
+            <ref target="bibliography.html#sunzi">Bibliography</ref>
+        </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="TYM" tls:textid="None">陶淵明詩</title>
+        <creation>
+            <date>ca. -200 -
+                -100</date>
+        </creation>
+        <note type="Source">N/A</note>
+        <note type="Translation">Hightower</note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_lomova.lasso">Olga Lomova</ref>
+        </note>
+        <note type="Bibliography"> </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="Wang Ji" tls:textid="None">王績</title>
+        <creation>
+            <date> </date>
+        </creation>
+        <note type="Source">(test selection only)</note>
+        <note type="Translation">Stephen Owen</note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref>
+        </note>
+        <note type="Bibliography"/>
+    </bibl>
+    <bibl>
+        <title tls:sigle="WEN" tls:textid="None">文子</title>
+        <creation>
+            <date>ca. -250 -
+            -100</date>
+        </creation>
+        <note type="Source">N/A (test selection only)</note>
+        <note type="Translation">none</note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref>
+        </note>
+        <note type="Bibliography">
+            <ref target="bibliography.html#wenzi">Bibliography</ref>
+        </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="WXP" tls:textid="None">五行篇</title>
+        <creation>
+            <date>ca. -300 -
+            -200</date>
+        </creation>
+        <note type="Source">PANG PU </note>
+        <note type="Translation">Pang
+            Pu et al.</note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref>
+        </note>
+        <note type="Bibliography"> </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="XIAOLIN" tls:textid="None">笑林</title>
+        <creation>
+            <date>+4th
+            cent.</date>
+        </creation>
+        <note type="Source">WANG LIQI 1962</note>
+        <note type="Translation">
+            <ref target="../acknowledgements/ack_harbsmeier.lasso">C.
+            Harbsmeier</ref>
+        </note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref>
+        </note>
+        <note type="Bibliography"> </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="XINLUN" tls:textid="None">新論</title>
+        <creation>
+            <date>ca. -60 -
+            0</date>
+        </creation>
+        <note type="Source">ZHANG PEIHENG </note>
+        <note type="Translation">Pokora, Michigan University Press</note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_yu.lasso">Yu Jing</ref>
+        </note>
+        <note type="Bibliography">
+            <ref target="bibliography.html#xinlun">Bibliography</ref>
+        </note>
+    </bibl>
+    <bibl>
+        <title tls:sigle="ZHONGJING" tls:textid="None">忠經</title>
+        <creation>
+            <date> </date>
+        </creation>
+        <note type="Source"> </note>
+        <note type="Translation">
+            <ref target="../acknowledgements/ack_harbsmeier.lasso">C.
+                Harbsmeier</ref>
+        </note>
+        <note type="Input">
+            <ref target="../acknowledgements/ack_harbsmeier.lasso">C. Harbsmeier</ref>
+        </note>
+        <note type="Bibliography"> </note>
+    </bibl>
 
 </listBibl>
