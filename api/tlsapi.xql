@@ -251,8 +251,8 @@ $zi := $w/parent::tei:form/tei:orth/text(),
 $wid := $w/ancestor::tei:entry/@xml:id,
 $form := $w/parent::tei:form/@corresp
 
-(:group by $concept
-order by $concept:)
+(:group by $concept:)
+order by $concept
 return
 <li class="mb-3"><strong>{$zi}</strong>&#160;({$py})&#160;<strong>{$concept}</strong> 
      { if (sm:is-authenticated()) then 

@@ -18,3 +18,12 @@ declare function functx:index-of-string
           string-length($substring))
   else ()
 };
+
+
+declare function functx:substring-after-last
+($string as xs:string?, $delim as xs:string) as xs:string?
+{
+if (contains ($string, $delim))
+then functx:substring-after-last(substring-after($string, $delim), $delim)
+else $string
+};
