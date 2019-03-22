@@ -40,7 +40,7 @@ declare function tlslib:tv-header($node as node()*, $model as map(*)){
      else
       let $firstdiv := (collection($config:tls-texts-root)//tei:*[@xml:id=$location]//tei:body/tei:div[1])
       return
-      ($firstdiv//tei:seg)[1]
+      if ($firstdiv//tei:seg) then ($firstdiv//tei:seg)[1] else $firstdiv/following::tei:seg[1]
     else ()
     
     let $head := if ($targetseg) then $targetseg/ancestor::tei:div[1]/tei:head[1] else (),
@@ -65,7 +65,9 @@ declare function tlslib:tv-header($node as node()*, $model as map(*)){
 
 declare function tlslib:generate-toc($node){
  if ($node/tei:head) then
-  <a class="dropdown-item" href="textview.html?location={($node//tei:seg/@xml:id)[1]}&amp;prec=0&amp;foll=30">{$node/tei:head/text()}</a>
+  let $locseg := if ($node//tei:seg/@xml:id) then ($node//tei:seg/@xml:id)[1] else $node/following::tei:seg[1]/@xml:id
+  return 
+    <a class="dropdown-item" title="{$locseg}" href="textview.html?location={$locseg}&amp;prec=0&amp;foll=30">{$node/tei:head/text()}</a>
   else (),
  for $d in $node/child::tei:div
  return tlslib:generate-toc($d)

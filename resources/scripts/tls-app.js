@@ -554,6 +554,61 @@ function delete_swl(uid){
   });    
 };
 
-$(".tr").change(
- console.log("Content changed.")
-);
+
+
+$( ".tr" ).keyup(function( event ) {
+}).keydown(function( event ) {
+if ( event.which == 52 ) {
+    event.preventDefault();
+    console.log(lineid, line)    
+  $.ajax({
+  type : "GET",
+  dataType : "html",
+  url : "api/procline.xql?line="+line,
+  success : function(resp){
+    var new_height = $("#chunkcol-right").outerHeight();
+    var new_width = $("#chunkcol-right").outerWidth();
+    $('#swl-select').html(resp);
+    $( "#swl-form" ).show();
+    $( "#swl-form" ).scrollTop( 0 );
+//    $( "#swl-form" ).css({'width' : 'new_width'+px});
+    $( "#swl-form" ).width(new_width);
+  },
+  error : function(resp){
+  console.log(resp)
+    alert("PROBLEM"+resp);
+  }
+  });
+      
+  }
+  if ( event.which == 9 ) {
+    var trid = $(this).attr('id');
+    var lineid = trid.substring(0, trid.indexOf("-tr"));
+    var line = document.getElementById( lineid ).innerText;
+    var tr = $(this).text()
+    save_tr(trid, tr, line);    
+  }
+  if ( event.which == 13 ) {
+    var trid = $(this).attr('id');
+    var lineid = trid.substring(0, trid.indexOf("-tr"));
+    var line = document.getElementById( lineid ).innerText;
+    var tr = $(this).text()
+    event.preventDefault();
+    save_tr(trid, tr, line);    
+  }
+});
+
+function save_tr (trid, tr, line){
+  $.ajax({
+  type : "GET",
+  dataType : "json",
+  url : "api/save_tr.xq?trid="+trid+"&tr="+tr,
+  success : function(resp){
+    toastr.info("Translation for line "+line+" saved.", "HXWD says:");
+  },
+  error : function(resp){
+  console.log(resp)
+    alert("PROBLEM"+resp);
+  }
+  });    
+};

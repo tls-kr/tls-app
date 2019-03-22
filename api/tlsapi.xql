@@ -125,9 +125,9 @@ $wordtmp := $sense/parent::tei:entry/tei:form/tei:orth/text(),
         for $w in $wordtmp
          return if (contains($line, $w)) then $w else "", ""),:)
 $word := $wordtmp[1],
-$uid := util:uuid(),
+$uuid := concat("uuid-", util:uuid()),
 $newswl :=
-<tls:ann xmlns="http://www.tei-c.org/ns/1.0" concept="{$concept}" concept-id="{$concept-id}" xml:id="{$uid}">
+<tls:ann xmlns="http://www.tei-c.org/ns/1.0" concept="{$concept}" concept-id="{$concept-id}" xml:id="{$uuid}">
 <link target="#{$line-id} #{$sense-id}"/>
 <tls:text>
 <tls:srcline title="{$title}" target="#{$line-id}" pos="{functx:index-of-string(string-join($line/text(), ""), $word)}">{$line/text()}</tls:srcline>
@@ -148,15 +148,15 @@ $sense/parent::tei:entry/tei:form/tei:pron[starts-with(@xml:lang, 'zh-Latn')]}
 </respStmt>
 </tls:metadata>
 </tls:ann>,
-$path := concat($notes-path, substring($uid, 1, 2))
+$path := concat($notes-path, substring($uuid, 6, 2))
 return (
 if (xmldb:collection-available($path)) then () else
-(xmldb:create-collection($notes-path, substring($uid, 1, 2)),
+(xmldb:create-collection($notes-path, substring($uuid, 6, 2)),
 sm:chmod(xs:anyURI($path), "rwxrwxr--"),
 sm:chown(xs:anyURI($path), $user),
 sm:chgrp(xs:anyURI($path), "tls-user")
 ),
-let $res := (xmldb:store($path, concat($uid, ".xml"), $newswl)) 
+let $res := (xmldb:store($path, concat($uuid, ".xml"), $newswl)) 
 return
 if ($res) then (
 sm:chmod(xs:anyURI($res), "rwxrwxr--"),
