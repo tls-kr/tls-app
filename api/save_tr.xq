@@ -25,13 +25,13 @@ let $trid := request:get-parameter("trid", "xxxx")
   sm:chmod(xs:anyURI($trcoll), "rwxrwxr--"),
   sm:chown(xs:anyURI($trcoll), "tls"),
   sm:chgrp(xs:anyURI($trcoll), "tls-user") )
-,$docpath := concat($trcoll, "/", $txtid, ".xml")
+,$docpath := concat($trcoll, "/", $txtid, "-", $lang, ".xml")
 ,$title := collection($config:tls-texts-root)//tei:TEI[@xml:id=$txtid]//tei:titleStmt/tei:title/text()
 ,$node := collection($trcoll)//tei:seg[@corresp=concat("#", $id)]
 ,$seg := <seg xmlns="http://www.tei-c.org/ns/1.0" corresp="#{$id}" xml:lang="{$lang}" resp="{$user}" modified="{current-dateTime()}">{$tr}</seg>
 let $doc :=
   if (not (doc-available($docpath))) then
-   doc(xmldb:store($trcoll, concat($txtid, ".xml"), 
+   doc(xmldb:store($trcoll, concat($txtid, "-", $lang, ".xml"), 
    <TEI xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$txtid}-{$lang}">
   <teiHeader>
       <fileDesc>

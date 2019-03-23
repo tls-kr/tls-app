@@ -100,9 +100,7 @@ function show_swls_for_line(line_id){
     
 };
 
-// save one attribution
-function save_this_swl(sense_id){
-    var line_id=document.getElementById( "swl-line-id-span" ).innerText;
+function save_swl_line(sense_id, line_id){
   $.ajax({
   type : "PUT",
   dataType : "html",
@@ -117,7 +115,13 @@ function save_this_swl(sense_id){
     console.log(resp)
     alert(resp);
   }
-  });   
+  });       
+};
+
+// save one attribution
+function save_this_swl(sense_id){
+    var line_id=document.getElementById( "swl-line-id-span" ).innerText;
+    save_swl_line(sense_id, line_id);
 };
 
 // save edited swl
@@ -251,6 +255,7 @@ $( ".zh" )
     var new_width = $("#chunkcol-right").outerWidth();
     console.log(xid);
     console.log(new_width);
+    $( 'input[name="query"]' ).val(sel.toString());
     $( "#swl-line-id-span" ).html(xid);
 //    $( "#concept-line-id-span" ).html(xid);
 //    $( "#swl-line-text" ).val(line);      
@@ -510,7 +515,16 @@ $('#settings-form').submit(function (){
 
 
 function search_and_att(sense_id){
-    toastr.info("Not ready yet :-(", "HXWD says:");
+ //   toastr.info("Not ready yet :-(", "HXWD says:");
+  $.ajax({
+  type : "GET",
+  dataType : "html",  
+  url : "api/search_att.xql?sense-id=" + sense_id, 
+  success : function(resp){
+  $('#'+sense_id+'-resp').html(resp)
+  }
+  });
+    
 }
 
 $('body').on('focus', '[contenteditable]', function() {
@@ -540,18 +554,18 @@ function edit_swl(uid){
 }
 
 function delete_swl(uid){
-  $.ajax({
-  type : "GET",
-  dataType : "html",  
-  url : "api/delete_swl.xql?type=swl&uid=" + uid, 
-  success : function(resp){
     var strconfirm = confirm("Do you really want to delete this attribution?");
     if (strconfirm == true) {
-      save_this_swl(resp.sense_id)
+     $.ajax({
+     type : "GET",
+     dataType : "html",  
+     url : "api/delete_swl.xql?type=swl&uid=" + uid, 
+     success : function(resp){
+   //  save_this_swl(resp.sense_id)
       toastr.info("Attribution deleted.", "HXWD says:");
-    }
+   }
+  });
   }
-  });    
 };
 
 

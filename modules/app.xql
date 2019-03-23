@@ -650,6 +650,7 @@ declare
 function app:concept($node as node()*, $model as map(*), $concept as xs:string?, $uuid as xs:string?)
 {
     (session:create(),
+    let $user := sm:id()//sm:real/sm:username/text()
     let $key := replace($uuid, '^#', '')
     let $c :=  if (string-length($key) > 0) then
        collection($config:tls-data-root || "/concepts")//tei:div[ends-with(@xml:id,$key)]    
@@ -660,7 +661,12 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
     <div class="card">
     <div class="card-body">
     <h4 class="card-title">{$c/tei:head/text()}&#160;&#160;{for $t in $tr return 
-      <span class="badge badge-light" title="{map:get($app:lmap, $t/@xml:lang)}">{$t/text()}</span>}</h4>
+      <span class="badge badge-light" title="{map:get($app:lmap, $t/@xml:lang)}">{$t/text()}</span>} 
+      {if  ("tls-admin" = sm:get-user-groups($user)) then 
+      <a target="_blank" class="float-right badge badge-pill badge-light" href="{templates:link-to-app("http://exist-db.org/apps/eXide", 
+      concat("index.html?open=", document-uri(root($c))))}">Edit concept</a>
+      else ()}
+      </h4>
     <h5 class="card-subtitle" id="popover-test" data-toggle="popover">{$c/tei:div[@type="definition"]//tei:p/text()}</h5>
     <div id="concept-content" class="accordion">
     <div class="card">
@@ -740,13 +746,13 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
     <h4 class="card-title">Words</h4>
     <p class="card-text">
     {for $e in $c/tei:div[@type="words"]//tei:entry
-    let $zi := $e/tei:form/tei:orth
+    let $zi := string-join($e/tei:form/tei:orth, " / ")
     ,$pr := $e/tei:form/tei:pron
     ,$def := $e/tei:def/text()
     order by $zi[1]
 (:    count $count :)
     return 
-    <div><h5>{$zi/text()}&#160;&#160; {for $p in $pr return <span>{
+    <div><h5>{$zi}&#160;&#160; {for $p in $pr return <span>{
     if (ends-with($p/@xml:lang, "oc")) then "OC: " else 
     if (ends-with($p/@xml:lang, "mc")) then "MC: " else (),
     $p/text()}&#160;</span>}</h5>
@@ -956,7 +962,7 @@ function app:main-navbar($node as node()*, $model as map(*))
                         -->
                     </ul>
                     <form action="search.html" class="form-inline my-2 my-lg-0" method="get">
-                        <input name="query" class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search"/>
+                        <input id="query-inp" name="query" class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search"/>
                         <button class="btn btn-outline-success my-2 my-sm-0" type="submit">
                             <img class="icon" src="resources/icons/open-iconic-master/svg/magnifying-glass.svg"/>
                         </button>

@@ -117,7 +117,7 @@ declare function tlslib:displaychunk($targetseg as node(), $prec as xs:int?, $fo
 declare function tlslib:format-swl($node as node(), $type as xs:string?){
 let $concept := data($node/@concept),
 $zi := $node/tei:form[1]/tei:orth[1]/text(),
-$py := $node/tei:form[1]/tei:pron[starts-with(@xml:lang, 'zh-Latn')]/text(),
+$py := $node/tei:form[1]/tei:pron[starts-with(@xml:lang, 'zh-Latn')][1]/text(),
 $sf := $node//tls:syn-func,
 $sm := $node//tls:sem-feat,
 $def := $node//tei:def[1]
@@ -184,11 +184,21 @@ if (string-length(string-join($seg/text(), "")) > 0) then
 (<div class="row {$mark}">
 <div class="col-sm-4 zh" id="{$seg/@xml:id}">{$seg/text()}</div>　
 <div class="col-sm-7 tr" id="{$seg/@xml:id}-tr" 
-contenteditable="{if (sm:has-access(xs:anyURI($config:tls-translation-root), "r")) then 'true' else 'false'}">{collection($config:tls-data-root)//tei:seg[@corresp=$link]/text()}</div>
+contenteditable="{if (sm:has-access(xs:anyURI($config:tls-translation-root), "r")) then 'true' else 'false'}">
+{  (: if there is more than one translation, we take the one with the shorter path (outrageous hack) :)
+   let $tr:= for $t in collection($config:tls-data-root)//tei:seg[@corresp=$link]
+             let $p := string-length(document-uri(root($t)))
+             order by $p ascending
+             return $t
+ return $tr[1]
+}</div>
 </div>,
 <div class="row swl collapse" data-toggle="collapse">
 <div class="col-sm-12" id="{$seg/@xml:id}-swl">
-{if ($ann = "false") then () else for $swl in collection($config:tls-data-root|| "/notes")//tls:srcline[@target=$link]
+{if ($ann = "false") then () else 
+for $swl in collection($config:tls-data-root|| "/notes")//tls:srcline[@target=$link]
+let $pos := if (string-length($swl/@pos) > 0) then xs:int($swl/@pos) else 0
+order by $pos
 return
 tlslib:format-swl($swl/ancestor::tls:ann, "row")}
 </div>
