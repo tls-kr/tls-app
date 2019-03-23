@@ -463,7 +463,7 @@ declare function app:textlist(){
          group by $bu
          return map:entry($bu, count($c)))
     let $count :=  sum(map:for-each($bc, $fv)),
-    $chantpath := concat($config:tls-texts-root, '/chant'),
+    $chantpath := concat($config:tls-texts-root, '/chant/'),
     $chantcount := if (xmldb:collection-available($chantpath)) then 1184 else 0,
     $starredcount := 0
     return
