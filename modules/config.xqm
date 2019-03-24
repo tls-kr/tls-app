@@ -40,7 +40,7 @@ declare variable $config:expath-descriptor := doc(concat($config:app-root, "/exp
 declare variable $config:tls-data-root := substring-before($config:app-root, data($config:expath-descriptor/@abbrev)) || "tls-data";
 declare variable $config:tls-texts-root := substring-before($config:app-root, data($config:expath-descriptor/@abbrev)) || "tls-texts";
 declare variable $config:tls-translation-root := concat($config:tls-data-root, "/translations");
-declare variable $config:tls-user-root := concat("/db/user/", sm:id()//sm:real/sm:username/text());
+declare variable $config:tls-user-root := concat("/db/users/", sm:id()//sm:real/sm:username/text());
 
 (: Get repo-config.xml to parse global varaibles :)
 declare variable $config:get-config := doc($config:app-root || '/repo-config.xml');

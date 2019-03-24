@@ -13,25 +13,23 @@ declare option output:media-type "text/html";
 import module namespace tlslib="http://hxwd.org/lib" at "../modules/tlslib.xql";
 import module namespace config="http://hxwd.org/config" at "../modules/config.xqm";
 
+declare variable $userhome := "/db/users/";
+
 let $textid-in := request:get-parameter("textid", "xx"),
 $textid := substring-after($textid-in, "input-") 
 let $rating := request:get-parameter("rating", "xx")
 let $user := sm:id()//sm:real/sm:username/text()
-
-let $ratingsfile := "ratings.xml"
-
+let $usercoll := $userhome || $user 
+let $ratingsfile := "/ratings.xml",
+$title := collection($config:tls-texts-root)//tei:TEI[@xml:id=$textid]//tei:titleStmt/tei:title/text()
 
 let $tmpl := <textlist></textlist>
 
-let $perm :=
-    try
-   { xmldb:get-permissions($config:tls-user-root, $ratingsfile)}
-    catch * 
-   { xmldb:store($config:tls-user-root, $ratingsfile, $tmpl)  }
-
-let $rdoc := doc(concat($config:tls-user-root, "/", $ratingsfile))
-let $newnode := <text id="{$textid}" rating="{$rating}"/>,
-$currentnode := $rdoc//text[@id=$textid]
+let $doc := if (doc-available($usercoll || $ratingsfile )) then doc($usercoll || $ratingsfile )
+           else doc(xmldb:store($usercoll, $ratingsfile, $tmpl))
+           
+let $newnode := <text id="{$textid}" rating="{$rating}">{$title}</text>,
+$currentnode := $doc//text[@id=$textid]
 return 
 if ($currentnode) then
 update replace $currentnode with $newnode

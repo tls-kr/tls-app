@@ -444,8 +444,8 @@ function app:textview($node as node()*, $model as map(*), $location as xs:string
       return
         tlslib:displaychunk($firstseg, $prec, $foll)
      else
-      let $firstdiv := (collection($config:tls-texts-root)//tei:*[@xml:id=$location]//tei:body/tei:div[1])
-      let $targetseg := if ($firstdiv//tei:seg) then ($firstdiv//tei:seg)[1] else $firstdiv/following::tei:seg[1]
+      let $firstdiv := (collection($config:tls-texts-root)//tei:*[@xml:id=$location]//tei:body/tei:div)[1]
+      let $targetseg := if ($firstdiv//tei:seg) then $firstdiv//tei:seg[1] else  $firstdiv/following::tei:seg[1] 
       return
        tlslib:displaychunk($targetseg, 0, $prec + $foll)
     else 
@@ -465,7 +465,9 @@ declare function app:textlist(){
     let $count :=  sum(map:for-each($bc, $fv)),
     $chantpath := concat($config:tls-texts-root, '/chant/'),
     $chantcount := if (xmldb:collection-available($chantpath)) then 1184 else 0,
-    $starredcount := 0
+    $user := sm:id()//sm:real/sm:username/text(),
+    $ratings := doc("/db/users/" || $user || "/ratings.xml")//text,
+    $starredcount := count($ratings)
     return
     <div>
     <h1>Available texts: <span class="badge badge-pill badge-light">{$count + $chantcount}</span></h1>
@@ -506,7 +508,7 @@ declare function app:textlist(){
     <a href="textview.html?location={$t}">{map:get($titles, $t)}
     { if (sm:is-authenticated()) then
     <input id="input-{$t}" name="input-name" type="number" class="rating" 
-    min="1" max="10" step="2" data-theme="krajee-svg" data-size="xs"/>    
+    min="1" max="10" step="2" data-theme="krajee-svg" data-size="xs" value="{tlslib:get-rating($t)}"/>    
     else ()}
     </a></li>
     }
@@ -543,11 +545,10 @@ declare function app:textlist(){
      let $textid := data($title/ancestor::tei:TEI/@xml:id)
      where string-length($title/text()) > 0
     return
-    <li class="list-group-itemx">
+    <li class="list-group-item">
     <a href="textview.html?location={$textid}">{$title/text()}
-    <!--
-    <input id="input-{$textid}" name="input-name" type="number" class="rating" 
-    min="1" max="10" step="2" data-theme="krajee-svg" data-size="xs"/>    -->
+    <input id="input-{$textid}" name="input-name" type="number" class="rating"
+    min="1" max="10" step="2" data-theme="krajee-svg" data-size="xs" value="{if ($ratings[@id=$textid]) then $ratings[@id=$textid]/@rating else 0}"/>    
     </a></li>    
     }</ul>
     </div>
@@ -560,7 +561,20 @@ declare function app:textlist(){
     
     </div>
     <div class="tab-pane" id="starredtexts" role="tabpanel">    
-    Starred texts
+    <ul>{for $text in $ratings
+        let $r := xs:int($text/@rating),
+        $textid := data($text/@id),
+        $title := $text/text()
+(:      $title := collection($config:tls-texts-root)//tei:TEI[@xml:id=$textid]//tei:titleStmt/tei:title/text():)
+        order by $r descending
+        return
+    <li class="list-group-item">
+    <a href="textview.html?location={$textid}">{$title}
+    <input id="input-{$textid}" name="input-name" type="number" class="rating"
+    min="1" max="10" step="2" data-theme="krajee-svg" data-size="xs" value="{$r}"/>    
+    </a></li>
+    }
+    </ul>
     </div>
     
     </div>

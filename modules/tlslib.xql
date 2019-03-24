@@ -2,8 +2,8 @@ xquery version "3.1";
 module namespace tlslib="http://hxwd.org/lib";
 
 import module namespace config="http://hxwd.org/config" at "config.xqm";
-
 import module namespace app="http://hxwd.org/app" at "app.xql";
+import module namespace templates="http://exist-db.org/xquery/templates" ;
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
@@ -28,6 +28,12 @@ declare function tlslib:is-first-in-div($seg as node()){
     $seg/@xml:id = $seg/ancestor::tei:div/tei:p[1]/tei:seg[1]/@xml:id    
 };
 
+declare function tlslib:get-rating($txtid){
+    let $user := sm:id()//sm:real/sm:username/text(),
+    $ratings := doc("/db/users/" || $user || "/ratings.xml")//text
+    return 
+    if ($ratings[@id=$txtid]) then $ratings[@id=$txtid]/@rating else 0
+};
 
 declare function tlslib:tv-header($node as node()*, $model as map(*)){
     let $location := request:get-parameter("location", "xx")
@@ -115,6 +121,7 @@ declare function tlslib:displaychunk($targetseg as node(), $prec as xs:int?, $fo
 :)
 
 declare function tlslib:format-swl($node as node(), $type as xs:string?){
+let $user := sm:id()//sm:real/sm:username/text()
 let $concept := data($node/@concept),
 $zi := $node/tei:form[1]/tei:orth[1]/text(),
 $py := $node/tei:form[1]/tei:pron[starts-with(@xml:lang, 'zh-Latn')][1]/text(),
@@ -127,7 +134,12 @@ return
 if ($type = "row") then
 <div class="row bg-light ">
 <div class="col-sm-1">&#160;</div>
-<div class="col-sm-2"><span class="zh">{$zi}</span> ({$py})</div>
+<div class="col-sm-2"><span class="zh">{$zi}</span> ({$py})
+ {if  ("tls-admin" = sm:get-user-groups($user)) then (data(($node//tls:srcline/@pos)[1]),
+ <a href="{templates:link-to-app("http://exist-db.org/apps/eXide", 
+      concat("index.html?open=", document-uri(root($node))))}">eXide</a>)
+      else ()
+  }    </div>
 <div class="col-sm-3"><a href="concept.html?concept={$concept}">{$concept}</a></div>
 <div class="col-sm-6">
 <span><a href="browse.html?type=syn-func&amp;id={data($sf/@corresp)}">{$sf/text()}</a>&#160;</span>
@@ -143,7 +155,7 @@ if ($type = "row") then
  </button> 
  -->
  <button type="button" class="btn" onclick="delete_swl('{$node/@xml:id}')" style="width:10px;height:20px;" 
- title="Delete Attribution">
+ title="Delete Attribution for {$zi}">
  <img class="icon" onclick="delete_swl('{$node/@xml:id}')" style="width:10px;height:13px;top:0;align:top" src="resources/icons/open-iconic-master/svg/x.svg"/>
  </button>
  
@@ -197,7 +209,7 @@ contenteditable="{if (sm:has-access(xs:anyURI($config:tls-translation-root), "r"
 <div class="col-sm-12" id="{$seg/@xml:id}-swl">
 {if ($ann = "false") then () else 
 for $swl in collection($config:tls-data-root|| "/notes")//tls:srcline[@target=$link]
-let $pos := if (string-length($swl/@pos) > 0) then xs:int($swl/@pos) else 0
+let $pos := if (string-length($swl/@pos) > 0) then xs:int(tokenize($swl/@pos)[1]) else 0
 order by $pos
 return
 tlslib:format-swl($swl/ancestor::tls:ann, "row")}

@@ -511,6 +511,17 @@ $('#settings-form').submit(function (){
     $('.rating').on('rating:change', function(event, value, caption) {
         console.log(value);
         console.log(this.id);
+  $.ajax({
+  type : "PUT",
+  url : "api/save_ratings.xql?textid="+this.id+"&rating="+value,
+  success : function(resp){
+    toastr.info("Your rating has been saved.", "HXWD says:")
+  },
+  error : function(resp){
+    console.log(resp)
+    alert(resp);
+  }
+  });
     });
 
 

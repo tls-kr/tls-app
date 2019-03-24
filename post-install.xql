@@ -18,6 +18,7 @@ declare variable $target external;
 
 declare variable $api := $target || "/api";
 declare variable $ace := $target || '/modules/admin';
+declare variable $modules := $target || '/modules';
 
 (: set perm on api :)
 declare function local:special-permission($uri as xs:string, $perm as xs:string) as empty-sequence() {
@@ -36,4 +37,9 @@ local:special-permission($api, "rwxrwxr-x"),
 sm:chown(xs:anyURI($ace), "admin"),
 sm:chgrp(xs:anyURI($ace), "dba"),
 sm:chmod(xs:anyURI($ace), 'rwxrwx---'),
+
 local:special-permission($ace, 'rwxrwx---')
+
+(: special treatment :)
+
+,sm:chmod(xs:anyURI($api || "/save_swl.xql"), 'rwsrws--x')
