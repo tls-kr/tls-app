@@ -449,8 +449,8 @@ function app:textview($node as node()*, $model as map(*), $location as xs:string
       return
         tlslib:displaychunk($firstseg, $prec, $foll)
      else
-      let $firstdiv := (collection($config:tls-texts-root)//tei:*[@xml:id=$location]//tei:body/tei:div)[1]
-      let $targetseg := if ($firstdiv//tei:seg) then $firstdiv//tei:seg[1] else  $firstdiv/following::tei:seg[1] 
+      let $firstdiv := (collection($config:tls-texts-root)//tei:TEI[@xml:id=$location]//tei:body/tei:div)[1]
+      let $targetseg := if ($firstdiv//tei:seg) then ($firstdiv//tei:seg)[1] else  ($firstdiv/following::tei:seg)[1] 
       return
        tlslib:displaychunk($targetseg, 0, $prec + $foll)
     else 
