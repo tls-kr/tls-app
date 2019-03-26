@@ -20,32 +20,43 @@ let $sense-id := request:get-parameter("sense-id", "uuid-20c9da30-27bc-4b0a-ab0a
 ,$label := concat($sense/tei:gramGrp/tls:syn-func, " ", $sense/tei:gramGrp/tls:sem-feat, " ", $sense/tei:def)
 ,$entry := $sense/ancestor::tei:entry
 ,$orth := $entry/tei:form/tei:orth
+,$user := sm:id()//sm:real/sm:username/text()
+,$ratings := doc("/db/users/" || $user || "/ratings.xml")//text
 ,$ret := for $o in $orth/text()
   for $line in  collection($config:tls-texts-root)//tei:seg[ngram:contains(., $o)]
     let $target := $line/@xml:id,
     $locs := substring-before(tokenize(substring-before($target, "."), "_")[last()], "-"),
+    $textid := tokenize($target, "_")[1],
     $loc := if (string-length($locs) > 0) then xs:int($locs) else $locs, 
     $src := $line/ancestor::tei:TEI//tei:titleStmt/tei:title/text(),
     $tr := collection($config:tls-translation-root)//tei:seg[@corresp="#" || $target]
-(:    ,$atts := collection(concat($config:tls-data-root, '/notes/'))//tls:srcline/@target = "#" || $target
-    where $tr and (count($atts) = 0):)
+(:   ,$atts := for $h in collection(concat($config:tls-data-root, '/notes/'))//tls:srcline[@target = "#" || $target]
+              let $o1 := $h/ancestor::tls:ann/tei:form[1]/tei:orth[1]/text()
+              where ($o1 = $o) 
+              return $h:)
+    ,$r := if ($ratings[@id=$textid]) then xs:int($ratings[@id=$textid]/@rating) else 0
+    order by $r descending
+(:    where $tr and (count($atts) = 0):)
     where $tr
 return 
 <div class="row bg-light table-striped">
 <div class="col-sm-2">
+ <a href="textview.html?location={$target}" class="font-weight-bold">{$src, $loc}</a>
      { if (sm:is-authenticated()) then 
      <button title="{$label}" class="btn badge badge-primary ml-2" type="button" onclick="save_swl_line('{$sense-id}','{$target}')">Use</button>
-      else () }
-<a href="textview.html?location={$target}" class="font-weight-bold">{$src, $loc}</a></div>
+      else () }</div>
 <div class="col-sm-3"><span data-target="{$target}" data-toggle="popover">{
          substring-before($line, $o), 
         <mark>{$o}</mark> 
         ,substring-after($line, $o)}</span></div>
 <div class="col-sm-7"><span>{$tr}</span></div>
 </div>
-
+, $cnt := count($ret)
 return 
-if (count($ret) > 0) then
+if ($cnt > 0) then
+<div><p class="ml-2 font-weight-bold">Found {$cnt} matches, returning {min((xs:int($count), $cnt))}, starting with the starred texts.</p>
+{
 subsequence($ret, $start, $count)
+}</div>
 else 
 <p class="font-weight-bold">No matches found.</p>

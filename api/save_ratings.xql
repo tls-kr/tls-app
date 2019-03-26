@@ -12,7 +12,7 @@ declare option output:media-type "text/html";
 
 import module namespace tlslib="http://hxwd.org/lib" at "../modules/tlslib.xql";
 import module namespace config="http://hxwd.org/config" at "../modules/config.xqm";
-
+ (: TODO: create user hierarchy if not existent. :)
 declare variable $userhome := "/db/users/";
 
 let $textid-in := request:get-parameter("textid", "xx"),

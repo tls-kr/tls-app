@@ -229,13 +229,18 @@ declare function app:ngram-query($queryStr as xs:string?, $mode as xs:string?)
 {
     let $dataroot := ($config:tls-data-root, $config:tls-texts-root, $config:tls-user-root)
     let $qs := tokenize($queryStr, "\s"),
+    $user := sm:id()//sm:real/sm:username/text(),
+    $ratings := doc("/db/users/" || $user || "/ratings.xml")//text,
+
     $matches := if  (count($qs) > 1) then 
       collection($dataroot)//tei:seg[ngram:contains(., $qs[1]) and ngram:contains(., $qs[2])]
       else
       collection($dataroot)//tei:seg[ngram:contains(., $qs[1])]
     for $hit in $matches
-(:    let $id := $hit/ancestor::tei:TEI/@xml:id     
-    order by $id:)
+      let $textid := substring-before(tokenize(document-uri(root($hit)), "/")[last()], ".xml"),
+      $r := if ($ratings[@id=$textid]) then xs:int($ratings[@id=$textid]/@rating) else 0
+(:    let $id := $hit/ancestor::tei:TEI/@xml:id :)     
+    order by $r descending
     return $hit 
 };
 

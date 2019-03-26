@@ -108,10 +108,9 @@ let $payload :=
 return 
 concat($callback, "([", string-join($payload, ","), "]);")
 };
-declare function tlsapi:save-swl-with-path($line-id as xs:string, $sense-id as xs:string, 
-$notes-path as xs:string, $user as xs:string, $currentword as xs:string){
 
-if (($line-id != "xx") and ($sense-id != "xx")) then
+declare function tlsapi:make-attribution($line-id as xs:string, $sense-id as xs:string, 
+ $user as xs:string, $currentword as xs:string) as element(){
 let $line := collection($config:tls-texts-root)//tei:seg[@xml:id=$line-id],
 $tr := collection($config:tls-translation-root)//tei:*[@corresp=concat('#', $line-id)],
 $textid := tokenize($line-id, "_")[1],
@@ -147,8 +146,66 @@ $sense/parent::tei:entry/tei:form/tei:pron[starts-with(@xml:lang, 'zh-Latn')]}
 <name>{$user}</name>
 </respStmt>
 </tls:metadata>
-</tls:ann>,
-$path := concat($notes-path, substring($uuid, 6, 2))
+</tls:ann>
+return
+$newswl
+};
+
+(: instead of using a uuid-named file hierarchy, this version uses one file per text to store the annotations :)
+declare function tlsapi:save-swl-to-docs($line-id as xs:string, $sense-id as xs:string, 
+$user as xs:string, $currentword as xs:string) {
+let $data-root := "/db/apps/tls-data"
+let $targetcoll := if (xmldb:collection-available($data-root || "/notes/doc")) then $data-root || "/notes/doc" else 
+    concat($data-root || "/notes", xmldb:create-collection($data-root || "/notes", "doc"))
+,$textid := tokenize($line-id, "_")[1]
+,$docname :=  $textid || "-ann.xml"
+,$newswl:=tlsapi:make-attribution($line-id, $sense-id, $user, $currentword)
+,$targetdoc :=   if (doc-available(concat($targetcoll,"/",$docname))) then
+                    doc(concat($targetcoll,"/", $docname)) else 
+   doc(xmldb:store($targetcoll, $docname, 
+  <TEI xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$textid}-ann">
+  <teiHeader>
+      <fileDesc>
+         <titleStmt>
+            <title>Annotations for {string($newswl//tls:srcline/@title)}</title>
+         </titleStmt>
+         <publicationStmt>
+            <p>published electronically as part of the TLS project at https://hxwd.org</p>
+         </publicationStmt>
+         <sourceDesc>
+            <p>Created by members of the TLS project</p>
+         </sourceDesc>
+      </fileDesc>
+     <profileDesc>
+        <creation>Initially created: <date>{current-dateTime()}</date> by {$user}</creation>
+     </profileDesc>
+  </teiHeader>
+  <text>
+      <body>
+      <div><head>Annotations</head><p xml:id="{$textid}-start"></p></div>
+      </body>
+  </text>
+</TEI>))
+
+let $targetnode := collection($targetcoll)//tei:seg[@xml:id=$line-id]
+
+return (
+if ($targetnode) then 
+ update insert $newswl into $targetnode
+else
+ update insert <seg  xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$line-id}"><line>{$newswl//tls:srcline/text()}</line>{$newswl}</seg> into 
+ $targetdoc//tei:p[@xml:id=concat($textid, "-start")]
+ ,data($newswl/@xml:id))
+};
+
+
+
+declare function tlsapi:save-swl-with-path($line-id as xs:string, $sense-id as xs:string, 
+$notes-path as xs:string, $user as xs:string, $currentword as xs:string){
+
+if (($line-id != "xx") and ($sense-id != "xx")) then
+let $newswl:=tlsapi:make-attribution($line-id, $sense-id, $user, $currentword)
+,$path := concat($notes-path, substring($uuid, 6, 2))
 return (
 if (xmldb:collection-available($path)) then () else
 (xmldb:create-collection($notes-path, substring($uuid, 6, 2)),
@@ -167,7 +224,6 @@ else
 "Some error occurred, could not save resource")
 else
 "Wrong parameters received"
-
 };
 
 
