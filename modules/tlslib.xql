@@ -156,7 +156,7 @@ if ($type = "row") then
  -->
  <button type="button" class="btn" onclick="delete_swl('{$node/@xml:id}')" style="width:10px;height:20px;" 
  title="Delete Attribution for {$zi}">
- <img class="icon" onclick="delete_swl('{$node/@xml:id}')" style="width:10px;height:13px;top:0;align:top" src="resources/icons/open-iconic-master/svg/x.svg"/>
+ <img class="icon"  style="width:10px;height:13px;top:0;align:top" src="resources/icons/open-iconic-master/svg/x.svg"/>
  </button>
  
  

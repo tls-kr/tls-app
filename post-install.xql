@@ -30,8 +30,6 @@ return
     sm:chmod(xs:anyURI($path), $perm) )
 };
 
-(: set execute on api for world :)
-local:special-permission($api, "rwxrwxr-x"),
 
 (: ace functions are admin only :)
 sm:chown(xs:anyURI($ace), "admin"),
@@ -40,6 +38,10 @@ sm:chmod(xs:anyURI($ace), 'rwxrwx---'),
 
 local:special-permission($ace, 'rwxrwx---')
 
+(: set execute on api for world :)
+
+(:local:special-permission($api, "rwxrwxr-x"),:)
+
 (: special treatment :)
 
-,sm:chmod(xs:anyURI($api || "/save_swl.xql"), 'rwsrws--x')
+(:,sm:chmod(xs:anyURI($api || "/save_swl.xql"), 'rwsrws--x'):)

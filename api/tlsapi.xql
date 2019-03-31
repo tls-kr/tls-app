@@ -560,10 +560,7 @@ else
 
 declare function tlsapi:delete-swl($uid as xs:string) {
 let $swl := collection($config:tls-data-root|| "/notes")//tls:ann[@xml:id=$uid]
-,$path := fn:base-uri($swl)
-,$doc := tokenize($path, "/")[last()]
-,$coll := substring-before($path, $doc)
-return xmldb:remove($coll, $doc)
+return update delete $swl
 };
 
 declare function tlsapi:show-use-of($uid as xs:string){
