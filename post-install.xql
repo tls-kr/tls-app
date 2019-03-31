@@ -40,7 +40,12 @@ local:special-permission($ace, 'rwxrwx---')
 
 (: set execute on api for world :)
 
-local:special-permission($api, "rwxrwxr-x")
+,
+for $res in xmldb:get-child-resources($api)
+ let $path := $api || "/" || $res
+ return
+     sm:chmod(xs:anyURI($path), "rwxrwxr-x") 
+
 
 (: special treatment :)
 
