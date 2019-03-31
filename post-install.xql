@@ -40,7 +40,7 @@ local:special-permission($ace, 'rwxrwx---')
 
 (: set execute on api for world :)
 
-(:local:special-permission($api, "rwxrwxr-x"),:)
+local:special-permission($api, "rwxrwxr-x"),
 
 (: special treatment :)
 
