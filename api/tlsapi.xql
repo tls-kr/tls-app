@@ -205,6 +205,7 @@ $notes-path as xs:string, $user as xs:string, $currentword as xs:string){
 
 if (($line-id != "xx") and ($sense-id != "xx")) then
 let $newswl:=tlsapi:make-attribution($line-id, $sense-id, $user, $currentword)
+,$uuid := $newswl/tls:ann/@xml:id
 ,$path := concat($notes-path, substring($uuid, 6, 2))
 return (
 if (xmldb:collection-available($path)) then () else
@@ -230,9 +231,11 @@ else
 declare function tlsapi:save-swl($line-id as xs:string, $sense-id as xs:string){
 let $notes-path := concat($config:tls-data-root, "/notes/new/")
 let $user := sm:id()//sm:real/sm:username/text()
-let $currentword := "dummy"
+let $currentword := ""
 return
-tlsapi:save-swl-with-path($line-id, $sense-id, $notes-path, $user, $currentword)
+(:tlsapi:save-swl-with-path($line-id, $sense-id, $notes-path, $user, $currentword):)
+tlsapi:save-swl-to-docs($line-id, $sense-id, $user, $currentword)
+
 };
 
 
