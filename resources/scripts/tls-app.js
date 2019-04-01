@@ -625,15 +625,15 @@ if ( event.which == 52 ) {
 
 function save_tr (trid, tr, line){
   $.ajax({
-  type : "GET",
-  dataType : "json",
-  url : "api/save_tr.xq?trid="+trid+"&tr="+tr,
+  type : "PUT",
+  dataType : "html",
+  url : "api/save_tr.xql?trid="+trid+"&tr="+tr,
   success : function(resp){
     toastr.info("Translation for line "+line+" saved.", "HXWD says:");
   },
   error : function(resp){
-  console.log(resp)
-    alert("PROBLEM"+resp);
+  console.log(resp);
+    alert("PROBLEM: "+resp.statusText + "\n " + resp.responseText);
   }
   });    
 };

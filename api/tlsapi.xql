@@ -581,3 +581,53 @@ else
 concat("No usage examples found for key: ", $key)
 
 };
+
+declare function tlsapi:save-tr($trid as xs:string, $tr as xs:string, $lang as xs:string){
+let $user := sm:id()//sm:real/sm:username/text()
+let $id := substring($trid, 1, string-length($trid) -3)
+,$txtid := tokenize($id, "_")[1]
+,$trcoll := concat($config:tls-translation-root, "/", $lang)
+,$trcollavailable := xmldb:collection-available($trcoll) or 
+  (xmldb:create-collection($config:tls-translation-root, $lang),
+  sm:chmod(xs:anyURI($trcoll), "rwxrwxr--"),
+  sm:chown(xs:anyURI($trcoll), "tls"),
+  sm:chgrp(xs:anyURI($trcoll), "tls-user") )
+,$docpath := concat($trcoll, "/", $txtid, "-", $lang, ".xml")
+,$title := collection($config:tls-texts-root)//tei:TEI[@xml:id=$txtid]//tei:titleStmt/tei:title/text()
+,$node := collection($trcoll)//tei:seg[@corresp=concat("#", $id)]
+,$seg := <seg xmlns="http://www.tei-c.org/ns/1.0" corresp="#{$id}" xml:lang="{$lang}" resp="{$user}" modified="{current-dateTime()}">{$tr}</seg>
+let $doc :=
+  if (not (doc-available($docpath))) then
+   doc(xmldb:store($trcoll, concat($txtid, "-", $lang, ".xml"), 
+   <TEI xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$txtid}-{$lang}">
+  <teiHeader>
+      <fileDesc>
+         <titleStmt>
+            <title>Translation of {$title} into ({$lang})</title>
+         </titleStmt>
+         <publicationStmt>
+            <p>published electronically as part of the TLS project at https://hxwd.org</p>
+         </publicationStmt>
+         <sourceDesc>
+            <p>Created by members of the TLS project</p>
+         </sourceDesc>
+      </fileDesc>
+     <profileDesc>
+        <creation>Initially created: <date>{current-dateTime()}</date> by {$user}</creation>
+     </profileDesc>
+  </teiHeader>
+  <text>
+      <body>
+      <div><head>Translated parts</head><p xml:id="{$txtid}-start"></p></div>
+      </body>
+  </text>
+</TEI>)) 
+ else doc($docpath)
+ 
+return
+if ($node) then 
+if (update replace $node with $seg) then "Success. Updated translation." else "Could not update translation." 
+else 
+if (update insert $seg  into $doc//tei:p[@xml:id=concat($txtid, "-start")]) then "Success. Saved translation." else ("Could not save translation. ", $docpath)
+
+};
