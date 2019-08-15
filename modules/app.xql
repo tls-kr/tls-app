@@ -27,6 +27,7 @@ declare variable $app:lmap := map{
 "modern-chinese-criteria" : "Modern Chinese Criteria",
 "taxonymy" : "Taxonoymy",
 "antonymy" : "Antonymy",
+"hypernymy" : "Kind Of",
 "see" : "See also",
 "source-references" : "Bibliography",
 "warring-states-currency" : "Warring States Currency",
@@ -1062,16 +1063,17 @@ function app:footer($node as node()*, $model as map(*)){
             <div class="container">
                 <span id="copyright"/>
                     <p>Copyright TLS Project 2019</p>
-                <p>Support by <strong>Princeton 
-                    University Dean for Research</strong>, 
-                    <strong>Department of East Asian Studies - Princeton University</strong>,
+                <p>Developed at the <strong>Center for Informatics in East-Asian Studies, Institute for Research in Humanities, Kyoto University</strong>, with support from the 
+                <strong>Dean for Research, Department of East Asian Studies</strong>, and
+                <strong>Program in East Asian Studies, Princeton University</strong>.</p>    
+                <p>Hosted by <strong>Princeton University, Department of East Asian Studies</strong>, in cooperation with <strong>Ruhr University Bochum, Forschungszentrum für traditionelle chinesische Kulturen</strong>.  </p>
+                <p>Support from 
                     <strong>Heidelberg University - Cluster of Excellence - Asia and Europe in a Global Context</strong>
                     and <strong>IKOS - University of Oslo</strong>
                     gratefully acknowledged.
                 </p>
                 <p class="small text-right">This site uses cookies to maintain login state. The cookies are not used for any other purposes. By using this site you agree to this.</p>
             </div>
-
 };
 
 declare
