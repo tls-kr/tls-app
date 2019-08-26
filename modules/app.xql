@@ -22,6 +22,7 @@ declare variable $app:lmap := map{
 "char" : "Chars",
 "concept" : "Concepts",
 "definition" : "Definition",
+"taxchar" : "Character analysis",
 "notes" : "Notes",
 "old-chinese-criteria" : "Old Chinese Criteria",
 "modern-chinese-criteria" : "Modern Chinese Criteria",
@@ -140,7 +141,7 @@ function app:browse($node as node()*, $model as map(*), $type as xs:string?, $fi
     for $h in $hits
     let $n := $h/tei:head/text()
     ,$id := $h/@xml:id
-    ,$def := $h/tei:p
+    ,$def := ($h/tei:p, <small>{$h/tei:note}</small>)
     order by $n
     return
     (
@@ -277,17 +278,27 @@ declare function app:create-query($queryStr as xs:string?, $mode as xs:string?)
 
 declare 
 %templates:default("start", 1)
-function app:show-hits($node as node()*, $model as map(*), $start as xs:int)
+%templates:default("type", "")
+function app:show-hits($node as node()*, $model as map(*), $start as xs:int, $type as xs:string)
 {   let $query := map:get($model, "query")
     ,$iskanji := tlslib:iskanji($query) 
     ,$map := session:get-attribute($app:SESSION || ".types")
     ,$qs := tokenize($query, "\s")
+    ,$qc := for $c in string-to-codepoints($query) return  codepoints-to-string($c)
     return
-    <div><h1>Searching for <mark>{$query}</mark></h1>
+    <div><h1>Searching for <mark>{$query}</mark>{if (string-length($type) > 0) then 
+    <span>in {map:get($app:lmap, $type)}</span>
+    else ()}</h1>
     {if ($iskanji) then
-    <h4>Found {count($model("hits"))} matches, showing {$start} to {$start + 10 -1}</h4>
+    (
+    <h4>Found {count($model("hits"))} matches, showing {$start} to {$start + 10 -1}</h4>,
+    <p>Characters: 
+    {if ($start = 1) then for $c in $qc return <a href="char.html?char={$c}">{$c}</a> else ()}
+    </p>
+    )
     else
-    <h4>Found {count($model("hits"))} matches</h4>}    
+    <h4>Found {if (string-length($type) > 0) then (count(map:get($map, $type)),<span>; displaying matches {$start} to {min((count(map:get($map, $type)), xs:int($start) + 10))}</span>)
+    else (count($model("hits")), <span>matches</span>)}</h4>}    
     {if ($iskanji) then
     <div>
     <table class="table">
@@ -322,6 +333,16 @@ function app:show-hits($node as node()*, $model as map(*), $start as xs:int)
   </ul>
 </nav>
     </div>
+    else if (string-length($type) > 0) then 
+     <div>{
+      app:get-more($type, xs:int($start), 10)}
+    <nav aria-label="Page navigation">
+      <ul class="pagination">
+        <li class="page-item"><a class="page-link {if (xs:int($start) = 1) then "disabled" else ()}" href="search.html?query={$query}&amp;type={$type}&amp;start={$start - 10}">&#171;</a></li>
+        <li class="page-item"><a class="page-link" href="search.html?query={$query}&amp;type={$type}&amp;start={$start + 10}">&#187;</a></li>
+      </ul>
+     </nav>
+     </div>
     else
     <div>
     <ul>{
@@ -329,35 +350,55 @@ function app:show-hits($node as node()*, $model as map(*), $start as xs:int)
      order by $t
       return <li><a href="#{data($t)}-link" title="{data($t)}">{map:get($app:lmap, $t)}</a>, {count(map:get($map, $t))}</li>}</ul>
     {for $t in map:keys($map)
+      let $hitcount := count(map:get($map, $t))
      order by $t
      return
-     <div id="{data($t)}-link"><h4>{map:get($app:lmap, $t)} <span class="badge badge-light">{count(map:get($map, $t))}</span></h4>
-     <ul>{for $h at $c in map:get($map, $t) where $c < 4 
-(:      let $kwic := kwic:summarize($h, <config width="40"/>, app:filter#2),:)
-    let $expanded := util:expand($h, "add-exist-id=all")
-    return
-    for $match in subsequence($expanded//exist:match, 1, 3)
-(:    let $kwic := kwic:summarize($hit, <config width="40"/>, app:filter#2):)
-     let $kwic := app:get-kwic($match, <config width="40"/>, <a></a>),
-      $root := $h/ancestor-or-self::tei:div[@type="concept"],
-      $uplink := if ($root) then $root/@xml:id else (),
-      $head := $root/tei:head/text()
-      (: $h is a div element, so this does not seem to work... :)
-     return
-         <li>{if ($root) 
-         then <strong><a href="concept.html?uuid={$uplink}#{$t}" title="{substring-after(document-uri(root($h)), $config:tls-data-root)}
-">{$head}</a></strong> 
-         else <strong>{substring-after(document-uri(root($h)), $config:tls-data-root)}</strong>}
-         {$kwic}</li>
-     }
+     <div id="{data($t)}-link"><h4>{map:get($app:lmap, $t)} <span class="badge badge-light">{$hitcount}</span></h4>
+     <ul>{      app:get-more($t, 1, 3) }
      </ul>
-     <span class="btn">Show more...</span>
+     { if ($hitcount > 3) then 
+     <a href="search.html?query={$query}&amp;type={$t}&amp;start=1">Show more...</a>
+     else ()}
      </div>
      }
     </div>
     }
     </div>
 };    
+
+declare %private function app:get-more($t as xs:string, $start as xs:int, $count as xs:int){
+    let $map := session:get-attribute($app:SESSION || ".types")
+     for $h in subsequence(map:get($map, $t), $start, $count)
+(:      let $kwic := kwic:summarize($h, <config width="40"/>, app:filter#2),:)
+    let $expanded := util:expand($h, "add-exist-id=all")
+    return
+    (: if there is more than one match, they could be expanded here. Maybe make this optional? 
+    for the time being, disabled, thus expanding only one match:)
+    for $match in subsequence($expanded//exist:match, 1, 1)
+(:    let $kwic := kwic:summarize($hit, <config width="40"/>, app:filter#2):)
+     let $kwic := app:get-kwic($match, <config width="40"/>, <a></a>),
+      $root := $h/ancestor-or-self::tei:div[@type="concept" or @type="taxchar" or @type="syn-func" or @type="sem-feat"],
+      $uplink := if ($root) then $root/@xml:id else (),
+      $head := $root/tei:head/text()
+      (: $h is a div element, so this does not seem to work... :)
+     return
+         <li>{if ($root) 
+         then <strong>
+         {
+         if ($t = "syn-func" or $t = "sem-feat") then
+         <a href="browse.html?type={$t}&amp;id=#{$uplink}" title="{substring-after(document-uri(root($h)), $config:tls-data-root)}"
+         >{$head}</a>
+         else if ($t = "taxchar") then
+         <a href="char.html?id={$uplink}" title="{substring-after(document-uri(root($h)), $config:tls-data-root)}"
+         >{$head}</a>
+         else 
+         <a href="concept.html?uuid={$uplink}#{$t}" title="{substring-after(document-uri(root($h)), $config:tls-data-root)}"
+         >{$head}</a>
+         }</strong> 
+         else <strong>{substring-after(document-uri(root($h)), $config:tls-data-root)}#{$t}</strong>}
+         {$kwic}</li>
+};
+
 
 declare %private function app:get-kwic($node as element(), $config as element(config), $link) {
   <tr>
