@@ -247,10 +247,11 @@ declare function tlslib:capitalize-first ( $arg as xs:string? )  as xs:string? {
  } ;
  
  
- declare function tlslib:display_sense($sw as node()){
+ declare function tlslib:display_sense($sw as node(), $count as xs:int){
     let $id := data($sw/@xml:id),
     $sf := $sw//tls:syn-func/text(),
     $sm := $sw//tls:sem-feat/text(),
+    $user := sm:id()//sm:real/sm:username/text(),
     $def := $sw//tei:def/text()
     return
     <li><span class="font-weight-bold">{$sf}</span>
@@ -258,12 +259,15 @@ declare function tlslib:capitalize-first ( $arg as xs:string? )  as xs:string? {
     <span class="ml-2">{$def}</span>
      <button class="btn badge badge-light ml-2" type="button" 
      data-toggle="collapse" data-target="#{$id}-resp" onclick="show_att('{$id}')">
-           Attributions
+          {if ($count > -1) then $count else ()}
+          {if ($count = 1) then " Attribution" else  " Attributions" }
       </button>
+     {if ($user = "guest") then () else 
      <button title="Search for this word" class="btn badge btn-outline-success ml-2" type="button" 
      data-toggle="collapse" data-target="#{$id}-resp" onclick="search_and_att('{$id}')">
       <img class="icon-small" src="resources/icons/open-iconic-master/svg/magnifying-glass.svg"/>
       </button>
+      }
       <div id="{$id}-resp" class="collapse container"></div>
     </li>
  

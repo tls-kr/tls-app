@@ -213,7 +213,7 @@ function app:query($node as node()*, $model as map(*), $query as xs:string?, $mo
 
 declare function app:do-query($queryStr as xs:string?, $mode as xs:string?)
 {
-    let $dataroot := ($config:tls-data-root, $config:tls-texts-root, $config:tls-user-root),
+    let $dataroot := ($config:tls-data-root, $config:tls-texts-root, $config:tls-user-root, $config:tls-translation-root),
     $query := app:create-query(lower-case($queryStr), $mode),
     $hits := for $h in collection($dataroot)//tei:div[ft:query(., $query)]
             where $h/@type != "swl" return $h,
@@ -233,16 +233,33 @@ declare function app:ngram-query($queryStr as xs:string?, $mode as xs:string?)
     let $qs := tokenize($queryStr, "\s"),
     $user := sm:id()//sm:real/sm:username/text(),
     $ratings := doc("/db/users/" || $user || "/ratings.xml")//text,
-
+    $dates := if (exists(doc("/db/users/" || $user || "/textdates.xml")//date)) then 
+      doc("/db/users/" || $user || "/textdates.xml")//date else 
+      doc($config:tls-texts-root || "/tls/textdates.xml")//date,
+    (: HACK: if no login, use date mode for sorting :)
+    $mode := if ($user = "guest") then "date" else $mode,
     $matches := if  (count($qs) > 1) then 
       collection($dataroot)//tei:seg[ngram:contains(., $qs[1]) and ngram:contains(., $qs[2])]
       else
       collection($dataroot)//tei:seg[ngram:contains(., $qs[1])]
     for $hit in $matches
       let $textid := substring-before(tokenize(document-uri(root($hit)), "/")[last()], ".xml"),
-      $r := if ($ratings[@id=$textid]) then xs:int($ratings[@id=$textid]/@rating) else 0
+      (: for the CHANT text no text date data exist, so we use this flag to cheat a bit :)
+      $flag := substring($textid, 1, 3),
+      $r := 
+      if ($mode = "rating") then 
+        (: the order by is ascending because of the dates, so here we inverse the rating :)
+        if ($ratings[@id=$textid]) then - xs:int($ratings[@id=$textid]/@rating) else 0
+      else
+        switch ($flag)
+         case "CH1" return 0
+         case "CH2" return 300
+         case "CH7" return 700
+         case "CH8" return -200
+         default return
+         if (string-length($dates[@corresp="#" || $textid]/@notafter) > 0) then local:getdate($dates[@corresp="#" || $textid]) else 0
 (:    let $id := $hit/ancestor::tei:TEI/@xml:id :)     
-    order by $r descending
+    order by $r ascending
     return $hit 
 };
 
@@ -279,11 +296,14 @@ declare function app:create-query($queryStr as xs:string?, $mode as xs:string?)
 declare 
 %templates:default("start", 1)
 %templates:default("type", "")
-function app:show-hits($node as node()*, $model as map(*), $start as xs:int, $type as xs:string)
+%templates:default("mode", "")
+function app:show-hits($node as node()*, $model as map(*), $start as xs:int, $type as xs:string, $mode as xs:string)
 {   let $query := map:get($model, "query")
     ,$iskanji := tlslib:iskanji($query) 
     ,$map := session:get-attribute($app:SESSION || ".types")
+    ,$user := sm:id()//sm:real/sm:username/text()
     ,$qs := tokenize($query, "\s")
+    ,$rat := "Go to the menu -> Browse -> Texts to rate your favorite texts."
     ,$qc := for $c in string-to-codepoints($query) return  codepoints-to-string($c)
     return
     <div><h1>Searching for <mark>{$query}</mark>{if (string-length($type) > 0) then 
@@ -292,13 +312,23 @@ function app:show-hits($node as node()*, $model as map(*), $start as xs:int, $ty
     {if ($iskanji) then
     (
     <h4>Found {count($model("hits"))} matches, showing {$start} to {$start + 10 -1}</h4>,
-    <p>Characters: 
-    {if ($start = 1) then for $c in $qc return <a href="char.html?char={$c}">{$c}</a> else ()}
+    <p>
+    {if ($start = 1) then ("Characters: ", for $c in $qc return  <a class="btn badge badge-light" title="Show analysis of {$c}" href="char.html?char={$c}">{$c}</a>) else ()}
+    { if ($user = "guest") then () else
+    if ($mode = "rating") then 
+    (
+    "&#160;Sorting by text rating. ", <a class="btn badge badge-light" href="search.html?query={$query}&amp;start=1&amp;mode=date">Click here to sort by text date instead. </a> 
+    )
+     else
+    (
+    "&#160;Sorting by text date. ", <a class="btn badge badge-light" href="search.html?query={$query}&amp;start=1&amp;mode=rating" title="{$rat}">Click here to sort your favorite texts first. </a> 
+    )
+    }
     </p>
     )
     else
     <h4>Found {if (string-length($type) > 0) then (count(map:get($map, $type)),<span>; displaying matches {$start} to {min((count(map:get($map, $type)), xs:int($start) + 10))}</span>)
-    else (count($model("hits")), <span>matches</span>)}</h4>}    
+    else (count($model("hits")), <span> matches</span>)}</h4>}    
     {if ($iskanji) then
     <div>
     <table class="table">
@@ -328,8 +358,8 @@ function app:show-hits($node as node()*, $model as map(*), $start as xs:int, $ty
     </table>
     <nav aria-label="Page navigation">
   <ul class="pagination">
-    <li class="page-item"><a class="page-link {if ($start = 1) then "disabled" else ()}" href="search.html?query={$query}&amp;start={$start - 10}">&#171;</a></li>
-    <li class="page-item"><a class="page-link" href="search.html?query={$query}&amp;start={$start + 10}">&#187;</a></li>
+    <li class="page-item"><a class="page-link {if ($start = 1) then "disabled" else ()}" href="search.html?query={$query}&amp;start={$start - 10}{if ($mode) then concat("&amp;mode=", $mode) else ()}">&#171;</a></li>
+    <li class="page-item"><a class="page-link" href="search.html?query={$query}&amp;start={$start + 10}{if ($mode) then concat("&amp;mode=", $mode) else ()}">&#187;</a></li>
   </ul>
 </nav>
     </div>
@@ -664,6 +694,13 @@ function app:char($node as node()*, $model as map(*), $char as xs:string?, $id a
     </div>
     </div>
 )};   
+
+declare function local:getdate($node as node()) as xs:int{
+ let $nb := xs:int($node/@notbefore)
+ , $na := xs:int($node/@notafter)
+ return
+ xs:int(($na + $nb) div 2)
+};
    
 declare function local:proc_char($node as node())
 { 
@@ -693,7 +730,8 @@ typeswitch ($node)
       data-toggle="collapse" data-target="#{$id}-swl">{count($swl)}</button>
       <ul class="list-unstyled collapse" id="{$id}-swl"> 
       {for $sw in $swl
-      return tlslib:display_sense($sw)}
+      (: we dont check for attribution count, so pass -1  :)
+      return tlslib:display_sense($sw, -1)}
       </ul>
       </span>
   case text() return
@@ -717,7 +755,10 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
        collection($config:tls-data-root || "/concepts")//tei:div[ends-with(@xml:id,$key)]    
      else
        collection($config:tls-data-root || "/concepts")//tei:div[tei:head[. = $concept]],
+    $key := $c/@xml:id,
     $tr := $c//tei:list[@type="translations"]//tei:item
+    let $ann := for $c in collection($config:tls-data-root||"/notes")//tls:ann[@concept-id=$key]
+     return $c
     return
     <div class="card">
     <div class="card-body">
@@ -798,9 +839,41 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
      }     
      </div>
     </div>
-    
     <!-- -->
     </div>
+    <div class="card">
+    <!-- Here we look for all places where this concept has been used -->
+     <div>
+     <div class="card-header" id="look-head">
+      <h5 class="mb-0 mt-2">
+        <button class="btn" data-toggle="collapse" data-target="#look" >
+          Attributions overview <span class="btn badge badge-light">{count($ann)} attested</span>
+        </button>
+      </h5>
+      </div>
+     <div id="look" class="collapse" data-parent="#concept-content">
+     <p><b>Attributions by syntactic funtion</b>
+     <ul>
+     {for $sf in distinct-values($ann//tls:syn-func/@corresp)
+       let $csf :=  count($ann//tls:syn-func[@corresp=$sf])
+       order by $csf descending
+       return
+       <li>{($ann//tls:syn-func[@corresp=$sf])[1], " : ", $csf}</li>
+     }</ul></p>
+     <p><b>Attributions by text</b>
+     <ul>{for $ti in distinct-values($ann//tls:srcline/@title)
+       let $csf :=  count($ann//tls:srcline[@title=$ti])
+       order by $csf descending
+       return
+       <li>{data(($ann//tls:srcline[@title=$ti])[1]/@title), " : ", $csf}</li>
+     }
+     </ul>
+     </p>
+    </div>
+    </div>
+    
+    </div>
+    
     </div>
     <div id="word-content" class="card">
     <div class="card-body">
@@ -810,17 +883,19 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
     let $zi := string-join($e/tei:form/tei:orth, " / ")
     ,$pr := $e/tei:form/tei:pron
     ,$def := $e/tei:def/text()
-    order by $zi[1]
+    ,$wc := sum(for $sw in $e//tei:sense 
+             return count($ann//tei:sense[@corresp="#" || $sw/@xml:id]))
+    order by $wc descending    
 (:    count $count :)
     return 
     <div><h5>{$zi}&#160;&#160; {for $p in $pr return <span>{
     if (ends-with($p/@xml:lang, "oc")) then "OC: " else 
     if (ends-with($p/@xml:lang, "mc")) then "MC: " else (),
-    $p/text()}&#160;</span>}</h5>
+    $p/text()}&#160;</span>}  <small>{$wc} {if ($wc = 1) then " Attribution" else " Attributions"}</small></h5>
     {if ($def) then <p class="ml-4">{$def}</p> else ()}
     <ul>{for $sw in $e//tei:sense
     return
-    tlslib:display_sense($sw)
+    tlslib:display_sense($sw, count($ann//tei:sense[@corresp="#" || $sw/@xml:id]))
     }</ul>
     </div>
     }

@@ -563,10 +563,11 @@ let $swl := collection($config:tls-data-root|| "/notes")//tls:ann[@xml:id=$uid]
 return update delete $swl
 };
 
-declare function tlsapi:show-use-of($uid as xs:string){
+declare function tlsapi:show-use-of($uid as xs:string, $type as xs:string){
 let $key := "#" || $uid
-let $res := for $r in collection($config:tls-data-root)//tls:*[@corresp = $key]
-     where exists($r/ancestor::tei:sense)
+, $str := 'collection(' || $config:tls-data-root || ')//tls:' || $type || '[@corresp ="' || $key || '"]'
+let $res := for $r in util:eval($str)
+     (:where exists($r/ancestor::tei:sense):)
      return $r
 
 return
@@ -575,10 +576,10 @@ if (count($res) > 0) then
 for $r in subsequence($res, 1, 10)
   let $sw := $r/ancestor::tei:sense
   return
-  tlslib:display_sense($sw)
+  tlslib:display_sense($sw, -1)
 else 
 
-concat("No usage examples found for key: ", $key)
+concat("No usage examples found for key: ", $key, " type: ", $type )
 
 };
 

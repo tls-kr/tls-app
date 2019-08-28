@@ -22,6 +22,9 @@ let $sense-id := request:get-parameter("sense-id", "uuid-20c9da30-27bc-4b0a-ab0a
 ,$orth := $entry/tei:form/tei:orth
 ,$user := sm:id()//sm:real/sm:username/text()
 ,$ratings := doc("/db/users/" || $user || "/ratings.xml")//text
+,$dates := if (exists(doc("/db/users/" || $user || "/textdates.xml")//date)) then 
+      doc("/db/users/" || $user || "/textdates.xml")//date else 
+      doc($config:tls-texts-root || "/tls/textdates.xml")//date
 ,$ret := for $o in $orth/text()
   for $line in  collection($config:tls-texts-root)//tei:seg[ngram:contains(., $o)]
     let $target := $line/@xml:id,
@@ -34,6 +37,8 @@ let $sense-id := request:get-parameter("sense-id", "uuid-20c9da30-27bc-4b0a-ab0a
               let $o1 := $h/ancestor::tls:ann/tei:form[1]/tei:orth[1]/text()
               where ($o1 = $o) 
               return $h:)
+    ,$flag := substring($textid, 1, 3)
+    (: should I switch this to date sorting as well? :) 
     ,$r := if ($ratings[@id=$textid]) then xs:int($ratings[@id=$textid]/@rating) else 0
     order by $r descending
 (:    where $tr and (count($atts) = 0):)

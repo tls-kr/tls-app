@@ -8,6 +8,8 @@ declare option output:media-type "text/html";
 import module namespace tlsapi="http://hxwd.org/tlsapi" at "tlsapi.xql";
 
 let $uid := request:get-parameter("uid", "xx")
+, $type := request:get-parameter("type", "xx")
+
 return 
-tlsapi:show-use-of($uid)
+tlsapi:show-use-of($uid, $type)
 
