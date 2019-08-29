@@ -10,92 +10,6 @@ declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
 declare namespace tx = "http://exist-db.org/tls";
 
-(: Just for reference, might want to use this later...
-"None" : "TJAN TJOE SOM 1949FF", (\: BHT 白虎通 :\)
-"None" : "Stephen Owen", (\: CEN SHEN 岑參 :\)
-"None" : "Stephen Owen", (\: CHEN ZIANG 陳子昂 :\)
-"None" : "Legge", (\: CQ 春秋 :\)
-"None" : "Christoph Anderl", (\: XINXINGLUN 大乘心行論 :\)
-"None" : "Stephen Owen", (\: DU FU 杜甫 :\)
-"None" : " ", (\: XIAOFUXU 馮夢龍笑府序 :\)
-"None" : "C. Harbsmeier,  based on Dirk Meier", (\: GD.XZMC 郭店。性自命出 :\)
-"None" : "C. Harbsmeier", (\: GD.YUCONG 郭店語叢 :\)
-"None" : "Dirk Meier", (\: GD.ZHONGXIN 郭店.忠信之道 :\)
-"None" : "PINE 2000", (\: HANSHAN 寒山詩 :\)
-"None" : "HARPER 1998", (\: HEYINYANG 合陰陽 :\)
-"None" : "C. Harbsmeier", (\: HUAZAN 畫贊 :\)
-"None" : "Keightley, Takashima, Qiu", (\: HEJI 甲骨文字合集 :\)
-"None" : "C. Harbsmeier", (\: KQ 孔雀東南飛 :\)
-"None" : "Stephen Owen", (\: Li Bai 李白 :\)
-"None" : "Stephen Owen", (\: LISHIMIN 李世民 :\)
-"None" : "C. Harbsmeier, based on Pelliot 1920 and Keenan 1994", (\: MOUZI 牟子：理惑論 :\)
-"None" : "C. Harbsmeier, based on SWANN 1960", (\: NJ 女戒 :\)
-"None" : "C. Harbsmeier", (\: QYX 切韻序 :\)
-"None" : "Martin Kern, modified by C. Harbsmeier", (\: STELAE 秦刻石 :\)
-"None" : "C. Harbsmeier", (\: RENJING 吳亮：忍經 :\)
-"None" : "Duyvendak", (\: SHANG 商君書 :\)
-"None" : "P. Thompson", (\: SHENDAO 慎到 :\)
-"None" : "Owen 1992", (\: SIKUNGTU.SHIPIN 司空圖:二十四詩品 :\)
-"None" : "HULSEWE", (\: SHUIHUDI 睡虎地 :\)
-"None" : "C. Harbsmeier", (\: SHUOWEN XU 説文解字序 :\)
-"None" : "C. Harbsmeier", (\: SUMMA SUMMA.THEOL :\)
-"None" : "LAU AND AMES 1996", (\: SB 孫臏 :\)
-"None" : "Ralph D. Sawyer", (\: SUN 孫子 :\)
-"None" : "Hightower", (\: TYM 陶淵明詩 :\)
-"None" : "Stephen Owen", (\: Wang Ji 王績 :\)
-"None" : "none", (\: WEN 文子 :\)
-"None" : "Pang Pu et al.", (\: WXP 五行篇 :\)
-"None" : "C. Harbsmeier", (\: XIAOLIN 笑林 :\)
-"None" : "Pokora, Michigan University Press", (\: XINLUN 新論 :\)
-"None" : "C. Harbsmeier", (\: ZHONGJING 忠經 :\)
-:)
-
-declare variable $tlsapi:translation-map := map{
-"KR1a0001" : "[Lynn, Columbia Unversity Press]", (: XC 繫辭 :)
-"KR1b0001" : "Karlgren", (: SHU 尚書 :)
-"KR1c0001" : "Karlgren, BMFEA", (: SHI 詩經 :)
-"KR1c0003" : "Stephen Owen 1992", (: DAXU 詩。大序 :)
-"KR1c0066" : "Hightower", (: HSWZ 韓詩外傳 :)
-"KR1d0052" : "Legge", (: LJ 禮記 :)
-"KR1e0001" : "Legge", (: ZUO 左傳 :)
-"KR1e0008" : "MALMQVIST 1972ff", (: CQGL 穀梁傳 :)
-"KR1f0001" : "L. Zádrapa", (: XJ 孝經 :)
-"KR1h0001" : "David Sehnal; D.C. Lau", (: MENG 孟子 :)
-"KR1h0004" : "C. Harbsmeier", (: LY 論語 :)
-"KR2a0001" : "Watson", (: SJ 史記 :)
-"KR2e0001" : "none", (: GY 國語 :)
-"KR2e0003" : "Crump, Oxford University Press", (: ZGC 戰國策 :)
-"KR2g0003" : "none", (: YAN 晏子春秋 :)
-"KR2g0017" : "O'HARA 1945", (: LNZ 列女傳 :)
-"KR3a0001" : "KRAMER 1950", (: KJ 孔子家語 :)
-"KR3a0002" : "Knoblock and Riegel", (: XUN 荀子 :)
-"KR3a0006" : "GALE 1931", (: YTL 鹽鐵論 :)
-"KR3a0047" : "C. Harbsmeier", (: YULEI 朱子語類 :)
-"KR3c0001" : "Rickett, Princeton University Press", (: GUAN 管子 :)
-"KR3c0005" : "C. Harbsmeier", (: HF 韓非子 :)
-"KR3e0001" : "C. Harbsmeier", (: SUWEN 素問 :)
-"KR3j0002" : "Mei Yi Pao", (: MOZI 墨子 :)
-"KR3j0006" : "Wells", (: HEGUAN 鶡冠子 :)
-"KR3j0009" : "Knoblock &amp; Riegel", (: LS 呂氏春秋 :)
-"KR3j0010" : "Wallacker, Ames, LeBlanc, Kraft, Morgan", (: HNZ 淮南子 :)
-"KR3j0080" : "Hu Chirui and Michael Nylan", (: LH 論衡 :)
-"KR3l0002" : "Mather", (: SSXY 世說新語 :)
-"KR3l0090" : "Anne Birrell", (: SHJ 山海經 :)
-"KR4a0001" : "HAWKES 1985 ", (: CC 楚辭 :)
-"KR5c0057" : "Karlgren 1975", (: LAO 道德經 :)
-"KR5c0124" : "GRAHAM 1960", (: LIE 列子 :)
-"KR5c0126" : "[Watson 1969]", (: ZHUANG 莊子 :)
-"KR5f0010" : "Graham 1998", (: MOJ 墨經 :)
-"KR6b0059" : "Sun Xixin and Victor Mair", (: XYJ 賢愚經 :)
-"KR6b0066" : "C. Harbsmeier ", (: BAIYU 百喻經 :)
-"KR6b0067" : "DHARMAJOTI 1990", (: FAJU 法句經 :)
-"KR6b0070" : " ", (: SONGJING 法集要頌經 :)
-"KR6d0001" : "WATSON 1993 ", (: FAHUA 法華經 :)
-"KR6q0002" : "Christoph Anderl", (: ZTJ 祖堂集 :)
-"KR6q0053" : "Christoph Anderl", (: LINJILU 臨濟錄 :)
-"KR6q0082" : "YAMPOLSKY 1996" (: TANJING 六祖壇經 :),
-"KR6s0019" : "?" (: FYMYJ 翻譯名義序 :)
-};
 
 declare function tlsapi:autocomplete($type as xs:string, $term as xs:string){
 let $callback := request:get-parameter("callback", "xx")
@@ -130,7 +44,7 @@ $newswl :=
 <link target="#{$line-id} #{$sense-id}"/>
 <tls:text>
 <tls:srcline title="{$title}" target="#{$line-id}" pos="{functx:index-of-string(string-join($line/text(), ""), $word)}">{$line/text()}</tls:srcline>
-<tls:line title="{$title-en}" src="{map:get($tlsapi:translation-map, $textid)}">{$tr/text()}</tls:line>
+<tls:line title="{$title-en}" src="{map:get($config:translation-map, $textid)}">{$tr/text()}</tls:line>
 </tls:text>
 <form  corresp="{$sense/parent::tei:entry/tei:form/@corresp}" orig="{$currentword}">
 {$sense/parent::tei:entry/tei:form/tei:orth,
@@ -634,6 +548,8 @@ return
 if ($node) then 
 if (update replace $node with $seg) then "Success. Updated translation." else "Could not update translation." 
 else 
-if (update insert $seg  into $doc//tei:p[@xml:id=concat($txtid, "-start")]) then "Success. Saved translation." else ("Could not save translation. ", $docpath)
+if (update insert $seg  into $doc//tei:p[@xml:id=concat($txtid, "-start")]) then 
+("Success. Saved translation.")
+else ("Could not save translation. ", $docpath)
 
 };

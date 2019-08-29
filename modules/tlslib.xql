@@ -51,6 +51,7 @@ declare function tlslib:tv-header($node as node()*, $model as map(*)){
     
     let $head := if ($targetseg) then $targetseg/ancestor::tei:div[1]/tei:head[1] else (),
     $title := if ($targetseg) then $targetseg/ancestor::tei:TEI//tei:titleStmt/tei:title/text() else "No title"
+   ,$textid := substring-before(tokenize(document-uri(root($targetseg)), "/")[last()], ".xml")
     return
       (
       <span class="navbar-text ml-2 font-weight-bold">{$title} <small class="ml-2">{$head/text()}</small></span> 
@@ -64,8 +65,9 @@ declare function tlslib:tv-header($node as node()*, $model as map(*)){
             
      <img class="icon" src="resources/icons/open-iconic-master/svg/eye.svg"/>
 
-      </button>
-      
+      </button>,
+      <li class="nav-item"><small class="nav-brand ml-2">Translation by {map:get($config:translation-map, $textid)}</small></li>
+
       )
 };
 
