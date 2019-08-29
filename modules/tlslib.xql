@@ -264,11 +264,12 @@ declare function tlslib:capitalize-first ( $arg as xs:string? )  as xs:string? {
       </button>
      {if ($user = "guest") then () else 
      <button title="Search for this word" class="btn badge btn-outline-success ml-2" type="button" 
-     data-toggle="collapse" data-target="#{$id}-resp" onclick="search_and_att('{$id}')">
+     data-toggle="collapse" data-target="#{$id}-resp1" onclick="search_and_att('{$id}')">
       <img class="icon-small" src="resources/icons/open-iconic-master/svg/magnifying-glass.svg"/>
       </button>
       }
       <div id="{$id}-resp" class="collapse container"></div>
+      <div id="{$id}-resp1" class="collapse container"></div>
     </li>
  
  };

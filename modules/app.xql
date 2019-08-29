@@ -10,6 +10,7 @@ import module namespace config="http://hxwd.org/config" at "config.xqm";
 import module namespace kwic="http://exist-db.org/xquery/kwic"
     at "resource:org/exist/xquery/lib/kwic.xql";
 import module namespace tlslib="http://hxwd.org/lib" at "tlslib.xql";
+import module namespace tlsapi="http://hxwd.org/tlsapi" at "../api/tlsapi.xql";
 
 declare variable $app:SESSION := "tls:results";
 
@@ -81,6 +82,7 @@ declare
 function app:doc($node as node(), $model as map(*), $section as xs:string) {
 switch($section)
  case "overview" return doc(concat($config:app-root, "/documentation/overview.html"))
+ case "team" return doc(concat($config:app-root, "/documentation/team.html"))
  default return (<h1>About the TLS project</h1>,
         <p>Under construction</p>)
 };
@@ -672,7 +674,9 @@ function app:char($node as node()*, $model as map(*), $char as xs:string?, $id a
     return
     <div class="card">
     <div class="card-header">
-    <h4 class="card-title">Analysis of {$n/tei:head/text()}:</h4>
+    <h4 class="card-title">{if ($n) then <span>Analysis of {$n/tei:head/text()}:</span> else 
+    <span>The character {$char} has not been analyzed yet.</span>
+    }</h4>
     </div>
     <div class="card-text">
      {for $l in $n/tei:list return local:proc_char($l)}
@@ -1042,8 +1046,8 @@ declare
 function app:main-navbar($node as node()*, $model as map(*))
 {
 <nav class="navbar navbar-expand-sm navbar-light bg-light fixed-top">
-                <span class="banner-icon">
-                {app:logo($node, $model)}
+                <span class="banner-icon"><a href="index.html">
+                {app:logo($node, $model)}</a>
                 </span>
                 <a class="navbar-brand ml-2" href="index.html">{$config:app-title}</a>
                 <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
@@ -1059,9 +1063,11 @@ function app:main-navbar($node as node()*, $model as map(*))
                             <div class="dropdown-menu" aria-labelledby="navbarDropdown">
                                 <a class="dropdown-item" href="browse.html?type=concept">Concepts</a>
                                 <a class="dropdown-item" href="browse.html?type=taxchar">Characters</a>
+                                <!--
                                 <a class="dropdown-item" href="browse.html?type=word">Words</a>
+                                -->
                                 <a class="dropdown-item" href="browse.html?type=syn-func">Syntactical functions</a>
-                                <a class="dropdown-item" href="browse.html?type=sem-feat">Semantical features</a>
+                                <a class="dropdown-item" href="browse.html?type=sem-feat">Semantic features</a>
                                 <div class="dropdown-divider"/>
                                 <a class="dropdown-item" href="textlist.html">Texts</a>
                             </div>
@@ -1072,13 +1078,21 @@ function app:main-navbar($node as node()*, $model as map(*))
                             </a>
                             <div class="dropdown-menu" aria-labelledby="navbarDropdownDoc">
                                 <a class="dropdown-item" href="documentation.html?section=overview">Overview</a>
-                                <a class="dropdown-item" href="#">Another action</a>
+                                <a class="dropdown-item" href="documentation.html?section=team">Advisory Board</a>
                                 <div class="dropdown-divider"/>
-                                <a class="dropdown-item" href="#">About this website</a>
+                                <a class="dropdown-item" href="documentation.html?section=manual">About this website</a>
                             </div>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="#">Link</a>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#"  id="navbarDropdownLinks" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Links</a>
+                            <div class="dropdown-menu" aria-labelledby="navbarDropdownLinks">
+                            <a class="dropdown-item" href="https://www.kanripo.org">Kanseki Repository</a>
+                                <!--
+                                <a class="dropdown-item" href="documentation.html?section=team">Advisory Board</a>
+                                <div class="dropdown-divider"/>
+                                <a class="dropdown-item" href="documentation.html?section=manual">About this website</a>
+                                -->
+                            </div>
                         </li>
                         <!--
                         <li class="nav-item dropdown">

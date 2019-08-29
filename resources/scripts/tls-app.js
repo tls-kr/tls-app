@@ -70,6 +70,7 @@ function show_att(uid){
   $('#'+uid+'-resp').html(resp)
   }
   });
+  $('#'+uid+'-resp').html("Searching, please wait...")  
 };
 
 // show use for sem-feat and syn-func
@@ -532,10 +533,10 @@ function search_and_att(sense_id){
   dataType : "html",  
   url : "api/search_att.xql?sense-id=" + sense_id, 
   success : function(resp){
-  $('#'+sense_id+'-resp').html(resp)
+  $('#'+sense_id+'-resp1').html(resp)
   }
   });
-    
+  $('#'+sense_id+'-resp1').html("Searching, please wait...")  
 }
 
 $('body').on('focus', '[contenteditable]', function() {

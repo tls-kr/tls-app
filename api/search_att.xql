@@ -17,11 +17,15 @@ let $sense-id := request:get-parameter("sense-id", "uuid-20c9da30-27bc-4b0a-ab0a
 , $start := request:get-parameter("start", "1", false())
 , $count := request:get-parameter("count", "30", false())
 ,$sense := collection($config:tls-data-root)//tei:sense[@xml:id = $sense-id]
+,$concept-id := $sense/ancestor::tei:div[@type='concept']/@xml:id
+,$ann := for $c in collection($config:tls-data-root||"/notes")//tls:ann[@concept-id=$concept-id]
+     return $c//tls:srcline/@target
 ,$label := concat($sense/tei:gramGrp/tls:syn-func, " ", $sense/tei:gramGrp/tls:sem-feat, " ", $sense/tei:def)
 ,$entry := $sense/ancestor::tei:entry
 ,$orth := $entry/tei:form/tei:orth
 ,$user := sm:id()//sm:real/sm:username/text()
 ,$ratings := doc("/db/users/" || $user || "/ratings.xml")//text
+(: not yet using the dates here, this would require refactoring in separate fun, cf app:concept :)
 ,$dates := if (exists(doc("/db/users/" || $user || "/textdates.xml")//date)) then 
       doc("/db/users/" || $user || "/textdates.xml")//date else 
       doc($config:tls-texts-root || "/tls/textdates.xml")//date
@@ -33,6 +37,9 @@ let $sense-id := request:get-parameter("sense-id", "uuid-20c9da30-27bc-4b0a-ab0a
     $loc := if (string-length($locs) > 0) then xs:int($locs) else $locs, 
     $src := $line/ancestor::tei:TEI//tei:titleStmt/tei:title/text(),
     $tr := collection($config:tls-translation-root)//tei:seg[@corresp="#" || $target]
+(:    ,$atts := for $a in $ann 
+               where $a = "#" || $target
+               return $a:)
 (:   ,$atts := for $h in collection(concat($config:tls-data-root, '/notes/'))//tls:srcline[@target = "#" || $target]
               let $o1 := $h/ancestor::tls:ann/tei:form[1]/tei:orth[1]/text()
               where ($o1 = $o) 
@@ -41,8 +48,9 @@ let $sense-id := request:get-parameter("sense-id", "uuid-20c9da30-27bc-4b0a-ab0a
     (: should I switch this to date sorting as well? :) 
     ,$r := if ($ratings[@id=$textid]) then xs:int($ratings[@id=$textid]/@rating) else 0
     order by $r descending
-(:    where $tr and (count($atts) = 0):)
-    where $tr
+    (: I am ignoring all lines that have an attribution to this concept ...  :)
+    where $tr and not (contains("#" || $target , $ann))
+(:    where $tr:)
 return 
 <div class="row bg-light table-striped">
 <div class="col-sm-2">

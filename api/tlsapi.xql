@@ -189,13 +189,18 @@ let $targetcoll := if (xmldb:collection-available($data-root || "/notes/doc")) t
 
 let $targetnode := collection($targetcoll)//tei:seg[@xml:id=$line-id]
 
-return (
+return 
+if (sm:has-access($targetcoll, "w")) then
+(
 if ($targetnode) then 
  update insert $newswl into $targetnode
 else
+
  update insert <seg  xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$line-id}"><line>{$newswl//tls:srcline/text()}</line>{$newswl}</seg> into 
  $targetdoc//tei:p[@xml:id=concat($textid, "-start")]
+ 
  ,data($newswl/@xml:id))
+ else "No access"
 };
 
 
