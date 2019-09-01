@@ -66,7 +66,17 @@ declare function tlslib:tv-header($node as node()*, $model as map(*)){
      <img class="icon" src="resources/icons/open-iconic-master/svg/eye.svg"/>
 
       </button>,
-      <li class="nav-item"><small class="nav-brand ml-2">Translation by {map:get($config:translation-map, $textid)}</small></li>
+      <li class="nav-item">
+      <small class="nav-brand ml-2" title="Text provided by">Source: 
+      {if (map:get($config:txtsource-map, $textid)) then 
+          map:get($config:txtsource-map, $textid) 
+      else 
+         if (substring($textid, 1, 3) = "KR6") then "CBETA" 
+         else <a href="http://www.chant.org/">CHANT</a>}
+      </small>
+      {if (map:get($config:translation-map, $textid)) then 
+      (<br/>,<small class="nav-brand ml-2">Translation by {map:get($config:translation-map, $textid)}</small>) else ()}
+      </li>
 
       )
 };

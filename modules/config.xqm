@@ -130,6 +130,10 @@ declare variable $config:translation-map := map{
 "KR6s0019" : "?" (: FYMYJ 翻譯名義序 :)
 };
 
+declare variable $config:txtsource-map := map{
+"KR3a0047" : "Kanseki Repository",
+"KR6q0002" : "Kanseki Repository"
+};
 
 (: Get repo-config.xml to parse global varaibles :)
 declare variable $config:get-config := doc($config:app-root || '/repo-config.xml');
