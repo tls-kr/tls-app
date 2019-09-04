@@ -769,8 +769,8 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
     <h4 class="card-title">{$c/tei:head/text()}&#160;&#160;{for $t in $tr return 
       <span class="badge badge-light" title="{map:get($app:lmap, $t/@xml:lang)}">{$t/text()}</span>} 
       {if  ("tls-admin" = sm:get-user-groups($user)) then 
-      <a target="_blank" class="float-right badge badge-pill badge-light" href="{templates:link-to-app("http://exist-db.org/apps/eXide", 
-      concat("index.html?open=", document-uri(root($c))))}">Edit concept</a>
+      <a target="_blank" class="float-right badge badge-pill badge-light" href="{
+      concat($config:exide-url, "index.html?open=", document-uri(root($c)))}">Edit concept</a>
       else ()}
       </h4>
     <h5 class="card-subtitle" id="popover-test" data-toggle="popover">{$c/tei:div[@type="definition"]//tei:p/text()}</h5>

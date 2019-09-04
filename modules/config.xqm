@@ -26,8 +26,11 @@ declare variable $config:app-root :=
             if (starts-with($rawPath, "xmldb:exist://embedded-eXist-server")) then
                 substring($rawPath, 36)
             else
-                substring($rawPath, 15)
-        else
+               if (starts-with($rawPath, "xmldb:exist://null/")) then
+                 substring($rawPath, 19) 
+                 else
+                 substring($rawPath, 15)
+        else 
             $rawPath
     return
         substring-before($modulePath, "/modules")
@@ -41,7 +44,7 @@ declare variable $config:tls-data-root := substring-before($config:app-root, dat
 declare variable $config:tls-texts-root := substring-before($config:app-root, data($config:expath-descriptor/@abbrev)) || "tls-texts";
 declare variable $config:tls-translation-root := concat($config:tls-data-root, "/translations");
 declare variable $config:tls-user-root := concat("/db/users/", sm:id()//sm:real/sm:username/text());
-
+declare variable $config:exide-url :="https://hxwd.org:8443/exist/apps/eXide/index.html";
 (: translation attribution :)
 (: Just for reference, might want to use this later...
 "None" : "TJAN TJOE SOM 1949FF", (\: BHT 白虎通 :\)

@@ -148,8 +148,8 @@ if ($type = "row") then
 <div class="col-sm-1">&#160;</div>
 <div class="col-sm-2"><span class="zh">{$zi}</span> ({$py})
  {if  ("tls-admin" = sm:get-user-groups($user)) then (data(($node//tls:srcline/@pos)[1]),
- <a href="{templates:link-to-app("http://exist-db.org/apps/eXide", 
-      concat("index.html?open=", document-uri(root($node))))}">eXide</a>)
+ <a href="{
+      concat($config:exide-url, "?open=", document-uri(root($node)))}">eXide</a>)
       else ()
   }    </div>
 <div class="col-sm-3"><a href="concept.html?concept={$concept}">{$concept}</a></div>

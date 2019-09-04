@@ -204,7 +204,8 @@ function save_newsw(){
 
 
 function save_to_concept(){
-    var guangyun_id = $(".guangyun-input:checked").map(function(){
+    var guangyun_id = $(".guangyun-input:checked,.guangyun-input-checked").map(function(){
+    console.log($(this).text());
     return $(this).val();
     }).get().join("xxx");
     var line_id= $( "#swl-line-id-span" ).text();
