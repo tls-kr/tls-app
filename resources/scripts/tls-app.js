@@ -31,6 +31,19 @@ var word = $("#swl-query-span").text();
   });
 };
 
+function get_sf(senseid){
+  $.ajax({
+  type : "GET",
+  dataType : "html",
+  url : "api/get_sf.xql?senseid=" + senseid, 
+  success : function(resp){
+  $('#remoteDialog').html(resp);
+  initialize_sf_autocomplete();  
+  $('#edit-sf-ialog').modal('show');
+  }
+  });
+};
+
 function get_guangyun(){
 // this is assuming one char, TODO make this work for multiple
 var word = $("#swl-query-span").text();
@@ -49,8 +62,8 @@ function hide_new_att(){
   $("#swl-form").hide()  
 };
 
-function hide_swl_form(){
-    $( "#editSWLDialog" ).modal('hide');    
+function hide_swl_form(selector){
+    $( selector ).modal('hide');    
     console.log("Clearing SWL form");
     $("#select-synfunc" ).val("");
     $("#select-semfeat").val("");
@@ -107,7 +120,7 @@ function save_swl_line(sense_id, line_id){
   dataType : "html",
   url : "api/save_swl.xql?line="+line_id+"&sense="+sense_id,
   success : function(resp){
-  hide_swl_form();
+  hide_swl_form("#editSWLDialog");
   console.log("Hiding form");
   show_swls_for_line(line_id);
   toastr.info("Attribution has been saved. Thank you for your contribution. Reload page to see new attributions.", "HXWD says:")
@@ -188,7 +201,7 @@ function save_newsw(){
   success : function(resp){
     save_this_swl(resp.sense_id)
     toastr.info("Concept has been saved.", "HXWD says:")
-    hide_swl_form();
+    hide_swl_form("#editSWLDialog");
 //  console.log("Hiding form");
   show_swls_for_line(line_id);
 //  alert(resp);
@@ -287,7 +300,36 @@ $( ".zh" )
     });
   });
 //});
-  function initialize_autocomplete(){
+function initialize_sf_autocomplete(){
+    $( "#select-synfunc" ).autocomplete({
+      appendTo: "#select-synfunc-group",
+      response : function(event, ui){
+      // need to reset this, in case of a new SF
+        $("#synfunc-id-span" ).html("xxx");     
+        $("#def-old-sf-span").html("<span class='warn'>If the new SF is not from the list, please add a definition below!</span>")
+      },
+      source: function( request, response ) {
+        $.ajax( {
+          url: "api/autocomplete.xql",
+          dataType: "jsonp",
+          data: {
+            term: request.term,
+	        type: "syn-func"
+          },
+          success: function( data ) {
+            response( data );
+          }
+        } );
+      },
+      minLength: 1,
+      select: function( event, ui ) {
+        $("#synfunc-id-span" ).html(ui.item.id);     
+        console.log( "Selected: " + ui.item.value + " aka " + ui.item.id );
+      }
+    } );
+};
+
+function initialize_autocomplete(){
     $( "#select-concept" ).autocomplete({
       appendTo: "#select-concept-group",
       source: function( request, response ) {
@@ -545,6 +587,7 @@ $('body').on('focus', '[contenteditable]', function() {
     $this.data('before', $this.html());
 }).on('blur keyup paste input', '[contenteditable]', function() {
     const $this = $(this);
+    console.log("trigger")
     if ($this.data('before') !== $this.html()) {
         $this.data('before', $this.html());
         $this.trigger('change');
@@ -639,3 +682,58 @@ function save_tr (trid, tr, line){
   }
   });    
 };
+
+// save modified definition of swl
+
+$( ".swedit" ).keyup(function( event ) {
+}).keydown(function( event ) {
+  alert(event);
+  if ( event.which == 9 | event.which == 13) {
+    var defid = $(this).attr('id');
+    var defel = document.getElementById( defid ).innerText;
+    var def = $(this).text()
+    save_def(defid, def);    
+  }
+});
+
+function save_def (defid){
+  console.log(defid)
+  var def = document.getElementById( defid ).innerText;
+  $.ajax({
+  type : "PUT",
+  dataType : "html",
+  url : "api/save_def.xql?defid="+defid+"&def="+def,
+  success : function(resp){
+    toastr.info("Modification for definition saved.", "HXWD says:");
+  },
+  error : function(resp){
+  console.log(resp);
+    alert("PROBLEM: "+resp.statusText + "\n " + resp.responseText);
+  }
+  });    
+};
+
+//stub for new sf
+
+function save_sf (){
+    var sense_id= $( "#sense-id-span" ).text();
+    var synfunc_val = $("#select-synfunc" ).val();
+    var synfunc_id = $("#synfunc-id-span" ).text();     
+    var def_val = $("#input-def" ).val();
+
+  console.log(sense_id)
+  $.ajax({
+  type : "PUT",
+  dataType : "html",
+  url : "api/save_sf.xql?sense-id="+sense_id+"&sf_id="+synfunc_id+"&sf_val="+synfunc_val+"&def="+def_val,
+  success : function(resp){
+    hide_swl_form( "#edit-sf-dialog" );      
+    toastr.info("Syntactic function updated.", "HXWD says:");
+  },
+  error : function(resp){
+  console.log(resp);
+    alert("PROBLEM: "+resp.statusText + "\n " + resp.responseText);
+  }
+  });    
+};
+

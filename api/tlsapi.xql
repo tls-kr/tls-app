@@ -323,16 +323,19 @@ return
 (: prepare the parameters for edit-sf-dialog :)
 declare function tlsapi:get-sf($senseid as xs:string){
 let $sense := collection($config:tls-data-root)//tei:sense[@xml:id=$senseid]
+,$synfunc-id := data($sense/tei:gramGrp/tls:syn-func/@corresp)=>substring(2)
+,$sfdef := doc($config:tls-data-root || "/core/syntactic-functions.xml")//tei:div[@xml:id=$synfunc-id]/tei:p/text()
 ,$para := map{
-"def" : $sense/tei:def,
+"def" : $sense/tei:def/text(),
 "synfunc" : data($sense/tei:gramGrp/tls:syn-func/text()),  
-"synfunc-id" : data($sense/tei:gramGrp/tls:syn-func/@corresp)=>substring(2),
+"synfunc-id" : $synfunc-id,
 "zi" : $sense/parent::tei:entry/tei:form/tei:orth[1]/text(),
 "pinyin" : $sense/parent::tei:entry/tei:form/tei:pron[@xml:lang="zh-Latn-x-pinyin"]/text(),
-"sense-id" : $senseid
+"sense-id" : $senseid,
+"sfdef" : $sfdef
 }
-(:return tlsapi:edit-sf-dialog($para):)
-return $para
+return tlsapi:edit-sf-dialog($para)
+(:return $para:)
 };
 
 (: 2019-12-01: the following is a stub for changing the sf of a swl. If not existing, it has to be created, including def :)
@@ -349,13 +352,14 @@ declare function tlsapi:edit-sf-dialog($para as map()){
             <div class="modal-body"> 
                 <h6 class="text-muted">Sense:  <span id="def-span" class="ml-2">{$para?def}</span></h6>
                 <h6 class="text-muted">Current SF:  <span id="old-sf-span" class="ml-2">{$para?synfunc}</span></h6>
+                <h6 class="text-muted">SF Definition:  <span id="def-old-sf-span" class="ml-2">{$para?sfdef}</span></h6>
             <div>
             <span id="sense-id-span" style="display:none;">{$para?sense-id}</span>
             <span id="synfunc-id-span" style="display:none;">{$para?synfunc-id}</span>
                 <div class="form-row">
                 <div id="select-synfunc-group" class="form-group ui-widget col-md-6">
-                    <label for="select-synfunc">New Syntactic function: </label>
-                    <input id="select-synfunc" class="form-control" required="true" value="{$para?synfunc}"/>
+                    <label for="select-synfunc">New syntactic function: </label>
+                    <input id="select-synfunc" class="form-control" required="true" value="{$para?synfunc}"></input>
                 </div>
                 <!--
                 <div id="select-semfeat-group" class="form-group ui-widget col-md-6">
@@ -365,13 +369,13 @@ declare function tlsapi:edit-sf-dialog($para as map()){
                 </div>
                 <div id="input-def-group">
                     <label for="input-def">Definition (if creating new SF)</label>
-                    <textarea id="input-def" class="form-control">{$para?def}</textarea>                   
+                    <textarea id="input-def" class="form-control"></textarea>                   
                 </div>
             </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" onclick="save-sf()">Save</button>
+                <button type="button" class="btn btn-primary" onclick="save_sf()">Save</button>
           </div>
        
        </div>
@@ -412,7 +416,8 @@ let $sf := $s//tls:syn-func/text(),
 $sm := $s//tls:sem-feat/text(),
 $def := $s//tei:def/text(),
 $sid := $s/@xml:id,
-$edit := sm:id()//sm:groups/sm:group[. = "tls-editorxx"],
+$edit := sm:id()//sm:groups/sm:group[. = "tls-editor"],
+$click := if ($edit) then concat("get_sf('" , $sid , "')") else "",
 $atts := count(collection(concat($config:tls-data-root, '/notes/'))//tls:ann[tei:sense/@corresp = "#" || $sid])
 order by $sf
 (:  :)
@@ -420,7 +425,7 @@ return
 <li>
 <span id="pop-{$s/@xml:id}" class="small btn">●</span>
 
-<a href="#" onclick="alert('{$sid}')">{$sf}</a>&#160;{$sm}: 
+<a href="#" onclick="{$click}">{$sf}</a>&#160;{$sm}: 
 <span class="swedit" id="def-{$sid}" contenteditable="{if ($edit) then 'true' else 'false'}">{ $def}</span>
     {if ($edit) then 
      <button class="btn badge badge-warning ml-2" type="button" onclick="save_def('def-{$sid}')">
@@ -617,6 +622,26 @@ for $r in subsequence($res, 1, 10)
 else 
 
 concat("No usage examples found for key: ", $key, " type: ", $type )
+
+};
+
+(: safe_sf.xql tlsapi:save-sf($sense-id, $synfunc-id, $def) :)
+declare function tlsapi:save-sf($sense-id as xs:string, $synfunc-id as xs:string, $synfunc-val as xs:string, $def as xs:string){
+let $newsf-id := if ($synfunc-id = 'xxx') then (
+  tlslib:new-syn-func ($synfunc-val, $def)
+) else ($synfunc-id)
+,$pos := <pos xmlns="http://www.tei-c.org/ns/1.0">{upper-case(substring($synfunc-val, 1, 1))}</pos>
+,$sf :=  <tls:syn-func corresp="#{$newsf-id}">{$synfunc-val}</tls:syn-func>
+,$sense := collection($config:tls-data-root)//tei:sense[@xml:id = $sense-id]
+,$upd := update replace $sense/tei:gramGrp/tei:pos with $pos 
+,$upd := update replace $sense/tei:gramGrp/tls:syn-func with $sf
+,$gramgrp := $sense/tei:gramGrp
+,$a := for $s in collection($config:tls-data-root)//tls:ann/tei:sense[@corresp = "#" || $sense-id]
+  return
+  update replace $s/tei:gramGrp with $gramgrp
+
+return 
+count(collection($config:tls-data-root)//tls:ann/tei:sense[@corresp = "#" || $sense-id])
 
 };
 

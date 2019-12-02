@@ -112,6 +112,12 @@ declare function tlslib:displaychunk($targetseg as node(), $prec as xs:int?, $fo
     </div>,
       <div class="row">
       <div class="col-sm-2">
+      {if ($dseg) then  
+      (: currently the 0 is hardcoded -- do we need to make this customizable? :)
+       <a href="?location={tokenize($dseg/@xml:id, "_")[1]}">First</a>
+       else ()}
+       </div>
+      <div class="col-sm-2">
       {if ($dseg[1]/preceding::tei:seg[1]/@xml:id) then  
       (: currently the 0 is hardcoded -- do we need to make this customizable? :)
        <a href="?location={$dseg[1]/preceding::tei:seg[1]/@xml:id}&amp;prec={$foll+$prec -2}&amp;foll=2">Previous</a>
@@ -121,6 +127,12 @@ declare function tlslib:displaychunk($targetseg as node(), $prec as xs:int?, $fo
        {
        if ($dseg[last()]/following::tei:seg[1]/@xml:id) then
       <a href="?location={$dseg[last()]/following::tei:seg[1]/@xml:id}&amp;prec=2&amp;foll={$foll+$prec -2}">Next</a>
+       else ()}
+       </div> 
+       <div class="col-sm-2">
+       {
+       if ($dseg/following::tei:seg[last()]/@xml:id) then
+      <a href="?location={$dseg/following::tei:seg[last()]/@xml:id}&amp;prec={$foll+$prec - 2}&amp;foll=0">Last</a>
        else ()}
        </div> 
       </div>
@@ -151,7 +163,8 @@ if ($type = "row") then
  <a href="{
       concat($config:exide-url, "?open=", document-uri(root($node)))}">eXide</a>)
       else ()
-  }    </div>
+  }    
+</div>
 <div class="col-sm-3"><a href="concept.html?concept={$concept}">{$concept}</a></div>
 <div class="col-sm-6">
 <span><a href="browse.html?type=syn-func&amp;id={data($sf/@corresp)}">{$sf/text()}</a>&#160;</span>
@@ -266,7 +279,7 @@ declare function tlslib:capitalize-first ( $arg as xs:string? )  as xs:string? {
     $user := sm:id()//sm:real/sm:username/text(),
     $def := $sw//tei:def/text()
     return
-    <li><span class="font-weight-bold">{$sf}</span>
+    <li><span id="sw-{$id}" class="font-weight-bold">{$sf}</span>
     <em class="ml-2">{$sm}</em> 
     <span class="ml-2">{$def}</span>
      <button class="btn badge badge-light ml-2" type="button" 
@@ -285,3 +298,17 @@ declare function tlslib:capitalize-first ( $arg as xs:string? )  as xs:string? {
     </li>
  
  };
+ 
+ 
+ declare function tlslib:new-syn-func ($sf as xs:string, $def as xs:string){
+ let $uuid := concat("uuid-", util:uuid()),
+ $user := sm:id()//sm:real/sm:username/text(),
+$el := <div xmlns:tls="http://hxwd.org/ns/1.0" xmlns="http://www.tei-c.org/ns/1.0" type="syn-func" xml:id="{$uuid}" resp="#{$user}" tls:created="{current-dateTime()}">
+<head>{$sf}</head>
+<p>{$def}</p>
+</div>,
+$last := doc($config:tls-data-root || "/core/syntactic-functions.xml")//tei:div[@type="syn-func"][last()]
+,$ret := update insert $el following $last 
+return $uuid
+ };
+ 

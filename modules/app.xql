@@ -1288,3 +1288,4 @@ function app:dialogs($node as node()*, $model as map(*))
         <div id="remoteDialog"/>
    </div>
 };
+(:: xx :)
