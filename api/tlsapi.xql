@@ -76,6 +76,7 @@ let $targetcoll := if (xmldb:collection-available($data-root || "/notes/doc")) t
 ,$newswl:=tlsapi:make-attribution($line-id, $sense-id, $user, $currentword)
 ,$targetdoc :=   if (doc-available(concat($targetcoll,"/",$docname))) then
                     doc(concat($targetcoll,"/", $docname)) else 
+                    (
    doc(xmldb:store($targetcoll, $docname, 
   <TEI xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$textid}-ann">
   <teiHeader>
@@ -100,6 +101,8 @@ let $targetcoll := if (xmldb:collection-available($data-root || "/notes/doc")) t
       </body>
   </text>
 </TEI>))
+ ,sm:chmod(xs:anyURI($targetcoll || "/" || $docname), "rwxrwxr--")
+)
 
 let $targetnode := collection($targetcoll)//tei:seg[@xml:id=$line-id]
 
@@ -113,7 +116,9 @@ else
  update insert <seg  xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$line-id}"><line>{$newswl//tls:srcline/text()}</line>{$newswl}</seg> into 
  $targetdoc//tei:p[@xml:id=concat($textid, "-start")]
  
- ,data($newswl/@xml:id))
+ ,data($newswl/@xml:id)
+ ,sm:chmod(xs:anyURI($targetcoll || "/" || $docname), "rwxrwxr--")
+ )
  else "No access"
 };
 
@@ -129,16 +134,16 @@ let $newswl:=tlsapi:make-attribution($line-id, $sense-id, $user, $currentword)
 return (
 if (xmldb:collection-available($path)) then () else
 (xmldb:create-collection($notes-path, substring($uuid, 6, 2)),
-sm:chmod(xs:anyURI($path), "rwxrwxr--"),
 sm:chown(xs:anyURI($path), $user),
-sm:chgrp(xs:anyURI($path), "tls-user")
+sm:chgrp(xs:anyURI($path), "tls-user"),
+sm:chmod(xs:anyURI($path), "rwxrwxr--")
 ),
 let $res := (xmldb:store($path, concat($uuid, ".xml"), $newswl)) 
 return
 if ($res) then (
-sm:chmod(xs:anyURI($res), "rwxrwxr--"),
 sm:chown(xs:anyURI($res), $user),
 sm:chgrp(xs:anyURI($res), "tls-editor"),
+sm:chmod(xs:anyURI($res), "rwxrwxr--"),
 "OK")
 else
 "Some error occurred, could not save resource")
@@ -188,7 +193,6 @@ let $swl:= if ($rpara?uuid = "xx") then <empty/> else collection($config:tls-dat
           if ($rpara?type = "swl") then "Editing Attribution for" else
           ""
 }
-
 return
 tlsapi:swl-dialog($para, $rpara?type)
 };
@@ -282,8 +286,10 @@ for $char at $cc in  analyze-string($chars, ".")//fn:match/text()
 return
 <div id="guangyun-input-dyn-{$cc}">
 <h5><strong class="ml-2">{$char}</strong></h5>
-{
-for $g at $count in collection(concat($config:tls-data-root, "/guangyun"))//tx:attested-graph/tx:graph[contains(.,$char)]
+{let $r:= collection(concat($config:tls-data-root, "/guangyun"))//tx:attested-graph/tx:graph[contains(.,$char)]
+return 
+if ($r) then
+for $g at $count in $r
 let $e := $g/ancestor::tx:guangyun-entry,
 $p := for $s in $e//tx:mandarin/* 
        return 
@@ -303,9 +309,76 @@ return
      {$e/tx:gloss/text()} -  {$py}
    </label>
   </div>
+  else 
+  <div class="form-check">
+  <input class="guangyun-input-checked" name="guangyun-input-{$cc}" id="guangyun-input-{$cc}-1" type="text" value="{$char}:"/>
+   <label class="form-check-label" for="guangyun-input-{$cc}-1">
+     No entry found in Guangyun. Please enter the pinyin after the character and : 
+   </label>
+  </div>
 }
 </div>
 };
+
+(: prepare the parameters for edit-sf-dialog :)
+declare function tlsapi:get-sf($senseid as xs:string){
+let $sense := collection($config:tls-data-root)//tei:sense[@xml:id=$senseid]
+,$para := map{
+"def" : $sense/tei:def,
+"synfunc" : data($sense/tei:gramGrp/tls:syn-func/text()),  
+"synfunc-id" : data($sense/tei:gramGrp/tls:syn-func/@corresp)=>substring(2),
+"zi" : $sense/parent::tei:entry/tei:form/tei:orth[1]/text(),
+"pinyin" : $sense/parent::tei:entry/tei:form/tei:pron[@xml:lang="zh-Latn-x-pinyin"]/text(),
+"sense-id" : $senseid
+}
+(:return tlsapi:edit-sf-dialog($para):)
+return $para
+};
+
+(: 2019-12-01: the following is a stub for changing the sf of a swl. If not existing, it has to be created, including def :)
+declare function tlsapi:edit-sf-dialog($para as map()){
+<div id="edit-sf-ialog" class="modal" tabindex="-1" role="dialog" style="display: none;">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Change <span class="">syntactic function</span> for <span>{$para?zi}&#160;({$para?pinyin})</span></h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    ×
+                </button>
+            </div>
+            <div class="modal-body"> 
+                <h6 class="text-muted">Sense:  <span id="def-span" class="ml-2">{$para?def}</span></h6>
+                <h6 class="text-muted">Current SF:  <span id="old-sf-span" class="ml-2">{$para?synfunc}</span></h6>
+            <div>
+            <span id="sense-id-span" style="display:none;">{$para?sense-id}</span>
+            <span id="synfunc-id-span" style="display:none;">{$para?synfunc-id}</span>
+                <div class="form-row">
+                <div id="select-synfunc-group" class="form-group ui-widget col-md-6">
+                    <label for="select-synfunc">New Syntactic function: </label>
+                    <input id="select-synfunc" class="form-control" required="true" value="{$para?synfunc}"/>
+                </div>
+                <!--
+                <div id="select-semfeat-group" class="form-group ui-widget col-md-6">
+                    <label for="select-semfeat">Semantic feature: </label>
+                    <input id="select-semfeat" class="form-control" value="{$para?semfeat}"/>
+                </div> -->
+                </div>
+                <div id="input-def-group">
+                    <label for="input-def">Definition (if creating new SF)</label>
+                    <textarea id="input-def" class="form-control">{$para?def}</textarea>                   
+                </div>
+            </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="save-sf()">Save</button>
+          </div>
+       
+       </div>
+       </div>   
+</div>
+};
+
 
 declare function tlsapi:get-sw($word as xs:string) as item()* {
 let $words := collection(concat($config:tls-data-root, '/concepts/'))//tei:orth[. = $word]
@@ -322,27 +395,56 @@ $form := $w/parent::tei:form/@corresp
 (:group by $concept:)
 order by $concept
 return
-<li class="mb-3"><strong>{$zi}</strong>&#160;({$py})&#160;<strong>{$concept}</strong> 
+<li class="mb-3"><strong>{$zi}</strong>&#160;({$py})&#160;<strong>
+<a href="concept.html?uuid={$id}">{$concept}</a></strong> 
      { if (sm:is-authenticated()) then 
 <button class="btn badge badge-secondary ml-2" type="button" 
 onclick="show_newsw({{'wid':'{$wid}','concept' : '{$concept}', 'concept_id' : '{$id}'}})">
            New SW
       </button>
       else ()}
-<ul class="list-unstyled" style="swl-bullet">{for $s in $w/ancestor::tei:entry/tei:sense
+<span>      
+<button title="click to reveal {count($w/ancestor::tei:entry/tei:sense)} syntactic words" class="btn badge badge-light" type="button" 
+      data-toggle="collapse" data-target="#{$id}-concept">{count($w/ancestor::tei:entry/tei:sense)}</button>
+
+<ul class="list-unstyled collapse" id="{$id}-concept" style="swl-bullet">{for $s in $w/ancestor::tei:entry/tei:sense
 let $sf := $s//tls:syn-func/text(),
 $sm := $s//tls:sem-feat/text(),
-$def := $s//tei:def/text()
+$def := $s//tei:def/text(),
+$sid := $s/@xml:id,
+$edit := sm:id()//sm:groups/sm:group[. = "tls-editorxx"],
+$atts := count(collection(concat($config:tls-data-root, '/notes/'))//tls:ann[tei:sense/@corresp = "#" || $sid])
+order by $sf
+(:  :)
 return
-<li><span id="pop-{$s/@xml:id}" class="small btn" data-toggle="popover" data-placement="left">●</span>{$sf}&#160;{$sm}: {$def}
+<li>
+<span id="pop-{$s/@xml:id}" class="small btn">●</span>
+
+<a href="#" onclick="alert('{$sid}')">{$sf}</a>&#160;{$sm}: 
+<span class="swedit" id="def-{$sid}" contenteditable="{if ($edit) then 'true' else 'false'}">{ $def}</span>
+    {if ($edit) then 
+     <button class="btn badge badge-warning ml-2" type="button" onclick="save_def('def-{$sid}')">
+           Save
+     </button>
+    else ()}
      { if (sm:is-authenticated()) then 
+     (
      <button class="btn badge badge-primary ml-2" type="button" onclick="save_this_swl('{$s/@xml:id}')">
            Use
+      </button>,
+     <button class="btn badge badge-light ml-2" type="button" 
+     data-toggle="collapse" data-target="#{$sid}-resp" onclick="show_att('{$sid}')">
+      <span class="ml-2">SWL: {$atts}</span>
       </button>
+      
+      )
       else () }
+      <div id="{$sid}-resp" class="collapse container"></div>
 </li>
 }
-</ul></li>
+</ul>
+</span>
+</li>
 else 
 <li class="list-group-item">No word selected or no existing syntactic word found.</li>
 };
@@ -395,27 +497,34 @@ return
 declare function tlsapi:save-to-concept($rpara as map(*)) {
 
 let $user := sm:id()//sm:real/sm:username/text()
-
+(:  if no gy record is found, we return a string like this for guangyun-id "黃:huangxxx蘗:bo" :)
 let $gys :=    
    for $gid in tokenize(normalize-space($rpara?guangyun-id), "xxx") 
+   let $r :=  collection(concat($config:tls-data-root, "/guangyun"))//tx:guangyun-entry[@xml:id=$gid]
    return
-    collection(concat($config:tls-data-root, "/guangyun"))//tx:guangyun-entry[@xml:id=$gid]
+   if ($r) then $r else $gid
 
  
  let $form :=
 (:   let $e := collection(concat($config:tls-data-root, "/guangyun"))//tx:guangyun-entry[@xml:id=$gid],:)
     let $oc := for $gy in $gys
-        let $rec := $gy//tx:old-chinese/tx:pan-wuyun/tx:oc/text()
+        let $rec := if ($gy instance of element()) then $gy//tx:old-chinese/tx:pan-wuyun/tx:oc/text() else ()
         return if ($rec) then $rec else "--"
     ,$mc := for $gy in $gys 
-        let $rec := $gy//tx:middle-chinese//tx:baxter/text()
+        let $rec := if ($gy instance of element()) then $gy//tx:middle-chinese//tx:baxter/text() else ()
         return if ($rec) then $rec else "--"
-    ,$p := for $gy in $gys for $s in $gy//tx:mandarin/*
-       return 
-       if (string-length(normalize-space($s)) > 0) then $s/text() else (),
-    $gr := for $gy in $gys return 
-      normalize-space($gy//tx:attested-graph/tx:graph/text())
-    
+    ,$p := for $gy in $gys 
+         let $rec := if ($gy instance of element()) then
+            for $s in $gy//tx:mandarin/*
+             return
+             if (string-length(normalize-space($s)) > 0) then $s/text() else () else ()
+         return 
+         if ($rec) then $rec else
+         tokenize($gy, ":")[2] ,
+    $gr := for $gy in $gys
+      let $r := if ($gy instance of element()) then normalize-space($gy//tx:attested-graph/tx:graph/text()) else ()
+      return
+      if ($r) then $r else tokenize($gy, ":")[1] 
 return
     <form xmlns="http://www.tei-c.org/ns/1.0" corresp="#{replace($rpara?guangyun-id, "xxx", " #")}">
     <orth>{string-join($gr, "")}</orth>
@@ -470,7 +579,16 @@ return
 <div class="row bg-light table-striped">
 <div class="col-sm-2"><a href="textview.html?location={$target}" class="font-weight-bold">{$src, $loc}</a></div>
 <div class="col-sm-3"><span data-target="{$target}" data-toggle="popover">{$line}</span></div>
-<div class="col-sm-7"><span>{$tr}</span></div>
+<div class="col-sm-7"><span>{$tr}</span>
+{if (sm:has-access(document-uri(fn:root($a)), "w") and $a/@xml:id) then 
+<div style="height:13px;position:absolute; top:0; right:0;">
+ <button type="button" class="btn" onclick="delete_swl('{$a/@xml:id}')" style="width:10px;height:20px;" 
+ title="Delete this attribution">
+ <img class="icon"  style="width:10px;height:13px;top:0;align:top" src="resources/icons/open-iconic-master/svg/x.svg"/>
+ </button>
+</div>
+else ()}
+</div>
 </div>
 else 
 <p class="font-weight-bold">No attributions found</p>
@@ -502,6 +620,23 @@ concat("No usage examples found for key: ", $key, " type: ", $type )
 
 };
 
+declare function tlsapi:save-def($defid as xs:string, $def as xs:string){
+let $user := sm:id()//sm:real/sm:username/text()
+let $id := substring($defid, 5)
+,$sense := collection($config:tls-data-root)//tei:sense[@xml:id = $id]
+,$defel := <def xmlns="http://www.tei-c.org/ns/1.0" resp="#{$user}" updated="{current-dateTime()}">{$def}</def>
+,$upd := update replace $sense/tei:def with $defel
+,$a := for $s in collection($config:tls-data-root)//tls:ann/tei:sense[@corresp = "#" || $id]
+  return
+  update replace $s/tei:def with $defel
+return 
+$defel
+(:if (update replace $node with $seg) then "Success. Updated translation." else "Could not update translation." 
+if (update replace $sense/tei:def with $defel) then "Success" else "Problem"
+:)
+
+};
+
 declare function tlsapi:save-tr($trid as xs:string, $tr as xs:string, $lang as xs:string){
 let $user := sm:id()//sm:real/sm:username/text()
 let $id := substring($trid, 1, string-length($trid) -3)
@@ -509,9 +644,10 @@ let $id := substring($trid, 1, string-length($trid) -3)
 ,$trcoll := concat($config:tls-translation-root, "/", $lang)
 ,$trcollavailable := xmldb:collection-available($trcoll) or 
   (xmldb:create-collection($config:tls-translation-root, $lang),
-  sm:chmod(xs:anyURI($trcoll), "rwxrwxr--"),
   sm:chown(xs:anyURI($trcoll), "tls"),
-  sm:chgrp(xs:anyURI($trcoll), "tls-user") )
+  sm:chgrp(xs:anyURI($trcoll), "tls-user"),
+  sm:chmod(xs:anyURI($trcoll), "rwxrwxr--")
+  )
 ,$docpath := concat($trcoll, "/", $txtid, "-", $lang, ".xml")
 ,$title := collection($config:tls-texts-root)//tei:TEI[@xml:id=$txtid]//tei:titleStmt/tei:title/text()
 ,$node := collection($trcoll)//tei:seg[@corresp=concat("#", $id)]
