@@ -15,7 +15,7 @@ import module namespace tlsapi="http://hxwd.org/tlsapi" at "tlsapi.xql";
 
 let $sense-id := request:get-parameter("sense-id", "uuid-20c9da30-27bc-4b0a-ab0a-787663fdf4b2", false())
 , $start := request:get-parameter("start", "1", false())
-, $count := request:get-parameter("count", "30", false())
+, $count := request:get-parameter("count", "100", false())
 ,$sense := collection($config:tls-data-root)//tei:sense[@xml:id = $sense-id]
 ,$concept-id := $sense/ancestor::tei:div[@type='concept']/@xml:id
 ,$ann := for $c in collection($config:tls-data-root||"/notes")//tls:ann[@concept-id=$concept-id]

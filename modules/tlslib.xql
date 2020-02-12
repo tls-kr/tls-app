@@ -28,6 +28,26 @@ declare function tlslib:is-first-in-div($seg as node()){
     $seg/@xml:id = $seg/ancestor::tei:div/tei:p[1]/tei:seg[1]/@xml:id    
 };
 
+declare function tlslib:display_duration($pt as xs:duration) {
+let $y := years-from-duration($pt)
+,$m := months-from-duration($pt)
+,$d := days-from-duration($pt)
+,$h := hours-from-duration($pt)
+,$mi := minutes-from-duration($pt)
+,$s := seconds-from-duration($pt)
+return
+<span>{(
+if ($y > 0) then if ($y > 1) then <span> {$y} years </span> else <span>{$y} year </span> else (),
+if ($m > 0) then if ($m > 1) then <span> {$m} months </span> else <span> {$m} month </span> else (),
+if ($d > 0) then if ($d > 1) then <span> {$d} days </span> else <span> {$d} day </span> else (),
+if ($h > 0) then if ($h > 1) then <span> {$m} hours </span> else <span> {$m} hour </span> else (),
+if ($mi > 0) then if ($mi > 1) then <span> {$mi} minutes </span> else <span> {$mi} minute </span> else (),
+if ($s > 0) then if ($s > 1) then <span> {$s} seconds </span> else <span> {$s} second </span> else ()
+)
+}
+</span>
+};
+
 declare function tlslib:get-rating($txtid){
     let $user := sm:id()//sm:real/sm:username/text(),
     $ratings := doc("/db/users/" || $user || "/ratings.xml")//text
@@ -197,6 +217,7 @@ if (string-length($def) > 10) then concat(substring($def, 10), "...") else $def}
 
 
 declare function tlslib:displayseg($seg as node()*, $options as map(*) ){
+let $user := sm:id()//sm:real/sm:username/text()
 let $link := concat('#', $seg/@xml:id),
 $ann := lower-case(map:get($options, "ann")),
 $loc := map:get($options, "loc"),
@@ -221,7 +242,7 @@ if (string-length(string-join($seg/text(), "")) > 0) then
 (<div class="row {$mark}">
 <div class="col-sm-4 zh" id="{$seg/@xml:id}">{$seg/text()}</div>　
 <div class="col-sm-7 tr" id="{$seg/@xml:id}-tr" 
-contenteditable="{if (sm:has-access(xs:anyURI($config:tls-translation-root), "r")) then 'true' else 'false'}">
+contenteditable="{if (sm:has-access(xs:anyURI($config:tls-translation-root), "r") and $user != 'test') then 'true' else 'false'}">
 {  (: if there is more than one translation, we take the one with the shorter path (outrageous hack) :)
    let $tr:= for $t in collection($config:tls-data-root)//tei:seg[@corresp=$link]
              let $p := string-length(document-uri(root($t)))
@@ -311,4 +332,33 @@ $last := doc($config:tls-data-root || "/core/syntactic-functions.xml")//tei:div[
 ,$ret := update insert $el following $last 
 return $uuid
  };
+ 
+ 
+ 
+ declare function tlslib:show-att-display($a as node()){
+
+let $user := sm:id()//sm:real/sm:username/text()
+let $src := data($a/tls:text/tls:srcline/@title)
+let $line := $a/tls:text/tls:srcline/text(),
+$tr := $a/tls:text/tls:line,
+$target := substring(data($a/tls:text/tls:srcline/@target), 2),
+$loc := xs:int(substring-before(tokenize(substring-before($target, "."), "_")[last()], "-"))
+
+return
+<div class="row bg-light table-striped">
+<div class="col-sm-2"><a href="textview.html?location={$target}" class="font-weight-bold">{$src, $loc}</a></div>
+<div class="col-sm-3"><span data-target="{$target}" data-toggle="popover">{$line}</span></div>
+<div class="col-sm-7"><span>{$tr}</span>
+{if ((sm:has-access(document-uri(fn:root($a)), "w") and $a/@xml:id) and $user != 'test') then 
+<div style="height:13px;position:absolute; top:0; right:0;">
+ <button type="button" class="btn" onclick="delete_swl('{$a/@xml:id}')" style="width:10px;height:20px;" 
+ title="Delete this attribution">
+ <img class="icon"  style="width:10px;height:13px;top:0;align:top" src="resources/icons/open-iconic-master/svg/x.svg"/>
+ </button>
+</div>
+else ()}
+</div>
+</div>
+};
+
  

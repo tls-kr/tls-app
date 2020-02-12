@@ -4,6 +4,7 @@ module namespace app="http://hxwd.org/app";
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
+declare namespace json = "http://www.json.org";
 
 import module namespace templates="http://exist-db.org/xquery/templates" ;
 import module namespace config="http://hxwd.org/config" at "config.xqm";
@@ -11,6 +12,8 @@ import module namespace kwic="http://exist-db.org/xquery/kwic"
     at "resource:org/exist/xquery/lib/kwic.xql";
 import module namespace tlslib="http://hxwd.org/lib" at "tlslib.xql";
 import module namespace tlsapi="http://hxwd.org/tlsapi" at "../api/tlsapi.xql";
+import module namespace un="http://hxwd.org/user" at "user.xql";
+(:import module namespace un = "http://exist-db.org/apps/userManager" at "/db/apps/usermanager/modules/userManager.xqm";:)
 
 declare variable $app:SESSION := "tls:results";
 
@@ -1187,12 +1190,91 @@ function app:tv-navbar($node as node()*, $model as map(*))
             </nav>
 };
 
+declare 
+    %templates:wrap
+function app:recent($node as node()*, $model as map(*)){
+(: attributions and translations, with API calls to actual activity :)
+
+<div><h2>Recent activity</h2>
+{
+let $notes := "/db/apps/tls-data/notes"
+, $trans := "/db/apps/tls-data/translations"
+let $atts := for $a in collection($notes)//tls:ann/tls:metadata
+ let $date := xs:dateTime($a/@created)
+ where $date > xs:dateTime("2019-08-29T19:51:15.425+09:00")
+ order by $date descending
+ return $a
+,$pers := for $a in distinct-values($atts/@resp)
+  return $a
+  
+return  
+
+<div>
+<h3>Attributions</h3>
+<p>Total number of attributions made since Aug. 28, 2019: {count($atts)}</p>
+
+<ul>
+{for $p in $pers
+let $px := substring-after($p,"#")
+let $un := un:get-user($px)
+(:,$un := $px
+:), $cnt := count($atts[@resp=$p])
+order by $cnt descending
+return
+<li>{if (not($un)) then $px else $un}, {$cnt}</li>
+}
+</ul>
+{
+for $a in subsequence($atts, 1, 1)
+let $att := $a/ancestor::tls:ann
+return 
+<div><span>The most recent attribution was {tlslib:display_duration(xs:dateTime(current-dateTime()) - xs:dateTime(data($a/@created)))} ago :</span>
+{(
+tlslib:show-att-display($att),
+tlslib:format-swl($att, "row")
+)}
+</div>}
+</div>
+},
+
+{
+let $trans := "/db/apps/tls-data/translations"
+let $atts := for $a in collection($trans)//tei:seg
+ let $date := xs:dateTime($a/@modified)
+ where $date > xs:dateTime("2019-08-29T19:51:15.425+09:00")
+ order by $date descending
+ return $a
+,$pers := for $a in distinct-values($atts/@resp)
+  return $a
+  
+return  
+
+<div>
+<h3>Lines of translations</h3>
+<p>Total number of lines translated since Aug. 28, 2019: {count($atts)}</p>
+<ul>
+{for $px in $pers
+let $un := un:get-user($px)
+(:let $un := "xx":)
+let $cnt := count($atts[@resp=$px])
+order by $cnt descending
+return
+(:<li>{if (not($un)) then $px else $un}, {$cnt}</li>:)
+<li>{if (not($un)) then $px else $un}, {$cnt}</li>
+
+}
+</ul>
+</div>
+}
+</div>
+};
+
 declare
     %templates:wrap
 function app:footer($node as node()*, $model as map(*)){
             <div class="container">
                 <span id="copyright"/>
-                    <p>Copyright TLS Project 2019</p>
+                    <p>Copyright TLS Project 2020</p>
                 <p>Developed at the <strong>Center for Informatics in East-Asian Studies, Institute for Research in Humanities, Kyoto University</strong>, with support from the 
                 <strong>Dean for Research, Department of East Asian Studies</strong>, and
                 <strong>Program in East Asian Studies, Princeton University</strong>.</p>    

@@ -199,9 +199,13 @@ function save_newsw(){
   async : false,
   url : "api/save_newsw.xql?concept="+concept_id+"&wid="+word_id+"&concept-val="+concept_val+"&synfunc="+synfunc_id+"&synfunc-val="+synfunc_val+"&semfeat="+semfeat_id+"&semfeat-val="+semfeat_val+"&def="+def_val,
   success : function(resp){
+    if (resp.sense_id == "not_saved"){
+    toastr.info("Could not save: " + resp.result, "HXWD says:")        
+    } else {
     save_this_swl(resp.sense_id)
     toastr.info("Concept has been saved.", "HXWD says:")
     hide_swl_form("#editSWLDialog");
+    }
 //  console.log("Hiding form");
   show_swls_for_line(line_id);
 //  alert(resp);

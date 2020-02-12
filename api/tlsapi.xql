@@ -291,7 +291,7 @@ return
 if ($r) then
 for $g at $count in $r
 let $e := $g/ancestor::tx:guangyun-entry,
-$p := for $s in $e//tx:mandarin/* 
+$p := for $s in $e//tx:mandarin/tx:jin 
        return 
        if (string-length(normalize-space($s)) > 0) then $s else (),
 $py := normalize-space(string-join($p, ';'))
@@ -386,6 +386,7 @@ declare function tlsapi:edit-sf-dialog($para as map()){
 
 declare function tlsapi:get-sw($word as xs:string) as item()* {
 let $words := collection(concat($config:tls-data-root, '/concepts/'))//tei:orth[. = $word]
+let $user := sm:id()//sm:real/sm:username/text()
 return
 if (count($words) > 0) then
 for $w in $words
@@ -434,9 +435,10 @@ return
     else ()}
      { if (sm:is-authenticated()) then 
      (
+     if ($user != 'test') then
      <button class="btn badge badge-primary ml-2" type="button" onclick="save_this_swl('{$s/@xml:id}')">
            Use
-      </button>,
+      </button> else (),
      <button class="btn badge badge-light ml-2" type="button" 
      data-toggle="collapse" data-target="#{$sid}-resp" onclick="show_att('{$sid}')">
       <span class="ml-2">SWL: {$atts}</span>
@@ -484,13 +486,21 @@ declare function tlsapi:save-newsw($rpara as map(*)) {
 <sense xml:id="{$suid}" resp="#{$user}" tls:created="{current-dateTime()}" xmlns="http://www.tei-c.org/ns/1.0" 
 xmlns:tls="http://hxwd.org/ns/1.0">
 <gramGrp><pos>{upper-case(substring($rpara?synfunc-val, 1,1))}</pos>
-  <tls:syn-func corresp="#{$rpara?synfunc}">{$rpara?synfunc-val}</tls:syn-func>
+  <tls:syn-func corresp="#{$rpara?synfunc}">{translate($rpara?synfunc-val, ' ', '+')}</tls:syn-func>
   {if ($rpara?semfeat) then 
-  <tls:sem-feat corresp="#{$rpara?semfeat}">{$rpara?semfeat-val}</tls:sem-feat>
+  <tls:sem-feat corresp="#{$rpara?semfeat}">{translate($rpara?semfeat-val, ' ', '')}</tls:sem-feat>
   else ()}
   </gramGrp>
   <def>{$rpara?def}</def></sense>
 return
+(: this is a hack, validation needs to be properly done on the form before posting :)
+if (string-length($rpara?synfunc-val) = 0) then
+<response>
+<user>{$user}</user>
+<sense_id>not_saved</sense_id>
+<result>No syntactic function given</result>
+</response>
+else
 <response>
 <user>{$user}</user>
 <result>{update insert $newnode into $concept-doc}</result>
@@ -565,39 +575,18 @@ return
 
 };
 
-
 declare function tlsapi:show-att($uid as xs:string){
-
 let $key := "#" || $uid
 let $atts := collection(concat($config:tls-data-root, '/notes/'))//tls:ann[tei:sense/@corresp = $key]
 return
 if (count($atts) > 0) then
-for $a in $atts
-let $src := data($a/tls:text/tls:srcline/@title),
-$when := data($a/tls:text/@tls:when)
-let $line := $a/tls:text/tls:srcline/text(),
-$tr := $a/tls:text/tls:line,
-$target := substring(data($a/tls:text/tls:srcline/@target), 2),
-$loc := xs:int(substring-before(tokenize(substring-before($target, "."), "_")[last()], "-"))
-order by $when descending
-return
-<div class="row bg-light table-striped">
-<div class="col-sm-2"><a href="textview.html?location={$target}" class="font-weight-bold">{$src, $loc}</a></div>
-<div class="col-sm-3"><span data-target="{$target}" data-toggle="popover">{$line}</span></div>
-<div class="col-sm-7"><span>{$tr}</span>
-{if (sm:has-access(document-uri(fn:root($a)), "w") and $a/@xml:id) then 
-<div style="height:13px;position:absolute; top:0; right:0;">
- <button type="button" class="btn" onclick="delete_swl('{$a/@xml:id}')" style="width:10px;height:20px;" 
- title="Delete this attribution">
- <img class="icon"  style="width:10px;height:13px;top:0;align:top" src="resources/icons/open-iconic-master/svg/x.svg"/>
- </button>
-</div>
-else ()}
-</div>
-</div>
+ for $a in $atts return 
+ let $when := data($a/tls:text/@tls:when)
+ order by $when descending
+ return 
+ tlslib:show-att-display($a)
 else 
-<p class="font-weight-bold">No attributions found</p>
-
+ <p class="font-weight-bold">No attributions found</p>
 };
 
 declare function tlsapi:delete-swl($uid as xs:string) {
