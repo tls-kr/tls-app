@@ -1153,7 +1153,6 @@ function app:tv-navbar($node as node()*, $model as map(*))
                             <div class="dropdown-menu" aria-labelledby="navbarDropdown">
                                 <a class="dropdown-item" href="browse.html?type=concept">Concepts</a>
                                 <a class="dropdown-item" href="browse.html?type=taxchar">Characters</a>
-                                <a class="dropdown-item" href="browse.html?type=word">Words</a>
                                 <a class="dropdown-item" href="browse.html?type=syn-func">Syntactical functions</a>
                                 <a class="dropdown-item" href="browse.html?type=sem-feat">Semantical features</a>
                                 <div class="dropdown-divider"/>

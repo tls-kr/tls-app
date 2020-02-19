@@ -105,6 +105,8 @@ let $targetcoll := if (xmldb:collection-available($data-root || "/notes/doc")) t
 )
 
 let $targetnode := collection($targetcoll)//tei:seg[@xml:id=$line-id]
+,$texturi := if (starts-with($textid, "CH")) then 
+                xs:anyURI("/db/apps/tls-texts/chant/" || substring($textid, 1, 3) || "/" || $textid || ".xml") else ()
 
 return 
 if (sm:has-access($targetcoll, "w")) then
@@ -118,6 +120,8 @@ else
  
  ,data($newswl/@xml:id)
  ,sm:chmod(xs:anyURI($targetcoll || "/" || $docname), "rwxrwxr--")
+ (: for the CHANT files: grant access when attribution is made :)
+ ,if ($texturi) then sm:chmod($texturi, "rwxrwxr--") else ()
  )
  else "No access"
 };

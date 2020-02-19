@@ -632,9 +632,13 @@ function delete_swl(uid){
 
 $( ".tr" ).keyup(function( event ) {
 }).keydown(function( event ) {
-if ( event.which == 52 ) {
+    var trid = $(this).attr('id');
+    var lineid = trid.substring(0, trid.indexOf("-tr"));
+    var line = document.getElementById( lineid ).innerText;
+// this is disabled for the moment. procline.xql does not exist
+if ( event.which == 5200 & event.shiftKey == true) {
     event.preventDefault();
-    console.log(lineid, line)    
+    console.log(lineid, line, event.shiftKey)    
   $.ajax({
   type : "GET",
   dataType : "html",
