@@ -1,18 +1,36 @@
 xquery version "3.1";
+(:~
+: This module provides the internal functions that do not directly control the Web presentation
+: of the TLS. 
+
+: @author Christian Wittern  cwittern@yahoo.com
+: @version 1.0
+:)
+
 module namespace tlslib="http://hxwd.org/lib";
 
 import module namespace config="http://hxwd.org/config" at "config.xqm";
-import module namespace app="http://hxwd.org/app" at "app.xql";
+(: import module namespace app="http://hxwd.org/app" at "app.xql"; :)
+(:
 import module namespace templates="http://exist-db.org/xquery/templates" ;
+:)
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
+
+(:~ 
+: Helper functions
+:)
 
 declare function tlslib:expath-descriptor() as element() {
     <rl/>
 };
 
-(: helper functions :)
+(:~
+: check if a string consists completely of kanji
+: @param $string  a string to be tested
+:)
+
 declare function tlslib:iskanji($string as xs:string) as xs:boolean {
 let $kanji := '&#x3400;-&#x4DFF;&#x4e00;-&#x9FFF;&#xF900;-&#xFAFF;&#xFE30;-&#xFE4F;&#x00020000;-&#x0002A6DF;&#x0002A700;-&#x0002B73F;&#x0002B740;-&#x0002B81F;&#x0002B820;-&#x0002F7FF;',
 $pua := '&#xE000;-&#xF8FF;&#x000F0000;-&#x000FFFFD;&#x00100000;-&#x0010FFFD;'
@@ -20,14 +38,66 @@ return
 matches(replace($string, '\s', ''), concat("^[", $kanji, $pua, "]+$" ))
 };
 
+(:~ 
+: check if the tei:seg node passed in is the first in the paragraph
+: @param  $seg a tei:seg element
+:)
+
 declare function tlslib:is-first-in-p($seg as node()){
     $seg/@xml:id = $seg/parent::tei:p/tei:seg[1]/@xml:id    
 };
+
+(:~ 
+: check if the tei:seg node passed in is the first in the division
+: @param  $seg a tei:seg element
+:)
 
 declare function tlslib:is-first-in-div($seg as node()){
     $seg/@xml:id = $seg/ancestor::tei:div/tei:p[1]/tei:seg[1]/@xml:id    
 };
 
+declare function tlslib:capitalize-first ( $arg as xs:string? )  as xs:string? {
+   concat(upper-case(substring($arg,1,1)),
+             substring($arg,2))
+ } ;
+
+(:~
+: get the definition for semantic features or syntactic functions
+: @param $type either "sem-feat" or "syn-func"
+: @param $string  : this string will be used to look up the feature
+: 2020-02-26 not sure if this is actually used somewhere
+:)
+declare function tlslib:getsynsem($type as xs:string, $string as xs:string, $map as map(*))
+{
+map:merge(
+let $file := if ($type = "sem-feat") then "semantic-features.xml" else 
+             if ($type = "syn-func") then "syntactic-functions.xml" else ""
+   for $s in doc(concat($config:tls-data-root, '/core/', $file))//tei:head[contains(., $string)]
+   return 
+   map:entry(string($s/parent::tei:div/@xml:id), string($s))
+ )
+};
+
+(:~
+: looks for a word in the tei:orth element of concepts
+: @param $word the word
+: @map  ??
+: returns a map of entry elements and their concept-id and concept name
+: used by app:get_sw($node, $model, $word)
+:)
+declare function tlslib:getwords($word as xs:string, $map as map(*))
+{
+map:merge(
+   for $s in collection(concat($config:tls-data-root, '/concepts/'))//tei:orth[. = $word]
+   return 
+   map:entry(string($s/ancestor::tei:entry/@xml:id), (string($s/ancestor::tei:div/@xml:id), string($s/ancestor::tei:div/tei:head)))
+ )
+};
+
+(:~
+: format the duration in a human readable way
+: @param  $pt a xs:duration instance
+:)
 declare function tlslib:display_duration($pt as xs:duration) {
 let $y := years-from-duration($pt)
 ,$m := months-from-duration($pt)
@@ -48,6 +118,11 @@ if ($s > 0) then if ($s > 1) then <span> {$s} seconds </span> else <span> {$s} s
 </span>
 };
 
+(:~
+: recurse through the supplied node (a te:seg) and return only the top level text()
+: 2020-02-20: created this element because KR2m0054 has <note> elements in translation. 
+: @param $node a tei:seg node, typically
+:)
 declare function tlslib:procseg($node as node()){
  typeswitch ($node)
  case element(tei:note) return ()
@@ -58,13 +133,36 @@ declare function tlslib:procseg($node as node()){
  default return $node    
 };
 
+(:~ 
+: get the rating (an integer between 0 and 10) of the text, identified by the passed in text id
+: this is i.e. used for the ranking of search results
+: @param $txtid  the id of the text
+:)
 declare function tlslib:get-rating($txtid){
     let $user := sm:id()//sm:real/sm:username/text(),
     $ratings := doc("/db/users/" || $user || "/ratings.xml")//text
     return 
     if ($ratings[@id=$txtid]) then $ratings[@id=$txtid]/@rating else 0
 };
+(:~
+: Lookup the title for a given textid
+: @param $txtid
+:)
+declare function tlslib:get-title($txtid as xs:string){
+let $title := collection("/db/apps/tls-texts") //tei:TEI[@xml:id=$txtid]//tei:titleStmt/tei:title/text()
+return $title
+};
 
+
+(:~ 
+: this is the header line used for the text display, called from app:textview
+: @param  $node  this is the tei:seg element that contains a line that will be on this page, 
+: note: currently the translators are drawn from the $config:textsource map, this will have to come from the 
+: translation file itself:  eg //tei:TEI[@xml:id=$textid || "-en"]//tei:editor[@role='translator']
+: TODO: add textid and title to the <title> element of HTML
+: @param $node  tei:seg on the page
+: @param $model a map containing arbitrary data 
+:)
 declare function tlslib:tv-header($node as node()*, $model as map(*)){
     let $location := request:get-parameter("location", "xx")
     ,$targetseg := 
@@ -113,6 +211,11 @@ declare function tlslib:tv-header($node as node()*, $model as map(*)){
       )
 };
 
+(:~
+: generate the table of contents for the textview header.  Called from
+: @see tlslib:tv-header()
+:)
+
 declare function tlslib:generate-toc($node){
  if ($node/tei:head) then
   let $locseg := if ($node//tei:seg/@xml:id) then ($node//tei:seg/@xml:id)[1] else $node/following::tei:seg[1]/@xml:id
@@ -123,7 +226,12 @@ declare function tlslib:generate-toc($node){
  return tlslib:generate-toc($d)
 };
 
-(: display $prec and $foll preceding and following segments of a given seg :)
+(:~
+: display a chunk of text, surrounding the $targetsec
+: @param $targetseg  a tei:seg element
+: @param $prec an xs:int giving the number of tei:seg elements to display before the $targetsec
+: @param $foll an xs:int giving the number of tei:seg elements following the $targetsec 
+display $prec and $foll preceding and following segments of a given seg :)
 
 declare function tlslib:displaychunk($targetseg as node(), $prec as xs:int?, $foll as xs:int?){
 
@@ -139,7 +247,7 @@ declare function tlslib:displaychunk($targetseg as node(), $prec as xs:int?, $fo
       <div id="chunkrow" class="row">
       <div id="chunkcol-left" class="col-sm-8">{for $d in $dseg return tlslib:displayseg($d, map{'loc' : data($targetseg/@xml:id) })}</div>
       <div id="chunkcol-right" class="col-sm-4">
-      {app:swl-form-dialog($targetseg, map{})}
+      {tlslib:swl-form-dialog($targetseg)}
     </div>
     </div>,
       <div class="row">
@@ -171,9 +279,138 @@ declare function tlslib:displaychunk($targetseg as node(), $prec as xs:int?, $fo
       )
 
 };
+
+(: dialog functions :) 
+
+declare function tlslib:swl-form-dialog($node as node()*){
+<div id="swl-form" class="card ann-dialog overflow-auto">
+<div class="card-body">
+    <h5 class="card-title">{if (sm:is-authenticated()) then "New Attribution:" else "Existing SW for " }<strong class="ml-2"><span id="swl-query-span">Word or char to annotate</span>:</strong>
+     <button type="button" class="close" onclick="hide_new_att()" aria-label="Close" title="Close">
+     <img class="icon" src="resources/icons/open-iconic-master/svg/circle-x.svg"/>  
+     </button>
+</h5>
+    <h6 class="text-muted">At:  <span id="swl-line-id-span" class="ml-2">Id of line</span>&#160;
+         <button type="button" class="close" onclick="bookmark_this_line()" aria-label="Bookmark" title="Bookmark this location">
+     <img class="icon" src="resources/icons/open-iconic-master/svg/bookmark.svg"/>  
+     </button>
+</h6>
+    <h6 class="text-muted">Line: <span id="swl-line-text-span" class="ml-2">Text of line</span>
+         <button type="button" class="close" onclick="comment_this_line()" aria-label="Comment" title="Comment on this line">
+     <img class="icon" src="resources/icons/octicons/svg/comment.svg"/>
+     </button>
+    </h6>
+    <div class="card-text">
+       
+        <p> { if (sm:is-authenticated()) then <span>
+        <span class="badge badge-primary">Use</span> one of the following syntactic words (SW), 
+        create a <span class="mb-2 badge badge-secondary">New SW</span> 
+         or add a new concept to the word here: 
+         <span class="btn badge badge-light ml-2" data-toggle="modal" onclick="show_new_concept()">Concept</span> 
+         </span>
+         else <span>Log in if you want to add attribution.</span>
+         }
+        <ul id="swl-select" class="list-unstyled"></ul>
+        </p>
+      </div>
+    </div>    
+    </div>
+};
+
+declare function tlslib:add-concept-dialog($node as node()*, $model as map(*), $type as xs:string){
+<div id="new-{$type}" class="modal" tabindex="-1" role="dialog" style="display: none;">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                {if ($type = "concept") then
+                <h5 class="modal-title">Adding concept for <strong class="ml-2"><span id="{$type}-query-span">Word</span></strong>
+                    <button class="btn badge badge-primary ml-2" type="button" onclick="get_guangyun()">
+                        廣韻
+                    </button>
+                </h5>
+                else 
+                <h5 class="modal-title">Adding SW to concept <strong class="ml-2"><span id="{$type}-query-span">Concept</span></strong></h5>
+                }
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    ×
+                </button>
+            </div>
+            <div class="modal-body">
+                {if ($type = "concept") then
+                (<h6 class="text-muted">At:  <span id="concept-line-id-span" class="ml-2">Id of line</span></h6>,
+                <h6 class="text-muted">Line: <span id="concept-line-text-span" class="ml-2">Text of line</span></h6>
+                ) else () }
+                <div>
+                   {if ($type = "concept") then
+                    <span id="concept-id-span" style="display:none;"/>
+                    else 
+                    <span id="word-id-span" style="display:none;"/>
+                    }
+                    <span id="synfunc-id-span-{$type}" style="display:none;"/>
+                    <span id="semfeat-id-span-{$type}" style="display:none;"/>
+                    
+                </div>
+                   {if ($type = "concept") then (
+                <div class="form-group" id="guangyun-group">
+                    <span class="text-muted" id="guangyun-group-pl"> Press the 廣韻 button above and select the pronounciation</span>
+                </div>,
+                <div id="select-concept-group" class="form-group ui-widget">
+                    <label for="select-concept">Concept: </label>
+                    <input id="select-concept" class="form-control" required="true"/>
+                </div>)
+                    else ()}                
+                <div class="form-row">
+                <div id="select-synfunc-group-{$type}" class="form-group ui-widget col-md-6">
+                    <label for="select-synfunc-{$type}">Syntactic function: </label>
+                    <input id="select-synfunc-{$type}" class="form-control" required="true"/>
+                </div>
+                <div id="select-semfeat-group-{$type}" class="form-group ui-widget col-md-6">
+                    <label for="select-semfeat-{$type}">Semantic feature: </label>
+                    <input id="select-semfeat-{$type}" class="form-control"/>
+                </div>
+                </div>
+                <div id="input-def-group-{$type}">
+                    <label for="input-{$type}-def">Definition </label>
+                    <textarea id="input-{$type}-def" class="form-control"></textarea>                   
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                   {if ($type = "concept") then 
+                <button type="button" class="btn btn-primary" onclick="save_to_concept()">Save changes</button>
+                else
+                <button type="button" class="btn btn-primary" onclick="save_newsw()">Save SW</button>
+                }
+            </div>
+        </div>
+    </div>    
+    <!-- temp -->
+    
+</div>    
+};
+
+
+
 (:
 <span class="en">{collection($config:tls-texts-root)//tei:seg[@corresp=concat('#', $seg/@xml:id)]/text()}</span>
 
+:)
+
+
+
+declare function tlslib:get-sense-def($uuid as xs:string){
+let $cnode := collection("/db/apps/tls-data")//tei:sense[@xml:id=$uuid]
+,$def := $cnode/tei:def[1]/text()
+return $def
+};
+(: 2020-02-23 : because of defered update in tlsapi:save-def, we use the master definition instead of the local definition of the swl 
+ : 2020-02-26 : this now works indeed.
+:) 
+(:~
+: formats a single syntactic word location for display either in a row (as in the textview, made visible by the blue eye) or as a list item, this is used in the left hand display for the annotations
+: @param $node  the tls:ann element to display
+: @param $type  type of the display, currently 'row' for selecting the row style, anything else will be list style
+: called from api/show_swl_for_line.xql
 :)
 
 declare function tlslib:format-swl($node as node(), $type as xs:string?){
@@ -182,8 +419,10 @@ let $concept := data($node/@concept),
 $zi := $node/tei:form[1]/tei:orth[1]/text(),
 $py := $node/tei:form[1]/tei:pron[starts-with(@xml:lang, 'zh-Latn')][1]/text(),
 $sf := $node//tls:syn-func,
-$sm := $node//tls:sem-feat,
-$def := $node//tei:def[1]
+$sm := $node//tls:sem-feat
+,$link := substring(tokenize($node/tei:link/@target)[2], 2)
+(: damnit, why does this not work?  3 days later... seems to work now :)
+,$def := tlslib:get-sense-def($link)
 (:$pos := concat($sf, if ($sm) then (" ", $sm) else "")
 :)
 return
@@ -202,7 +441,7 @@ if ($type = "row") then
 <span><a href="browse.html?type=syn-func&amp;id={data($sf/@corresp)}">{$sf/text()}</a>&#160;</span>
 {if ($sm) then 
 <span><a href="browse.html?type=sem-feat&amp;id={$sm/@corresp}">{$sm/text()}</a>&#160;</span> else ()}
-{$def/text()}
+{$def}
 {if (sm:has-access(document-uri(fn:root($node)), "w") and $node/@xml:id) then 
 <div style="height:13px;position:absolute; top:0; right:0;">
  <!-- for the time being removing the button, don't really now what I want to edit here:-)
@@ -227,6 +466,16 @@ else
 if (string-length($def) > 10) then concat(substring($def, 10), "...") else $def}</li>
 };
 
+(:~
+: displays a tei:seg element, that is, a line of text, including associated items like translation and swl
+: @param $seg the tei:seg to display
+: @param $options  a map of additional options, for example 
+:         {"ann" : true } for the display of annotations,
+:        {"loc" : "<@xml:id of a tei:seg>"} the id of a line to be highlighted in the display
+: @see tlslib:format-swl(), which is used for displaying the swl
+: called from tlsapi:get-text-preview($loc as xs:string)
+: 
+:)
 
 declare function tlslib:displayseg($seg as node()*, $options as map(*) ){
 let $user := sm:id()//sm:real/sm:username/text()
@@ -252,7 +501,7 @@ if (tlslib:is-first-in-p($seg)) then
  (),
 if (string-length(string-join($seg/text(), "")) > 0) then
 (<div class="row {$mark}">
-<div class="col-sm-4 zh" id="{$seg/@xml:id}">{$seg}</div>　
+<div class="col-sm-4 zh" id="{$seg/@xml:id}">{$seg/text()}</div>　
 <div class="col-sm-7 tr" id="{$seg/@xml:id}-tr" 
 contenteditable="{if (sm:has-access(xs:anyURI($config:tls-translation-root), "r") and $user != 'test') then 'true' else 'false'}">
 {  (: if there is more than one translation, we take the one with the shorter path (outrageous hack) :)
@@ -277,33 +526,12 @@ tlslib:format-swl($swl/ancestor::tls:ann, "row")}
 )
 };
 
-
-declare function tlslib:getsynsem($type as xs:string, $string as xs:string, $map as map(*))
-{
-map:merge(
-let $file := if ($type = "sem-feat") then "semantic-features.xml" else 
-             if ($type = "syn-func") then "syntactic-functions.xml" else ""
-   for $s in doc(concat($config:tls-data-root, '/core/', $file))//tei:head[contains(., $string)]
-   return 
-   map:entry(string($s/parent::tei:div/@xml:id), string($s))
- )
-};
-
-declare function tlslib:getwords($word as xs:string, $map as map(*))
-{
-map:merge(
-   for $s in collection(concat($config:tls-data-root, '/concepts/'))//tei:orth[. = $word]
-   return 
-   map:entry(string($s/ancestor::tei:entry/@xml:id), (string($s/ancestor::tei:div/@xml:id), string($s/ancestor::tei:div/tei:head)))
- )
-};
-
-
-declare function tlslib:capitalize-first ( $arg as xs:string? )  as xs:string? {
-   concat(upper-case(substring($arg,1,1)),
-             substring($arg,2))
- } ;
- 
+ (:~ 
+ : called from function tlsapi:show-use-of($uid as xs:string, $type as xs:string), which is called via XHR from concept.html and char.html through 
+ : tls-app.js -> show_use_of(type, uid) 
+ : @param $sw the tei:sense to display 
+ : 2020-02-26 it seems this belongs to tlsapi
+ :)
  
  declare function tlslib:display_sense($sw as node(), $count as xs:int){
     let $id := data($sw/@xml:id),
@@ -331,9 +559,14 @@ declare function tlslib:capitalize-first ( $arg as xs:string? )  as xs:string? {
     </li>
  
  };
+
+(:~
+: called from tlsapi:save-sf($sense-id as xs:string, $synfunc-id as xs:string, $synfunc-val as xs:string, $def as xs:string)
+ : 2020-02-26 it seems this belongs to tlsapi
+
+:)
  
- 
- declare function tlslib:new-syn-func ($sf as xs:string, $def as xs:string){
+declare function tlslib:new-syn-func ($sf as xs:string, $def as xs:string){
  let $uuid := concat("uuid-", util:uuid()),
  $user := sm:id()//sm:real/sm:username/text(),
 $el := <div xmlns:tls="http://hxwd.org/ns/1.0" xmlns="http://www.tei-c.org/ns/1.0" type="syn-func" xml:id="{$uuid}" resp="#{$user}" tls:created="{current-dateTime()}">
@@ -345,7 +578,11 @@ $last := doc($config:tls-data-root || "/core/syntactic-functions.xml")//tei:div[
 return $uuid
  };
  
- 
+ (:~
+ : called from function tlsapi:show-att($uid as xs:string)
+  : 2020-02-26 it seems this belongs to tlsapi
+
+ :)
  
  declare function tlslib:show-att-display($a as node()){
 

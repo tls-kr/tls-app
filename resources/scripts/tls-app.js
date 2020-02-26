@@ -745,3 +745,24 @@ function save_sf (){
   });    
 };
 
+// stub for bookmark  2020-02-23, called from app:swl-form-dialog
+
+function bookmark_this_line(){
+  var word = $("#swl-query-span").text();
+  var line_id= $( "#swl-line-id-span" ).text();  
+  var line = $( "#swl-line-text-span" ).text();
+  $.ajax({
+  type : "GET",
+  dataType : "html",  
+  url : "api/save_bookmark.xql?word="+word+"&line-id="+line_id+"&line="+line, 
+  success : function(resp){
+  toastr.info("Bookmark has been saved.", "HXWD says:")
+  }
+  });
+};
+
+// stub for comment  2020-02-23, called from app:swl-form-dialog
+
+function comment_this_line(){
+    
+};

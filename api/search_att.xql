@@ -62,7 +62,7 @@ return
          substring-before($line, $o), 
         <mark>{$o}</mark> 
         ,substring-after($line, $o)}</span></div>
-<div class="col-sm-7"><span>{$tr}</span></div>
+<div class="col-sm-7"><span>{$tr[1]}</span></div>
 </div>
 , $cnt := count($ret)
 return 

@@ -1,5 +1,5 @@
 xquery version "3.1";
-
+(: probably obsolete 2020-02-26 :)
 (: module namespace test="http://hxwd.org/app"; :)
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";

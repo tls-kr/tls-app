@@ -11,7 +11,8 @@ import module namespace config="http://hxwd.org/config" at "config.xqm";
 import module namespace kwic="http://exist-db.org/xquery/kwic"
     at "resource:org/exist/xquery/lib/kwic.xql";
 import module namespace tlslib="http://hxwd.org/lib" at "tlslib.xql";
-import module namespace tlsapi="http://hxwd.org/tlsapi" at "../api/tlsapi.xql";
+(: import module namespace tlsapi="http://hxwd.org/tlsapi" at "../api/tlsapi.xql"; :)
+
 import module namespace un="http://hxwd.org/user" at "user.xql";
 (:import module namespace un = "http://exist-db.org/apps/userManager" at "/db/apps/usermanager/modules/userManager.xqm";:)
 
@@ -939,110 +940,6 @@ src="resources/icons/open-iconic-master/svg/account-login.svg"/>Login</a>
 };
 
 (: dialog functions :)
-declare
-    %templates:wrap
-function app:swl-form-dialog($node as node()*, $model as map(*)){
-<div id="swl-form" class="card ann-dialog overflow-auto">
-<div class="card-body">
-    <h5 class="card-title">{if (sm:is-authenticated()) then "New Attribution:" else "Existing SW for " }<strong class="ml-2"><span id="swl-query-span">Word or char to annotate</span>:</strong>
-     <button type="button" class="close" onclick="hide_new_att()" aria-label="Close">
-       &#215;
-     </button>
-</h5>
-    <h6 class="text-muted">At:  <span id="swl-line-id-span" class="ml-2">Id of line</span></h6>
-    <h6 class="text-muted">Line: <span id="swl-line-text-span" class="ml-2">Text of line</span></h6>
-    <div class="card-text">
-       
-        <p> { if (sm:is-authenticated()) then <span>
-        <span class="badge badge-primary">Use</span> one of the following syntactic words (SW), 
-        create a <span class="mb-2 badge badge-secondary">New SW</span> 
-         or add a new concept to the word here: 
-         <span class="btn badge badge-light ml-2" data-toggle="modal" onclick="show_new_concept()">Concept</span> 
-         </span>
-         else <span>Log in if you want to add attribution.</span>
-         }
-        <ul id="swl-select" class="list-unstyled"></ul>
-        </p>
-      </div>
-    </div>    
-    </div>
-};
-
-declare
-    %templates:wrap
-    %templates:default("type", "concept")
-function app:add-concept-dialog($node as node()*, $model as map(*), $type as xs:string){
-<div id="new-{$type}" class="modal" tabindex="-1" role="dialog" style="display: none;">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                {if ($type = "concept") then
-                <h5 class="modal-title">Adding concept for <strong class="ml-2"><span id="{$type}-query-span">Word</span></strong>
-                    <button class="btn badge badge-primary ml-2" type="button" onclick="get_guangyun()">
-                        廣韻
-                    </button>
-                </h5>
-                else 
-                <h5 class="modal-title">Adding SW to concept <strong class="ml-2"><span id="{$type}-query-span">Concept</span></strong></h5>
-                }
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    ×
-                </button>
-            </div>
-            <div class="modal-body">
-                {if ($type = "concept") then
-                (<h6 class="text-muted">At:  <span id="concept-line-id-span" class="ml-2">Id of line</span></h6>,
-                <h6 class="text-muted">Line: <span id="concept-line-text-span" class="ml-2">Text of line</span></h6>
-                ) else () }
-                <div>
-                   {if ($type = "concept") then
-                    <span id="concept-id-span" style="display:none;"/>
-                    else 
-                    <span id="word-id-span" style="display:none;"/>
-                    }
-                    <span id="synfunc-id-span-{$type}" style="display:none;"/>
-                    <span id="semfeat-id-span-{$type}" style="display:none;"/>
-                    
-                </div>
-                   {if ($type = "concept") then (
-                <div class="form-group" id="guangyun-group">
-                    <span class="text-muted" id="guangyun-group-pl"> Press the 廣韻 button above and select the pronounciation</span>
-                </div>,
-                <div id="select-concept-group" class="form-group ui-widget">
-                    <label for="select-concept">Concept: </label>
-                    <input id="select-concept" class="form-control" required="true"/>
-                </div>)
-                    else ()}                
-                <div class="form-row">
-                <div id="select-synfunc-group-{$type}" class="form-group ui-widget col-md-6">
-                    <label for="select-synfunc-{$type}">Syntactic function: </label>
-                    <input id="select-synfunc-{$type}" class="form-control" required="true"/>
-                </div>
-                <div id="select-semfeat-group-{$type}" class="form-group ui-widget col-md-6">
-                    <label for="select-semfeat-{$type}">Semantic feature: </label>
-                    <input id="select-semfeat-{$type}" class="form-control"/>
-                </div>
-                </div>
-                <div id="input-def-group-{$type}">
-                    <label for="input-{$type}-def">Definition </label>
-                    <textarea id="input-{$type}-def" class="form-control"></textarea>                   
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                   {if ($type = "concept") then 
-                <button type="button" class="btn btn-primary" onclick="save_to_concept()">Save changes</button>
-                else
-                <button type="button" class="btn btn-primary" onclick="save_newsw()">Save SW</button>
-                }
-            </div>
-        </div>
-    </div>    
-    <!-- temp -->
-    
-</div>    
-};
-
 
 declare
     %templates:wrap
@@ -1287,12 +1184,26 @@ function app:footer($node as node()*, $model as map(*)){
             </div>
 };
 
+(:~
+: This displays the title, both for regular pages (page.html) and textview pages (tv-page.html)
+
+:)
 declare
     %templates:wrap
 function app:page-title($node as node()*, $model as map(*))
 { (: the html file accessed, without the extension :) 
-let $context := substring-before(tokenize(request:get-uri(), "/")[last()], ".html")
-return concat ("TLS: ", $context)
+let $loc := request:get-parameter("location", "")
+,$ts := if (string-length($loc) > 0) then (
+ let $lc := tokenize($loc, "_")
+ let $txtid := $lc[1]
+ , $l3 := tokenize($lc[3], "-")
+ , $l := xs:string(xs:int($l3[1]))
+ , $l2 := tokenize($l3[2], "[a-z\.]")[1]
+ , $tl := tlslib:get-title($txtid)
+ return $txtid || " " || $tl || $l || " " || $l2
+) else ""
+(:,$context := substring-before(tokenize(request:get-uri(), "/")[last()], ".html"):)
+return concat ("TLS: ", $ts)
 };
 
 declare function app:recent-activity(){

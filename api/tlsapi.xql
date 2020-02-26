@@ -219,7 +219,7 @@ declare function tlsapi:swl-dialog($para as map(), $type as xs:string){
                 else
                 <h5 class="modal-title">Adding SW for {$para?char} to concept <strong class="ml-2"><span id="newsw-concept-span">{$para?concept}</span></strong></h5>
                 }
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" title="Close">
                     ×
                 </button>
             </div>
@@ -644,9 +644,11 @@ let $id := substring($defid, 5)
 ,$sense := collection($config:tls-data-root)//tei:sense[@xml:id = $id]
 ,$defel := <def xmlns="http://www.tei-c.org/ns/1.0" resp="#{$user}" updated="{current-dateTime()}">{$def}</def>
 ,$upd := update replace $sense/tei:def with $defel
+(: 2020-02-23 : update of the existing attributions defered
 ,$a := for $s in collection($config:tls-data-root)//tls:ann/tei:sense[@corresp = "#" || $id]
   return
   update replace $s/tei:def with $defel
+:)
 return 
 $defel
 (:if (update replace $node with $seg) then "Success. Updated translation." else "Could not update translation." 
@@ -705,5 +707,7 @@ else
 if (update insert $seg  into $doc//tei:p[@xml:id=concat($txtid, "-start")]) then 
 ("Success. Saved translation.")
 else ("Could not save translation. ", $docpath)
-
 };
+
+(: The bookmark will also serve as template for intertextual links and anthology, which is why we also save word and line :)
+ 
