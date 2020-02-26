@@ -48,6 +48,16 @@ if ($s > 0) then if ($s > 1) then <span> {$s} seconds </span> else <span> {$s} s
 </span>
 };
 
+declare function tlslib:procseg($node as node()){
+ typeswitch ($node)
+ case element(tei:note) return ()
+(:     <small>{$node/text()}</small>:)
+  case element (tei:l) return ()
+  case element (tei:lb)  return ()
+  case element(tei:seg) return for $n in $node/node() return tlslib:procseg($n)
+ default return $node    
+};
+
 declare function tlslib:get-rating($txtid){
     let $user := sm:id()//sm:real/sm:username/text(),
     $ratings := doc("/db/users/" || $user || "/ratings.xml")//text
@@ -72,6 +82,7 @@ declare function tlslib:tv-header($node as node()*, $model as map(*)){
     let $head := if ($targetseg) then $targetseg/ancestor::tei:div[1]/tei:head[1] else (),
     $title := if ($targetseg) then $targetseg/ancestor::tei:TEI//tei:titleStmt/tei:title/text() else "No title"
    ,$textid := substring-before(tokenize(document-uri(root($targetseg)), "/")[last()], ".xml")
+   ,$trl := //tei:TEI[@xml:id=$textid || "-en"]//tei:editor[@role='translator']
     return
       (
       <span class="navbar-text ml-2 font-weight-bold">{$title} <small class="ml-2">{$head/text()}</small></span> 
@@ -94,8 +105,9 @@ declare function tlslib:tv-header($node as node()*, $model as map(*)){
          if (substring($textid, 1, 3) = "KR6") then "CBETA" 
          else <a href="http://www.chant.org/">CHANT</a>}
       </small>
-      {if (map:get($config:translation-map, $textid)) then 
-      (<br/>,<small class="nav-brand ml-2">Translation by {map:get($config:translation-map, $textid)}</small>) else ()}
+      {if ($trl) then (<br/>,<small class="nav-brand ml-2">Translation by {$trl}</small>) else () }
+      {if (map:get($config:translation-map, $textid) or $trl) then 
+      (<br/>,<small class="nav-brand ml-2">Translation by {if ($trl) then $trl else map:get($config:translation-map, $textid)}</small>) else ()}
       </li>
 
       )
@@ -240,7 +252,7 @@ if (tlslib:is-first-in-p($seg)) then
  (),
 if (string-length(string-join($seg/text(), "")) > 0) then
 (<div class="row {$mark}">
-<div class="col-sm-4 zh" id="{$seg/@xml:id}">{$seg/text()}</div>　
+<div class="col-sm-4 zh" id="{$seg/@xml:id}">{$seg}</div>　
 <div class="col-sm-7 tr" id="{$seg/@xml:id}-tr" 
 contenteditable="{if (sm:has-access(xs:anyURI($config:tls-translation-root), "r") and $user != 'test') then 'true' else 'false'}">
 {  (: if there is more than one translation, we take the one with the shorter path (outrageous hack) :)
@@ -248,7 +260,7 @@ contenteditable="{if (sm:has-access(xs:anyURI($config:tls-translation-root), "r"
              let $p := string-length(document-uri(root($t)))
              order by $p ascending
              return $t
- return $tr[1]
+ return if ($tr[1]) then tlslib:procseg($tr[1]) else ()
 }</div>
 </div>,
 <div class="row swl collapse" data-toggle="collapse">
