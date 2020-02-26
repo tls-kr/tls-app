@@ -1,6 +1,7 @@
 xquery version "3.1";
 (:~
-: This module provides the internal functions that do not directly control the Web presentation
+: This module provides the internal functions that do not directly control the 
+: template driven Web presentation
 : of the TLS. 
 
 : @author Christian Wittern  cwittern@yahoo.com
@@ -78,6 +79,55 @@ let $file := if ($type = "sem-feat") then "semantic-features.xml" else
  )
 };
 
+declare function tlslib:getdate($node as node()) as xs:int{
+ let $nb := xs:int($node/@notbefore)
+ , $na := xs:int($node/@notafter)
+ return
+ xs:int(($na + $nb) div 2)
+};
+   
+declare function tlslib:proc_char($node as node())
+{ 
+typeswitch ($node)
+  case element(tei:div) return
+      <div>{for $n in $node/node() return tlslib:proc_char($n)}</div>
+  case element(tei:head) return
+  <h4 class="card-title">{$node/text()}</h4>
+  case element(tei:list) return
+  <ul >{for $n in $node/node()
+       return
+       tlslib:proc_char($n)
+  }</ul>
+  case element(tei:item) return
+    <li>{for $n in $node/node()
+        return
+            tlslib:proc_char($n)
+    }</li>
+  case element(tei:ref) return
+     let $id := substring($node/@target, 2),
+     $char := tokenize($node/ancestor::tei:div[1]/tei:head/text(), "\s")[1],
+     $swl := collection($config:tls-data-root)//tei:div[@xml:id=$id]//tei:entry[tei:form/tei:orth[. = $char]]//tei:sense
+     return
+      <span>
+      <a href="concept.html?uuid={$id}" class="mr-2 ml-2">{$node/text()}</a>
+      <button title="click to reveal {count($swl)} syntactic words" class="btn badge badge-light" type="button" 
+      data-toggle="collapse" data-target="#{$id}-swl">{count($swl)}</button>
+      <ul class="list-unstyled collapse" id="{$id}-swl"> 
+      {for $sw in $swl
+      (: we dont check for attribution count, so pass -1  :)
+      return tlslib:display_sense($sw, -1)}
+      </ul>
+      </span>
+  case text() return
+      $node
+  default
+  return 
+  <not-handled>{$node}</not-handled>
+};
+   
+
+
+
 (:~
 : looks for a word in the tei:orth element of concepts
 : @param $word the word
@@ -153,6 +203,10 @@ let $title := collection("/db/apps/tls-texts") //tei:TEI[@xml:id=$txtid]//tei:ti
 return $title
 };
 
+(: -- Search / retrieval related functions -- :)
+
+
+(: -- Display related functions -- :)
 
 (:~ 
 : this is the header line used for the text display, called from app:textview
@@ -316,6 +370,10 @@ declare function tlslib:swl-form-dialog($node as node()*){
     </div>    
     </div>
 };
+
+(:~
+: 2020-02-26:  I think this has been moved to tlsapi, probably can delete it here
+:)
 
 declare function tlslib:add-concept-dialog($node as node()*, $model as map(*), $type as xs:string){
 <div id="new-{$type}" class="modal" tabindex="-1" role="dialog" style="display: none;">

@@ -1,5 +1,16 @@
 xquery version "3.1";
+(:~
+: This module provides the functions that are called through javascript
+: from the webpages to provide interactive functionality
+: of the TLS. 
 
+: In most cases, a stub of the same name as the function exists in the /api
+: directory, this collects the parameters and calls the corresponding function 
+: here
+: 
+: @author Christian Wittern  cwittern@yahoo.com
+: @version 1.0
+:)
 module namespace tlsapi="http://hxwd.org/tlsapi"; 
 
 import module namespace config="http://hxwd.org/config" at "../modules/config.xqm";
@@ -592,10 +603,14 @@ if (count($atts) > 0) then
 else 
  <p class="font-weight-bold">No attributions found</p>
 };
-
+(:~
+ Delete a syntactic word location.  We return the line-id, so that we can display the updated attributions.
+:)
 declare function tlsapi:delete-swl($uid as xs:string) {
 let $swl := collection($config:tls-data-root|| "/notes")//tls:ann[@xml:id=$uid]
-return update delete $swl
+,$link := substring(tokenize($swl/tei:link/@target)[1], 2)
+,$res := update delete $swl
+return $link
 };
 
 declare function tlsapi:show-use-of($uid as xs:string, $type as xs:string){

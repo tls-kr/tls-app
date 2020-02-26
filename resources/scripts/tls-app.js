@@ -105,6 +105,7 @@ function show_swls_for_line(line_id){
   dataType : "html",
   url : "api/show_swl_for_line.xql?line=" + line_id, 
   success : function(resp){
+  line_id = line_id.split(".").join("\\.")
   console.log("Displaying response at: " + '#'+line_id+'-swl');
 //  $('#swl-select').html(resp)
   $('#'+line_id+'-swl').html(resp);
@@ -123,7 +124,7 @@ function save_swl_line(sense_id, line_id){
   hide_swl_form("#editSWLDialog");
   console.log("Hiding form");
   show_swls_for_line(line_id);
-  toastr.info("Attribution has been saved. Thank you for your contribution. Reload page to see new attributions.", "HXWD says:")
+  toastr.info("Attribution has been saved. Thank you for your contribution.", "HXWD says:")
   },
   error : function(resp){
     console.log(resp)
@@ -622,6 +623,9 @@ function delete_swl(uid){
      url : "api/delete_swl.xql?type=swl&uid=" + uid, 
      success : function(resp){
    //  save_this_swl(resp.sense_id)
+      var line_id = resp.replace(/"/g, '')
+      console.log("Lineid: " & line_id);
+      show_swls_for_line(line_id);
       toastr.info("Attribution deleted.", "HXWD says:");
    }
   });
