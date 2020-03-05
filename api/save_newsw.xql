@@ -18,7 +18,7 @@ let $rpara := map {"concept-id" : request:get-parameter("concept", "xx"),
  "synfunc-val" : request:get-parameter("synfunc-val", "xx"),
  "semfeat" : request:get-parameter("semfeat", "xx"),
  "semfeat-val" : request:get-parameter("semfeat-val", "xx"),
- "def" := request:get-parameter("def", "xx")
+ "def" : request:get-parameter("def", "xx")
 }
 return
 tlsapi:save-newsw($rpara)

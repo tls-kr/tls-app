@@ -398,7 +398,9 @@ declare function tlsapi:edit-sf-dialog($para as map()){
 </div>
 };
 
-
+(:~
+: This is called when a term is selected in the textview // get_sw in tls-app.js
+:)
 declare function tlsapi:get-sw($word as xs:string) as item()* {
 let $words := collection(concat($config:tls-data-root, '/concepts/'))//tei:orth[. = $word]
 let $user := sm:id()//sm:real/sm:username/text()
@@ -407,6 +409,7 @@ if (count($words) > 0) then
 for $w in $words
 let $concept := $w/ancestor::tei:div/tei:head/text(),
 $id := $w/ancestor::tei:div/@xml:id,
+$cdef := $w/ancestor::tei:div/tei:div[@type="definition"]/tei:p/text(),
 $py := $w/parent::tei:form/tei:pron[starts-with(@xml:lang, 'zh-Latn')]/text(),
 $zi := $w/parent::tei:form/tei:orth/text(),
 $wid := $w/ancestor::tei:entry/@xml:id,
@@ -416,7 +419,7 @@ $form := $w/parent::tei:form/@corresp
 order by $concept
 return
 <li class="mb-3"><strong>{$zi}</strong>&#160;({$py})&#160;<strong>
-<a href="concept.html?uuid={$id}">{$concept}</a></strong> 
+<a href="concept.html?uuid={$id}" title="{$cdef}">{$concept}</a></strong> 
      { if (sm:is-authenticated()) then 
 <button class="btn badge badge-secondary ml-2" type="button" 
 onclick="show_newsw({{'wid':'{$wid}','concept' : '{$concept}', 'concept_id' : '{$id}'}})">
@@ -613,9 +616,29 @@ let $swl := collection($config:tls-data-root|| "/notes")//tls:ann[@xml:id=$uid]
 return $link
 };
 
+declare function tlsapi:delete-word-from-concept($id as xs:string, $type as xs:string) {
+let $item := if ($type = 'word') then 
+   collection($config:tls-data-root|| "/concepts")//tei:entry[@xml:id=$id]
+   else
+   collection($config:tls-data-root|| "/concepts")//tei:sense[@xml:id=$id]
+,$itemcount := sum(
+    if ($type = 'word') then
+      for $i in $item/tei:sense
+      return count(collection(concat($config:tls-data-root, '/notes/'))//tls:ann[tei:sense/@corresp = "#"||$i/@xml:id])
+    else count(collection(concat($config:tls-data-root, '/notes/'))//tls:ann[tei:sense/@corresp = "#"||$item/@xml:id]))
+,$ret := if ($itemcount = 0) then 
+ (update delete $item, "OK") else "There are " || $itemcount || " Attributions, can not delete."
+ return $ret
+};
+
+(:~
+: For syn-func and sem-feat: show examples of usage
+: TODO get the stuff from the CONCEPTS, then collect usage examples.?
+:)
+
 declare function tlsapi:show-use-of($uid as xs:string, $type as xs:string){
 let $key := "#" || $uid
-, $str := 'collection(' || $config:tls-data-root || ')//tls:' || $type || '[@corresp ="' || $key || '"]'
+, $str := 'collection("/db/apps/tls-data")//tls:' || $type || '[@corresp ="' || $key || '"]'
 let $res := for $r in util:eval($str)
      (:where exists($r/ancestor::tei:sense):)
      return $r
@@ -726,3 +749,48 @@ else ("Could not save translation. ", $docpath)
 
 (: The bookmark will also serve as template for intertextual links and anthology, which is why we also save word and line :)
  
+declare function tlsapi:save-bookmark($word as xs:string, $line-id as xs:string, $line as xs:string) {
+let $user := sm:id()//sm:real/sm:username/text()
+,$docpath := $config:tls-user-root || $user|| "/bookmarks.xml"
+,$txtid := tokenize($line-id, "_")[1]
+,$juan := tlslib:get-juan($line-id)
+,$title := tlslib:get-title($txtid)
+,$item := <item xmlns="http://www.tei-c.org/ns/1.0" modified="{current-dateTime()}"><ref target="{$line-id}">{$title} {$juan}</ref>
+<seg>{$line}</seg>
+<term>{$word}</term></item>
+let $doc :=
+  if (not (doc-available($docpath))) then
+   doc(xmldb:store($config:tls-user-root || $user, "bookmarks.xml", 
+<TEI xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$user}-bookmarks">
+  <teiHeader>
+      <fileDesc>
+         <titleStmt>
+            <title>Bookmarks for user {$user}</title>
+         </titleStmt>
+         <publicationStmt>
+            <p>published electronically as part of the TLS project at https://hxwd.org</p>
+         </publicationStmt>
+         <sourceDesc>
+            <p>Created by members of the TLS project</p>
+         </sourceDesc>
+      </fileDesc>
+     <profileDesc>
+        <creation>Initially created: <date>{current-dateTime()}</date> by {$user}</creation>
+     </profileDesc>
+  </teiHeader>
+  <text>
+      <body>
+      <div><head>Bookmarks</head>
+      <list xml:id="bookmarklist-{$user}">
+      </list>
+      </div>
+      </body>
+  </text>
+</TEI>)) 
+ else doc($docpath)
+return 
+if (update insert $item  into $doc//tei:list[@xml:id="bookmarklist-"||$user]) then 
+("Success. Saved bookmark.")
+else ("Could not save bookmark. ", $docpath)
+
+};

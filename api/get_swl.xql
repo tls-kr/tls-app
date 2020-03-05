@@ -21,7 +21,7 @@ let $rpara := map {"uuid" : request:get-parameter("uid", "xx"),
 "type" : request:get-parameter("type", "swl"),
 "word" : request:get-parameter("word", "xx"),
 "wid" : request:get-parameter("wid", "xx"),
-"line-id" := request:get-parameter("line-id", "xx"),
+"line-id" : request:get-parameter("line-id", "xx"),
 "line" : request:get-parameter("line", "xx"),
 "concept" : request:get-parameter("concept", "xx"),
 "concept-id" : request:get-parameter("concept-id", "xx") }

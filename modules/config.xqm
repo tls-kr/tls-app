@@ -43,7 +43,7 @@ declare variable $config:expath-descriptor := doc(concat($config:app-root, "/exp
 declare variable $config:tls-data-root := substring-before($config:app-root, data($config:expath-descriptor/@abbrev)) || "tls-data";
 declare variable $config:tls-texts-root := substring-before($config:app-root, data($config:expath-descriptor/@abbrev)) || "tls-texts";
 declare variable $config:tls-translation-root := concat($config:tls-data-root, "/translations");
-declare variable $config:tls-user-root := concat("/db/users/", sm:id()//sm:real/sm:username/text());
+declare variable $config:tls-user-root := "/db/users/";
 declare variable $config:exide-url :="https://hxwd.org:8443/exist/apps/eXide/index.html";
 (: translation attribution :)
 (: Just for reference, might want to use this later...

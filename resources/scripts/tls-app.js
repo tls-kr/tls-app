@@ -5,6 +5,7 @@ $(function() {
 if (!window.x) {
     x = {};
 }
+// this is some plumbing to get the selection
 x.Selector = {};
 x.Selector.getSelected = function() {
     var t = '';
@@ -98,6 +99,7 @@ function show_use_of(type, uid){
   });
 };
 
+// This is called after either adding or deleting a SWL to update the display
 
 function show_swls_for_line(line_id){
   $.ajax({
@@ -114,6 +116,8 @@ function show_swls_for_line(line_id){
   });
     
 };
+
+// this saves the SW for a line, called from save_this_swl (from the "Use" button)
 
 function save_swl_line(sense_id, line_id){
   $.ajax({
@@ -133,7 +137,7 @@ function save_swl_line(sense_id, line_id){
   });       
 };
 
-// save one attribution
+// save one attribution: the "Use" button calls this function
 function save_this_swl(sense_id){
     var line_id=document.getElementById( "swl-line-id-span" ).innerText;
     save_swl_line(sense_id, line_id);
@@ -181,7 +185,9 @@ function show_newsw(para){
   }
   });
 };
-
+// this is called from the "editSWLDialog" dialog, assembling the 
+// bits and pieces and saving them.
+// we need to do some more error-checking here
 function save_newsw(){
     var line_id= $( "#swl-line-id-span" ).text();
     var word = $("#swl-query-span").text();
@@ -212,6 +218,7 @@ function save_newsw(){
 //  alert(resp);
   },
   error : function(resp){
+  // resp is an object, find out what to display!
     console.log(resp)
     alert(resp);
   }
@@ -220,7 +227,7 @@ function save_newsw(){
     
 };
 
-
+// saving the concept, from editSWLDialog, with the new SW 
 function save_to_concept(){
     var guangyun_id = $(".guangyun-input:checked,.guangyun-input-checked").map(function(){
     console.log($(this).text());
@@ -261,10 +268,15 @@ function save_to_concept(){
 };
 
 // jquery selectors 
-
+// we bind a touchend event to mouseup.  This is an attempt to make this work
+// on mobile devices, but apparently not really working.
 $('.zh').bind('touchend', function(){
     $(this).mouseup();
 });
+
+// here we bind the mouseup event of all elements with the class "zh" to this
+// anonymous function, get the selected stuff from the x.Selector and proceed
+// to show the stuff
 
 $( ".zh" )
   .mouseup(function() {
@@ -274,23 +286,24 @@ $( ".zh" )
     var new_height = $("#chunkcol-right").outerHeight();
     var new_width = $("#chunkcol-right").outerWidth();
     console.log(xid);
-    console.log(new_width);
+    console.log(new_height);
+    // this sets the selection to the search input field, to make it easy to search for this term
+    // idea: write a search that displays the results on this page, so that I do
+    // not need to leave the current context.
     $( 'input[name="query"]' ).val(sel.toString());
     $( "#swl-line-id-span" ).html(xid);
-//    $( "#concept-line-id-span" ).html(xid);
-//    $( "#swl-line-text" ).val(line);      
     $( "#swl-line-text-span" ).html(line);      
-//    $( "#concept-line-text-span" ).html(line);      
     $( "#swl-query" ).val( sel.toString());
-//    $( "#concept-query-span" ).html( sel.toString());
     $( "#swl-query-span" ).html( sel.toString());
     $( "#swl-form" ).removeAttr("style");
     $( "#swl-form" ).show();
     $( "#swl-form" ).scrollTop( 0 );
-//    $( "#swl-form" ).css({'width' : 'new_width'+px});
-    $( "#swl-form" ).width(new_width);
+    // I do see these numbers in the CSS, but they don't seem to take effect
+ //   $( "#swl-form" ).width(new_width - 10);
+ //   $( "#swl-form" ).height(new_height - 10);
     
    get_sw()
+   // this is to activate the click on the text line to get the context
    $('[data-toggle="popover"]').popover({'content' : get_atts})
   });
 //$(document).ready(function(){  
@@ -305,6 +318,9 @@ $( ".zh" )
     });
   });
 //});
+
+// for concepts, synfunc, semfeat we provide autocomplete
+
 function initialize_sf_autocomplete(){
     $( "#select-synfunc" ).autocomplete({
       appendTo: "#select-synfunc-group",
@@ -378,29 +394,6 @@ function initialize_autocomplete(){
         console.log( "Selected: " + ui.item.value + " aka " + ui.item.id );
       }
     } );
-/* 
-    $( "#select-synfunc-newsw" ).autocomplete({
-      appendTo: "#select-synfunc-group-newsw",
-      source: function( request, response ) {
-        $.ajax( {
-          url: "api/autocomplete.xql",
-          dataType: "jsonp",
-          data: {
-            term: request.term,
-	        type: "syn-func"
-          },
-          success: function( data ) {
-            response( data );
-          }
-        } );
-      },
-      minLength: 1,
-      select: function( event, ui ) {
-        $("#synfunc-id-span-newsw" ).html(ui.item.id);     
-        console.log( "Selected: " + ui.item.value + " aka " + ui.item.id );
-      }
-    } );
- */
 
     $( "#select-semfeat" ).autocomplete({
       appendTo: "#select-semfeat-group",
@@ -423,33 +416,11 @@ function initialize_autocomplete(){
         console.log( "Selected: " + ui.item.value + " aka " + ui.item.id );
       }
     } );
-/* 
-    $( "#select-semfeat-newsw" ).autocomplete({
-      appendTo: "#select-semfeat-group-newsw",
-      source: function( request, response ) {
-        $.ajax( {
-          url: "api/autocomplete.xql",
-          dataType: "jsonp",
-          data: {
-            term: request.term,
-	        type: "sem-feat"
-          },
-          success: function( data ) {
-            response( data );
-          }
-        } );
-      },
-      minLength: 1,
-      select: function( event, ui ) {
-        $("#semfeat-id-span-newsw" ).html(ui.item.id);     
-        console.log( "Selected: " + ui.item.value + " aka " + ui.item.id );
-      }
-    } );
- */
 };
-// clear the modal form
 
-    $('#new-concept').on('hidden.bs.modal', function(e){
+// add this anonyomous function to the #new-concept dialog, so that on hiding 
+// its content gets cleared away.
+$('#new-concept').on('hidden.bs.modal', function(e){
         console.log("Clearing form");
         $("#select-synfunc" ).val("");
         $("#select-semfeat").val("");
@@ -462,9 +433,8 @@ function initialize_autocomplete(){
     });
     
     
-//    $(window).load(function(){
-      $(".mysticky").sticky({ topSpacing: 50 });
-//    });
+// this prevents the top menubar from covering text 
+$(".mysticky").sticky({ topSpacing: 50 });
 
 
 // popover
@@ -479,10 +449,8 @@ $(document).ajaxComplete(function() {
   container: 'body'});
 });
 
-/*
-$(function () {
-  $('[data-toggle="popover"]').popover({'content' : get_atts(this)})
-}) */
+// this is a bit of a misnamer. Gets the preview
+// TODO: rename
 
 function get_atts(target, div_id){
    console.log(target)
@@ -531,6 +499,8 @@ $('#login-form').submit(function (){
         });
 });
 
+// not yet implemented
+
 $('#settings-form').submit(function (){
     this.preventDefault();
     alert("This button does nothing.");
@@ -556,8 +526,8 @@ $('#settings-form').submit(function (){
         });
 */});
 
-
-    $('.rating').on('rating:change', function(event, value, caption) {
+// save changes on ratings of the texts
+$('.rating').on('rating:change', function(event, value, caption) {
         console.log(value);
         console.log(this.id);
   $.ajax({
@@ -570,10 +540,10 @@ $('#settings-form').submit(function (){
     console.log(resp)
     alert(resp);
   }
-  });
-    });
+ });
+});
 
-
+// this is for the button "Attributions" search
 function search_and_att(sense_id){
  //   toastr.info("Not ready yet :-(", "HXWD says:");
   $.ajax({
@@ -598,7 +568,7 @@ $('body').on('focus', '[contenteditable]', function() {
         $this.trigger('change');
     }
 });
-
+// to update the swl for a certain sense uuid
 function edit_swl(uid){
   $.ajax({
   type : "GET",
@@ -613,6 +583,25 @@ function edit_swl(uid){
   }
   });
 }
+
+// delete word from concept 
+function delete_word_from_concept(wid, type){
+    $.ajax({
+     type : "GET",
+     dataType : "html",  
+     url : "api/delete_word_from_concept.xql?wid=" + wid+"&type="+type, 
+     success : function(resp){
+     if (resp.length > 2){
+         toastr.info(resp, "HXWD says:");     
+     } else {
+         $('#'+wid).html("");
+         toastr.info("Word has been deleted.", "HXWD says:");     
+     }
+   }
+  })  
+};
+
+// delete the attribution; this is the x on the attributions
 
 function delete_swl(uid){
     var strconfirm = confirm("Do you really want to delete this attribution?");
@@ -632,7 +621,7 @@ function delete_swl(uid){
   }
 };
 
-
+// for the translations (class "tr"), we save on keyup, so we check for our event
 
 $( ".tr" ).keyup(function( event ) {
 }).keydown(function( event ) {
@@ -663,6 +652,7 @@ if ( event.which == 5200 & event.shiftKey == true) {
   });
       
   }
+  // we save the translation on either tab or enter
   if ( event.which == 9 ) {
     var trid = $(this).attr('id');
     var lineid = trid.substring(0, trid.indexOf("-tr"));
@@ -680,6 +670,7 @@ if ( event.which == 5200 & event.shiftKey == true) {
   }
 });
 
+// this does the actual save
 function save_tr (trid, tr, line){
   $.ajax({
   type : "PUT",

@@ -730,7 +730,7 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
     let $ann := for $c in collection($config:tls-data-root||"/notes")//tls:ann[@concept-id=$key]
      return $c
     return
-    <div class="card">
+    <div class="card" style="max-width: 1000px;">
     <div class="card-body">
     <h4 class="card-title">{$c/tei:head/text()}&#160;&#160;{for $t in $tr return 
       <span class="badge badge-light" title="{map:get($app:lmap, $t/@xml:lang)}">{$t/text()}</span>} 
@@ -851,6 +851,7 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
     <p class="card-text">
     {for $e in $c/tei:div[@type="words"]//tei:entry
     let $zi := string-join($e/tei:form/tei:orth, " / ")
+    ,$entry-id := $e/@xml:id
     ,$pr := $e/tei:form/tei:pron
     ,$def := $e/tei:def/text()
     ,$wc := sum(for $sw in $e//tei:sense 
@@ -858,10 +859,13 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
     order by $wc descending    
 (:    count $count :)
     return 
-    <div><h5>{$zi}&#160;&#160; {for $p in $pr return <span>{
+    <div id="{$entry-id}"><h5>{$zi}&#160;&#160; {for $p in $pr return <span>{
     if (ends-with($p/@xml:lang, "oc")) then "OC: " else 
     if (ends-with($p/@xml:lang, "mc")) then "MC: " else (),
-    $p/text()}&#160;</span>}  <small>{$wc} {if ($wc = 1) then " Attribution" else " Attributions"}</small></h5>
+    $p/text()}&#160;</span>}  <small>{$wc} {if ($wc = 1) then " Attribution" else " Attributions"}</small>
+    {if ($wc = 0) then
+    tlslib:format-button("delete_word_from_concept('"|| $entry-id || "', 'word')", "Delete the word "|| $zi || ", including all syntactic words.", "open-iconic-master/svg/x.svg", "", "", "tls-editor") else ()}
+    </h5>
     {if ($def) then <p class="ml-4">{$def}</p> else ()}
     <ul>{for $sw in $e//tei:sense
     return
@@ -878,7 +882,7 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
 
 
 (: get words for new ann :)
-
+(: 2/28 disabled
 declare 
     %templates:wrap
 function app:get_sw($node as node()*, $model as map(*), $word as xs:string?)
@@ -886,6 +890,7 @@ function app:get_sw($node as node()*, $model as map(*), $word as xs:string?)
 for $w in tlslib:getwords($word, $model)
 return $w
 };
+:)
 
 (: login :)
 declare 
@@ -901,12 +906,16 @@ else
 src="resources/icons/open-iconic-master/svg/account-login.svg"/>Login</a>
 };
 
-(: dialog functions :)
-
+(:~
+ : The navbar shown on all pages except the textview page, which has app:tv-navbar instead
+ : common elements between these navbars have been factored out to app:browse-navbar
+:)
 declare
     %templates:wrap
 function app:main-navbar($node as node()*, $model as map(*))
 {
+let $context := substring-before(tokenize(request:get-uri(), "/")[last()], ".html")
+return
 <nav class="navbar navbar-expand-sm navbar-light bg-light fixed-top">
                 <span class="banner-icon"><a href="index.html">
                 {app:logo($node, $model)}</a>
@@ -931,47 +940,20 @@ function app:main-navbar($node as node()*, $model as map(*))
                                 <a class="dropdown-item" href="browse.html?type=syn-func">Syntactical functions</a>
                                 <a class="dropdown-item" href="browse.html?type=sem-feat">Semantic features</a>
                                 <div class="dropdown-divider"/>
+                                <!-- will need to make another menu level here for the bookmarks -->
+                                <div class="dropdown-menu">
+  <a class="dropdown-item" href="#">Regular link</a>
+  <a class="dropdown-item active" href="#">Active link</a>
+  <a class="dropdown-item" href="#">Another link</a>
+</div>
                                 <a class="dropdown-item" href="textlist.html">Texts</a>
                             </div>
                         </li>
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownDoc" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                Documentation
-                            </a>
-                            <div class="dropdown-menu" aria-labelledby="navbarDropdownDoc">
-                                <a class="dropdown-item" href="documentation.html?section=overview">Overview</a>
-                                <a class="dropdown-item" href="documentation.html?section=team">Advisory Board</a>
-                                <div class="dropdown-divider"/>
-                                <a class="dropdown-item" href="documentation.html?section=manual">About this website</a>
-                            </div>
-                        </li>
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#"  id="navbarDropdownLinks" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Links</a>
-                            <div class="dropdown-menu" aria-labelledby="navbarDropdownLinks">
-                            <a class="dropdown-item" href="https://www.kanripo.org">Kanseki Repository</a>
-                                <!--
-                                <a class="dropdown-item" href="documentation.html?section=team">Advisory Board</a>
-                                <div class="dropdown-divider"/>
-                                <a class="dropdown-item" href="documentation.html?section=manual">About this website</a>
-                                -->
-                            </div>
-                        </li>
-                        <!--
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                Dropdown
-                            </a>
-                            <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-                                <a class="dropdown-item" href="#">Action</a>
-                                <a class="dropdown-item" href="#">Another action</a>
-                                <div class="dropdown-divider"></div>
-                                <a class="dropdown-item" href="#">Something else here</a>
-                            </div>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link disabled" href="#" tabindex="-1" aria-disabled="true">Disabled</a>
-                        </li>
-                        -->
+                        {if ($context = "textview") then
+                        tlslib:tv-header($node, $model)
+                        else
+                        (tlslib:navbar-doc(),
+                        tlslib:navbar-link())}
                     </ul>
                     <form action="search.html" class="form-inline my-2 my-lg-0" method="get">
                         <input id="query-inp" name="query" class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search"/>
@@ -991,62 +973,7 @@ function app:main-navbar($node as node()*, $model as map(*))
             </nav>
 };
 
-declare
-    %templates:wrap
-function app:tv-navbar($node as node()*, $model as map(*))
-{
-<nav class="navbar navbar-expand-md navbar-light bg-light fixed-top">
-                <a href="index.html"><span class="banner-icon">
-                {app:logo($node, $model)}
-                </span></a>
-                <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"/>
-                </button>                
-                <a class="navbar-brand" href="#" id="mainDropdown"  data-toggle="xdropdown" >TLS</a>
-                <div class="collapse navbar-collapse" id="navbarSupportedContent">
-                    <ul class="navbar-nav mr-auto">
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                Browse
-                            </a>
-                            <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-                                <a class="dropdown-item" href="browse.html?type=concept">Concepts</a>
-                                <a class="dropdown-item" href="browse.html?type=taxchar">Characters</a>
-                                <a class="dropdown-item" href="browse.html?type=syn-func">Syntactical functions</a>
-                                <a class="dropdown-item" href="browse.html?type=sem-feat">Semantical features</a>
-                                <div class="dropdown-divider"/>
-                                <a class="dropdown-item" href="textlist.html">Texts</a>
-                            </div>
-                        </li>
-                        {tlslib:tv-header($node, $model)}
-                        <!--
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownDoc" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                Documentation
-                            </a>
-                            <div class="dropdown-menu" aria-labelledby="navbarDropdownDoc">
-                                <a class="dropdown-item" href="documentation.html?section=overview">Overview</a>
-                                <a class="dropdown-item" href="#">Another action</a>
-                                <div class="dropdown-divider"/>
-                                <a class="dropdown-item" href="#">About this website</a>
-                            </div>
-                        </li>
-                        -->
-                    </ul>
-                    
-                </div>
-                    <form action="search.html" class="form-inline my-2 my-lg-0" method="get">
-                        <input name="query" class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search"/>
-                        <button class="btn btn-outline-success my-2 my-sm-0" type="submit">
-                            <img class="icon" src="resources/icons/open-iconic-master/svg/magnifying-glass.svg"/>
-                        </button>
-                    </form>
-                <div class="btn-nav">
-                        {app:login($node, $model)}
-                </div>
-   
-            </nav>
-};
+
 
 declare 
     %templates:wrap

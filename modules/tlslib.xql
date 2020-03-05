@@ -61,7 +61,9 @@ declare function tlslib:capitalize-first ( $arg as xs:string? )  as xs:string? {
    concat(upper-case(substring($arg,1,1)),
              substring($arg,2))
  } ;
-
+declare function tlslib:get-juan($link as xs:string){
+xs:int((tokenize($link, "_")[3] => tokenize("-"))[1])
+};
 (:~
 : get the definition for semantic features or syntactic functions
 : @param $type either "sem-feat" or "syn-func"
@@ -125,8 +127,27 @@ typeswitch ($node)
   <not-handled>{$node}</not-handled>
 };
    
+(: button, mostly at the right side, in which case class will be "close" :)
+declare function tlslib:format-button($onclick as xs:string, $title as xs:string, $icon as xs:string, $style as xs:string, $class as xs:string, $group as xs:string){
+ let $usergroups := sm:id()//sm:group/text()
+ return
+ if (contains($usergroups, $group)) then
+ if (string-length($style) > 0) then
+ <button type="button" class="btn {$class}" onclick="{$onclick}"
+ title="{$title}">
+ <img class="icon" style="width:10px;height:13px;top:0;align:top" src="resources/icons/{$icon}"/>
+ </button>
+ else 
+ <button type="button" class="btn {$class}" onclick="{$onclick}"
+ title="{$title}">
+ <img class="icon"  src="resources/icons/{$icon}"/>
+ </button>
+ else ()
+};
 
-
+declare function tlslib:format-button-common($onclick as xs:string, $title as xs:string, $icon as xs:string){
+  tlslib:format-button($onclick, $title, $icon, "", "close", "tls-user")
+};
 
 (:~
 : looks for a word in the tei:orth element of concepts
@@ -208,6 +229,36 @@ return $title
 
 (: -- Display related functions -- :)
 
+declare function tlslib:navbar-doc(){
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownDoc" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                Documentation
+                            </a>
+                            <div class="dropdown-menu" aria-labelledby="navbarDropdownDoc">
+                                <a class="dropdown-item" href="documentation.html?section=overview">Overview</a>
+                                <a class="dropdown-item" href="documentation.html?section=team">Advisory Board</a>
+                                <div class="dropdown-divider"/>
+                                <a class="dropdown-item" href="documentation.html?section=manual">About this website</a>
+                            </div>
+                        </li>
+
+};
+
+declare function tlslib:navbar-link(){
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#"  id="navbarDropdownLinks" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Links</a>
+                            <div class="dropdown-menu" aria-labelledby="navbarDropdownLinks">
+                            <a class="dropdown-item" href="https://www.kanripo.org">Kanseki Repository</a>
+                                <!--
+                                <a class="dropdown-item" href="documentation.html?section=team">Advisory Board</a>
+                                <div class="dropdown-divider"/>
+                                <a class="dropdown-item" href="documentation.html?section=manual">About this website</a>
+                                -->
+                            </div>
+                        </li>
+};
+
+
 (:~ 
 : this is the header line used for the text display, called from app:textview
 : @param  $node  this is the tei:seg element that contains a line that will be on this page, 
@@ -267,7 +318,9 @@ declare function tlslib:tv-header($node as node()*, $model as map(*)){
 
 (:~
 : generate the table of contents for the textview header.  Called from
+: @param $node  a node from the text to process
 : @see tlslib:tv-header()
+: TODO: Store a generated TOC in the text file and use if available
 :)
 
 declare function tlslib:generate-toc($node){
@@ -345,14 +398,10 @@ declare function tlslib:swl-form-dialog($node as node()*){
      </button>
 </h5>
     <h6 class="text-muted">At:  <span id="swl-line-id-span" class="ml-2">Id of line</span>&#160;
-         <button type="button" class="close" onclick="bookmark_this_line()" aria-label="Bookmark" title="Bookmark this location">
-     <img class="icon" src="resources/icons/open-iconic-master/svg/bookmark.svg"/>  
-     </button>
+    {tlslib:format-button-common("bookmark_this_line()","Bookmark this location", "open-iconic-master/svg/bookmark.svg")}
 </h6>
     <h6 class="text-muted">Line: <span id="swl-line-text-span" class="ml-2">Text of line</span>
-         <button type="button" class="close" onclick="comment_this_line()" aria-label="Comment" title="Comment on this line">
-     <img class="icon" src="resources/icons/octicons/svg/comment.svg"/>
-     </button>
+    {tlslib:format-button-common("comment_this_line()","Comment on this line", "octicons/svg/comment.svg")}
     </h6>
     <div class="card-text">
        
@@ -374,7 +423,7 @@ declare function tlslib:swl-form-dialog($node as node()*){
 (:~
 : 2020-02-26:  I think this has been moved to tlsapi, probably can delete it here
 :)
-
+(:
 declare function tlslib:add-concept-dialog($node as node()*, $model as map(*), $type as xs:string){
 <div id="new-{$type}" class="modal" tabindex="-1" role="dialog" style="display: none;">
     <div class="modal-dialog" role="document">
@@ -447,7 +496,7 @@ declare function tlslib:add-concept-dialog($node as node()*, $model as map(*), $
 </div>    
 };
 
-
+:)
 
 (:
 <span class="en">{collection($config:tls-texts-root)//tei:seg[@corresp=concat('#', $seg/@xml:id)]/text()}</span>
@@ -480,6 +529,7 @@ $sf := $node//tls:syn-func,
 $sm := $node//tls:sem-feat
 ,$link := substring(tokenize($node/tei:link/@target)[2], 2)
 (: damnit, why does this not work?  3 days later... seems to work now :)
+,$cdef := collection("/db/apps/tls-data")//tei:sense[@xml:id=$link]/ancestor::tei:div/tei:div[@type="definition"]/tei:p/text()
 ,$def := tlslib:get-sense-def($link)
 (:$pos := concat($sf, if ($sm) then (" ", $sm) else "")
 :)
@@ -494,27 +544,21 @@ if ($type = "row") then
       else ()
   }    
 </div>
-<div class="col-sm-3"><a href="concept.html?concept={$concept}">{$concept}</a></div>
+<div class="col-sm-3"><a href="concept.html?concept={$concept}" title="{$cdef}">{$concept}</a></div>
 <div class="col-sm-6">
 <span><a href="browse.html?type=syn-func&amp;id={data($sf/@corresp)}">{$sf/text()}</a>&#160;</span>
 {if ($sm) then 
 <span><a href="browse.html?type=sem-feat&amp;id={$sm/@corresp}">{$sm/text()}</a>&#160;</span> else ()}
 {$def}
 {if (sm:has-access(document-uri(fn:root($node)), "w") and $node/@xml:id) then 
-<div style="height:13px;position:absolute; top:0; right:0;">
- <!-- for the time being removing the button, don't really now what I want to edit here:-)
+(: for the time being removing the button, don't really now what I want to edit here:-)
  <button type="button" class="btn" onclick="edit_swl('{$node/@xml:id}')" style="width:10px;height:20px;" 
  title="Edit Attribution">
  <img class="icon" onclick="edit_swl('{$node/@xml:id}')" style="width:10px;height:13px;top:0;align:top" src="resources/icons/open-iconic-master/svg/pencil.svg"/>
  </button> 
- -->
- <button type="button" class="btn" onclick="delete_swl('{$node/@xml:id}')" style="width:10px;height:20px;" 
- title="Delete Attribution for {$zi}">
- <img class="icon"  style="width:10px;height:13px;top:0;align:top" src="resources/icons/open-iconic-master/svg/x.svg"/>
- </button>
- 
- 
-</div>
+ :)
+tlslib:format-button("delete_swl('" || data($node/@xml:id) || "')", "Delete Attribution for "||$zi, "open-iconic-master/svg/x.svg", "small", "close", "tls-editor")
+
 else ()
 }
 </div>
@@ -591,14 +635,14 @@ tlslib:format-swl($swl/ancestor::tls:ann, "row")}
  : 2020-02-26 it seems this belongs to tlsapi
  :)
  
- declare function tlslib:display_sense($sw as node(), $count as xs:int){
+declare function tlslib:display_sense($sw as node(), $count as xs:int){
     let $id := data($sw/@xml:id),
     $sf := $sw//tls:syn-func/text(),
     $sm := $sw//tls:sem-feat/text(),
     $user := sm:id()//sm:real/sm:username/text(),
     $def := $sw//tei:def/text()
     return
-    <li><span id="sw-{$id}" class="font-weight-bold">{$sf}</span>
+    <li id="{$id}"><span id="sw-{$id}" class="font-weight-bold">{$sf}</span>
     <em class="ml-2">{$sm}</em> 
     <span class="ml-2">{$def}</span>
      <button class="btn badge badge-light ml-2" type="button" 
@@ -610,7 +654,9 @@ tlslib:format-swl($swl/ancestor::tls:ann, "row")}
      <button title="Search for this word" class="btn badge btn-outline-success ml-2" type="button" 
      data-toggle="collapse" data-target="#{$id}-resp1" onclick="search_and_att('{$id}')">
       <img class="icon-small" src="resources/icons/open-iconic-master/svg/magnifying-glass.svg"/>
-      </button>
+      </button>,
+      if ($count = 0) then
+      tlslib:format-button("delete_word_from_concept('"|| $id || "')", "Delete the syntactic word "|| $sf || ".", "open-iconic-master/svg/x.svg", "", "", "tls-editor") else ()
       }
       <div id="{$id}-resp" class="collapse container"></div>
       <div id="{$id}-resp1" class="collapse container"></div>
@@ -649,7 +695,7 @@ let $src := data($a/tls:text/tls:srcline/@title)
 let $line := $a/tls:text/tls:srcline/text(),
 $tr := $a/tls:text/tls:line,
 $target := substring(data($a/tls:text/tls:srcline/@target), 2),
-$loc := xs:int(substring-before(tokenize(substring-before($target, "."), "_")[last()], "-"))
+$loc := xs:int((tokenize($target, "_")[3] => tokenize("-"))[1])
 
 return
 <div class="row bg-light table-striped">
@@ -657,12 +703,7 @@ return
 <div class="col-sm-3"><span data-target="{$target}" data-toggle="popover">{$line}</span></div>
 <div class="col-sm-7"><span>{$tr}</span>
 {if ((sm:has-access(document-uri(fn:root($a)), "w") and $a/@xml:id) and $user != 'test') then 
-<div style="height:13px;position:absolute; top:0; right:0;">
- <button type="button" class="btn" onclick="delete_swl('{$a/@xml:id}')" style="width:10px;height:20px;" 
- title="Delete this attribution">
- <img class="icon"  style="width:10px;height:13px;top:0;align:top" src="resources/icons/open-iconic-master/svg/x.svg"/>
- </button>
-</div>
+tlslib:format-button("delete_swl('" || data($a/@xml:id) || "')", "Delete this attribution", "open-iconic-master/svg/x.svg", "small", "close", "tls-editor")
 else ()}
 </div>
 </div>
