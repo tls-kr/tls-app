@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html xmlns="http://www.w3.org/1999/xhtml" data-template="app:tv-data">
     <head>
         <title data-template="app:page-title">App Title</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -10,10 +10,11 @@
         <link rel="stylesheet" type="text/css" href="resources/css/star-svg-theme.min.css"/>
         <link rel="stylesheet" type="text/css" href="resources/css/toastr.min.css"/>
         <link rel="stylesheet" type="text/css" href="resources/css/style.css"/>
+        <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/alpheios-components@1.6.2-dev/dist/style/style-components.min.css"/>    
     </head>
     <body id="body">
         <div>
-            <div id="main-navbar" data-template="app:tv-navbar"/>
+            <div id="main-navbar" data-template="app:main-navbar"/>
             <div id="content" class="container-fluid"/> 
             <div id="footer" data-template="app:footer"/>
             <a id="poweredby" href="http://exist-db.org"/>
@@ -21,7 +22,6 @@
         </div>
         <!-- additional stuff -->
         <div id="dialogs" data-template="app:dialogs"/>        
-        
         <!-- Optional JavaScript -->
         <!-- jQuery first, then Popper.js, then Bootstrap JS -->
         <script type="text/javascript" src="resources/scripts/jquery.min.js"/>
@@ -34,5 +34,6 @@
         <script type="text/javascript" src="resources/scripts/star-svg-theme.min.js"/>
         <script type="text/javascript" src="resources/scripts/toastr.min.js"/>
         <script type="text/javascript" src="resources/scripts/tls-app.js"/>
+        <script type="text/javascript" src="resources/scripts/xalpheios.js"/>
     </body>
 </html>

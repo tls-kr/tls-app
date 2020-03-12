@@ -22,14 +22,17 @@ x.Selector.getSelected = function() {
 function get_sw(){
 var word = $("#swl-query-span").text();
 // alert(uid);
+  if (word.length > 0){
+  var context = window.location.pathname;
   $.ajax({
   type : "GET",
   dataType : "html",
-  url : "api/get_sw.xql?word=" + word, 
+  url : "api/get_sw.xql?word=" + word+"&context="+context, 
   success : function(resp){
   $('#swl-select').html(resp)
   }
   });
+  }
 };
 
 function get_sf(senseid){
@@ -40,7 +43,7 @@ function get_sf(senseid){
   success : function(resp){
   $('#remoteDialog').html(resp);
   initialize_sf_autocomplete();  
-  $('#edit-sf-ialog').modal('show');
+  $('#edit-sf-dialog').modal('show');
   }
   });
 };
@@ -167,7 +170,7 @@ function show_new_concept(){
   });
 };
 
-// save one sw
+// save one sw OR one new word
 function show_newsw(para){
   var word = $("#swl-query-span").text();
   var line_id= $( "#swl-line-id-span" ).text();  
@@ -175,7 +178,7 @@ function show_newsw(para){
   $.ajax({
   type : "GET",
   dataType : "html",  
-  url : "api/get_swl.xql?type=word&concept="+para.concept+"&word="+word+"&wid="+para.wid+"&concept-id="+para.concept_id+"&line-id="+line_id+"&line="+line, 
+  url : "api/get_swl.xql?type=word&concept="+para.concept+"&word="+word+"&wid="+para.wid+"&py="+para.py+"&concept-id="+para.concept_id+"&line-id="+line_id+"&line="+line, 
   success : function(resp){
   $('#remoteDialog').html(resp);
   console.log("Initializing autocomplete functions");
@@ -185,6 +188,8 @@ function show_newsw(para){
   }
   });
 };
+
+
 // this is called from the "editSWLDialog" dialog, assembling the 
 // bits and pieces and saving them.
 // we need to do some more error-checking here
@@ -192,6 +197,7 @@ function save_newsw(){
     var line_id= $( "#swl-line-id-span" ).text();
     var word = $("#swl-query-span").text();
     var word_id = $("#word-id-span").text();
+    var py = $("#py-span").text();
     var synfunc_val = $("#select-synfunc" ).val();
     var semfeat_val = $("#select-semfeat").val();
     var concept_val = $("#newsw-concept-span" ).text();
@@ -204,7 +210,7 @@ function save_newsw(){
   type : "PUT",
   dataType : "json",
   async : false,
-  url : "api/save_newsw.xql?concept="+concept_id+"&wid="+word_id+"&concept-val="+concept_val+"&synfunc="+synfunc_id+"&synfunc-val="+synfunc_val+"&semfeat="+semfeat_id+"&semfeat-val="+semfeat_val+"&def="+def_val,
+  url : "api/save_newsw.xql?concept="+concept_id+"&wid="+word_id+"&word="+word+"&py="+py+"&concept-val="+concept_val+"&synfunc="+synfunc_id+"&synfunc-val="+synfunc_val+"&semfeat="+semfeat_id+"&semfeat-val="+semfeat_val+"&def="+def_val,
   success : function(resp){
     if (resp.sense_id == "not_saved"){
     toastr.info("Could not save: " + resp.result, "HXWD says:")        
@@ -306,7 +312,6 @@ $( ".zh" )
    // this is to activate the click on the text line to get the context
    $('[data-toggle="popover"]').popover({'content' : get_atts})
   });
-//$(document).ready(function(){  
 
 //this is for the filter in browse pages
   $("#myInput")
@@ -317,7 +322,6 @@ $( ".zh" )
       $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
     });
   });
-//});
 
 // for concepts, synfunc, semfeat we provide autocomplete
 
@@ -556,18 +560,12 @@ function search_and_att(sense_id){
   });
   $('#'+sense_id+'-resp1').html("Searching, please wait...")  
 }
-
+// we save this on focus to compare with it later
 $('body').on('focus', '[contenteditable]', function() {
     const $this = $(this);
-    $this.data('before', $this.html());
-}).on('blur keyup paste input', '[contenteditable]', function() {
-    const $this = $(this);
-    console.log("trigger")
-    if ($this.data('before') !== $this.html()) {
-        $this.data('before', $this.html());
-        $this.trigger('change');
-    }
+    $this.data('before', $this.text());
 });
+
 // to update the swl for a certain sense uuid
 function edit_swl(uid){
   $.ajax({
@@ -622,11 +620,11 @@ function delete_swl(uid){
 };
 
 // for the translations (class "tr"), we save on keyup, so we check for our event
-
 $( ".tr" ).keyup(function( event ) {
 }).keydown(function( event ) {
     var trid = $(this).attr('id');
-    var lineid = trid.substring(0, trid.indexOf("-tr"));
+    var lineid = trid.slice(0, -3);
+//    var lineid = trid.substring(0, trid.indexOf("-tr"));
     var line = document.getElementById( lineid ).innerText;
 // this is disabled for the moment. procline.xql does not exist
 if ( event.which == 5200 & event.shiftKey == true) {
@@ -655,18 +653,27 @@ if ( event.which == 5200 & event.shiftKey == true) {
   // we save the translation on either tab or enter
   if ( event.which == 9 ) {
     var trid = $(this).attr('id');
-    var lineid = trid.substring(0, trid.indexOf("-tr"));
+    var lineid = trid.slice(0, -3);
     var line = document.getElementById( lineid ).innerText;
     var tr = $(this).text()
-    save_tr(trid, tr, line);    
+    console.log("tab", $(this).data('before') , "h", tr)
+    if ($(this).data('before') !== tr){    
+          save_tr(trid, tr, line);
+          // save this, in case there are more changes
+          $(this).data('before', tr)
+    }
   }
   if ( event.which == 13 ) {
     var trid = $(this).attr('id');
-    var lineid = trid.substring(0, trid.indexOf("-tr"));
+    var lineid = trid.slice(0, -3);
     var line = document.getElementById( lineid ).innerText;
     var tr = $(this).text()
     event.preventDefault();
-    save_tr(trid, tr, line);    
+    if ($(this).data('before') !== tr){    
+          save_tr(trid, tr, line);
+          // save this, in case there are more changes
+          $(this).data('before', tr)
+    }
   }
 });
 

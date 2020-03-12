@@ -45,6 +45,13 @@ declare variable $config:tls-texts-root := substring-before($config:app-root, da
 declare variable $config:tls-translation-root := concat($config:tls-data-root, "/translations");
 declare variable $config:tls-user-root := "/db/users/";
 declare variable $config:exide-url :="https://hxwd.org:8443/exist/apps/eXide/index.html";
+
+declare variable $config:status-map := map{
+0 : "pending",
+1 : "proposed",
+2 : "checked",
+4 : "published"
+};
 (: translation attribution :)
 (: Just for reference, might want to use this later...
 "None" : "TJAN TJOE SOM 1949FF", (\: BHT 白虎通 :\)

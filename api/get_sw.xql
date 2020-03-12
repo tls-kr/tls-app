@@ -7,8 +7,8 @@ declare option output:media-type "text/html";
 import module namespace tlsapi="http://hxwd.org/tlsapi" at "tlsapi.xql";
 
 
-let $word := request:get-parameter("word", "xx")
-
+let $word := request:get-parameter("word", "xx"),
+$context := request:get-parameter("context", "xx")
 return
 
-tlsapi:get-sw($word)
+tlsapi:get-sw($word, $context)

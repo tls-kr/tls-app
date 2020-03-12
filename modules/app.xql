@@ -138,6 +138,13 @@ function app:browse($node as node()*, $model as map(*), $type as xs:string?, $fi
       <span class="col-3">
       <input class="form-control" id="myInput" type="text" placeholder="Type to filter..."/>
       </span>
+      <span class="col-2"></span>
+      {(: if ($type = 'concept') then
+      <span class="col-3">
+       <button type="button" class="btn btn-primary" onclick="new_concept()">New concept</button>
+      </span> else () :)
+      ()
+      }
       </div>
     </div>
     <div class="card-body"><table class="table">
@@ -511,14 +518,46 @@ function app:hit-count($node as node()*, $model as map(*), $query as xs:string?)
 
 (: textview related functions :)
 
+(:~
+: Get the first seg to display, translators, title etc. Store this in the model for later use
+:)
+
+declare 
+    %templates:wrap
+function app:tv-data($node as node()*, $model as map(*))
+{
+   let $location := request:get-parameter("location", "")
+   let $seg := 
+    if (string-length($location) > 0) then
+     if (contains($location, '_')) then
+      let $textid := tokenize($location, '_')[1]
+      return
+       collection($config:tls-texts-root)//tei:seg[@xml:id=$location]
+     else
+      let $firstdiv := (collection($config:tls-texts-root)//tei:TEI[@xml:id=$location]//tei:body/tei:div)[1]
+      let $targetseg := if ($firstdiv//tei:seg) then ($firstdiv//tei:seg)[1] else  ($firstdiv/following::tei:seg)[1] 
+      return
+       $targetseg
+    else 
+    (), 
+    $s :=  session:create(),
+    $textid := tokenize($seg/@xml:id, "_")[1],
+    $title := collection($config:tls-texts-root)//tei:TEI[@xml:id=$textid]//tei:titleStmt/tei:title,
+    $transl := collection("/db/apps/tls-data")//tei:bibl[@corresp="#"||$textid]/ancestor::tei:fileDesc//tei:editor[@role='translator']
+    return
+    map {"seg" : $seg, "textid" : $textid, "title" : $title, "transl" :  $transl}
+};
+
+
 (: function textview 
 @param location  text location or text id for the text to display. If empty, display text list app:textlist
 @param mode      for textlist: 'tls' texts or 'chant' texts or 'all' texts
 
-: if we have a location, call tlslib:displaychunk(), which will display  n lines (tei:seg) elements
+: if we have a location, call tlslib:display-chunk(), which will display  n lines (tei:seg) elements
 : for search results, prec and follow are the same to place the result in the middle of the page.
 
-:)
+:) 
+
 declare 
     %templates:wrap
     %templates:default("prec", 15)
@@ -533,12 +572,12 @@ function app:textview($node as node()*, $model as map(*), $location as xs:string
       let $textid := tokenize($location, '_')[1]
       let $firstseg := collection($config:tls-texts-root)//tei:*[@xml:id=$location]
       return
-        tlslib:displaychunk($firstseg, $prec, $foll)
+        tlslib:display-chunk($firstseg, $model, $prec, $foll)
      else
       let $firstdiv := (collection($config:tls-texts-root)//tei:TEI[@xml:id=$location]//tei:body/tei:div)[1]
       let $targetseg := if ($firstdiv//tei:seg) then ($firstdiv//tei:seg)[1] else  ($firstdiv/following::tei:seg)[1] 
       return
-       tlslib:displaychunk($targetseg, 0, $prec + $foll)
+       tlslib:display-chunk($targetseg, $model, 0, $prec + $foll)
     else 
     app:textlist()
     )
@@ -691,7 +730,7 @@ function app:char($node as node()*, $model as map(*), $char as xs:string?, $id a
     }</h4>
     </div>
     <div class="card-text">
-     {for $l in $n/tei:list return tlslib:proc_char($l)}
+     {for $l in $n/tei:list return tlslib:proc-char($l)}
     </div>
     <div class="card-footer">
     <ul class="pagination">
@@ -730,7 +769,8 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
     let $ann := for $c in collection($config:tls-data-root||"/notes")//tls:ann[@concept-id=$key]
      return $c
     return
-    <div class="card" style="max-width: 1000px;">
+    <div class="row">
+    <div class="card col-sm-12" style="max-width: 1000px;">
     <div class="card-body">
     <h4 class="card-title">{$c/tei:head/text()}&#160;&#160;{for $t in $tr return 
       <span class="badge badge-light" title="{map:get($app:lmap, $t/@xml:lang)}">{$t/text()}</span>} 
@@ -859,7 +899,7 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
     order by $wc descending    
 (:    count $count :)
     return 
-    <div id="{$entry-id}"><h5>{$zi}&#160;&#160; {for $p in $pr return <span>{
+    <div id="{$entry-id}"><h5><span class="zh">{$zi}</span>&#160;&#160; {for $p in $pr return <span>{
     if (ends-with($p/@xml:lang, "oc")) then "OC: " else 
     if (ends-with($p/@xml:lang, "mc")) then "MC: " else (),
     $p/text()}&#160;</span>}  <small>{$wc} {if ($wc = 1) then " Attribution" else " Attributions"}</small>
@@ -869,7 +909,7 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
     {if ($def) then <p class="ml-4">{$def}</p> else ()}
     <ul>{for $sw in $e//tei:sense
     return
-    tlslib:display_sense($sw, count($ann//tei:sense[@corresp="#" || $sw/@xml:id]))
+    tlslib:display-sense($sw, count($ann//tei:sense[@corresp="#" || $sw/@xml:id]))
     }</ul>
     </div>
     }
@@ -877,7 +917,10 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
     </div>
     </div>
     </div>
+        <div class="col-sm-0">{tlslib:swl-form-dialog('concept')}</div>
+    </div>
     )
+    
 };
 
 
@@ -1013,7 +1056,7 @@ return
 for $a in subsequence($atts, 1, 1)
 let $att := $a/ancestor::tls:ann
 return 
-<div><span>The most recent attribution was {tlslib:display_duration(xs:dateTime(current-dateTime()) - xs:dateTime(data($a/@created)))} ago :</span>
+<div><span>The most recent attribution was {tlslib:display-duration(xs:dateTime(current-dateTime()) - xs:dateTime(data($a/@created)))} ago :</span>
 {(
 tlslib:show-att-display($att),
 tlslib:format-swl($att, "row")
@@ -1081,18 +1124,15 @@ declare
     %templates:wrap
 function app:page-title($node as node()*, $model as map(*))
 { (: the html file accessed, without the extension :) 
-let $loc := request:get-parameter("location", "")
-,$ts := if (string-length($loc) > 0) then (
- let $lc := tokenize($loc, "_")
- let $txtid := $lc[1]
- , $l3 := tokenize($lc[3], "-")
- , $l := xs:string(xs:int($l3[1]))
- , $l2 := tokenize($l3[2], "[a-z\.]")[1]
- , $tl := tlslib:get-title($txtid)
- return $txtid || " " || $tl || $l || " " || $l2
-) else ""
+ let $ts := 
+ if ($model("textid")) then 
+   $model("textid") || " : " || $model("title")
+ else if ($model("concept")) then
+   "Concept: " || $model("concept")
+ else "漢學文典"
+
 (:,$context := substring-before(tokenize(request:get-uri(), "/")[last()], ".html"):)
-return concat ("TLS: ", $ts)
+return concat ("TLS - ", $ts)
 };
 
 declare function app:recent-activity(){

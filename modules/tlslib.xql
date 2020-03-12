@@ -87,37 +87,70 @@ declare function tlslib:getdate($node as node()) as xs:int{
  return
  xs:int(($na + $nb) div 2)
 };
-   
-declare function tlslib:proc_char($node as node())
+  
+(:~
+ : Get the content source for the given slot, either 1 or 2
+ : @param $seg the line for which we need content
+ : @param $options is a map with possible options
+ : we return a map of labels and doc nodes that fulfil the requirements
+:)
+declare function tlslib:get-content-slots($seg as node(), $options as map(*)) {
+let $user := sm:id()//sm:real/sm:username/text()
+,$id := $seg/@xml:id
+,$tr := for $s in collection($config:tls-translation-root, "/db/users/" || $user || "/translations")//tei:seg[@corresp="#"||$id]
+        return root($s)
+,$retmap := map:merge(
+          for $t in $tr
+          let $lang := tokenize($tr/tei:TEI/@xml:id, '-')[last()]
+          ,$ed := $tr//tei:editor[@role='translator']/text()
+          return map:entry(document-uri($tr), ($lang, $ed))
+)
+return $retmap
+};
+
+  
+declare function tlslib:proc-char($node as node())
 { 
 typeswitch ($node)
   case element(tei:div) return
-      <div>{for $n in $node/node() return tlslib:proc_char($n)}</div>
+      <div>{for $n in $node/node() return tlslib:proc-char($n)}</div>
   case element(tei:head) return
   <h4 class="card-title">{$node/text()}</h4>
   case element(tei:list) return
   <ul >{for $n in $node/node()
        return
-       tlslib:proc_char($n)
+       tlslib:proc-char($n)
   }</ul>
   case element(tei:item) return
     <li>{for $n in $node/node()
         return
-            tlslib:proc_char($n)
+            tlslib:proc-char($n)
     }</li>
   case element(tei:ref) return
      let $id := substring($node/@target, 2),
      $char := tokenize($node/ancestor::tei:div[1]/tei:head/text(), "\s")[1],
      $swl := collection($config:tls-data-root)//tei:div[@xml:id=$id]//tei:entry[tei:form/tei:orth[. = $char]]//tei:sense
+      (: this is the concept originally defined in the taxononomy file! :)
+     ,$alt := $node/@altname
+     ,$swl-count := count($swl)
+     ,$concept := normalize-space($node/text())
      return
       <span>
-      <a href="concept.html?uuid={$id}" class="mr-2 ml-2">{$node/text()}</a>
+      {if ($swl-count = 0) then 
+      if ($alt) then 
+      <a href="concept.html?uuid={$id}" class="text-muted mr-2 ml-2" title="Concept pending: not yet attributed. Alternate name: {string($alt)}">{$concept}</a>
+      else 
+      <a href="concept.html?uuid={$id}" class="text-muted mr-2 ml-2" title="Concept pending: not yet attributed">{$concept}</a>
+      else 
+      (
+      <a href="concept.html?uuid={$id}" class="mr-2 ml-2">{$concept}</a>
+      ,
       <button title="click to reveal {count($swl)} syntactic words" class="btn badge badge-light" type="button" 
-      data-toggle="collapse" data-target="#{$id}-swl">{count($swl)}</button>
+      data-toggle="collapse" data-target="#{$id}-swl">{$swl-count}</button>)}
       <ul class="list-unstyled collapse" id="{$id}-swl"> 
       {for $sw in $swl
       (: we dont check for attribution count, so pass -1  :)
-      return tlslib:display_sense($sw, -1)}
+      return tlslib:display-sense($sw, -1)}
       </ul>
       </span>
   case text() return
@@ -165,11 +198,16 @@ map:merge(
  )
 };
 
+declare function tlslib:get-sf-def($sfid as xs:string){
+let $sfdef := doc($config:tls-data-root || "/core/syntactic-functions.xml")//tei:div[@xml:id=$sfid]/tei:p/text()
+return $sfdef
+};
+
 (:~
 : format the duration in a human readable way
 : @param  $pt a xs:duration instance
 :)
-declare function tlslib:display_duration($pt as xs:duration) {
+declare function tlslib:display-duration($pt as xs:duration) {
 let $y := years-from-duration($pt)
 ,$m := months-from-duration($pt)
 ,$d := days-from-duration($pt)
@@ -268,31 +306,38 @@ declare function tlslib:navbar-link(){
 : @param $node  tei:seg on the page
 : @param $model a map containing arbitrary data 
 :)
+declare function tlslib:tv-headerz($node as node()*, $model as map(*)){
+<span>{for $k in distinct-values(map:keys($model)) 
+let $r := if (not($k="configuration")) then map:get($model, $k) else ()
+return
+<li>{$k, string($r)}</li>
+}
+</span>
+};
+declare function tlslib:session-att($name, $default){
+   if (contains(session:get-attribute-names(),$name)) then 
+    session:get-attribute($name) else 
+    (session:set-attribute($name, $default), $default)
+};
+
 declare function tlslib:tv-header($node as node()*, $model as map(*)){
-    let $location := request:get-parameter("location", "xx")
-    ,$targetseg := 
-     if (string-length($location) > 0) then
-     if (contains($location, '_')) then
-      let $textid := tokenize($location, '_')[1]
-      return
-      collection($config:tls-texts-root)//tei:*[@xml:id=$location]
-     else
-      let $firstdiv := (collection($config:tls-texts-root)//tei:*[@xml:id=$location]//tei:body/tei:div[1])
-      return
-      if ($firstdiv//tei:seg) then ($firstdiv//tei:seg)[1] else $firstdiv/following::tei:seg[1]
-    else ()
-    
-    let $head := if ($targetseg) then $targetseg/ancestor::tei:div[1]/tei:head[1] else (),
-    $title := if ($targetseg) then $targetseg/ancestor::tei:TEI//tei:titleStmt/tei:title/text() else "No title"
-   ,$textid := substring-before(tokenize(document-uri(root($targetseg)), "/")[last()], ".xml")
-   ,$trl := //tei:TEI[@xml:id=$textid || "-en"]//tei:editor[@role='translator']
-    return
+   let $textid := $model('textid'),
+   $toc := if (contains(session:get-attribute-names(), $textid || "-toc")) then 
+    session:get-attribute($textid || "-toc")
+    else 
+    tlslib:generate-toc($model("seg")/ancestor::tei:body)
+   
+   let $store := 
+     if (not(contains(session:get-attribute-names(),$textid || "-toc"))) 
+     then session:set-attribute($textid || "-toc", $toc) else ()
+
+   return
       (
-      <span class="navbar-text ml-2 font-weight-bold">{$title} <small class="ml-2">{$head/text()}</small></span> 
+      <span class="navbar-text ml-2 font-weight-bold">{$model('title')/text()} <small class="ml-2">{$model('seg')/ancestor::tei:div[1]/tei:head[1]/text()}</small></span> 
       ,<li class="nav-item dropdown">
        <a id="navbar-mulu" role="button" data-toggle="dropdown" href="#" class="nav-link dropdown-toggle">目錄</a> 
        <div class="dropdown-menu">
-       {tlslib:generate-toc($targetseg/ancestor::tei:body)}
+       {$toc}
        </div>
       </li>
       ,<button title="Show SWL" class="btn btn-primary ml-2" type="button" data-toggle="collapse" data-target=".swl">
@@ -302,15 +347,14 @@ declare function tlslib:tv-header($node as node()*, $model as map(*)){
       </button>,
       <li class="nav-item">
       <small class="nav-brand ml-2" title="Text provided by">Source: 
-      {if (map:get($config:txtsource-map, $textid)) then 
+      {if (map:contains($config:txtsource-map, $textid)) then 
           map:get($config:txtsource-map, $textid) 
       else 
-         if (substring($textid, 1, 3) = "KR6") then "CBETA" 
+         if (substring($model('textid'), 1, 3) = "KR6") then "CBETA" 
          else <a href="http://www.chant.org/">CHANT</a>}
       </small>
-      {if ($trl) then (<br/>,<small class="nav-brand ml-2">Translation by {$trl}</small>) else () }
-      {if (map:get($config:translation-map, $textid) or $trl) then 
-      (<br/>,<small class="nav-brand ml-2">Translation by {if ($trl) then $trl else map:get($config:translation-map, $textid)}</small>) else ()}
+      {if ($model("transl")) then 
+      (<br/>,<small class="nav-brand ml-2">Translation by {$model("transl")}</small>) else () }
       </li>
 
       )
@@ -332,6 +376,25 @@ declare function tlslib:generate-toc($node){
  for $d in $node/child::tei:div
  return tlslib:generate-toc($d)
 };
+(:~
+ Display a selection menu for translations and commentaries, given the current slot and type
+:)
+declare function local:trsubmenu($model as map(*), $slottype as xs:string, $slot as xs:int){
+        <div class="dropdown">
+            <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+    Translation {$model($slottype)[$slot]/text()}
+            </button>
+    <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+        {for $n in ('transl', 'comm')
+         for $m at $i in $model($n) 
+           where not($i = $slot and $slottype = $n) 
+            return 
+        <a class="dropdown-item" title="This is not working yet." href="#">{$n ||" : " || $m}</a>
+        }
+  </div>
+</div>
+
+};
 
 (:~
 : display a chunk of text, surrounding the $targetsec
@@ -340,21 +403,38 @@ declare function tlslib:generate-toc($node){
 : @param $foll an xs:int giving the number of tei:seg elements following the $targetsec 
 display $prec and $foll preceding and following segments of a given seg :)
 
-declare function tlslib:displaychunk($targetseg as node(), $prec as xs:int?, $foll as xs:int?){
+declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $prec as xs:int?, $foll as xs:int?){
 
       let $fseg := if ($foll > 0) then $targetseg/following::tei:seg[fn:position() < $foll] 
         else (),
       $pseg := if ($prec > 0) then $targetseg/preceding::tei:seg[fn:position() < $prec] 
         else (),
       $head := $targetseg/ancestor::tei:div[1]/tei:head[1],
-      $title := $targetseg/ancestor::tei:TEI//tei:titleStmt/tei:title/text(),
-      $dseg := ($pseg, $targetseg, $fseg)
-      return
+(:      $title := $model('title')/text(),:)
+      $dseg := ($pseg, $targetseg, $fseg),
+      $slot1 := tlslib:session-att("slot1", 1), 
+      $slot2 := tlslib:session-att("slot2", 2), 
+      $slottype1 :=  tlslib:session-att("slottype1", 'transl'),
+      $slottype2 :=  tlslib:session-att("slottype2", 'transl')
+    return
       (
       <div id="chunkrow" class="row">
-      <div id="chunkcol-left" class="col-sm-8">{for $d in $dseg return tlslib:displayseg($d, map{'loc' : data($targetseg/@xml:id) })}</div>
-      <div id="chunkcol-right" class="col-sm-4">
-      {tlslib:swl-form-dialog($targetseg)}
+      <div id="toprow" class="col-sm-12">
+      {(:  this is the same structure as the one display-seg will fill it 
+      with selection for translation etc, we use this as a header line :)()}
+       <div class="row">
+        <div class="col-sm-2" id="toprow-1"><!-- zh --></div>
+        <div class="col-sm-5" id="toprow-2"><!-- tr -->
+        {local:trsubmenu($model, $slottype1, $slot1)}
+        </div>
+        <div class="col-sm-4" id="toprow-3">
+        {local:trsubmenu($model, $slottype1, $slot2)}
+        </div>
+        </div>
+      </div>
+      <div id="chunkcol-left" class="col-sm-12">{for $d at $pos in $dseg return tlslib:display-seg($d, map:merge(($model, map{'loc' : data($targetseg/@xml:id), 'pos' : $pos})))}</div>
+      <div id="chunkcol-right" class="col-sm-0">
+      {tlslib:swl-form-dialog('textview')}
     </div>
     </div>,
       <div class="row">
@@ -389,120 +469,49 @@ declare function tlslib:displaychunk($targetseg as node(), $prec as xs:int?, $fo
 
 (: dialog functions :) 
 
-declare function tlslib:swl-form-dialog($node as node()*){
+(: This is the stub for the dynamic display in the right section.  Called from textview, it is used for attributions, from other contexts, just for display :)
+
+declare function tlslib:swl-form-dialog($context as xs:string){
 <div id="swl-form" class="card ann-dialog overflow-auto">
-<div class="card-body">
+{if ($context = 'textview') then
+ <div class="card-body">
     <h5 class="card-title">{if (sm:is-authenticated()) then "New Attribution:" else "Existing SW for " }<strong class="ml-2"><span id="swl-query-span">Word or char to annotate</span>:</strong>
      <button type="button" class="close" onclick="hide_new_att()" aria-label="Close" title="Close">
      <img class="icon" src="resources/icons/open-iconic-master/svg/circle-x.svg"/>  
-     </button>
-</h5>
+     </button></h5>
     <h6 class="text-muted">At:  <span id="swl-line-id-span" class="ml-2">Id of line</span>&#160;
-    {tlslib:format-button-common("bookmark_this_line()","Bookmark this location", "open-iconic-master/svg/bookmark.svg")}
-</h6>
+    {tlslib:format-button-common("bookmark_this_line()","Bookmark this location", "open-iconic-master/svg/bookmark.svg")}</h6>
     <h6 class="text-muted">Line: <span id="swl-line-text-span" class="ml-2">Text of line</span>
-    {tlslib:format-button-common("comment_this_line()","Comment on this line", "octicons/svg/comment.svg")}
-    </h6>
+    {tlslib:format-button-common("comment_this_line()","Comment on this line", "octicons/svg/comment.svg")}</h6>
     <div class="card-text">
        
-        <p> { if (sm:is-authenticated()) then <span>
+        <p> { if (sm:is-authenticated() and not(contains(sm:id()//sm:group, 'tls-test'))) then <span>
         <span class="badge badge-primary">Use</span> one of the following syntactic words (SW), 
         create a <span class="mb-2 badge badge-secondary">New SW</span> 
          or add a new concept to the word here: 
          <span class="btn badge badge-light ml-2" data-toggle="modal" onclick="show_new_concept()">Concept</span> 
          </span>
-         else <span>Log in if you want to add attribution.</span>
+         else <span>You do not have permission to make attributions.</span>
          }
         <ul id="swl-select" class="list-unstyled"></ul>
         </p>
       </div>
     </div>    
-    </div>
-};
-
-(:~
-: 2020-02-26:  I think this has been moved to tlsapi, probably can delete it here
-:)
-(:
-declare function tlslib:add-concept-dialog($node as node()*, $model as map(*), $type as xs:string){
-<div id="new-{$type}" class="modal" tabindex="-1" role="dialog" style="display: none;">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                {if ($type = "concept") then
-                <h5 class="modal-title">Adding concept for <strong class="ml-2"><span id="{$type}-query-span">Word</span></strong>
-                    <button class="btn badge badge-primary ml-2" type="button" onclick="get_guangyun()">
-                        廣韻
-                    </button>
-                </h5>
-                else 
-                <h5 class="modal-title">Adding SW to concept <strong class="ml-2"><span id="{$type}-query-span">Concept</span></strong></h5>
-                }
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    ×
-                </button>
-            </div>
-            <div class="modal-body">
-                {if ($type = "concept") then
-                (<h6 class="text-muted">At:  <span id="concept-line-id-span" class="ml-2">Id of line</span></h6>,
-                <h6 class="text-muted">Line: <span id="concept-line-text-span" class="ml-2">Text of line</span></h6>
-                ) else () }
-                <div>
-                   {if ($type = "concept") then
-                    <span id="concept-id-span" style="display:none;"/>
-                    else 
-                    <span id="word-id-span" style="display:none;"/>
-                    }
-                    <span id="synfunc-id-span-{$type}" style="display:none;"/>
-                    <span id="semfeat-id-span-{$type}" style="display:none;"/>
-                    
-                </div>
-                   {if ($type = "concept") then (
-                <div class="form-group" id="guangyun-group">
-                    <span class="text-muted" id="guangyun-group-pl"> Press the 廣韻 button above and select the pronounciation</span>
-                </div>,
-                <div id="select-concept-group" class="form-group ui-widget">
-                    <label for="select-concept">Concept: </label>
-                    <input id="select-concept" class="form-control" required="true"/>
-                </div>)
-                    else ()}                
-                <div class="form-row">
-                <div id="select-synfunc-group-{$type}" class="form-group ui-widget col-md-6">
-                    <label for="select-synfunc-{$type}">Syntactic function: </label>
-                    <input id="select-synfunc-{$type}" class="form-control" required="true"/>
-                </div>
-                <div id="select-semfeat-group-{$type}" class="form-group ui-widget col-md-6">
-                    <label for="select-semfeat-{$type}">Semantic feature: </label>
-                    <input id="select-semfeat-{$type}" class="form-control"/>
-                </div>
-                </div>
-                <div id="input-def-group-{$type}">
-                    <label for="input-{$type}-def">Definition </label>
-                    <textarea id="input-{$type}-def" class="form-control"></textarea>                   
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                   {if ($type = "concept") then 
-                <button type="button" class="btn btn-primary" onclick="save_to_concept()">Save changes</button>
-                else
-                <button type="button" class="btn btn-primary" onclick="save_newsw()">Save SW</button>
-                }
-            </div>
-        </div>
+else 
+ <div class="card-body">
+    <h5 class="card-title">Existing SW for <strong class="ml-2"><span id="swl-query-span"></span></strong>
+     <button type="button" class="close" onclick="hide_new_att()" aria-label="Close" title="Close">
+     <img class="icon" src="resources/icons/open-iconic-master/svg/circle-x.svg"/>  
+     </button></h5>
+    <div class="card-text">
+    <p>Here are <b>S</b>yntactic <b>W</b>ords already defined in the database:</p>
+        <ul id="swl-select" class="list-unstyled"></ul>
+      </div>
     </div>    
-    <!-- temp -->
-    
-</div>    
+
+}
+</div>
 };
-
-:)
-
-(:
-<span class="en">{collection($config:tls-texts-root)//tei:seg[@corresp=concat('#', $seg/@xml:id)]/text()}</span>
-
-:)
-
 
 
 declare function tlslib:get-sense-def($uuid as xs:string){
@@ -568,6 +577,7 @@ else
 if (string-length($def) > 10) then concat(substring($def, 10), "...") else $def}</li>
 };
 
+
 (:~
 : displays a tei:seg element, that is, a line of text, including associated items like translation and swl
 : @param $seg the tei:seg to display
@@ -579,14 +589,55 @@ if (string-length($def) > 10) then concat(substring($def, 10), "...") else $def}
 : 
 :)
 
-declare function tlslib:displayseg($seg as node()*, $options as map(*) ){
-let $user := sm:id()//sm:real/sm:username/text()
-let $link := concat('#', $seg/@xml:id),
-$ann := lower-case(map:get($options, "ann")),
+declare function tlslib:display-seg($seg as node()*, $options as map(*) ) {
+ let $user := sm:id()//sm:real/sm:username/text(),
+ $testuser := contains(sm:id()//sm:group, ('tls-test', 'guest'))
+ let $link := concat('#', $seg/@xml:id),
+  $ann := lower-case(map:get($options, "ann")),
+  $loc := map:get($options, "loc"),
+  $mark := if (data($seg/@xml:id) = $loc) then "mark" else ()
+  ,$lang := 'zho'
+  ,$alpheios-class := 'alpheios-enabled'
+  (: $model($model('slottype1'))[$model('slot1')] :)
+(:  ,$slot1 := root($options($options('slottype1'))[$options('slot1')])
+  ,$slot2 := root($options($options('slottype2'))[$options('slot2')]):)
+  ,$slot1 := root($options('transl')[1])
+  ,$slot2 := root($options('transl')[2])
+return
+(
+<div class="row {$mark}">
+<div class="{if ($ann='false') then 'col-sm-4' else 'col-sm-2'} zh {$alpheios-class}" lang="{$lang}" id="{$seg/@xml:id}">{$seg/text()}</div>　
+<div class="col-sm-5 tr" tabindex="{2*$options('pos')+500}" id="{$seg/@xml:id}-tr" contenteditable="{if (not($testuser)) then 'true' else 'false'}">{$slot1//tei:seg[@corresp="#"||$seg/@xml:id]/text()}</div>
+<div tabindex="{2*$options('pos')+500+1}"></div>
+ {if ($ann = 'false') then () else 
+  <div class="col-sm-4 tr" tabindex="{2*$options('pos')+1000}" id="{$seg/@xml:id}-ex" contenteditable="{if (not($testuser)) then 'true' else 'false'}">
+  {$slot2//tei:seg[@corresp="#"||$seg/@xml:id]/text()}
+  </div>}
+  <div tabindex="{2*$options('pos')+1000+1}"> </div>
+</div>,
+<div class="row swl collapse" data-toggle="collapse">
+<div class="col-sm-10" id="{$seg/@xml:id}-swl">
+{if ($ann = "false") then () else 
+for $swl in collection($config:tls-data-root|| "/notes")//tls:srcline[@target=$link]
+let $pos := if (string-length($swl/@pos) > 0) then xs:int(tokenize($swl/@pos)[1]) else 0
+order by $pos
+return
+tlslib:format-swl($swl/ancestor::tls:ann, "row")}
+</div>
+<div class="col-sm-2"></div>
+</div>
+)
+};
+
+declare function tlslib:display-segx($seg as node()*, $options as map(*) ) {
+ let $user := sm:id()//sm:real/sm:username/text()
+ let $link := concat('#', $seg/@xml:id),
+
+$ann := (:lower-case(map:get($options, "ann")):) 'false',
 $loc := map:get($options, "loc"),
 $mark := if (data($seg/@xml:id) = $loc) then "mark" else ()
 return
-(
+( (: headers or paragraphs :)
 if (tlslib:is-first-in-p($seg)) then
  if (tlslib:is-first-in-div($seg)) then 
   let $hx := $seg/ancestor::tei:div[1]/tei:head/text()
@@ -595,27 +646,34 @@ if (tlslib:is-first-in-p($seg)) then
  <div class="col-sm-12"><h5>{$hx}　　　</h5></div>
  </div>
  else
+ (: create an empty line between paragraphs :)
  <div class="row">
  <!-- p --> 
  <div class="col-sm-12 my-6">　　　</div>
  </div> 
  else
  (),
+ (: avoid extra empty lines :)
 if (string-length(string-join($seg/text(), "")) > 0) then
 (<div class="row {$mark}">
-<div class="col-sm-4 zh" id="{$seg/@xml:id}">{$seg/text()}</div>　
-<div class="col-sm-7 tr" id="{$seg/@xml:id}-tr" 
-contenteditable="{if (sm:has-access(xs:anyURI($config:tls-translation-root), "r") and $user != 'test') then 'true' else 'false'}">
-{  (: if there is more than one translation, we take the one with the shorter path (outrageous hack) :)
-   let $tr:= for $t in collection($config:tls-data-root)//tei:seg[@corresp=$link]
+<div class="{if ($ann='false') then 'col-sm-4' else 'col-sm-2'} zh" id="{$seg/@xml:id}">{$seg/text()}</div>　
+<div class="col-sm-5 tr" id="{$seg/@xml:id}-tr" 
+  contenteditable="{if (sm:has-access(xs:anyURI($config:tls-translation-root), "r") and not(contains(sm:id()//sm:group, 'tls-test'))) then 'true' else 'false'}">
+ {  (: if there is more than one translation, we take the one with the shorter path (outrageous hack) :)
+(:   let $tr:= if ($config:tls-translation-root) then 
+             for $t in collection($config:tls-translation-root)//tei:seg[@corresp=$link]
              let $p := string-length(document-uri(root($t)))
              order by $p ascending
              return $t
- return if ($tr[1]) then tlslib:procseg($tr[1]) else ()
-}</div>
+             else ():)
+             let $tr := ('')
+   return if ($tr[1]) then tlslib:procseg($tr[1]) else ()
+ }</div>
+ {if ($ann = 'false') then () else 
+  <div class="col-sm-4 ex" id="{$seg/@xml:id}-ex">Dummy</div>}
 </div>,
 <div class="row swl collapse" data-toggle="collapse">
-<div class="col-sm-12" id="{$seg/@xml:id}-swl">
+<div class="col-sm-10" id="{$seg/@xml:id}-swl">
 {if ($ann = "false") then () else 
 for $swl in collection($config:tls-data-root|| "/notes")//tls:srcline[@target=$link]
 let $pos := if (string-length($swl/@pos) > 0) then xs:int(tokenize($swl/@pos)[1]) else 0
@@ -623,6 +681,7 @@ order by $pos
 return
 tlslib:format-swl($swl/ancestor::tls:ann, "row")}
 </div>
+<div class="col-sm-2"></div>
 </div>
 ) else ()
 )
@@ -635,7 +694,7 @@ tlslib:format-swl($swl/ancestor::tls:ann, "row")}
  : 2020-02-26 it seems this belongs to tlsapi
  :)
  
-declare function tlslib:display_sense($sw as node(), $count as xs:int){
+declare function tlslib:display-sense($sw as node(), $count as xs:int){
     let $id := data($sw/@xml:id),
     $sf := $sw//tls:syn-func/text(),
     $sm := $sw//tls:sem-feat/text(),
@@ -702,7 +761,7 @@ return
 <div class="col-sm-2"><a href="textview.html?location={$target}" class="font-weight-bold">{$src, $loc}</a></div>
 <div class="col-sm-3"><span data-target="{$target}" data-toggle="popover">{$line}</span></div>
 <div class="col-sm-7"><span>{$tr}</span>
-{if ((sm:has-access(document-uri(fn:root($a)), "w") and $a/@xml:id) and $user != 'test') then 
+{if ((sm:has-access(document-uri(fn:root($a)), "w") and $a/@xml:id) and not(contains(sm:id()//sm:group, 'tls-test'))) then 
 tlslib:format-button("delete_swl('" || data($a/@xml:id) || "')", "Delete this attribution", "open-iconic-master/svg/x.svg", "small", "close", "tls-editor")
 else ()}
 </div>
