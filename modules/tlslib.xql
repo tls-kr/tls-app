@@ -597,7 +597,7 @@ declare function tlslib:display-seg($seg as node()*, $options as map(*) ) {
   $loc := map:get($options, "loc"),
   $mark := if (data($seg/@xml:id) = $loc) then "mark" else ()
   ,$lang := 'zho'
-  ,$alpheios-class := 'alpheios-enabled'
+  ,$alpheios-class := if ($user = 'test2') then 'alpheios-enabled' else ''
   (: $model($model('slottype1'))[$model('slot1')] :)
 (:  ,$slot1 := root($options($options('slottype1'))[$options('slot1')])
   ,$slot2 := root($options($options('slottype2'))[$options('slot2')]):)

@@ -526,6 +526,7 @@ declare
     %templates:wrap
 function app:tv-data($node as node()*, $model as map(*))
 {
+    session:create(),
    let $location := request:get-parameter("location", "")
    let $seg := 
     if (string-length($location) > 0) then

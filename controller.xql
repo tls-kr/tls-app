@@ -29,6 +29,7 @@ else if ($exist:path eq "/") then
     (: forward root path to index.xql :)
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
         <redirect url="index.html"/>
+            <cache-control cache="no"/>
     </dispatch>
 else if (ends-with($exist:resource, ".xql")) then (
         login:set-user($config:login-domain, (), false()),
@@ -40,8 +41,9 @@ else if (ends-with($exist:resource, ".xql")) then (
 else if ($logout) then (
     login:set-user($config:login-domain, (), false()),
     session:invalidate(),
+    response:set-header("Cache-control", "no-cache"),
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
-        <redirect url="{replace(request:get-uri(), "^(.*)\?", "$1")}"/>
+        <redirect url="{replace(request:get-uri(), "^(.*)\?", "/index.html")}"/>
     </dispatch>
 )
 (:else if ($exist:resource = "login") then (
@@ -61,6 +63,7 @@ else if ($exist:resource = "login") then (
     try {
         login:set-user($config:login-domain, (), false()),
         if ((sm:id()//sm:username/text()) != "guest") then (
+            response:set-header("Cache-control", "no-cache"),
             response:set-status-code($local:HTTP_OK),
             <response>
                 <user>{sm:id()//sm:username/text()}</user>
