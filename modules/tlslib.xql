@@ -747,7 +747,7 @@ tlslib:format-swl($swl/ancestor::tls:ann, map{'type' : 'row'})}
 
  (:~ 
  : called from function tlsapi:show-use-of($uid as xs:string, $type as xs:string), which is called via XHR from concept.html and char.html through 
- : tls-app.js -> show_use_of(type, uid) 
+ : tls-webapp.js -> show_use_of(type, uid) 
  : @param $sw the tei:sense to display 
  : 2020-02-26 it seems this belongs to tlsapi
  :)

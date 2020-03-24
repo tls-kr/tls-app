@@ -415,7 +415,7 @@ declare function tlsapi:edit-sf-dialog($para as map()){
 };
 
 (:~
-: This is called when a term is selected in the textview // get_sw in tls-app.js
+: This is called when a term is selected in the textview // get_sw in tls-webapp.js
 :)
 declare function tlsapi:get-sw($word as xs:string, $context as xs:string) as item()* {
 let $words := collection(concat($config:tls-data-root, '/concepts/'))//tei:orth[. = $word]
