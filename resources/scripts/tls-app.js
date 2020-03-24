@@ -899,6 +899,7 @@ function bookmark_this_line(){
 };
 
 // stub for comment  2020-02-23, called from app:swl-form-dialog
+// maybe this can be removed again?
 
 function comment_this_line(){
     
