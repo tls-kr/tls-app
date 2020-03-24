@@ -40,13 +40,18 @@ concat($callback, "([", string-join($payload, ","), "]);")
 
 (:~
  assemble a new attribution out of the information given.
+ called from the save-swl-* functions.
 :)
 
 declare function tlsapi:make-attribution($line-id as xs:string, $sense-id as xs:string, 
  $user as xs:string, $currentword as xs:string) as element(){
 let $line := collection($config:tls-texts-root)//tei:seg[@xml:id=$line-id],
-$tr := collection($config:tls-translation-root)//tei:*[@corresp=concat('#', $line-id)],
 $textid := tokenize($line-id, "_")[1],
+(: we generally use the translation from slot1 :)
+$trid:= tlslib:get-settings()//tls:section[@type='slot-config']/tls:item[@textid=$textid and @slot='slot1']/@content,
+$trdoc := collection("/db")//tei:TEI[@xml:id=$trid],
+$tr := $trdoc//tei:seg[@corresp='#' || $line-id],
+$tr-resp := $trdoc//tei:fileDesc//tei:editor[@role='translator']/text(),
 $title-en := $tr/ancestor::tei:TEI/tei:teiHeader/tei:fileDesc/tei:titleStmt/tei:title/text(),
 $title := $line/ancestor::tei:TEI/tei:teiHeader/tei:fileDesc/tei:titleStmt/tei:title/text(),
 $sense := collection($config:tls-data-root)//tei:sense[@xml:id=$sense-id],
@@ -63,7 +68,7 @@ $newswl :=
 <link target="#{$line-id} #{$sense-id}"/>
 <tls:text>
 <tls:srcline title="{$title}" target="#{$line-id}" pos="{functx:index-of-string(string-join($line/text(), ""), $word)}">{$line/text()}</tls:srcline>
-<tls:line title="{$title-en}" src="{map:get($config:translation-map, $textid)}">{$tr/text()}</tls:line>
+<tls:line title="{$title-en}" transl-id="{$trid}" src="{$tr-resp}">{$tr/text()}</tls:line>
 </tls:text>
 <form  corresp="{$sense/parent::tei:entry/tei:form/@corresp}" orig="{$currentword}">
 {$sense/parent::tei:entry/tei:form/tei:orth,
@@ -73,10 +78,9 @@ $sense/parent::tei:entry/tei:form/tei:pron[starts-with(@xml:lang, 'zh-Latn')]}
 {$sense/*}
 </sense>
 <tls:metadata resp="#{$user}" created="{current-dateTime()}">
-<respStmt>{if (("tls-editor") = sm:id()//sm:group/text()) then 
-<resp>added and approved</resp> else
-<resp>added</resp>}
-<name>{$user}</name>
+<respStmt>
+<resp>added</resp>
+<name notBefore ="{current-dateTime()}">{$user}</name>
 </respStmt>
 </tls:metadata>
 </tls:ann>
@@ -184,8 +188,6 @@ return
 tlsapi:save-swl-to-docs($line-id, $sense-id, $user, $currentword)
 
 };
-
-
 
 (: so this is now the xquery that displays the dialog for 
  - new concept for character:  type=concept
@@ -497,14 +499,12 @@ return
      if ($user != 'test' and $doann) then
      <button class="btn badge badge-primary ml-2" type="button" onclick="save_this_swl('{$s/@xml:id}')">
            Use
-      </button> else (),
+      </button> else ()) else ()}
      <button class="btn badge badge-light ml-2" type="button" 
      data-toggle="collapse" data-target="#{$sid}-resp" onclick="show_att('{$sid}')">
       <span class="ml-2">SWL: {$atts}</span>
-      </button>
+      </button> 
       
-      )
-      else () }
       <div id="{$sid}-resp" class="collapse container"></div>
 </li>
 }
@@ -517,14 +517,67 @@ else
 <li class="list-group-item">No word selected or no existing syntactic word found.</li>
 };
 
-declare function tlsapi:get-text-preview($loc as xs:string){
+declare function local:get-targetsegs($loc as xs:string, $prec as xs:int, $foll as xs:int){
+    let $targetseg := if (contains($loc, '_')) then
+       collection($config:tls-texts-root)//tei:seg[@xml:id=$loc]
+     else
+      let $firstdiv := (collection($config:tls-texts-root)//tei:TEI[@xml:id=$loc]//tei:body/tei:div)[1]
+      return if ($firstdiv//tei:seg) then ($firstdiv//tei:seg)[1] else  ($firstdiv/following::tei:seg)[1] 
+
+    let $fseg := if ($foll > 0) then $targetseg/following::tei:seg[fn:position() < $foll] 
+        else (),
+      $pseg := if ($prec > 0) then $targetseg/preceding::tei:seg[fn:position() < $prec] 
+        else (),
+      $dseg := ($pseg, $targetseg, $fseg)
+return $dseg
+};
+
+declare function tlsapi:get-tr-for-page($loc as xs:string, $prec as xs:int, $foll as xs:int, $slot as xs:string, $content-id as xs:string){
+let $textid := tokenize($loc, "_")[1]
+let $transl := tlslib:get-translations($textid),
+  $troot := $transl($content-id)[1],
+  $cl := if ($slot = "slot1") then "-tr" else "-ex",
+  $dseg := local:get-targetsegs($loc, $prec, $foll)
+(:  $sa := session:set-attribute($slot, $no):)
+return
+ map:merge(for $seg in $dseg 
+   let $tr := $troot//tei:seg[@corresp="#"||$seg/@xml:id]/text()
+    return 
+    map:entry("#"||data($seg/@xml:id)||$cl, $tr))
+
+};
+
+declare function tlsapi:get-swl-for-page($loc as xs:string, $prec as xs:int, $foll as xs:int){
+  let $dseg := local:get-targetsegs($loc, $prec, $foll)
+   for $d in $dseg
+   let $link := "#" || data($d/@xml:id)
+return
+<div id="{data($d/@xml:id)}-swl">{
+for $swl in collection($config:tls-data-root|| "/notes")//tls:srcline[@target=$link]
+let $pos := if (string-length($swl/@pos) > 0) then xs:int(tokenize($swl/@pos)[1]) else 0
+order by $pos
+return
+tlslib:format-swl($swl/ancestor::tls:ann, map{'type' : 'row'})}
+</div>
+};
+
+
+declare function tlsapi:get-text-preview($loc as xs:string, $options as map(*)){
 
 let $seg := collection($config:tls-texts-root)//tei:seg[@xml:id = $loc],
+$context := if($options?context) then $options?context else 5,
+$format := if($options?format) then $options?format else 'tooltip',
 $title := $seg/ancestor::tei:TEI//tei:titleStmt/tei:title/text(),
-$pseg := $seg/preceding::tei:seg[fn:position() < 5],
-$fseg := $seg/following::tei:seg[fn:position() < 5],
-$dseg := ($pseg, $seg, $fseg)
+$pseg := $seg/preceding::tei:seg[fn:position() < $context],
+$fseg := $seg/following::tei:seg[fn:position() < $context],
+$dseg := ($pseg, $seg, $fseg),
+$textid := tokenize($loc, "_")[1],
+$tr := tlslib:get-translations($textid),
+$slot1 := if ($options?transl-id) then $options?transl-id else tlslib:get-settings()//tls:section[@type='slot-config']/tls:item[@textid=$textid and @slot='slot1']/@content,
+$transl := $tr($slot1)
+(:$transl := collection("/db/apps/tls-data")//tei:bibl[@corresp="#"||$textid]/ancestor::tei:fileDesc//tei:editor[@role='translator']:)
 return
+if ($format = 'tooltip') then
 <div class="popover" role="tooltip">
 <div class="arrow"></div>
 <h3 class="popover-header">
@@ -533,11 +586,22 @@ return
     {
 for $d in $dseg 
 return 
-    tlslib:display-seg($d, map{"ann": "false", "loc": $loc})
+    (: we hardcode the translation slot to 1; need to make sure that 1 always has the one we want :)
+    tlslib:display-seg($d, map{"transl" : $transl, "ann": "false", "loc": $loc})
     }
 </div>
 </div>
+else 
+<div class="col">
+    {
+for $d in $dseg 
+return 
+    (: we hardcode the translation slot to 1; need to make sure that 1 always has the one we want :)
+    tlslib:display-seg($d, map{"transl" : $transl[1], "ann": "false", "loc": $loc})
+    }
+</div>
 };
+
 (: Save a new SW to an existing concept.   UPDATE: word is also created if ncessessary :) 
 declare function tlsapi:save-newsw($rpara as map(*)) {
  let $user := sm:id()//sm:real/sm:username/text()
@@ -669,6 +733,366 @@ let $swl := collection($config:tls-data-root|| "/notes")//tls:ann[@xml:id=$uid]
 return $link
 };
 
+
+declare function tlsapi:review-swl-dialog($uuid as xs:string){
+let $swl := collection($config:tls-data-root || "/notes")//tls:ann[@xml:id=$uuid],
+(: "[M01]/[D01]/[Y0001] at [H01]:[m01]:[s01]" :)
+$seg-id:=$swl/parent::tei:seg/@xml:id,
+$creator-id := substring($swl/tls:metadata/@resp, 2),
+$score := if ($swl/tls:metadata/@score) then data($swl/tls:metadata/@score) else 0,
+$date := format-dateTime(xs:dateTime($swl/tls:metadata/@created),"[MNn] [D1o], [Y] at [h].[m01][Pn]"),
+$creator := doc("/db/apps/tls-data/vault/members.xml")//tei:person[@xml:id=$creator-id]
+return
+<div id="review-swl-dialog" class="modal" tabindex="-1" role="dialog" style="display: none;">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header"><h5>Review SWL <span class="pl-5">Current score: <span class="font-weight-bold">{$score}</span></span></h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" title="Close">x</button>
+            </div>
+            <div class="modal-body">
+            <h6 class="font-weight-bold">Existing SWL <small>created by {$creator//tei:persName/text()}, {$date}</small></h6>
+            <div class="card-text">{tlslib:format-swl($swl, map{'type': 'row', 'context' : 'review'})}</div>
+            <h6 class="font-weight-bold mt-2">Context</h6>
+            {tlsapi:get-text-preview($seg-id, map{"context" : 3, "format" : "plain"})}
+            <!--
+            <h6 class="font-weight-bold mt-2">Other possibilities</h6>
+            <div class="form-row">
+              <div id="select-synfunc-group" class="form-group ui-widget col-md-6">
+                 <label for="select-synfunc">other syntactic function: </label>
+                 <input id="select-synfunc" class="form-control" required="false" />
+                 <span id="synfunc-id-span" style="display:none;"></span>
+              </div>
+              <div id="select-semfeat-group" class="form-group ui-widget col-md-6">
+                  <label for="select-semfeat">other semantic feature: </label>
+                  <input id="select-semfeat" class="form-control" />
+                  <span id="semfeat-id-span" style="display:none;"></span>
+              </div>
+            </div> -->
+            {if (count($swl/tls:metadata/tei:respStmt) > 1) then 
+            <div>
+            <h6 class="font-weight-bold mt-2">Previous comments</h6>
+            {for $d in subsequence($swl/tls:metadata/tei:respStmt, 2) 
+             let $cr2-id := $d/tei:name/text(),
+             $action:= $d/tei:resp/text(),
+             $cr2-date := format-dateTime(xs:dateTime($d/tei:resp/@notBefore),"[MNn] [D1o], [Y] at [h].[m01][Pn]"),
+             $cr2 := doc("/db/apps/tls-data/vault/members.xml")//tei:person[@xml:id=$cr2-id]//tei:persName/text()
+             return
+             <p><span class="font-weight-bold" title="{$cr2}">@{$cr2-id}</span>({$cr2-date})-><span class="rp-5 {if ($action = 'approve') then 'bg-success' else if ($action = 'change') then 'bg-warning' else 'bg-danger'}">{$action}</span> &#160;&#160;<span class="bg-light">{$d/tei:note/text()}</span> </p>
+}</div>
+            else ()}
+              <div id="select-concept-group" class="form-group ui-widget">
+                    <label for="input-comment" class="font-weight-bold mt-2">Comment:<br/><small>If you want to suggest a different CONCEPT, vote for deletion here and create a new SWL.</small></label>
+                    <textarea id="input-comment" class="form-control" required="false" value=""/>
+              </div>
+            <div>
+            <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                <label class="btn btn-success active">
+                    <input type="radio" name="actions" id="approve" autocomplete="off" checked="true">Approve</input>
+                </label>
+                <label class="btn btn-warning">
+                    <input type="radio" name="actions" id="change" autocomplete="off"> Suggest changes</input>
+                </label>
+                <label class="btn btn-danger">
+                    <input type="radio" name="actions" id="delete" autocomplete="off"> Mark for deletion</input>
+                </label>
+</div>            </div>  
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="save_swl_review('{$uuid}')">Save Review</button>
+           </div>
+     </div>
+     </div>
+</div>
+};
+
+
+declare function tlsapi:save-swl-review($uuid as xs:string, $comment as xs:string, $action as xs:string){
+let $swl := collection($config:tls-data-root || "/notes")//tls:ann[@xml:id=$uuid],
+ $user := sm:id()//sm:real/sm:username/text(),
+ $previous-action := $swl/tls:metadata/tei:respStmt[last()],
+ $score := if ($swl/tls:metadata/@score) then xs:int($swl/tls:metadata/@score) else 0,
+ $newscore := if ($action = 'approve') then 
+   if (not($previous-action/tei:name/text() = $user)) then
+   if ($swl/tls:metadata/@score) then 
+     update replace $swl/tls:metadata/@score with $score + 1 else
+     update insert attribute score {$score + 1}  into $swl/tls:metadata 
+   else -99
+   else if ($action = 'delete') then 
+     if ($score < 0) then 
+     (: move to crypt :)
+      -2
+     else 
+      update insert attribute score {-1}  into $swl/tls:metadata 
+   else (),
+ $node := <respStmt xmlns="http://www.tei-c.org/ns/1.0">
+ <name>{$user}</name>
+ <resp notBefore="{current-dateTime()}">{$action}</resp>
+ {if (string-length($comment) > 0) then <note>{$comment}</note> else ()}
+</respStmt>
+return 
+ (: we first update, then, if necessary, move to crypt :)
+ if ($newscore = -99) then 
+  "Error: you can not approve your own SWL."  
+ else 
+ (update insert $node into $swl/tls:metadata,
+ if ($newscore = -2) then 
+  if (not($previous-action/tei:name/text() = $user)) then
+  let $swl := collection($config:tls-data-root || "/notes")//tls:ann[@xml:id=$uuid],
+  $cm := substring(string(current-date()), 1, 7),
+  $doc := tlslib:get-crypt-file()
+  return 
+  (update insert $swl into $doc//tei:p[@xml:id="del-" || $cm || "-start"],
+   update delete $swl,
+   "The SWL has been moved to the crypt.  Thank you for making TLS better!")
+  else 
+ "Error: You can not second your own deletion!"
+ else 
+ "Review has been saved. Thank you for your effort!"
+ )
+};
+
+(:~
+: Dialog for new translation stub
+:)
+
+declare function tlsapi:new-translation($slot as xs:string, $loc as xs:string){
+let $textid := tokenize($loc, "_")[1],
+$title := tlslib:get-title($textid),
+$tr := tlslib:get-translations($textid)
+return
+<div id="new-translation-dialog" class="modal" tabindex="-1" role="dialog" style="display: none;">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header"><h5>Start a new translation or comment file for {$title}</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" title="Close">x</button>
+            </div>
+            <div class="modal-body">
+            <div class="form-row">
+             <div class="form-group col-md-6 font-weight-bold">
+             <label class="form-check-label" for="typrad1">Information about the translation / work   </label></div>
+             <div class="form-group col-md-2 font-weight-bold">Type of work:</div>
+             <div class="form-group col-md-2 font-weight-bold">
+             <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" name="typradio" id="typrad1" value="transl" checked="true"/>
+              <label class="form-check-label" for="typrad1">Translation</label>
+             </div>
+             </div>
+             <div class="form-group col-md-2 font-weight-bold">
+             <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" name="typradio" id="typrad2" value="comment"/>
+              <label class="form-check-label" for="typrad2">Comments</label>
+              </div> 
+              </div>
+            </div>
+            <div class="form-row">
+              <div id="select-lang-group" class="form-group ui-widget col-md-3">
+                 <label for="select-lang">Translation language: </label>
+                 <select class="form-control" id="select-lang">
+                  {for $l in map:keys($config:languages)
+                    order by $l
+                    return
+                    if ($l = "en") then
+                    <option value="{$l}" selected="true">{$config:languages($l)}</option>
+                    else
+                    <option value="{$l}">{$config:languages($l)}</option>
+                   } 
+                 </select>                 
+              </div>
+              <div id="select-transl-group" class="form-group ui-widget col-md-3">
+                  <label for="select-transl">Creator (if it is not you:-): </label>
+                  <input id="select-transl" class="form-control" />
+              </div>
+              <div id="select-type-group1" class="form-group ui-widget col-md-6">
+                 <label for="select-rel">For comments, are they related to a translation?</label>
+                 <select class="form-control" id="select-rel">
+                    <option value="none" selected="true">None</option>
+                  {for $c in map:keys($tr)
+                    let $this := $tr($c)
+                    let $l := $this[3]
+                    order by $l
+                    return
+                    <option value="{$c}" title="{$c}">by {$this[2]} ({$this[3]})</option>
+                   } 
+                 </select>                 
+              </div>             
+            </div>
+            <h6 class="font-weight-bold">Visibility</h6>
+              <p>We hope and expect that the work will be available to all TLS users.  However, we realize there are reasons to keep it private, even if temporarily. You can change this later.</p>
+           <div class="form-row">
+             <div class="form-group col-md-4">
+             <div class="form-check">
+              <input class="form-check-input" type="radio" name="visradio" id="visrad1" value="option1" checked="true"/>
+             <label class="form-check-label" for="visrad1">
+               Show to everybody
+             </label>
+              </div>
+             </div> 
+             <div class="form-group col-md-4">
+             <div class="form-check disabled">
+            <input class="form-check-input" type="radio" name="visradio" id="visrad2" value="option2" disabled="true"/>
+            <label class="form-check-label" for="visrad2">Show to registered users</label>
+               </div>
+              </div>
+             <div class="form-group col-md-4">
+             <div class="form-check">
+             <input class="form-check-input" type="radio" name="visradio" id="visrad3" value="option3"/>
+             <label class="form-check-label" for="visrad3">
+             Keep it to me only
+             </label>
+           </div>
+           </div>
+</div>
+            <h6 class="font-weight-bold">Bibliographic information</h6>
+             <p class="text-muted">If you are entering a previously published translation, please give the bibliographic details here, at least title, publishing place and year.</p>
+            <div class="form-row">
+              <div id="select-trtitle-group" class="form-group ui-widget col-md-6">
+                  <label for="select-trtitle">Title: </label>
+                  <input id="select-trtitle" class="form-control" />
+              </div>
+              <div id="select-concept-group" class="form-group ui-widget col-md-6" >
+                    <label for="input-biblio" >Publisher, place and year</label>
+                    <input id="input-biblio" class="form-control" />
+              </div>
+              </div>
+
+           <div class="form-row">
+             <div class="form-group col-md-3">
+             <div class="form-check">
+              <input class="form-check-input" type="radio" name="copradio" id="coprad1" value="option1" checked="true"/>
+             <label class="form-check-label" for="coprad1">
+               No copyright
+             </label>
+              </div>
+             </div> 
+             <div class="form-group col-md-3">
+             <div class="form-check">
+            <input class="form-check-input" type="radio" name="copradio" id="coprad2" value="option2"/>
+            <label class="form-check-label" for="coprad2">Licensed</label>
+               </div>
+              </div>
+             <div class="form-group col-md-3">
+             <div class="form-check">
+            <input class="form-check-input" type="radio" name="copradio" id="coprad3" value="option3"/>
+            <label class="form-check-label" for="coprad3">Not Licensed</label>
+               </div>
+              </div>
+             <div class="form-group col-md-3">
+             <div class="form-check">
+             <input class="form-check-input" type="radio" name="copradio" id="coprad4" value="option4"/>
+             <label class="form-check-label" for="coprad4">
+             Status unclear
+             </label>
+           </div>
+           </div>
+</div>
+
+<p class="text-muted">Save the translation, then you can select this translation for input after reloading the page.</p>
+            <div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="store_new_translation('{$slot}','{$textid}')">Save</button>
+           </div>
+     </div>
+     </div>
+              </div>
+              </div>
+</div>
+};
+
+declare function tlsapi:store-new-translation($lang as xs:string, $txtid as xs:string, $translator as xs:string, $trtitle as xs:string, $bibl as xs:string, $vis as xs:string, $copy as xs:string, $type as xs:string, $rel-id as xs:string){
+  let $user := sm:id()//sm:real/sm:username/text()
+  ,$fullname := sm:id()//sm:real/sm:fullname/text()
+  ,$uuid := util:uuid()
+  ,$newid := $txtid || "-" || $lang || "-" || tokenize($uuid, "-")[1]
+  ,$lg := $config:languages($lang)
+  ,$title := tlslib:get-title($txtid)
+  ,$trcoll := if ($vis="option3") then $config:tls-user-root || $user || "/translations" 
+    else $config:tls-translation-root || "/" || $lang
+  ,$trcollavailable := xmldb:collection-available($trcoll) or 
+   (if ($vis="option3") then
+    xmldb:create-collection($config:tls-user-root || $user, "translations")
+   else
+   (xmldb:create-collection($config:tls-translation-root, $lang),
+    sm:chmod(xs:anyURI($trcoll), "rwxrwxr--"),
+    sm:chown(xs:anyURI($trcoll), "tls"),
+    sm:chgrp(xs:anyURI($trcoll), "tls-user")
+    )
+  )
+  , $trx := if (not($translator = "yy")) then $translator else if ($vis = "option3") then $fullname else "TLS Project"
+  , $doc := 
+    doc(xmldb:store($trcoll, $newid || ".xml", 
+   <TEI xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$newid}" type="{$type}">
+  <teiHeader>
+      <fileDesc>
+            {if ($type = "transl") then 
+         <titleStmt>
+            <title>Translation of {$title} into ({$lg})</title>
+            <editor role="translator">{$trx}</editor>
+         </titleStmt>
+            else 
+         <titleStmt>
+            <title>Comments to {$title}</title>
+            <editor role="creator">{$trx}</editor>
+         </titleStmt>
+            }
+         <publicationStmt>
+            <p>published electronically as part of the TLS project at https://hxwd.org</p>
+            {if ($copy = "option1") then 
+            <availability status="1">This work is in the public domain</availability> 
+            else 
+             if ($copy = "option2") then
+            <availability status="2">This work has been licensed for use in the TLS</availability> 
+            else 
+             if ($copy = "option3") then
+            <availability status="3">This work has not been licensed for use in the TLS</availability> 
+            else
+            <availability status="4">The copyright status of this work is unclear</availability> 
+            }
+         </publicationStmt>
+         <sourceDesc>
+            {if (not($bibl = "") or not ($trtitle = "")) then 
+            <bibl><title>{$trtitle}</title>{$bibl}</bibl> else 
+            <p>Created by members of the TLS project</p>}
+            
+            {if ($type="transl") then 
+             <p>Translation of <bibl corresp="#{$txtid}">
+                  <title xml:lang="och">{$title}</title>
+               </bibl> into <lang xml:lang="{$lang}">{$lg}</lang>.</p>
+             else 
+             <p>Comments and notes to <bibl corresp="#{$txtid}">
+                  <title xml:lang="och">{$title}</title>
+               </bibl>{if (string-length($rel-id) > 0) then ("for translation ", <ref target="#{$rel-id}"></ref>) else ()}.</p>
+             }
+         </sourceDesc>
+      </fileDesc>
+     <profileDesc>
+        <creation resp="#{$user}">Initially created: <date>{current-dateTime()}</date> by {$user}</creation>
+     </profileDesc>
+  </teiHeader>
+  <text>
+      <body>
+      {if ($type = "transl") then 
+      <div><head>Translated parts</head><p xml:id="{$txtid}-start"></p></div>
+      else 
+      <div><head>Comments</head><p xml:id="{$txtid}-start"></p></div>
+      }
+      </body>
+  </text>
+</TEI>))
+return
+if (not($vis="option3")) then 
+ let $uri := document-uri($doc)
+ return
+ (
+    sm:chmod(xs:anyURI($uri), "rwxrwxr--"),
+    sm:chown(xs:anyURI($uri), "tls"),
+    sm:chgrp(xs:anyURI($uri), "tls-user")
+ )
+ else ()
+};
+
+
 declare function tlsapi:delete-word-from-concept($id as xs:string, $type as xs:string) {
 let $item := if ($type = 'word') then 
    collection($config:tls-data-root|| "/concepts")//tei:entry[@xml:id=$id]
@@ -682,6 +1106,10 @@ let $item := if ($type = 'word') then
 ,$ret := if ($itemcount = 0) then 
  (update delete $item, "OK") else "There are " || $itemcount || " Attributions, can not delete."
  return $ret
+};
+
+declare function tlsapi:delete-bookmark($id as xs:string){
+()
 };
 
 (:~
@@ -751,15 +1179,40 @@ if (update replace $sense/tei:def with $defel) then "Success" else "Problem"
  : Save the translation (or comment)
  : 3/11: Get the file from the correct slot!
 :)
-declare function tlsapi:save-tr($trid as xs:string, $tr as xs:string, $lang as xs:string){
+declare function tlsapi:save-tr($trid as xs:string, $tr-to-save as xs:string, $lang as xs:string){
 let $user := sm:id()//sm:real/sm:username/text()
 let $id := substring($trid, 1, string-length($trid) -3)
 ,$txtid := tokenize($id, "_")[1]
-,$slots := if (ends-with($trid, '-tr')) then 'slot1' else 'slot2'
-,$slot := session:get-attribute($slots)
-,$transl := root(collection("/db/apps/tls-data")//tei:bibl[@corresp="#"||$txtid]/ancestor::tei:fileDesc//tei:editor[@role='translator'][$slot])
+,$tr := tlslib:get-translations($txtid)
+,$slot := if (ends-with($trid, '-tr')) then 'slot1' else 'slot2'
+,$content-id := tlslib:get-content-id($txtid, $slot, $tr)
+,$transl := $tr($content-id)[1]
+,$seg := <seg xmlns="http://www.tei-c.org/ns/1.0" corresp="#{$id}" xml:lang="{$lang}" resp="#{$user}" modified="{current-dateTime()}">{$tr-to-save}</seg>
+,$node := $transl//tei:seg[@corresp="#" || $id]
+ 
+return
+if ($node) then (
+ update insert attribute modified {current-dateTime()} into $node,
+ update insert attribute resp-del {"#" || $user} into $node,
+ update insert attribute src-id {$content-id} into $node,
+ update insert $node into (tlslib:get-crypt-file()//tei:div/tei:p[last()])[1],
+(: The return values are wrong: update always returns the empty sequence :)
+ if (update replace $node[1] with $seg) then () else "Success. Updated translation." 
+)
+else 
+if ($transl//tei:p[@xml:id=concat($txtid, "-start")]) then 
+  update insert $seg  into $transl//tei:p[@xml:id=concat($txtid, "-start")] 
+else 
+ (: mostly for existing translations.  Here we simple append it to the very end. :)
+ update insert $seg  into ($transl//tei:p[last()])[1]
+};
+
+declare function tlsapi:new-anonymous-translation(){
+()
+(:
+(: what follows is irrelevant for actively created translations, keep it here for those who are created by just writing the translation :) 
 ,$trcoll := concat($config:tls-translation-root, "/", $lang)
-,$trcollavailable := xmldb:collection-available($trcoll) or 
+,$trcollavailable := if ($transl) then 1 else xmldb:collection-available($trcoll) or 
   (xmldb:create-collection($config:tls-translation-root, $lang),
   sm:chown(xs:anyURI($trcoll), "tls"),
   sm:chgrp(xs:anyURI($trcoll), "tls-user"),
@@ -767,11 +1220,16 @@ let $id := substring($trid, 1, string-length($trid) -3)
   )
 ,$docpath := if ($transl) then document-uri($transl) else concat($trcoll, "/", $txtid, "-", $lang, ".xml")
 ,$title := collection($config:tls-texts-root)//tei:TEI[@xml:id=$txtid]//tei:titleStmt/tei:title/text()
-,$seg := <seg xmlns="http://www.tei-c.org/ns/1.0" corresp="#{$id}" xml:lang="{$lang}" resp="{$user}" modified="{current-dateTime()}">{$tr}</seg>
+,$seg := <seg xmlns="http://www.tei-c.org/ns/1.0" corresp="#{$id}" xml:lang="{$lang}" resp="#{$user}" modified="{current-dateTime()}">{$tr-to-save}</seg>
 let $doc :=
   if (not (doc-available($docpath))) then
-   doc(xmldb:store($trcoll, concat($txtid, "-", $lang, ".xml"), 
-   <TEI xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$txtid}-{$lang}">
+   (: TODO make sure that ID is unique across all translations :)
+   let $uid := util:uuid()
+   (: maybe like this? :)
+   ,$newid := $txtid || "-" || $lang || "-tls" || tokenize($uid, "-")[2]
+   return
+   doc(xmldb:store($trcoll, $newid || ".xml", 
+   <TEI xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$newid}">
   <teiHeader>
       <fileDesc>
          <titleStmt>
@@ -799,21 +1257,9 @@ let $doc :=
   </text>
 </TEI>)) 
  else doc($docpath)
-,$node := $doc//tei:seg[@corresp=concat("#", $id)]
- 
-return
-(: The return values are wrong: update always returns the empty sequence :)
-if ($node) then 
-if (update replace $node[1] with $seg) then "Success. Updated translation." else "Could not update translation." 
-else 
-if ($doc//tei:p[@xml:id=concat($txtid, "-start")]) then 
-  update insert $seg  into $doc//tei:p[@xml:id=concat($txtid, "-start")] 
-else 
- (: mostly for existing translations.  Here we simple append it to the very end. :)
- update insert $seg  into ($doc//tei:p[last()])[1]
+
+:)
 };
-
-
 
 (: The bookmark will also serve as template for intertextual links and anthology, which is why we also save word and line :)
  
@@ -823,7 +1269,8 @@ let $user := sm:id()//sm:real/sm:username/text()
 ,$txtid := tokenize($line-id, "_")[1]
 ,$juan := tlslib:get-juan($line-id)
 ,$title := tlslib:get-title($txtid)
-,$item := <item xmlns="http://www.tei-c.org/ns/1.0" modified="{current-dateTime()}"><ref target="{$line-id}">{$title} {$juan}</ref>
+,$uuid := "uuid-" || util:uuid() 
+,$item := <item xmlns="http://www.tei-c.org/ns/1.0" modified="{current-dateTime()}" xml:id="{$uuid}"><ref target="#{$line-id}"><title>{$title}</title>:{$juan}</ref>
 <seg>{$line}</seg>
 <term>{$word}</term></item>
 let $doc :=
@@ -849,7 +1296,7 @@ let $doc :=
   <text>
       <body>
       <div><head>Bookmarks</head>
-      <list xml:id="bookmarklist-{$user}">
+      <list type="bookmark" xml:id="bookmarklist-{$user}">
       </list>
       </div>
       </body>
@@ -861,4 +1308,15 @@ if (update insert $item  into $doc//tei:list[@xml:id="bookmarklist-"||$user]) th
 ("Success. Saved bookmark.")
 else ("Could not save bookmark. ", $docpath)
 
+};
+
+
+declare function tlsapi:reload-selector($map as map(*)){
+ let $group := sm:id()//sm:group
+ let $slot := $map?slot
+ ,$textid := tokenize($map?location, "_")[1]
+ ,$tr := tlslib:get-translations($textid)
+ ,$s := if ("tls-test" = $group) then  session:set-attribute($textid || "-" || $slot, $map?content-id) else tlslib:settings-save-slot($slot,$textid, $map?content-id)
+ return
+ tlslib:trsubmenu($textid, $slot, $map?content-id, $tr)
 };

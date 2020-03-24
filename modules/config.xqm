@@ -52,6 +52,19 @@ declare variable $config:status-map := map{
 2 : "checked",
 4 : "published"
 };
+
+declare variable $config:languages := map{
+"en" : "English",
+"zh" : "Chinese",
+"de" : "German",
+"fr" : "French",
+"ru" : "Russian",
+"la" : "Latin",
+"ogr" : "Old Greek",
+"ja" : "Japanese",
+"ja-ku" : "Japanese Kundoku"
+};
+
 (: translation attribution :)
 (: Just for reference, might want to use this later...
 "None" : "TJAN TJOE SOM 1949FF", (\: BHT 白虎通 :\)

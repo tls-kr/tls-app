@@ -10,6 +10,7 @@ declare option output:media-type "text/html";
 let $trid := request:get-parameter("trid", "xxxx")
 , $tr := request:get-parameter("tr", "xx")
 , $lang := request:get-parameter("lang", "en")
+(: , $tr-path := request:get-parameter("trpath", "en") :)
 
 return 
 tlsapi:save-tr($trid, $tr, $lang)

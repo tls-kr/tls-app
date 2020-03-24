@@ -4,16 +4,17 @@
     <git-config>
         <!-- github secret key can be stored here or as a environment variable. (prefered)  -->
         <private-key/>
-        <private-key-variable>GITSYNC</private-key-variable>
-        <!-- github token for rate limiting. can be stored here or as a environment variable. (prefered)  -->
-        <gitToken/>
+        <private-key-variable>GIT_PRIV_TOKEN</private-key-variable>
+        <!-- github token for rate limiting. can be stored here or as a environment variable. (prefered) 
+        CW: it seems to me this is the secret key from the webhook!-->
+        <gitToken>eb1b9628ad0eed7050a7d679ef0c35dde2165ee9</gitToken>
         <gitToken-variable/>
         <!-- Branch to sync, if empty assumes master -->
         <github-branch/>
         <!-- Collection in eXistdb to sync app to. example: /db/apps/tcadrt -->
-        <exist-collection>/db/apps/srophe</exist-collection>
+        <exist-collection>/db/apps/tls-app</exist-collection>
         <!-- App root in git repository. example: srophe-app -->
-        <repo-name>srophe-eXist-app</repo-name>
+        <repo-name>tls-app</repo-name>
     </git-config>
     <!-- Configuration for recaptcha options -->
     <recaptcha>

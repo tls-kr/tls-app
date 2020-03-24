@@ -19,8 +19,6 @@ import module namespace kwic="http://exist-db.org/xquery/kwic"
     at "resource:org/exist/xquery/lib/kwic.xql";
 import module namespace tlslib="http://hxwd.org/lib" at "tlslib.xql";
 
-import module namespace un="http://hxwd.org/user" at "user.xql";
-(:import module namespace un = "http://exist-db.org/apps/userManager" at "/db/apps/usermanager/modules/userManager.xqm";:)
 
 declare variable $app:SESSION := "tls:results";
 
@@ -34,7 +32,7 @@ declare variable $app:lmap := map{
 "concept" : "Concepts",
 "definition" : "Definition",
 "taxchar" : "Character analysis",
-"notes" : "Notes",
+"notes" : "Criteria and general notes",
 "old-chinese-criteria" : "Old Chinese Criteria",
 "modern-chinese-criteria" : "Modern Chinese Criteria",
 "taxonymy" : "Taxonoymy",
@@ -526,7 +524,7 @@ declare
     %templates:wrap
 function app:tv-data($node as node()*, $model as map(*))
 {
-    session:create(),
+   session:create(),
    let $location := request:get-parameter("location", "")
    let $seg := 
     if (string-length($location) > 0) then
@@ -539,14 +537,11 @@ function app:tv-data($node as node()*, $model as map(*))
       let $targetseg := if ($firstdiv//tei:seg) then ($firstdiv//tei:seg)[1] else  ($firstdiv/following::tei:seg)[1] 
       return
        $targetseg
-    else 
-    (), 
-    $s :=  session:create(),
+    else (), 
     $textid := tokenize($seg/@xml:id, "_")[1],
-    $title := collection($config:tls-texts-root)//tei:TEI[@xml:id=$textid]//tei:titleStmt/tei:title,
-    $transl := collection("/db/apps/tls-data")//tei:bibl[@corresp="#"||$textid]/ancestor::tei:fileDesc//tei:editor[@role='translator']
+    $title := collection($config:tls-texts-root)//tei:TEI[@xml:id=$textid]//tei:titleStmt/tei:title
     return
-    map {"seg" : $seg, "textid" : $textid, "title" : $title, "transl" :  $transl}
+    map {"seg" : $seg, "textid" : $textid, "title" : $title}
 };
 
 
@@ -585,6 +580,7 @@ function app:textview($node as node()*, $model as map(*), $location as xs:string
 };
 
 declare function app:textlist(){
+(: this is also quite expensive, need to cache... :)
     let $titles := map:merge(for $t in collection(concat($config:tls-texts-root, '/tls'))//tei:titleStmt/tei:title
             let $textid := data($t/ancestor::tei:TEI/@xml:id)
             return map:entry($textid, $t/text()))
@@ -786,7 +782,7 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
     <div class="card-header" id="altnames-head">
       <h5 class="mb-0">
         <button class="btn" data-toggle="collapse" data-target="#altnames" >
-          Alternate names
+          Alternate labels
         </button>
       </h5>
       </div>
@@ -820,7 +816,7 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
     <div class="card-header" id="notes-head">
       <h5 class="mb-0 mt-2">
         <button class="btn" data-toggle="collapse" data-target="#notes" >
-          Notes
+          {$app:lmap?notes}
         </button>
       </h5>
       </div>
@@ -959,6 +955,8 @@ declare
 function app:main-navbar($node as node()*, $model as map(*))
 {
 let $context := substring-before(tokenize(request:get-uri(), "/")[last()], ".html")
+ ,$testuser := contains(sm:id()//sm:group, ('tls-test', 'guest'))
+
 return
 <nav class="navbar navbar-expand-sm navbar-light bg-light fixed-top">
                 <span class="banner-icon"><a href="index.html">
@@ -985,19 +983,16 @@ return
                                 <a class="dropdown-item" href="browse.html?type=sem-feat">Semantic features</a>
                                 <div class="dropdown-divider"/>
                                 <!-- will need to make another menu level here for the bookmarks -->
-                                <div class="dropdown-menu">
-  <a class="dropdown-item" href="#">Regular link</a>
-  <a class="dropdown-item active" href="#">Active link</a>
-  <a class="dropdown-item" href="#">Another link</a>
-</div>
                                 <a class="dropdown-item" href="textlist.html">Texts</a>
-                            </div>
+                            </div>                            
                         </li>
                         {if ($context = "textview") then
                         tlslib:tv-header($node, $model)
                         else
                         (tlslib:navbar-doc(),
                         tlslib:navbar-link())}
+                        {if (not($testuser)) then tlslib:navbar-bookmarks() else ()}
+                        {if (contains(sm:id()//sm:group, "tls-editor")) then tlslib:navbar-review() else ()}
                     </ul>
                     <form action="search.html" class="form-inline my-2 my-lg-0" method="get">
                         <input id="query-inp" name="query" class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search"/>
@@ -1018,7 +1013,47 @@ return
 };
 
 
+(:~
+ This is called from review.html
+:)
+declare 
+    %templates:wrap
+function app:review($node as node()*, $model as map(*), $type as xs:string){
+let $user := "#" || sm:id()//sm:username
+  ,$review-items := for $r in collection($config:tls-data-root || "/notes")//tls:metadata[not(@resp= $user)]
+       let $score := if ($r/@score) then data($r/@score) else 0
+       , $date := xs:dateTime($r/@created)
+       where $score < 1 and $date > xs:dateTime("2019-08-29T19:51:15.425+09:00")
+       order by $date descending
+       return $r/parent::tls:ann
+return
+<div>
+<h3>Reviews due: {count($review-items)}</h3>
+ <div class="container">
+ {for $att in subsequence($review-items, 1, 20)
+  let  $px := substring($att/tls:metadata/@resp, 2)
+  let $un := doc("/db/apps/tls-data/vault/members.xml")//tei:person[@xml:id=$px]//tei:persName/text()
+  , $created := $att/tls:metadata/@created
+  return 
+  (
+  <div class="row border-top pt-4">
+  <div class="col-sm-4"><img class="icon" src="resources/icons/octicons/svg/pencil.svg"/>
+By <span class="font-weight-bold">{$un}</span>(@{$px})</div>
+  <div class="col-sm-5" title="{$created}">created {tlslib:display-duration(current-dateTime()- xs:dateTime($created))} ago</div>
+  </div>,
+tlslib:show-att-display($att),
+tlslib:format-swl($att, map{"type" : "row", "context" : "review"})
+  )
+ }
+ </div>
+ <p>Refresh page to see more items.</p>
+</div>
+};
 
+
+(:~
+ This is called from changes.html
+:)
 declare 
     %templates:wrap
 function app:recent($node as node()*, $model as map(*)){
@@ -1045,7 +1080,7 @@ return
 <ul>
 {for $p in $pers
 let $px := substring-after($p,"#")
-let $un := un:get-user($px)
+let $un := doc("/db/apps/tls-data/vault/members.xml")//tei:person[@xml:id=$px]//tei:persName/text()
 (:,$un := $px
 :), $cnt := count($atts[@resp=$p])
 order by $cnt descending
@@ -1060,7 +1095,7 @@ return
 <div><span>The most recent attribution was {tlslib:display-duration(xs:dateTime(current-dateTime()) - xs:dateTime(data($a/@created)))} ago :</span>
 {(
 tlslib:show-att-display($att),
-tlslib:format-swl($att, "row")
+tlslib:format-swl($att, map{"type" : "row"})
 )}
 </div>}
 </div>
@@ -1083,7 +1118,7 @@ return
 <p>Total number of lines translated since Aug. 28, 2019: {count($atts)}</p>
 <ul>
 {for $px in $pers
-let $un := un:get-user($px)
+let $un := doc("/db/apps/tls-data/vault/members.xml")//tei:person[@xml:id=$px]//tei:persName/text()
 (:let $un := "xx":)
 let $cnt := count($atts[@resp=$px])
 order by $cnt descending

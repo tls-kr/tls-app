@@ -18,4 +18,4 @@ let $line-id := request:get-parameter("line", "xx"),
 
 for $swl in collection($config:tls-data-root|| "/notes")//tls:ann[.//tls:srcline[@target=$link]]
 return
-tlslib:format-swl($swl, "row")
+tlslib:format-swl($swl, map{"type" :"row"})

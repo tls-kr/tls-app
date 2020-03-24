@@ -19,6 +19,13 @@ import module namespace templates="http://exist-db.org/xquery/templates" ;
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
 
+
+declare function local:string-to-ncr($s as xs:string){
+ string-join(for $a in string-to-codepoints($s)
+ return "&amp;#" || number($a) || ";" 
+ , "")
+};
+
 (:~ 
 : Helper functions
 :)
@@ -108,6 +115,29 @@ let $user := sm:id()//sm:real/sm:username/text()
 return $retmap
 };
 
+declare function tlslib:get-translations($textid as xs:string){
+let $user := sm:id()//sm:real/sm:username/text()
+  (: this is trying to work around a bug in fn:collection :)
+  , $t1 := collection($config:tls-user-root || $user || "/translations")//tei:bibl[@corresp="#"||$textid]/ancestor::tei:fileDesc//tei:editor[@role='translator' or @role='creator'] 
+  , $t2 := collection($config:tls-translation-root)//tei:bibl[@corresp="#"||$textid]/ancestor::tei:fileDesc//tei:editor[@role='translator' or @role='creator']
+ let $tr := map:merge(
+  for $ed in  ($t1, $t2)
+   let $t := $ed/ancestor::tei:TEI
+   , $tid := data($t/@xml:id)
+   , $type := if ($t/@type) then if ($t/@type = "transl") then "Translation" else "Comments" else "Translation"
+   , $lg := if ($type = "Translation") then $t//tei:bibl[@corresp="#"||$textid]/following-sibling::tei:lang/text() else  if ($t//tei:bibl[@corresp="#"||$textid]/following-sibling::tei:ref) then 
+       let $rel-tr:= substring($t//tei:bibl[@corresp="#"||$textid]/following-sibling::tei:ref/@target, 2) 
+       , $this-tr := ($t1, $t2)[ancestor::tei:TEI[@xml:id=$rel-tr]] 
+       return
+       "to transl. by " || $this-tr/text()
+       else "n/a" 
+   , $lic := $t//tei:availability/@status
+   , $resp := if ($ed/text()) then $ed/text() else "anon"
+   return
+   map:entry($tid, ($t, $resp, $lg, if ($lic) then xs:int($lic) else 3, $type))
+   )
+   return $tr
+};
   
 declare function tlslib:proc-char($node as node())
 { 
@@ -277,6 +307,9 @@ declare function tlslib:navbar-doc(){
                                 <a class="dropdown-item" href="documentation.html?section=team">Advisory Board</a>
                                 <div class="dropdown-divider"/>
                                 <a class="dropdown-item" href="documentation.html?section=manual">About this website</a>
+                                {if ("tls-user" = sm:id()//sm:group) then 
+                                <a class="dropdown-item" href="changes.html">Recent changes</a>
+                                else ()}
                             </div>
                         </li>
 
@@ -295,7 +328,43 @@ declare function tlslib:navbar-link(){
                             </div>
                         </li>
 };
+(:=
+TODO: move to XHR
+:)
+declare function tlslib:navbar-bookmarks(){
+let $user := sm:id()//sm:real/sm:username/text()
+,$bm := doc($config:tls-user-root || $user|| "/bookmarks.xml")
 
+return
+ <li class="nav-item dropdown">
+  <a class="nav-link dropdown-toggle" href="#"  id="navbarDropdownBookmarks" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Bookmarks</a>
+   <div class="dropdown-menu" aria-labelledby="navbarDropdownBookmarks">
+   {if ($bm) then 
+    for $b in $bm//tei:item
+      let $segid := $b/tei:ref/@target,
+      $date := xs:dateTime($b/@modified)
+      order by $date descending
+     return
+    <a class="dropdown-item" href="textview.html?location={substring($segid,2)}" title="Created: {$date}"><span class="bold">{$b/tei:ref/tei:title/text()}</span>: {$b/tei:seg}</a>
+    else 
+    <span class="text-muted px-1">You can add bookmarks by clicking on <img class="icon"  src="resources/icons/open-iconic-master/svg/bookmark.svg"/> after selecting a character.</span>
+    }
+   </div>
+ </li>
+};
+
+(:     
+     :)
+
+declare function tlslib:navbar-review(){
+   <li class="nav-item">
+     <a class="nav-item" href="review.html?type=swl">
+      <button class="btn btn-secondary my-2 my-sm-0" title="Review">
+       <img class="icon" src="resources/icons/octicons/svg/diff.svg"/>
+     </button>
+     </a>
+   </li>
+};
 
 (:~ 
 : this is the header line used for the text display, called from app:textview
@@ -306,7 +375,7 @@ declare function tlslib:navbar-link(){
 : @param $node  tei:seg on the page
 : @param $model a map containing arbitrary data 
 :)
-declare function tlslib:tv-headerz($node as node()*, $model as map(*)){
+declare function tlslib:tv-headerx($node as node()*, $model as map(*)){
 <span>{for $k in distinct-values(map:keys($model)) 
 let $r := if (not($k="configuration")) then map:get($model, $k) else ()
 return
@@ -321,6 +390,7 @@ declare function tlslib:session-att($name, $default){
 };
 
 declare function tlslib:tv-header($node as node()*, $model as map(*)){
+   session:create(),
    let $textid := $model('textid'),
    $toc := if (contains(session:get-attribute-names(), $textid || "-toc")) then 
     session:get-attribute($textid || "-toc")
@@ -340,14 +410,14 @@ declare function tlslib:tv-header($node as node()*, $model as map(*)){
        {$toc}
        </div>
       </li>
-      ,<button title="Show SWL" class="btn btn-primary ml-2" type="button" data-toggle="collapse" data-target=".swl">
+      ,<button title="Please wait, SWL are still loading." class="btn btn-primary ml-2" type="button" data-toggle="collapse" data-target=".swl">
             
      <img class="icon" src="resources/icons/open-iconic-master/svg/eye.svg"/>
 
       </button>,
       <li class="nav-item">
       <small class="nav-brand ml-2" title="Text provided by">Source: 
-      {if (map:contains($config:txtsource-map, $textid)) then 
+      {if ($textid and map:contains($config:txtsource-map, $textid)) then 
           map:get($config:txtsource-map, $textid) 
       else 
          if (substring($model('textid'), 1, 3) = "KR6") then "CBETA" 
@@ -376,20 +446,54 @@ declare function tlslib:generate-toc($node){
  for $d in $node/child::tei:div
  return tlslib:generate-toc($d)
 };
+
+declare function tlslib:get-content-id($textid as xs:string, $slot as xs:string, $tr as map(*)){
+   let $show-transl := not(contains(sm:id()//sm:group/text(), "guest")),
+   $slot-no := xs:int(substring-after($slot, 'slot')) - 1,
+   $usergroups := sm:id()//sm:group/text(),   
+   $select := for $t in map:keys($tr)
+        let $lic := $tr($t)[4]
+        where if ($show-transl) then $lic < 5 else $lic < 3
+        (: TODO in the future, maybe also consider the language :)
+        order by $lic ascending
+        return $t,
+   $content-id := if (("tls-test", "guest") = $usergroups) then tlslib:session-att($textid || "-" || $slot, $select[1 + $slot-no]) else
+        let $t1 := tlslib:get-settings()//tls:section[@type='slot-config']/tls:item[@textid=$textid and @slot=$slot]/@content
+        return
+        if ($t1) then data($t1)
+        else if (count($select) > $slot-no) then $select[1 + $slot-no] else "new-content"
+  return if (string-length($content-id) > 0) then $content-id else "new-content"
+};
+
 (:~
  Display a selection menu for translations and commentaries, given the current slot and type
 :)
-declare function local:trsubmenu($model as map(*), $slottype as xs:string, $slot as xs:int){
-        <div class="dropdown">
-            <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-    Translation {$model($slottype)[$slot]/text()}
+declare function tlslib:trsubmenu($textid as xs:string, $slot as xs:string, $trid as xs:string, $tr as map(*)){
+ let $keys := for $k in map:keys($tr)
+           where not($k = ($trid, "content-id")) return $k
+    ,$type := if ($trid and map:contains($tr, $trid)) then $tr($trid)[5] else "Translation"       
+ return
+  <div class="dropdown" id="{$slot}" data-trid="{$trid}">
+            <button class="btn btn-secondary dropdown-toggle" type="button" id="ddm-{$slot}" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            {if ($trid and map:contains($tr, $trid)) then ($tr($trid)[5], if ($tr($trid)[5] = "Comments") then () else  " by " ||  $tr($trid)[2]) else "Translation"}
             </button>
     <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-        {for $n in ('transl', 'comm')
-         for $m at $i in $model($n) 
-           where not($i = $slot and $slottype = $n) 
+        {  for $k at $i in $keys
             return 
-        <a class="dropdown-item" title="This is not working yet." href="#">{$n ||" : " || $m}</a>
+         if ($tr($k)[5] = "Comments") then 
+        <a class="dropdown-item" id="sel{$slot}-{$i}" onclick="get_tr_for_page('{$slot}', '{$k}')" href="#">{$tr($k)[5] } for {$tr($k)[3]}</a>
+        else
+        <a class="dropdown-item" id="sel{$slot}-{$i}" onclick="get_tr_for_page('{$slot}', '{$k}')" href="#">{$tr($k)[5]} by {$tr($k)[2]}({$tr($k)[3]})</a>
+        }
+        {if ("tls-user" = sm:id()//sm:group) then
+        <a class="dropdown-item" onclick="new_translation('{$slot}')" href="#"> <button class="btn btn-warning" type="button">New translation / comments</button></a> else ()
+        }
+        {if (count($keys) = 0) then 
+         if (count(map:keys($tr)) > 0) then  
+        <a class="dropdown-item disabled" id="sel-no-trans" href="#">No other translation available</a>
+        else 
+        <a class="dropdown-item disabled" id="sel-no-trans" href="#">No translation available</a>
+        else ()
         }
   </div>
 </div>
@@ -412,10 +516,12 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
       $head := $targetseg/ancestor::tei:div[1]/tei:head[1],
 (:      $title := $model('title')/text(),:)
       $dseg := ($pseg, $targetseg, $fseg),
-      $slot1 := tlslib:session-att("slot1", 1), 
-      $slot2 := tlslib:session-att("slot2", 2), 
-      $slottype1 :=  tlslib:session-att("slottype1", 'transl'),
-      $slottype2 :=  tlslib:session-att("slottype2", 'transl')
+      $show-transl := not(contains(sm:id()//sm:group/text(), "guest")),
+      $visit := tlslib:record-visit($targetseg),
+      $tr := tlslib:get-translations($model?textid),
+      $slot1-id := tlslib:get-content-id($model?textid, 'slot1', $tr),
+      $slot2-id := tlslib:get-content-id($model?textid, 'slot2', $tr)
+
     return
       (
       <div id="chunkrow" class="row">
@@ -425,14 +531,17 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
        <div class="row">
         <div class="col-sm-2" id="toprow-1"><!-- zh --></div>
         <div class="col-sm-5" id="toprow-2"><!-- tr -->
-        {local:trsubmenu($model, $slottype1, $slot1)}
+        {if ($show-transl) then tlslib:trsubmenu($model?textid, "slot1", $slot1-id, $tr) else ()}
         </div>
         <div class="col-sm-4" id="toprow-3">
-        {local:trsubmenu($model, $slottype1, $slot2)}
+        {if ($show-transl) then tlslib:trsubmenu($model?textid, "slot2", $slot2-id, $tr) else ()}
         </div>
         </div>
       </div>
-      <div id="chunkcol-left" class="col-sm-12">{for $d at $pos in $dseg return tlslib:display-seg($d, map:merge(($model, map{'loc' : data($targetseg/@xml:id), 'pos' : $pos})))}</div>
+      <div id="chunkcol-left" class="col-sm-12">{for $d at $pos in $dseg return tlslib:display-seg($d, map:merge(($model, $tr, 
+      map{'slot1': $slot1-id, 'slot2': $slot2-id, 
+          'loc' : data($targetseg/@xml:id), 
+          'pos' : $pos, "ann" : "xfalse.x"})))}</div>
       <div id="chunkcol-right" class="col-sm-0">
       {tlslib:swl-form-dialog('textview')}
     </div>
@@ -529,8 +638,10 @@ return $def
 : called from api/show_swl_for_line.xql
 :)
 
-declare function tlslib:format-swl($node as node(), $type as xs:string?){
-let $user := sm:id()//sm:real/sm:username/text()
+declare function tlslib:format-swl($node as node(), $options as map(*)){
+let $user := sm:id()//sm:real/sm:username/text(),
+$type := $options?type,
+$context := $options?context
 let $concept := data($node/@concept),
 $zi := $node/tei:form[1]/tei:orth[1]/text(),
 $py := $node/tei:form[1]/tei:pron[starts-with(@xml:lang, 'zh-Latn')][1]/text(),
@@ -545,9 +656,11 @@ $sm := $node//tls:sem-feat
 return
 if ($type = "row") then
 <div class="row bg-light ">
+{if (not($context = 'review')) then 
 <div class="col-sm-1">&#160;</div>
+else ()}
 <div class="col-sm-2"><span class="zh">{$zi}</span> ({$py})
- {if  ("tls-admin" = sm:get-user-groups($user)) then (data(($node//tls:srcline/@pos)[1]),
+{if  ("tls-admin.x" = sm:get-user-groups($user)) then (data(($node//tls:srcline/@pos)[1]),
  <a href="{
       concat($config:exide-url, "?open=", document-uri(root($node)))}">eXide</a>)
       else ()
@@ -566,8 +679,12 @@ if ($type = "row") then
  <img class="icon" onclick="edit_swl('{$node/@xml:id}')" style="width:10px;height:13px;top:0;align:top" src="resources/icons/open-iconic-master/svg/pencil.svg"/>
  </button> 
  :)
-tlslib:format-button("delete_swl('" || data($node/@xml:id) || "')", "Delete Attribution for "||$zi, "open-iconic-master/svg/x.svg", "small", "close", "tls-editor")
-
+ (
+(:   tlslib:format-button("delete_swl('" || data($node/@xml:id) || "')", "Request deletion of SWL for "||$zi, "open-iconic-master/svg/x.svg", "small", "close", "tls-editor"),:)
+if (not($context='review')) then
+   (<span class="rp-5">{tlslib:format-button("review_swl_dialog('" || data($node/@xml:id) || "')", "Review the SWL for " || $zi, "octicons/svg/unverified.svg", "small", "close", "tls-editor")}&#160;&#160;</span>,
+      tlslib:format-button("save_swl_review('" || data($node/@xml:id) || "')", "Approve the SWL for " || $zi, "octicons/svg/thumbsup.svg", "small", "close", "tls-editor")) else ()
+)
 else ()
 }
 </div>
@@ -591,6 +708,7 @@ if (string-length($def) > 10) then concat(substring($def, 10), "...") else $def}
 
 declare function tlslib:display-seg($seg as node()*, $options as map(*) ) {
  let $user := sm:id()//sm:real/sm:username/text(),
+ $show-transl := not(contains(sm:id()//sm:group/text(), "guest")),
  $testuser := contains(sm:id()//sm:group, ('tls-test', 'guest'))
  let $link := concat('#', $seg/@xml:id),
   $ann := lower-case(map:get($options, "ann")),
@@ -598,92 +716,32 @@ declare function tlslib:display-seg($seg as node()*, $options as map(*) ) {
   $mark := if (data($seg/@xml:id) = $loc) then "mark" else ()
   ,$lang := 'zho'
   ,$alpheios-class := if ($user = 'test2') then 'alpheios-enabled' else ''
-  (: $model($model('slottype1'))[$model('slot1')] :)
-(:  ,$slot1 := root($options($options('slottype1'))[$options('slot1')])
-  ,$slot2 := root($options($options('slottype2'))[$options('slot2')]):)
-  ,$slot1 := root($options('transl')[1])
-  ,$slot2 := root($options('transl')[2])
+  ,$slot1 := if ($show-transl) then 
+     if ($options?transl) then $options?transl
+     else map:get($options, $options?slot1)[1] else ()
+  ,$slot2 := if ($show-transl and not($ann = 'false')) then map:get($options, $options?slot2)[1] else ()
+  
 return
 (
 <div class="row {$mark}">
 <div class="{if ($ann='false') then 'col-sm-4' else 'col-sm-2'} zh {$alpheios-class}" lang="{$lang}" id="{$seg/@xml:id}">{$seg/text()}</div>　
-<div class="col-sm-5 tr" tabindex="{2*$options('pos')+500}" id="{$seg/@xml:id}-tr" contenteditable="{if (not($testuser)) then 'true' else 'false'}">{$slot1//tei:seg[@corresp="#"||$seg/@xml:id]/text()}</div>
-<div tabindex="{2*$options('pos')+500+1}"></div>
+<div class="col-sm-5 tr" tabindex="{$options('pos')+500}" id="{$seg/@xml:id}-tr" contenteditable="{if (not($testuser)) then 'true' else 'false'}">{$slot1//tei:seg[@corresp="#"||$seg/@xml:id]/text()}</div>
  {if ($ann = 'false') then () else 
-  <div class="col-sm-4 tr" tabindex="{2*$options('pos')+1000}" id="{$seg/@xml:id}-ex" contenteditable="{if (not($testuser)) then 'true' else 'false'}">
+  <div class="col-sm-4 tr" tabindex="{$options('pos')+1000}" id="{$seg/@xml:id}-ex" contenteditable="{if (not($testuser)) then 'true' else 'false'}">
   {$slot2//tei:seg[@corresp="#"||$seg/@xml:id]/text()}
   </div>}
-  <div tabindex="{2*$options('pos')+1000+1}"> </div>
 </div>,
 <div class="row swl collapse" data-toggle="collapse">
 <div class="col-sm-10" id="{$seg/@xml:id}-swl">
-{if ($ann = "false") then () else 
+{if (starts-with($ann, "false")) then () else 
 for $swl in collection($config:tls-data-root|| "/notes")//tls:srcline[@target=$link]
 let $pos := if (string-length($swl/@pos) > 0) then xs:int(tokenize($swl/@pos)[1]) else 0
 order by $pos
 return
-tlslib:format-swl($swl/ancestor::tls:ann, "row")}
+tlslib:format-swl($swl/ancestor::tls:ann, map{'type' : 'row'})}
 </div>
 <div class="col-sm-2"></div>
 </div>
-)
-};
-
-declare function tlslib:display-segx($seg as node()*, $options as map(*) ) {
- let $user := sm:id()//sm:real/sm:username/text()
- let $link := concat('#', $seg/@xml:id),
-
-$ann := (:lower-case(map:get($options, "ann")):) 'false',
-$loc := map:get($options, "loc"),
-$mark := if (data($seg/@xml:id) = $loc) then "mark" else ()
-return
-( (: headers or paragraphs :)
-if (tlslib:is-first-in-p($seg)) then
- if (tlslib:is-first-in-div($seg)) then 
-  let $hx := $seg/ancestor::tei:div[1]/tei:head/text()
-  return
- <div class="row"><!-- head! -->
- <div class="col-sm-12"><h5>{$hx}　　　</h5></div>
- </div>
- else
- (: create an empty line between paragraphs :)
- <div class="row">
- <!-- p --> 
- <div class="col-sm-12 my-6">　　　</div>
- </div> 
- else
- (),
- (: avoid extra empty lines :)
-if (string-length(string-join($seg/text(), "")) > 0) then
-(<div class="row {$mark}">
-<div class="{if ($ann='false') then 'col-sm-4' else 'col-sm-2'} zh" id="{$seg/@xml:id}">{$seg/text()}</div>　
-<div class="col-sm-5 tr" id="{$seg/@xml:id}-tr" 
-  contenteditable="{if (sm:has-access(xs:anyURI($config:tls-translation-root), "r") and not(contains(sm:id()//sm:group, 'tls-test'))) then 'true' else 'false'}">
- {  (: if there is more than one translation, we take the one with the shorter path (outrageous hack) :)
-(:   let $tr:= if ($config:tls-translation-root) then 
-             for $t in collection($config:tls-translation-root)//tei:seg[@corresp=$link]
-             let $p := string-length(document-uri(root($t)))
-             order by $p ascending
-             return $t
-             else ():)
-             let $tr := ('')
-   return if ($tr[1]) then tlslib:procseg($tr[1]) else ()
- }</div>
- {if ($ann = 'false') then () else 
-  <div class="col-sm-4 ex" id="{$seg/@xml:id}-ex">Dummy</div>}
-</div>,
-<div class="row swl collapse" data-toggle="collapse">
-<div class="col-sm-10" id="{$seg/@xml:id}-swl">
-{if ($ann = "false") then () else 
-for $swl in collection($config:tls-data-root|| "/notes")//tls:srcline[@target=$link]
-let $pos := if (string-length($swl/@pos) > 0) then xs:int(tokenize($swl/@pos)[1]) else 0
-order by $pos
-return
-tlslib:format-swl($swl/ancestor::tls:ann, "row")}
-</div>
-<div class="col-sm-2"></div>
-</div>
-) else ()
 )
 };
 
@@ -744,10 +802,10 @@ return $uuid
  (:~
  : called from function tlsapi:show-att($uid as xs:string)
   : 2020-02-26 it seems this belongs to tlsapi
-
+  : 2020-03-13 this is called from app:recent 
  :)
  
- declare function tlslib:show-att-display($a as node()){
+declare function tlslib:show-att-display($a as node()){
 
 let $user := sm:id()//sm:real/sm:username/text()
 let $src := data($a/tls:text/tls:srcline/@title)
@@ -760,12 +818,147 @@ return
 <div class="row bg-light table-striped">
 <div class="col-sm-2"><a href="textview.html?location={$target}" class="font-weight-bold">{$src, $loc}</a></div>
 <div class="col-sm-3"><span data-target="{$target}" data-toggle="popover">{$line}</span></div>
-<div class="col-sm-7"><span>{$tr}</span>
+<div class="col-sm-7"><span>{$tr/text()}</span>
 {if ((sm:has-access(document-uri(fn:root($a)), "w") and $a/@xml:id) and not(contains(sm:id()//sm:group, 'tls-test'))) then 
-tlslib:format-button("delete_swl('" || data($a/@xml:id) || "')", "Delete this attribution", "open-iconic-master/svg/x.svg", "small", "close", "tls-editor")
+tlslib:format-button("review_swl_dialog('" || data($a/@xml:id) || "')", "Review this attribution", "octicons/svg/unverified.svg", "small", "close", "tls-editor")
+(:tlslib:format-button("delete_swl('" || data($a/@xml:id) || "')", "Delete this attribution", "open-iconic-master/svg/x.svg", "small", "close", "tls-editor"):)
 else ()}
 </div>
 </div>
 };
 
+
+
+(: ~
+ : on visiting a page, record the visit in the history.xml file
+:)
  
+declare function tlslib:record-visit($targetseg as node()){
+let $user := sm:id()//sm:real/sm:username/text(),
+$groups := sm:get-user-groups($user),
+$cm := substring(string(current-date()), 1, 7),
+$doc := if ("guest" = $groups) then () else tlslib:get-visit-file($cm),
+$date := current-dateTime(),
+$item := <item xmlns="http://www.tei-c.org/ns/1.0" modified="{current-dateTime()}"><ref target="#{$targetseg/@xml:id}">{$targetseg/text()}</ref></item>
+return 
+if ($doc) then
+update insert $item  into $doc//tei:list[@xml:id="vis-" || $cm || "-start"]
+else ()
+};
+
+declare function tlslib:get-visit-file($cm as xs:string){
+  let $user := sm:id()//sm:real/sm:username/text(),
+  $doc-path := $config:tls-user-root|| $user || "/visits-" || $cm || ".xml",
+  $doc := if (not(doc-available($doc-path))) then 
+    doc(xmldb:store($config:tls-user-root|| $user,  "visits-" || $cm || ".xml",
+<TEI xmlns="http://www.tei-c.org/ns/1.0" xml:id="vis-{$user}-{$cm}">
+  <teiHeader>
+      <fileDesc>
+         <titleStmt>
+            <title>Visited pages for month {$cm}</title>
+         </titleStmt>
+         <publicationStmt>
+            <p>published electronically as part of the TLS project at https://hxwd.org</p>
+         </publicationStmt>
+         <sourceDesc>
+            <p>Created by members of the TLS project</p>
+         </sourceDesc>
+      </fileDesc>
+     <profileDesc>
+        <creation>Initially created: <date>{current-dateTime()}</date> for {$user}.</creation>
+     </profileDesc>
+  </teiHeader>
+  <text>
+      <body>
+      <div><head>Visited pages</head>
+      <list type="visits" xml:id="vis-{$cm}-start"></list>
+      </div>
+      </body>
+  </text>
+</TEI>))
+    else doc($doc-path)
+  return $doc
+};
+
+
+
+
+declare function tlslib:get-crypt-file(){
+  let $cm := substring(string(current-date()), 1, 7),
+  $doc-path := $config:tls-data-root || "/vault/crypt/" || $cm || ".xml",
+  $doc := if (not(doc-available($doc-path))) then 
+    let $res := 
+    xmldb:store($config:tls-data-root || "/vault/crypt/" , $cm || ".xml", 
+<TEI xmlns="http://www.tei-c.org/ns/1.0" xml:id="del-{$cm}-crypt">
+  <teiHeader>
+      <fileDesc>
+         <titleStmt>
+            <title>Deleted items for month {$cm}</title>
+         </titleStmt>
+         <publicationStmt>
+            <p>published electronically as part of the TLS project at https://hxwd.org</p>
+         </publicationStmt>
+         <sourceDesc>
+            <p>Created by members of the TLS project</p>
+         </sourceDesc>
+      </fileDesc>
+     <profileDesc>
+        <creation>Initially created: <date>{current-dateTime()}</date>.</creation>
+     </profileDesc>
+  </teiHeader>
+  <text>
+      <body>
+      <div><head>Deleted items</head>
+      <p xml:id="del-{$cm}-start"></p>
+      </div>
+      </body>
+  </text>
+</TEI>)
+    return
+    (sm:chmod(xs:anyURI($res), "rw-rw-rw-"),
+     sm:chgrp(xs:anyURI($res), "tls-user"),
+     sm:chown(xs:anyURI($res), "tls"),
+    doc($res)
+    )
+    else
+    doc($doc-path)
+  return $doc
+};
+
+(:~
+ : saves the content-id of a content selected for a s slot for a text
+:)
+declare function tlslib:settings-save-slot($slot as xs:string, $textid as xs:string, $content-id as xs:string) {
+let $settings := tlslib:get-settings(),
+  $current-setting := $settings//tls:section[@type='slot-config']/tls:item[@textid=$textid and @slot=$slot] 
+let $proc := 
+if ($current-setting) then 
+ (update value $current-setting/@content with $content-id,
+ update value $current-setting/@modified with current-dateTime())
+else 
+ let $newitem := <item xmlns="http://hxwd.org/ns/1.0" created="{current-dateTime()}" modified="{current-dateTime()}" slot="{$slot}" textid="{$textid}" content="{$content-id}"/>
+ return
+ update insert $newitem into $settings//tls:section[@type='slot-config']
+ return
+ (:  we return the content-id for the case where this is used in a then clause of if statement:)
+ $content-id
+};
+(:~
+ : this creates a new empty stub for various user settings (if necessary) and returns the doc
+:)
+declare function tlslib:get-settings() {
+let $user := sm:id()//sm:real/sm:username/text()
+, $filename := "settings.xml"
+,$docpath := $config:tls-user-root || $user || "/" || $filename
+let $doc :=
+  if (not (doc-available($docpath))) then
+   doc(xmldb:store($config:tls-user-root || $user, $filename, 
+<settings xmlns="http://hxwd.org/ns/1.0" xml:id="{$user}-settings">
+<section type="bookmarks"></section>
+<section type="slot-config"></section>
+</settings>)) 
+ else doc($docpath)
+return $doc
+};
+
+

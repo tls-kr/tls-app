@@ -1,5 +1,6 @@
 $(function() {
     console.log( "ready!" );
+    //get_swl_for_page();
 });            
 
 if (!window.x) {
@@ -17,6 +18,101 @@ x.Selector.getSelected = function() {
         t = document.selection.createRange().text;
     }
     return t;
+};
+
+function get_swl_for_page(){
+  var location = window.location.search;
+/*  var url = new URL(context);
+  var location = url.searchParams.get("location")*/
+  console.log(location)
+  $.ajax({
+  type : "GET",
+  dataType : "html",
+  url : "api/get_swl_for_page.xql"+location, 
+  success : function(resp){
+  for (index = 0; index < resp.length; ++index) {
+    console.log(resp[index]);
+  };
+  $('#toprow').html(resp);
+  }
+  });
+    
+};
+// called ftom textview, toprow
+// slot is slot1 or slot2, type is 'transl' or 'comm', no is the item number in the list
+function get_tr_for_page(slot, myid){
+  var location = window.location.search;
+  $.ajax({
+  type : "GET",
+  dataType : "html",
+  url : "api/get_tr_for_page.xql"+location+"&slot="+slot+"&content-id="+myid, 
+  success : function(resp){
+   var obj = JSON.parse(resp);
+   for (var prop in obj) {
+    line_id = prop.split(".").join("\\.");
+    $(line_id).html(obj[prop]);
+   };
+  reload_selector(slot, myid);   
+  }
+  });
+    
+};
+// called from tranlation dropdown in toprow
+// slot is slot1 or slot2, 
+function new_translation(slot){
+  var location = window.location.search;
+  console.log(location)
+  $.ajax({
+  type : "GET",
+  dataType : "html",
+  url : "api/new_translation.xql"+location+"&slot="+slot, 
+  success : function(resp){
+    $('#remoteDialog').html(resp);
+    $('#new-translation-dialog').modal('show');
+  
+  }
+  });
+    
+};
+
+
+// called from new tranlation dialog
+// slot is slot1 or slot2, 
+function store_new_translation(slot, textid){
+  var lang = $('#select-lang').val()
+  var transl = $('#select-transl').val()
+  var bibl = $('#input-biblio').val()
+  var trtitle = $('#select-trtitle').val()
+  var rel = $('#select-rel').val()
+  var vis = $('input[name=visradio]:checked').val()
+  var copy = $('input[name=copradio]:checked').val()
+  var type = $('input[name=typradio]:checked').val()
+  
+  $.ajax({
+  type : "GET",
+  dataType : "html",
+  url : "api/store_new_translation.xql?lang="+lang+"&textid="+textid+"&transl="+transl+"&trtitle="+trtitle+"&bibl="+bibl+"&vis="+vis+"&copy="+copy+"&type="+type+"&rel="+rel, 
+  success : function(resp){
+  // todo : reload the selector with latest information
+  $('#new-translation-dialog').modal('hide');
+  reload_selector(slot);
+  toastr.info("New work has been saved.", "HXWD says:")  
+  }
+  });
+    
+};
+
+function reload_selector(slot, newid){
+  var location = window.location.search;
+  $.ajax({
+  type : "GET",
+  dataType : "html",
+  url : "api/responder.xql"+location+"&slot="+slot+"&content-id="+newid+"&func=reload-selector", 
+  success : function(resp){
+  $("#"+slot).html(resp)
+  }
+  });
+    
 };
 
 function get_sw(){
@@ -39,7 +135,7 @@ function get_sf(senseid){
   $.ajax({
   type : "GET",
   dataType : "html",
-  url : "api/get_sf.xql?senseid=" + senseid, 
+  url : "api/responder.xql?func=get_sf&senseid=" + senseid, 
   success : function(resp){
   $('#remoteDialog').html(resp);
   initialize_sf_autocomplete();  
@@ -213,7 +309,7 @@ function save_newsw(){
   url : "api/save_newsw.xql?concept="+concept_id+"&wid="+word_id+"&word="+word+"&py="+py+"&concept-val="+concept_val+"&synfunc="+synfunc_id+"&synfunc-val="+synfunc_val+"&semfeat="+semfeat_id+"&semfeat-val="+semfeat_val+"&def="+def_val,
   success : function(resp){
     if (resp.sense_id == "not_saved"){
-    toastr.info("Could not save: " + resp.result, "HXWD says:")        
+    toastr.error("Could not save: " + resp.result, "HXWD says:")        
     } else {
     save_this_swl(resp.sense_id)
     toastr.info("Concept has been saved.", "HXWD says:")
@@ -478,6 +574,7 @@ function logout(){
       //$('#'+uid+'-resp').html(resp)
   }
   });
+  window.location.replace('index.html')
 }
 
 $('#login-form').submit(function (){
@@ -619,6 +716,40 @@ function delete_swl(uid){
   }
 };
 
+// review the attribution; this is the ? on the attributions
+
+function review_swl_dialog(uid){
+     $.ajax({
+     type : "GET",
+     dataType : "html",  
+     url : "api/review_swl_dialog.xql?type=swl&uid=" + uid, 
+     success : function(resp){
+     $('#remoteDialog').html(resp);
+     initialize_autocomplete();
+     $('#review-swl-dialog').modal('show');
+   }
+  });
+};
+
+function save_swl_review(uid){
+   var com_val = $("#input-comment" ).val();
+   var action_val = $("input[name='actions']:checked").attr('id');
+     $.ajax({
+     type : "GET",
+     dataType : "html",  
+     url : "api/save_swl_review.xql?com="+com_val+"&uid=" + uid + "&action="+action_val, 
+     success : function(resp){
+     console.log("RESP" + resp, resp.startsWith('"Error'))
+     if (resp.startsWith('"Error')) {
+     toastr.error(resp, "HXWD says:");
+     } else {
+     toastr.info("Review has been saved. Thank you for your effort!", "HXWD says:");
+     }
+   }});
+   $('#review-swl-dialog').modal('hide');
+};
+
+
 // for the translations (class "tr"), we save on keyup, so we check for our event
 $( ".tr" ).keyup(function( event ) {
 }).keydown(function( event ) {
@@ -684,7 +815,11 @@ function save_tr (trid, tr, line){
   dataType : "html",
   url : "api/save_tr.xql?trid="+trid+"&tr="+tr,
   success : function(resp){
+    if (resp.startsWith("Could not")) {
+    toastr.error("Could not save translation for "+line+".", "HXWD says:");        
+    } else {
     toastr.info("Translation for line "+line+" saved.", "HXWD says:");
+    }
   },
   error : function(resp){
   console.log(resp);
