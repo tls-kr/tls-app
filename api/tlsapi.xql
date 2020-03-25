@@ -415,7 +415,7 @@ declare function tlsapi:edit-sf-dialog($para as map()){
 };
 
 (:~
-: This is called when a term is selected in the textview // get_sw in tls-webapp.js
+: This is called when a term is selected in the textview // get_sw in tls-app.js
 :)
 declare function tlsapi:get-sw($word as xs:string, $context as xs:string) as item()* {
 let $words := collection(concat($config:tls-data-root, '/concepts/'))//tei:orth[. = $word]
@@ -574,7 +574,7 @@ $dseg := ($pseg, $seg, $fseg),
 $textid := tokenize($loc, "_")[1],
 $tr := tlslib:get-translations($textid),
 $slot1 := if ($options?transl-id) then $options?transl-id else tlslib:get-settings()//tls:section[@type='slot-config']/tls:item[@textid=$textid and @slot='slot1']/@content,
-$transl := $tr($slot1)
+$transl := if ($slot1) then $tr($slot1) else ()
 (:$transl := collection("/db/apps/tls-data")//tei:bibl[@corresp="#"||$textid]/ancestor::tei:fileDesc//tei:editor[@role='translator']:)
 return
 if ($format = 'tooltip') then
@@ -587,7 +587,7 @@ if ($format = 'tooltip') then
 for $d in $dseg 
 return 
     (: we hardcode the translation slot to 1; need to make sure that 1 always has the one we want :)
-    tlslib:display-seg($d, map{"transl" : $transl, "ann": "false", "loc": $loc})
+    tlslib:display-seg($d, map{"transl" : $transl[1], "ann": "false", "loc": $loc})
     }
 </div>
 </div>

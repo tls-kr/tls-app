@@ -702,7 +702,7 @@ if (string-length($def) > 10) then concat(substring($def, 10), "...") else $def}
 :         {"ann" : true } for the display of annotations,
 :        {"loc" : "<@xml:id of a tei:seg>"} the id of a line to be highlighted in the display
 : @see tlslib:format-swl(), which is used for displaying the swl
-: called from tlsapi:get-text-preview($loc as xs:string)
+: called from tlsapi:get-text-preview($loc as xs:string, map)
 : 
 :)
 
@@ -717,7 +717,7 @@ declare function tlslib:display-seg($seg as node()*, $options as map(*) ) {
   ,$lang := 'zho'
   ,$alpheios-class := if ($user = 'test2') then 'alpheios-enabled' else ''
   ,$slot1 := if ($show-transl) then 
-     if ($options?transl) then $options?transl
+     if (map:contains($options, "transl")) then $options?transl
      else map:get($options, $options?slot1)[1] else ()
   ,$slot2 := if ($show-transl and not($ann = 'false')) then map:get($options, $options?slot2)[1] else ()
   
@@ -747,7 +747,7 @@ tlslib:format-swl($swl/ancestor::tls:ann, map{'type' : 'row'})}
 
  (:~ 
  : called from function tlsapi:show-use-of($uid as xs:string, $type as xs:string), which is called via XHR from concept.html and char.html through 
- : tls-webapp.js -> show_use_of(type, uid) 
+ : tls-app.js -> show_use_of(type, uid) 
  : @param $sw the tei:sense to display 
  : 2020-02-26 it seems this belongs to tlsapi
  :)

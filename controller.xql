@@ -44,14 +44,6 @@ if ($exist:path eq '') then
         <redirect url="{request:get-uri()}/"/>
     </dispatch>
 
-(:else if ($logout) then (
-(\:    session:remove-attribute($config:login-domain || ".user"),:\)
-    session:invalidate(),
-    <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
-        <redirect url="{replace(request:get-uri(), "^(.*)\?", "$1")}"/>
-    </dispatch>
-)
-:)    
 else if ($exist:path eq "/") then
     (: forward root path to index.xql :)
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
@@ -59,23 +51,14 @@ else if ($exist:path eq "/") then
     </dispatch>
     
 else if (ends-with($exist:resource, ".xql")) then (
+        (: log the user in again! :)
         login:set-user($config:login-domain, (), false()),
         <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
             <forward url="{$exist:controller}/{$exist:path}"/>
             <cache-control cache="no"/>
         </dispatch>
 )
-(:else if ($exist:resource = "login") then (
-(\:    util:declare-option("exist:serialize", "method=json media-type=application/json"),:\)
-(\:    util:declare-option("exist:serialize", "method=text media-type=text/plain"),:\)
-        login:set-user($config:login-domain, (), false()),
-(\:        need to redirect to the referring page, not the current one! :\)
-    <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
-        <redirect url="{replace(request:get-uri(), "^(.*)\?", "$1")}"/>
-    </dispatch>
 
-)
-:)    
 else if ($exist:resource = "login") then (
     util:declare-option("exist:serialize", "method=json media-type=application/json"),
     let $loggedIn := login:set-user($config:login-domain, (), false())
@@ -97,33 +80,6 @@ else if ($exist:resource = "login") then (
         }
 
 )
-(: this seems to work for now... CW 2019-02-18 :) 
-else if ($exist:resource = "xxlogin") then (
-    util:declare-option("exist:serialize", "method=json media-type=application/json"),
-    try {
-        login:set-user($config:login-domain, (), false()),
-        if ((sm:id()//sm:username/text()) != "guest") then (
-            response:set-status-code($local:HTTP_OK),
-            <response>
-                <user>{sm:id()//sm:username/text()}</user>
-                <isDba>{sm:is-dba(sm:id()//sm:username/text())}</isDba>
-            </response>
-        )
-        else (
-            response:set-status-code($local:HTTP_OK),
-            <response>
-                <fail>Authentication failed -- please check your credentials and try again.</fail>
-                <currentuser>{sm:id()//sm:username/text()}</currentuser>
-            </response>
-        )
-    } catch * {
-        response:set-status-code($local:HTTP_INTERNAL_SERVER_ERROR),
-        <response>
-            <fail>{$err:description}</fail>
-        </response>
-    }
-)
-
 
 else if (ends-with($exist:resource, ".html")) then (
     login:set-user($config:login-domain, (), false()),
