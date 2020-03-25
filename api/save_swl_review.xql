@@ -10,8 +10,11 @@ import module namespace tlsapi="http://hxwd.org/tlsapi" at "tlsapi.xql";
 
 let $uid := request:get-parameter("uid", "xx"),
 $comment := request:get-parameter("com", ""),
-$action := request:get-parameter("action", "approve")
+$action := request:get-parameter("action", "approve"),
+(: if the dialog has not been loaded, the pars are undefined :)
+$com := if ($comment = "undefined") then "" else $comment,
+$act := if ($act = "undefined") then "approve" else $action,
 
 return
 
-tlsapi:save-swl-review($uid, $comment, $action)
+tlsapi:save-swl-review($uid, $com, $action)
