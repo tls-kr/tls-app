@@ -565,67 +565,38 @@ function get_atts(target, div_id){
    return '<div id="'+ div_id +'">Loading...</div>';
 };
 
-function logout(){
+function dologout(){
   $.ajax({
   type : "GET",
   dataType : "html",  
-  url : "logout?logout=logout", 
+  url: 'login?logout=logout',
   success : function(resp){
-      //$('#'+uid+'-resp').html(resp)
+     $("#settingsDialog").modal('hide');
+     alert("You have been logged out.")
+     window.location.reload(true)
   }
   });
-  window.location.replace('index.html')
 }
 
-$('#login-form').submit(function (){
-        $.ajax({
-            dataType: "json",
-            method: "post",
-            url: 'login',
-            success: function(data)
-            {
-                if (data.status === 'OK') {
-                console.log(data);
-             //       window.location.replace('index.html');
-                }
-                else {
-                console.log(data);
-//                    alert(data.currentuser);
-                }
-            },
-            error: function(data, status){
-                console.log("Something went wrong" + data + "status:" + status);
-//                alert("Something went wrong: " + status);
-            }
-        });
-});
-
-// not yet implemented
-
-$('#settings-form').submit(function (){
-    this.preventDefault();
-    alert("This button does nothing.");
-/*        $.ajax({
-            dataType: "json",
-            method: "post",
-            url: 'login',
-            success: function(data)
-            {
-                if (data.status === 'OK') {
-                console.log(data);
-             //       window.location.replace('index.html');
-                }
-                else {
-                console.log(data);
-                    alert(data.status, data.currentuser);
-                }
-            },
-            error: function(data, status){
-                console.log(data);
-                alert(status);
-            }
-        });
-*/});
+function dologin(){
+   var name = $("input[name='user']").val()
+   var pw = $("input[name='password']").val()
+   var dur = $("input[name='duration']").val()   
+   $.post( 
+   "login", 
+   { user: name, password: pw , duration: dur },
+   function (data, textStatus){
+     console.log("data ", data, "s:", textStatus)
+     if (data.user == null){
+         alert("Password or user name wrong, please try again!")
+     } else {
+        $("#loginDialog").modal('hide');
+        window.location.reload(true) 
+     }
+   }, 
+   "json"
+   );
+};
 
 // save changes on ratings of the texts
 $('.rating').on('rating:change', function(event, value, caption) {
@@ -899,7 +870,6 @@ function bookmark_this_line(){
 };
 
 // stub for comment  2020-02-23, called from app:swl-form-dialog
-// maybe this can be removed again?
 
 function comment_this_line(){
     

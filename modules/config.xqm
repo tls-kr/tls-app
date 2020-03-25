@@ -200,6 +200,11 @@ declare variable $config:recaptcha :=
     else if($config:get-access-config//private-key/text() != '') then $config:get-access-config//private-key/text() 
     else ();
 
+
+declare function config:get-configuration() as element(configuration) {
+    doc(concat($config:app-root, "/access-config.xml"))/config
+};
+
 (:~
  : Get collection data
  : @param $collection match collection name in repo-config.xml 

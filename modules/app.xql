@@ -936,7 +936,10 @@ return $w
 declare 
     %templates:wrap
 function app:login($node as node()*, $model as map(*))
-{ if (sm:is-authenticated()) then 
+{ 
+let $user := request:get-parameter("user", ())
+return
+if (sm:is-authenticated() and not($user)) then 
 <a href="#" class="btn btn-default navbar-btn" data-toggle="modal" data-target="#settingsDialog">
 <img class="icon mr-2" 
 src="resources/icons/open-iconic-master/svg/person.svg"/>{sm:id()//sm:real/sm:username/text()}</a>
@@ -1188,7 +1191,6 @@ function app:settings($node as node()*, $model as map(*))
                         <h4 class="modal-title">Settings for user {sm:id()//sm:username/text()}</h4>
                         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
                     </div>
-                    <form id="settings-form" class="form form-horizontal" method="get">
                         <div class="modal-body">
                         <p>Recent Activity</p>
                         <ul class="list-unstyled">
@@ -1196,10 +1198,9 @@ function app:settings($node as node()*, $model as map(*))
                         </ul>
                         </div>
                         <div class="modal-footer">
-                            <button onclick="logout()" class="btn btn-danger">Logout</button>
+                            <button onclick="dologout()" class="btn btn-danger">Logout</button>
                             <button type="submit" class="btn btn-primary">Save</button>
                         </div>
-                    </form>
                 </div>
             </div>
 };
@@ -1216,7 +1217,6 @@ function app:dialogs($node as node()*, $model as map(*))
                         <h4 class="modal-title">Login</h4>
                         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
                     </div>
-                    <form id="login-form" class="form form-horizontal" method="post">
                         <div class="modal-body">
                             <div class="form-group">
                                 <label class="control-label col-sm-2">User:</label>
@@ -1232,10 +1232,9 @@ function app:dialogs($node as node()*, $model as map(*))
                             </div>
                         </div>
                         <div class="modal-footer">
-                            <button type="submit" class="btn btn-primary">Login</button>
+                            <button class="btn btn-primary" onclick="dologin()">Login</button>
                         </div>
                         <input type="hidden" name="duration" value="P7D"/>
-                    </form>
                 </div>
             </div>
         </div>

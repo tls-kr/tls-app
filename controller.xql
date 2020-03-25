@@ -1,6 +1,7 @@
 xquery version "3.0";
 import module namespace login="http://exist-db.org/xquery/login" at "resource:org/exist/xquery/modules/persistentlogin/login.xql";
 import module namespace config="http://hxwd.org/config" at "modules/config.xqm";
+declare namespace json="http://www.json.org";
 
 declare variable $exist:path external;
 declare variable $exist:resource external;
@@ -20,29 +21,49 @@ declare variable $local:HTTP_NOT_FOUND := xs:integer(404);
 declare variable $local:HTTP_METHOD_NOT_ALLOWED := xs:integer(405);
 declare variable $local:HTTP_INTERNAL_SERVER_ERROR := xs:integer(500);
 
+declare function local:user-allowed() {
+    (
+        request:get-attribute($config:login-domain || ".user") and
+        request:get-attribute($config:login-domain || ".user") != "guest"
+    ) or config:get-configuration()/restrictions/@guest = "yes"
+};
+
+declare function local:query-execution-allowed() {
+    (
+    config:get-configuration()/restrictions/@execute-query = "yes"
+        and
+    local:user-allowed()
+    )
+        or
+    sm:is-dba((request:get-attribute("org.exist.login.user"),request:get-attribute("xquery.user"), 'nobody')[1])
+};
+
+
 if ($exist:path eq '') then
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
         <redirect url="{request:get-uri()}/"/>
     </dispatch>
-    
+
+(:else if ($logout) then (
+(\:    session:remove-attribute($config:login-domain || ".user"),:\)
+    session:invalidate(),
+    <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+        <redirect url="{replace(request:get-uri(), "^(.*)\?", "$1")}"/>
+    </dispatch>
+)
+:)    
 else if ($exist:path eq "/") then
     (: forward root path to index.xql :)
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
         <redirect url="index.html"/>
     </dispatch>
+    
 else if (ends-with($exist:resource, ".xql")) then (
         login:set-user($config:login-domain, (), false()),
         <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
             <forward url="{$exist:controller}/{$exist:path}"/>
             <cache-control cache="no"/>
         </dispatch>
-)
-else if ($logout) then (
-    login:set-user($config:login-domain, (), false()),
-    session:invalidate(),
-    <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
-        <redirect url="{replace(request:get-uri(), "^(.*)\?", "$1")}"/>
-    </dispatch>
 )
 (:else if ($exist:resource = "login") then (
 (\:    util:declare-option("exist:serialize", "method=json media-type=application/json"),:\)
@@ -55,8 +76,29 @@ else if ($logout) then (
 
 )
 :)    
-(: this seems to work for now... CW 2019-02-18 :) 
 else if ($exist:resource = "login") then (
+    util:declare-option("exist:serialize", "method=json media-type=application/json"),
+    let $loggedIn := login:set-user($config:login-domain, (), false())
+    return
+        try {
+            if (local:user-allowed()) then
+                <status>
+                    <user>{request:get-attribute($config:login-domain||".user")}</user>
+                    <isAdmin json:literal="true">{ sm:is-dba((request:get-attribute("org.exist.login.user"),request:get-attribute("xquery.user"), 'guest')[1]) }</isAdmin>
+                </status>
+            else
+                (
+                    response:set-status-code(401),
+                    <status>fail</status>
+                )
+        } catch * {
+            response:set-status-code(401),
+            <status>{$err:description}</status>
+        }
+
+)
+(: this seems to work for now... CW 2019-02-18 :) 
+else if ($exist:resource = "xxlogin") then (
     util:declare-option("exist:serialize", "method=json media-type=application/json"),
     try {
         login:set-user($config:login-domain, (), false()),
