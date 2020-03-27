@@ -647,6 +647,41 @@ function edit_swl(uid){
   $('#editSWLDialog').modal('show');
   }
   });
+};
+
+function move_word(word, wid, count){
+  $.ajax({
+  type : "GET",
+  dataType : "html",  
+  url : "api/responder.xql?func=dialogs:move-word&word=" + word+"&wid="+wid+"&count="+count, 
+  success : function(resp){
+  $('#remoteDialog').html(resp);
+  console.log("Initializing autocomplete functions");
+  // lets see if this works better
+  initialize_autocomplete();
+  $('#move-word-dialog').modal('show');
+  }
+  });
+};
+
+function do_move_word(word, wid){
+  var sc = $("#concept-id").attr("data-id");
+  var tc = $("#concept-id-span").text();
+  if (tc.length < 1) {
+      alert("Concept ID not set.  Please select the concept name with the mouse!");
+      $("#select-concept").val("")
+  } else {
+  $.ajax({
+  type : "GET",
+  dataType : "html",  
+  url : "api/responder.xql?func=tlslib:move-word-to-concept&word=" + word + "&src-concept="+sc+"&trg-concept="+tc, 
+  success : function(resp){
+  $('#'+wid).html("");
+  $('#move-word-dialog').modal('hide');
+  toastr.info("Word "+ word +" as been moved.", "HXWD says:");     
+  }
+  });
+  }  
 }
 
 // delete word from concept 
@@ -749,6 +784,7 @@ $( ".tr" ).keyup(function( event ) {
     var line = document.getElementById( lineid ).innerText;
   if (event.ctrlKey == true){
     //var hlineid = lineid.split(".").join("\\.")
+    event.preventDefault();
     console.log("key: ", event.which)
     if (event.which > 48 & event.which < 58) {
       //var line = $("#"+hlineid).text()

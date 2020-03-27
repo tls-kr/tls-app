@@ -147,3 +147,29 @@ declare function dialogs:dialog-stub(){
      </div>
 </div>
 };
+
+declare function dialogs:move-word($map as map(*)){
+<div id="move-word-dialog" class="modal" tabindex="-1" role="dialog" style="display: none;">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header"><h5>Move {$map?word} to another concept</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" title="Close">x</button>
+            </div>
+            <div class="modal-body">
+            <h6 class="font-weight-bold">Select the target concept:</h6>
+            <div>
+                <span id="concept-id-span" style="display:none;"></span>
+                <div id="select-concept-group" class="form-group ui-widget">
+                    <input id="select-concept" class="form-control" required="true" value=""/>
+                </div>
+            <p>There are {$map?count} attributions, so this might take a while.</p>
+            </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="do_move_word('{$map?word}', '{$map?wid}')">Move</button>
+           </div>
+         </div>
+     </div>
+</div>
+};

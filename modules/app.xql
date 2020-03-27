@@ -775,7 +775,7 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
     let $ann := for $c in collection($config:tls-data-root||"/notes")//tls:ann[@concept-id=$key]
      return $c
     return
-    <div class="row">
+    <div class="row" id="concept-id" data-id="{$key}">
     <div class="card col-sm-12" style="max-width: 1000px;">
     <div class="card-body">
     <h4 class="card-title">{$c/tei:head/text()}&#160;&#160;{for $t in $tr return 
@@ -910,7 +910,10 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
     if (ends-with($p/@xml:lang, "mc")) then "MC: " else (),
     $p/text()}&#160;</span>}  <small>{$wc} {if ($wc = 1) then " Attribution" else " Attributions"}</small>
     {if ($wc = 0) then
-    tlslib:format-button("delete_word_from_concept('"|| $entry-id || "', 'word')", "Delete the word "|| $zi || ", including all syntactic words.", "open-iconic-master/svg/x.svg", "", "", "tls-editor") else ()}
+    tlslib:format-button("delete_word_from_concept('"|| $entry-id || "', 'word')", "Delete the word "|| $zi || ", including all syntactic words.", "open-iconic-master/svg/x.svg", "", "", "tls-editor") else 
+    (: move :)
+    tlslib:format-button("move_word('"|| $zi || "', '"|| $entry-id ||"', '"||$wc||"')", "Move the word "|| $zi || ", including all syntactic words to another concept.", "open-iconic-master/svg/move.svg", "", "", "tls-editor")
+    }
     </h5>
     {if ($def) then <p class="ml-4">{$def}</p> else ()}
     <ul>{for $sw in $e//tei:sense

@@ -971,3 +971,44 @@ return $doc
 };
 
 
+(:~
+ : move W with all SW to a new concept
+ @param $word : the word to move.  must exist in src-concept
+ @param $src-concept: uuid of concept where the word is currently defined
+ @param $trg-concept: uuid of concept where the words should be moved to, must exist and the word must not exist there already
+:)
+declare function tlslib:move-word-to-conceptx($map as map(*)){
+"OK, Dummy"
+};
+
+declare function tlslib:move-word-to-concept($map as map(*)){
+ let $sc := collection($config:tls-data-root || "/concepts")//tei:div[@xml:id=$map?src-concept]
+ ,$tc := collection($config:tls-data-root || "/concepts")//tei:div[@xml:id=$map?trg-concept]
+ ,$tc-name := $tc/tei:head/text()
+ ,$sw := $sc//tei:orth[. = $map?word]/ancestor::tei:entry
+ ,$swl := for $a in collection($config:tls-data-root||"/notes")//tls:ann[@concept-id=$map?src-concept] 
+        let $wx := $a//tei:orth[. = $map?word]
+        where ($wx)
+        return $a
+ return
+ if ($sc and count($tc//tei:orth[. = $map?word]) = 0) then 
+   let $tw := $tc//tei:div[@type="words"]
+   return
+     if ($tw) then (
+       update insert $sw into $tw,
+       update delete $sw,
+     for $a in $swl 
+       return
+     (
+     if ($a/tls:metadata/@concept) then 
+     update replace $a/tls:metadata/@concept with $tc-name else
+     update insert attribute concept {$tc-name}  into $a ,
+     if ($a/tls:metadata/@concept-id) then 
+     update replace $a/tls:metadata/@concept-id with $map?trg-concept else
+     update insert attribute concept-id {$map?trg-concept}  into $a ,
+     "OK! Moved " || $map?word || " to concept " || $tc-name || "." 
+     )
+ 
+ ) else "NO!! no words div in concept file"
+ else "ERROR: "
+};
