@@ -115,22 +115,6 @@ function reload_selector(slot, newid){
     
 };
 
-function get_sw(){
-var word = $("#swl-query-span").text();
-// alert(uid);
-  if (word.length > 0){
-  var context = window.location.pathname;
-  $.ajax({
-  type : "GET",
-  dataType : "html",
-  url : "api/get_sw.xql?word=" + word+"&context="+context, 
-  success : function(resp){
-  $('#swl-select').html(resp)
-  }
-  });
-  }
-};
-
 function get_sf(senseid){
   $.ajax({
   type : "GET",
@@ -369,6 +353,40 @@ function save_to_concept(){
 
 };
 
+// display the dialog in the right side of the screen
+function get_sw(sel, xid, line){
+   var dw = document.documentElement.clientWidth;
+   var dh = document.documentElement.clientHeight;
+   var new_width = $("#toprow").outerWidth() - $("#toprow-1").outerWidth() - $("#toprow-2").outerWidth();
+   console.log(new_width);
+    // this sets the selection to the search input field, to make it easy to search for this term
+    // idea: write a search that displays the results on this page, so that I do
+    // not need to leave the current context.
+   $( 'input[name="query"]' ).val(sel);
+   $( "#swl-line-id-span" ).html(xid);
+   $( "#swl-line-text-span" ).html(line);      
+   $( "#swl-query" ).val( sel);
+   $( "#swl-query-span" ).html(sel);
+//   $( "#swl-form" ).removeAttr("style");
+   $( "#swl-form" ).css("max-height", dh - 65);
+   $( "#swl-form" ).css("max-width", new_width - 10);
+   $( "#swl-form" ).show();
+   $( "#swl-form" ).scrollTop( 0 );
+// alert(uid);
+  if ((sel.length > 0) && (sel.length < 10)){
+  var context = window.location.pathname;
+  $.ajax({
+  type : "GET",
+  dataType : "html",
+  url : "api/get_sw.xql?word=" + sel+"&context="+context, 
+  success : function(resp){
+  $('#swl-select').html(resp)
+  }
+  });
+  }
+};
+
+
 // jquery selectors 
 // we bind a touchend event to mouseup.  This is an attempt to make this work
 // on mobile devices, but apparently not really working.
@@ -383,30 +401,11 @@ $('.zh').bind('touchend', function(){
 $( ".zh" )
   .mouseup(function() {
   const sel = x.Selector.getSelected();
-    const xid = sel.anchorNode.parentNode.id.toString();
-    const line = sel.anchorNode.parentNode.innerText;
-    var new_height = $("#chunkcol-right").outerHeight();
-    var new_width = $("#chunkcol-right").outerWidth();
-    console.log(xid);
-    console.log(new_height);
-    // this sets the selection to the search input field, to make it easy to search for this term
-    // idea: write a search that displays the results on this page, so that I do
-    // not need to leave the current context.
-    $( 'input[name="query"]' ).val(sel.toString());
-    $( "#swl-line-id-span" ).html(xid);
-    $( "#swl-line-text-span" ).html(line);      
-    $( "#swl-query" ).val( sel.toString());
-    $( "#swl-query-span" ).html( sel.toString());
-    $( "#swl-form" ).removeAttr("style");
-    $( "#swl-form" ).show();
-    $( "#swl-form" ).scrollTop( 0 );
-    // I do see these numbers in the CSS, but they don't seem to take effect
- //   $( "#swl-form" ).width(new_width - 10);
- //   $( "#swl-form" ).height(new_height - 10);
-    
-   get_sw()
+  const xid = sel.anchorNode.parentNode.id.toString();
+  const line = sel.anchorNode.parentNode.innerText;
+  get_sw(sel.toString(), xid, line)
    // this is to activate the click on the text line to get the context
-   $('[data-toggle="popover"]').popover({'content' : get_atts})
+  $('[data-toggle="popover"]').popover({'content' : get_atts})
   });
 
 //this is for the filter in browse pages
@@ -679,7 +678,7 @@ function delete_swl(uid){
      success : function(resp){
    //  save_this_swl(resp.sense_id)
       var line_id = resp.replace(/"/g, '')
-      console.log("Lineid: " & line_id);
+   //   console.log("Lineid: " & line_id);
       show_swls_for_line(line_id);
       toastr.info("Attribution deleted.", "HXWD says:");
    }
@@ -750,7 +749,7 @@ $( ".tr" ).keyup(function( event ) {
 //    var lineid = trid.substring(0, trid.indexOf("-tr"));
     var line = document.getElementById( lineid ).innerText;
 // this is disabled for the moment. procline.xql does not exist
-if ( event.which == 5200 & event.shiftKey == true) {
+if ( event.which == 52 & event.shiftKey == true) {
     event.preventDefault();
     console.log(lineid, line, event.shiftKey)    
   $.ajax({

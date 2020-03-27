@@ -19,6 +19,7 @@
 
 .navbar{
     min-height: 50px;
+    max-height: 50px;
 }
 /*@media (min-width: 920px) {
 
