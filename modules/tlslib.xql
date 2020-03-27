@@ -892,17 +892,18 @@ declare function tlslib:get-visit-file($cm as xs:string){
 
 
 
-declare function tlslib:get-crypt-file(){
+declare function tlslib:get-crypt-file($type as xs:string){
   let $cm := substring(string(current-date()), 1, 7),
-  $doc-path := $config:tls-data-root || "/vault/crypt/" || $cm || ".xml",
+  $doc-name := if (string-length($type) > 0 ) then $type || "-" || $cm || ".xml" else $cm || ".xml",
+  $doc-path :=  $config:tls-data-root || "/vault/crypt/" || $doc-name,
   $doc := if (not(doc-available($doc-path))) then 
     let $res := 
-    xmldb:store($config:tls-data-root || "/vault/crypt/" , $cm || ".xml", 
-<TEI xmlns="http://www.tei-c.org/ns/1.0" xml:id="del-{$cm}-crypt">
+    xmldb:store($config:tls-data-root || "/vault/crypt/" , $doc-name, 
+<TEI xmlns="http://www.tei-c.org/ns/1.0" xml:id="del-{$type}-{$cm}-crypt">
   <teiHeader>
       <fileDesc>
          <titleStmt>
-            <title>Deleted items for month {$cm}</title>
+            <title>Recorded items for month {$cm}</title>
          </titleStmt>
          <publicationStmt>
             <p>published electronically as part of the TLS project at https://hxwd.org</p>
@@ -917,7 +918,7 @@ declare function tlslib:get-crypt-file(){
   </teiHeader>
   <text>
       <body>
-      <div><head>Deleted items</head>
+      <div><head>Items</head>
       <p xml:id="del-{$cm}-start"></p>
       </div>
       </body>
@@ -985,16 +986,24 @@ declare function tlslib:move-word-to-concept($map as map(*)){
  let $sc := collection($config:tls-data-root || "/concepts")//tei:div[@xml:id=$map?src-concept]
  ,$tc := collection($config:tls-data-root || "/concepts")//tei:div[@xml:id=$map?trg-concept]
  ,$tc-name := $tc/tei:head/text()
+ ,$sc-name := $sc/tei:head/text()
  ,$sw := $sc//tei:orth[. = $map?word]/ancestor::tei:entry
  ,$swl := for $a in collection($config:tls-data-root||"/notes")//tls:ann[@concept-id=$map?src-concept] 
         let $wx := $a//tei:orth[. = $map?word]
         where ($wx)
         return $a
+ ,$resp-uuid := "uuid-" || util:uuid()       
+ ,$user := sm:id()//sm:real/sm:username/text()
+ ,$cm := substring(string(current-date()), 1, 7)
+ ,$rdoc := tlslib:get-crypt-file("changes")
+ ,$rec := <respStmt xml:id="{$resp-uuid}" xmlns="http://www.tei-c.org/ns/1.0" resp="#{$user}"><name>{$user}</name><resp notBefore="{current-dateTime()}">started moving {$map?word} and {count($swl)} attribution(s) from 
+ <ref corresp="#{$map?src-concept}">{$sc-name}</ref>to <ref corresp="#{$map?trg-concept}">{$tc-name}</ref>. </resp></respStmt>
  return
  if ($sc and count($tc//tei:orth[. = $map?word]) = 0) then 
    let $tw := $tc//tei:div[@type="words"]
    return
      if ($tw) then (
+       update insert $rec into $rdoc//tei:p[@xml:id="del-" || $cm || "-start"],
        update insert $sw into $tw,
        update delete $sw,
      for $a in $swl 
@@ -1006,9 +1015,16 @@ declare function tlslib:move-word-to-concept($map as map(*)){
      if ($a/tls:metadata/@concept-id) then 
      update replace $a/tls:metadata/@concept-id with $map?trg-concept else
      update insert attribute concept-id {$map?trg-concept}  into $a ,
+     tlslib:move-done($resp-uuid),
      "OK! Moved " || $map?word || " to concept " || $tc-name || "." 
      )
  
  ) else "NO!! no words div in concept file"
  else "ERROR: "
+};
+
+declare function tlslib:move-done($uuid as xs:string){
+let $resp:=  tlslib:get-crypt-file("changes")//tei:respStmt[@xml:id=$uuid]
+return
+     update insert attribute notAfter {current-dateTime()} into $resp
 };

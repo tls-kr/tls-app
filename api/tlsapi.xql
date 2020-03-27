@@ -840,7 +840,7 @@ return
   if (not($previous-action/tei:name/text() = $user)) then
   let $swl := collection($config:tls-data-root || "/notes")//tls:ann[@xml:id=$uuid],
   $cm := substring(string(current-date()), 1, 7),
-  $doc := tlslib:get-crypt-file()
+  $doc := tlslib:get-crypt-file("trans")
   return 
   (update insert $swl into $doc//tei:p[@xml:id="del-" || $cm || "-start"],
    update delete $swl,
@@ -1197,7 +1197,7 @@ if ($node) then (
  update insert attribute modified {current-dateTime()} into $node,
  update insert attribute resp-del {"#" || $user} into $node,
  update insert attribute src-id {$content-id} into $node,
- update insert $node into (tlslib:get-crypt-file()//tei:div/tei:p[last()])[1],
+ update insert $node into (tlslib:get-crypt-file("trans")//tei:div/tei:p[last()])[1],
 (: The return values are wrong: update always returns the empty sequence :)
  if (update replace $node[1] with $seg) then () else "Success. Updated translation." 
 )
