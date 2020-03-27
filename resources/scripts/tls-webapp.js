@@ -746,10 +746,28 @@ $( ".tr" ).keyup(function( event ) {
 }).keydown(function( event ) {
     var trid = $(this).attr('id');
     var lineid = trid.slice(0, -3);
-//    var lineid = trid.substring(0, trid.indexOf("-tr"));
     var line = document.getElementById( lineid ).innerText;
+  if (event.ctrlKey == true){
+    //var hlineid = lineid.split(".").join("\\.")
+    console.log("key: ", event.which)
+    if (event.which > 48 & event.which < 58) {
+      //var line = $("#"+hlineid).text()
+      var pos = event.which - 49
+      var sel = line.slice(pos,pos+1)
+      get_sw(sel, lineid, line)
+    } else
+    if (event.which == 59){
+      var sw = document.getElementById( lineid + "-swl" ).parentNode;
+      if (sw.style.display === "block") {
+          sw.style.display = "none";          
+      } else {
+          sw.style.display = "block";
+      }
+//      console.log(sw);      
+    }
+   }
 // this is disabled for the moment. procline.xql does not exist
-if ( event.which == 52 & event.shiftKey == true) {
+ if ( event.which == 5200 & event.shiftKey == true) {
     event.preventDefault();
     console.log(lineid, line, event.shiftKey)    
   $.ajax({
