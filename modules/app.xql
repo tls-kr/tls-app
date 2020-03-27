@@ -139,7 +139,7 @@ function app:browse($node as node()*, $model as map(*), $type as xs:string?, $fi
       <span class="col-2"></span>
       {(: if ($type = 'concept') then
       <span class="col-3">
-       <button type="button" class="btn btn-primary" onclick="new_concept()">New concept</button>
+       <button type="button" class="btn btn-primary" onclick="new_concept_dialog()">New concept</button>
       </span> else () :)
       ()
       }
@@ -153,8 +153,9 @@ function app:browse($node as node()*, $model as map(*), $type as xs:string?, $fi
     </tr></thead><tbody class="table-striped">{
     for $h in $hits
     let $n := $h/tei:head/text()
-    ,$id := $h/@xml:id
-    ,$def := ($h/tei:p, <small>{$h/tei:note}</small>)
+    ,$id := $h/@xml:id,
+    $d := $h/tei:div[@type="definition"]
+    ,$def := if ($type = 'concept') then ($d/tei:p, <small>{$d/tei:note}</small>) else ($h/tei:p, <small>{$h/tei:note}</small>)
     order by $n
     return
     (
@@ -208,11 +209,19 @@ declare function app:browse-char($type as xs:string?, $filter as xs:string?)
 :)
 declare function app:do-browse($type as xs:string?, $filter as xs:string?)
 {
-    for $hit in collection($config:tls-data-root)//tei:div[@type=$type]
-    let $head := data($hit/tei:head)
-    where starts-with($head, $filter)
-    order by $head
-    return $hit
+    if ($type = "concept") then 
+     for $hit in collection($config:tls-data-root)//tei:div[@type=$type]
+     let $head := data($hit/tei:head),
+     $w := $hit//tei:entry
+     where starts-with($head, $filter) and count($w) > 0
+     order by $head
+     return $hit
+    else 
+     for $hit in collection($config:tls-data-root)//tei:div[@type=$type]
+     let $head := data($hit/tei:head)
+     where starts-with($head, $filter)
+     order by $head
+     return $hit
 };
 
 
@@ -906,7 +915,7 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
     {if ($def) then <p class="ml-4">{$def}</p> else ()}
     <ul>{for $sw in $e//tei:sense
     return
-    tlslib:display-sense($sw, count($ann//tei:sense[@corresp="#" || $sw/@xml:id]))
+    tlslib:display-sense($sw, count($ann//tei:sense[@corresp="#" || $sw/@xml:id]), false())
     }</ul>
     </div>
     }

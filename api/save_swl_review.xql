@@ -13,8 +13,8 @@ $comment := request:get-parameter("com", ""),
 $action := request:get-parameter("action", "approve"),
 (: if the dialog has not been loaded, the pars are undefined :)
 $com := if ($comment = "undefined") then "" else $comment,
-$act := if ($act = "undefined") then "approve" else $action,
+$act := if ($action = "undefined") then "approve" else $action
 
 return
 
-tlsapi:save-swl-review($uid, $com, $action)
+tlsapi:save-swl-review($uid, $com, $act)

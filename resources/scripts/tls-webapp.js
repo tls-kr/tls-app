@@ -670,7 +670,7 @@ function delete_word_from_concept(wid, type){
 // delete the attribution; this is the x on the attributions
 
 function delete_swl(uid){
-    var strconfirm = confirm("Do you really want to delete this attribution?");
+    var strconfirm = true // confirm("Do you really want to delete this attribution?");
     if (strconfirm == true) {
      $.ajax({
      type : "GET",
@@ -701,6 +701,27 @@ function review_swl_dialog(uid){
    }
   });
 };
+
+
+function save_new_concept(uid){
+   //stub!
+   var com_val = $("#input-comment" ).val();
+   var action_val = $("input[name='actions']:checked").attr('id');
+     $.ajax({
+     type : "GET",
+     dataType : "html",  
+     url : "api/responder.xql?func=save-new-concept"+com_val+"&uid=" + uid + "&action="+action_val, 
+     success : function(resp){
+     console.log("RESP" + resp, resp.startsWith('"Error'))
+     if (resp.startsWith('"Error')) {
+     toastr.error(resp, "HXWD says:");
+     } else {
+     toastr.info("Review has been saved. Thank you for your effort!", "HXWD says:");
+     }
+   }});
+   $('#review-swl-dialog').modal('hide');
+};
+
 
 function save_swl_review(uid){
    var com_val = $("#input-comment" ).val();
@@ -873,4 +894,18 @@ function bookmark_this_line(){
 
 function comment_this_line(){
     
+};
+
+
+function new_concept_dialog(){
+     $.ajax({
+     type : "GET",
+     dataType : "html",  
+     url : "api/responder.xql?func=new-concept-dialog", 
+     success : function(resp){
+     $('#remoteDialog').html(resp);
+     initialize_autocomplete();
+     $('#new-concept-dialog').modal('show');
+   }
+  });
 };

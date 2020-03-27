@@ -180,7 +180,7 @@ typeswitch ($node)
       <ul class="list-unstyled collapse" id="{$id}-swl"> 
       {for $sw in $swl
       (: we dont check for attribution count, so pass -1  :)
-      return tlslib:display-sense($sw, -1)}
+      return tlslib:display-sense($sw, -1, false())}
       </ul>
       </span>
   case text() return
@@ -643,6 +643,7 @@ let $user := sm:id()//sm:real/sm:username/text(),
 $type := $options?type,
 $context := $options?context
 let $concept := data($node/@concept),
+$creator-id := substring($node/tls:metadata/@resp, 2),
 $zi := $node/tei:form[1]/tei:orth[1]/text(),
 $py := $node/tei:form[1]/tei:pron[starts-with(@xml:lang, 'zh-Latn')][1]/text(),
 $sf := $node//tls:syn-func,
@@ -682,8 +683,12 @@ else ()}
  (
 (:   tlslib:format-button("delete_swl('" || data($node/@xml:id) || "')", "Request deletion of SWL for "||$zi, "open-iconic-master/svg/x.svg", "small", "close", "tls-editor"),:)
 if (not($context='review')) then
-   (<span class="rp-5">{tlslib:format-button("review_swl_dialog('" || data($node/@xml:id) || "')", "Review the SWL for " || $zi, "octicons/svg/unverified.svg", "small", "close", "tls-editor")}&#160;&#160;</span>,
-      tlslib:format-button("save_swl_review('" || data($node/@xml:id) || "')", "Approve the SWL for " || $zi, "octicons/svg/thumbsup.svg", "small", "close", "tls-editor")) else ()
+   (<span class="rp-5">{tlslib:format-button("review_swl_dialog('" || data($node/@xml:id) || "')", "Review the SWL for " || $zi, "octicons/svg/unverified.svg", "", "close", "tls-editor")}&#160;&#160;</span>,
+   (: for my own swls: delete, otherwise approve :)
+   if ($user = $creator-id) then 
+    tlslib:format-button("delete_swl('" || data($node/@xml:id) || "')", "Immediately delete this SWL for "||$zi, "open-iconic-master/svg/x.svg", "", "close", "tls-editor")
+   else
+    tlslib:format-button("save_swl_review('" || data($node/@xml:id) || "')", "Approve the SWL for " || $zi, "octicons/svg/thumbsup.svg", "", "close", "tls-editor")) else ()
 )
 else ()
 }
@@ -720,6 +725,7 @@ declare function tlslib:display-seg($seg as node()*, $options as map(*) ) {
      if (map:contains($options, "transl")) then $options?transl
      else map:get($options, $options?slot1)[1] else ()
   ,$slot2 := if ($show-transl and not($ann = 'false')) then map:get($options, $options?slot2)[1] else ()
+  (: check if transl + comment are related, if yes than do not manipulate tab-index :)
   
 return
 (
@@ -752,14 +758,17 @@ tlslib:format-swl($swl/ancestor::tls:ann, map{'type' : 'row'})}
  : 2020-02-26 it seems this belongs to tlsapi
  :)
  
-declare function tlslib:display-sense($sw as node(), $count as xs:int){
-    let $id := data($sw/@xml:id),
+declare function tlslib:display-sense($sw as node(), $count as xs:int, $display-word as xs:boolean){
+    let $id := if ($sw/@xml:id) then data($sw/@xml:id) else substring($sw/@corresp, 2),
     $sf := $sw//tls:syn-func/text(),
     $sm := $sw//tls:sem-feat/text(),
     $user := sm:id()//sm:real/sm:username/text(),
-    $def := $sw//tei:def/text()
+    $def := $sw//tei:def/text(),
+    $char := $sw/preceding-sibling::tei:form/tei:orth/text()
     return
-    <li id="{$id}"><span id="sw-{$id}" class="font-weight-bold">{$sf}</span>
+    <li id="{$id}">
+    {if ($display-word) then <span class="ml-2">{$char}</span> else ()}
+    <span id="sw-{$id}" class="font-weight-bold">{$sf}</span>
     <em class="ml-2">{$sm}</em> 
     <span class="ml-2">{$def}</span>
      <button class="btn badge badge-light ml-2" type="button" 

@@ -1119,7 +1119,7 @@ declare function tlsapi:delete-bookmark($id as xs:string){
 
 declare function tlsapi:show-use-of($uid as xs:string, $type as xs:string){
 let $key := "#" || $uid
-, $str := 'collection("/db/apps/tls-data")//tls:' || $type || '[@corresp ="' || $key || '"]'
+, $str := 'collection($config:tls-data-root||"/notes")//tls:' || $type || '[@corresp ="' || $key || '"]'
 let $res := for $r in util:eval($str)
      (:where exists($r/ancestor::tei:sense):)
      return $r
@@ -1127,10 +1127,12 @@ let $res := for $r in util:eval($str)
 return
 
 if (count($res) > 0) then
+(<li>Found {count($res)}</li>, 
 for $r in subsequence($res, 1, 10)
   let $sw := $r/ancestor::tei:sense
   return
-  tlslib:display-sense($sw, -1)
+  tlslib:display-sense($sw, -1, true())
+)  
 else 
 
 concat("No usage examples found for key: ", $key, " type: ", $type )
@@ -1319,4 +1321,8 @@ declare function tlsapi:reload-selector($map as map(*)){
  ,$s := if ("tls-test" = $group) then  session:set-attribute($textid || "-" || $slot, $map?content-id) else tlslib:settings-save-slot($slot,$textid, $map?content-id)
  return
  tlslib:trsubmenu($textid, $slot, $map?content-id, $tr)
+};
+
+declare function tlsapi:save-new-concept($map as map(*)){
+()
 };
