@@ -231,7 +231,7 @@ function save_swl(){
   //not sure what to do here... what kind of changes to we want to allow?  
 };
 
-// save one sw
+// here we ask for a concept, to combine with a character to form a new SW and then assign a SWL
 function show_new_concept(){
   var word = $("#swl-query-span").text();
   var line_id= $( "#swl-line-id-span" ).text();  
@@ -285,6 +285,14 @@ function save_newsw(){
     var semfeat_id = $("#semfeat-id-span" ).text();
     var concept_id = $("#concept-id-span" ).text();
     var def_val = $("#input-def" ).val();
+  if (synfunc_id.length == 0){
+          alert("No syntactic function defined. Can not save SW to concept.");
+          $("#select-synfunc" ).val("");
+      }
+  else if(def_val.length < 1) {
+      alert("Newly defined SW need a definition. Can not save SW to concept.")
+      $("#input-def").val("");
+  } else {
 
   $.ajax({
   type : "PUT",
@@ -310,7 +318,8 @@ function save_newsw(){
   }
   });
  
-    
+}
+
 };
 
 // saving the concept, from editSWLDialog, with the new SW 
@@ -328,8 +337,25 @@ function save_to_concept(){
     var semfeat_id = $("#semfeat-id-span" ).text();
     var concept_id = $("#concept-id-span" ).text();
     var def_val = $("#input-def" ).val();
-  if (typeof guangyun_id !== 'undefined'){
+  if (typeof guangyun_id !== 'undefined' && guangyun_id.length > 0){
   console.log(guangyun_id);
+  if (concept_id.length == 0){
+      var strconfirm = confirm("No existing concept selected. Do you want create a new concept named "+concept_val+" ?")
+      if (strconfirm == true){
+          // new concept
+      } else {
+          $("#select-concept").val("")
+      }
+  } else {
+      if (synfunc_id.length == 0){
+          alert("No syntactic function defined. Can not save SW to concept.");
+          $("#select-synfunc" ).val("");
+      }
+  else if(def_val.length < 1) {
+      alert("Newly defined SW need a definition. Can not save SW to concept.")
+      $("#input-def" ).val("");
+  } else {
+  // need to show the selected stuff again to the user to confirm
   $.ajax({
   type : "PUT",
   dataType : "json",
@@ -346,7 +372,8 @@ function save_to_concept(){
     alert("PROBLEM"+resp);
   }
   });
-
+ }
+}
 } else {
   alert("Guangyun has not been selected!");    
 }
@@ -673,17 +700,36 @@ function do_move_word(word, wid){
   } else {
   $.ajax({
   type : "GET",
-  dataType : "html",  
+  dataType : "json",  
   url : "api/responder.xql?func=tlslib:move-word-to-concept&word=" + word + "&src-concept="+sc+"&trg-concept="+tc, 
   success : function(resp){
-  $('#'+wid).html("");
-  $('#move-word-dialog').modal('hide');
-  toastr.info("Word "+ word +" as been moved.", "HXWD says:");     
+     console.log(resp.uuid, resp.mes)
+     if (resp.uuid) {
+       $('#'+wid).html("");
+       toastr.info(resp.mes, "HXWD says:");
+       move_word_done(resp.uuid, word);
+     } else {
+      toastr.error(resp.mes, "HXWD says:");
+     }
   }
   });
+  $('#move-word-dialog').modal('hide');
+  toastr.info("Word "+ word +" is being moved.", "HXWD says:");
   }  
 }
 
+function move_word_done(uuid, word){
+  $.ajax({
+  type : "GET",
+  dataType : "html",  
+  url : "api/responder.xql?func=tlslib:move-done&uuid=" + uuid, 
+  success : function(resp){
+//     console.log(resp.uuid)
+     toastr.info("Move of "+ word +" has been completed.", "HXWD says:");
+  }
+  });
+    
+}
 // delete word from concept 
 function delete_word_from_concept(wid, type){
     $.ajax({
@@ -961,4 +1007,17 @@ function new_concept_dialog(){
      $('#new-concept-dialog').modal('show');
    }
   });
+};
+
+function add_to_tax(){
+  var ptr = $("#select-tax").val();
+  var relcon = $("#select-concept").val()
+  var relcon_id = $("#concept-id-span").html()
+  var chtml = $("#stag-"+ptr+"-span").html()
+  $("#stag-"+ptr+"-span").html(chtml+"<span class='badge badge-dark' data-cid='"+relcon_id+"' title='"+relcon_id+"'>"+relcon+"</span>")
+  $("#stag-"+ptr).show();
+  $("#staging").show();
+  $("#select-concept").val("")
+  $("#concept-id-span").html("")
+  
 };

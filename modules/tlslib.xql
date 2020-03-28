@@ -11,10 +11,6 @@ xquery version "3.1";
 module namespace tlslib="http://hxwd.org/lib";
 
 import module namespace config="http://hxwd.org/config" at "config.xqm";
-(: import module namespace app="http://hxwd.org/app" at "app.xql"; :)
-(:
-import module namespace templates="http://exist-db.org/xquery/templates" ;
-:)
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
@@ -550,7 +546,7 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
       <div class="col-sm-2">
       {if ($dseg) then  
       (: currently the 0 is hardcoded -- do we need to make this customizable? :)
-       <a href="?location={tokenize($dseg/@xml:id, "_")[1]}">First</a>
+       <a href="?location={tokenize($dseg/@xml:id, "_")[1]}&amp;first=true">First</a>
        else ()}
        </div>
       <div class="col-sm-2">
@@ -983,6 +979,7 @@ declare function tlslib:move-word-to-conceptx($map as map(*)){
 };
 
 declare function tlslib:move-word-to-concept($map as map(*)){
+ util:declare-option("exist:serialize", "method=json media-type=application/json"),
  let $sc := collection($config:tls-data-root || "/concepts")//tei:div[@xml:id=$map?src-concept]
  ,$tc := collection($config:tls-data-root || "/concepts")//tei:div[@xml:id=$map?trg-concept]
  ,$tc-name := $tc/tei:head/text()
@@ -1015,16 +1012,57 @@ declare function tlslib:move-word-to-concept($map as map(*)){
      if ($a/tls:metadata/@concept-id) then 
      update replace $a/tls:metadata/@concept-id with $map?trg-concept else
      update insert attribute concept-id {$map?trg-concept}  into $a ,
-     tlslib:move-done($resp-uuid),
-     "OK! Moved " || $map?word || " to concept " || $tc-name || "." 
+     map {'uuid': $resp-uuid,  'mes' : "OK! Moved " || $map?word || " and "|| count($swl) ||" attribution(s) to concept " || $tc-name || ".'"} 
      )
  
  ) else "NO!! no words div in concept file"
- else "ERROR: "
+ else map{'uuid': (), 'mes' : "ERROR: Word already exists in concept " || $tc-name || "."}
 };
 
-declare function tlslib:move-done($uuid as xs:string){
-let $resp:=  tlslib:get-crypt-file("changes")//tei:respStmt[@xml:id=$uuid]
+declare function tlslib:move-done($map as map(*)){
+let $resp:=  tlslib:get-crypt-file("changes")//tei:respStmt[@xml:id=$map?uuid]/tei:resp
 return
      update insert attribute notAfter {current-dateTime()} into $resp
 };
+
+
+declare function tlslib:get-text-preview($loc as xs:string, $options as map(*)){
+
+let $seg := collection($config:tls-texts-root)//tei:seg[@xml:id = $loc],
+$context := if($options?context) then $options?context else 5,
+$format := if($options?format) then $options?format else 'tooltip',
+$title := $seg/ancestor::tei:TEI//tei:titleStmt/tei:title/text(),
+$pseg := $seg/preceding::tei:seg[fn:position() < $context],
+$fseg := $seg/following::tei:seg[fn:position() < $context],
+$dseg := ($pseg, $seg, $fseg),
+$textid := tokenize($loc, "_")[1],
+$tr := tlslib:get-translations($textid),
+$slot1 := if ($options?transl-id) then $options?transl-id else tlslib:get-settings()//tls:section[@type='slot-config']/tls:item[@textid=$textid and @slot='slot1']/@content,
+$transl := if ($slot1) then $tr($slot1) else ()
+(:$transl := collection("/db/apps/tls-data")//tei:bibl[@corresp="#"||$textid]/ancestor::tei:fileDesc//tei:editor[@role='translator']:)
+return
+if ($format = 'tooltip') then
+<div class="popover" role="tooltip">
+<div class="arrow"></div>
+<h3 class="popover-header">
+<a href="textview.html?location={$loc}">{$title}</a></h3>
+<div class="popover-body">
+    {
+for $d in $dseg 
+return 
+    (: we hardcode the translation slot to 1; need to make sure that 1 always has the one we want :)
+    tlslib:display-seg($d, map{"transl" : $transl[1], "ann": "false", "loc": $loc})
+    }
+</div>
+</div>
+else 
+<div class="col">
+    {
+for $d in $dseg 
+return 
+    (: we hardcode the translation slot to 1; need to make sure that 1 always has the one we want :)
+    tlslib:display-seg($d, map{"transl" : $transl[1], "ann": "false", "loc": $loc})
+    }
+</div>
+};
+

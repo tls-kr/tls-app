@@ -16,6 +16,7 @@ module namespace tlsapi="http://hxwd.org/tlsapi";
 import module namespace config="http://hxwd.org/config" at "../modules/config.xqm";
 import module namespace functx="http://www.functx.com" at "../modules/functx.xql";
 import module namespace tlslib="http://hxwd.org/lib" at "../modules/tlslib.xql";
+import module namespace dialogs="http://hxwd.org/dialogs" at "../modules/dialogs.xql"; 
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
@@ -201,6 +202,7 @@ tlsapi:save-swl-to-docs($line-id, $sense-id, $user, $currentword)
 declare function tlsapi:get-swl($rpara as map(*)){
 
 let $swl:= if ($rpara?uuid = "xx") then <empty/> else collection($config:tls-data-root|| "/notes")//tls:ann[@xml:id=$rpara?uuid]
+,$concept-defined := collection($config:tls-data-root || "/concepts")//tei:div[@xml:id=$rpara?concept-id]
 ,$para := map{
 "char" : if ($rpara?word = "xx") then $swl//tei:form/tei:orth/text() else $rpara?word,
 "line-id" : if ($rpara?line-id = "xx") then tokenize(substring($swl//tei:link/@target, 2), " #")[1] else $rpara?line-id,
@@ -219,7 +221,10 @@ let $swl:= if ($rpara?uuid = "xx") then <empty/> else collection($config:tls-dat
           ""
 }
 return
-tlsapi:swl-dialog($para, $rpara?type)
+if ($concept-defined) then 
+ tlsapi:swl-dialog($para, $rpara?type)
+else
+ dialogs:new-concept-dialog($para)
 };
 
 declare function tlsapi:swl-dialog($para as map(), $type as xs:string){
@@ -562,46 +567,6 @@ tlslib:format-swl($swl/ancestor::tls:ann, map{'type' : 'row'})}
 };
 
 
-declare function tlsapi:get-text-preview($loc as xs:string, $options as map(*)){
-
-let $seg := collection($config:tls-texts-root)//tei:seg[@xml:id = $loc],
-$context := if($options?context) then $options?context else 5,
-$format := if($options?format) then $options?format else 'tooltip',
-$title := $seg/ancestor::tei:TEI//tei:titleStmt/tei:title/text(),
-$pseg := $seg/preceding::tei:seg[fn:position() < $context],
-$fseg := $seg/following::tei:seg[fn:position() < $context],
-$dseg := ($pseg, $seg, $fseg),
-$textid := tokenize($loc, "_")[1],
-$tr := tlslib:get-translations($textid),
-$slot1 := if ($options?transl-id) then $options?transl-id else tlslib:get-settings()//tls:section[@type='slot-config']/tls:item[@textid=$textid and @slot='slot1']/@content,
-$transl := if ($slot1) then $tr($slot1) else ()
-(:$transl := collection("/db/apps/tls-data")//tei:bibl[@corresp="#"||$textid]/ancestor::tei:fileDesc//tei:editor[@role='translator']:)
-return
-if ($format = 'tooltip') then
-<div class="popover" role="tooltip">
-<div class="arrow"></div>
-<h3 class="popover-header">
-<a href="textview.html?location={$loc}">{$title}</a></h3>
-<div class="popover-body">
-    {
-for $d in $dseg 
-return 
-    (: we hardcode the translation slot to 1; need to make sure that 1 always has the one we want :)
-    tlslib:display-seg($d, map{"transl" : $transl[1], "ann": "false", "loc": $loc})
-    }
-</div>
-</div>
-else 
-<div class="col">
-    {
-for $d in $dseg 
-return 
-    (: we hardcode the translation slot to 1; need to make sure that 1 always has the one we want :)
-    tlslib:display-seg($d, map{"transl" : $transl[1], "ann": "false", "loc": $loc})
-    }
-</div>
-};
-
 (: Save a new SW to an existing concept.   UPDATE: word is also created if ncessessary :) 
 declare function tlsapi:save-newsw($rpara as map(*)) {
  let $user := sm:id()//sm:real/sm:username/text()
@@ -753,7 +718,7 @@ return
             <h6 class="font-weight-bold">Existing SWL <small>created by {$creator//tei:persName/text()}, {$date}</small></h6>
             <div class="card-text">{tlslib:format-swl($swl, map{'type': 'row', 'context' : 'review'})}</div>
             <h6 class="font-weight-bold mt-2">Context</h6>
-            {tlsapi:get-text-preview($seg-id, map{"context" : 3, "format" : "plain"})}
+            {tlslib:get-text-preview($seg-id, map{"context" : 3, "format" : "plain"})}
             <!--
             <h6 class="font-weight-bold mt-2">Other possibilities</h6>
             <div class="form-row">

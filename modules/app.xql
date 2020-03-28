@@ -29,9 +29,9 @@ declare variable $app:lmap := map{
 "sem-feat" : "Semantic Features",
 "word" : "Words",
 "char" : "Chars",
+"taxchar" : "Character analysis",
 "concept" : "Concepts",
 "definition" : "Definition",
-"taxchar" : "Character analysis",
 "notes" : "Criteria and general notes",
 "old-chinese-criteria" : "Old Chinese Criteria",
 "modern-chinese-criteria" : "Modern Chinese Criteria",
@@ -567,7 +567,8 @@ declare
     %templates:wrap
     %templates:default("prec", 15)
     %templates:default("foll", 15)     
-function app:textview($node as node()*, $model as map(*), $location as xs:string?, $mode as xs:string?, $prec as xs:int?, $foll as xs:int?)
+    %templates:default("first", "false")     
+function app:textview($node as node()*, $model as map(*), $location as xs:string?, $mode as xs:string?, $prec as xs:int?, $foll as xs:int?, $first as xs:string)
 {
     let $dataroot := $config:tls-data-root
     return
@@ -579,7 +580,19 @@ function app:textview($node as node()*, $model as map(*), $location as xs:string
       return
         tlslib:display-chunk($firstseg, $model, $prec, $foll)
      else
-      let $firstdiv := (collection($config:tls-texts-root)//tei:TEI[@xml:id=$location]//tei:body/tei:div)[1]
+      let $firstdiv := if ($first = 'true') then 
+      (collection($config:tls-texts-root)//tei:TEI[@xml:id=$location]//tei:body/tei:div)[1]
+            else
+        let $user := sm:id()//sm:real/sm:username/text(),
+         $visit := (for $v in collection($config:tls-user-root|| $user)//tei:list[@type="visits"]/tei:item
+            let $date := xs:dateTime($v/@modified),
+            $target := substring($v/@target, 2)
+            order by $date descending
+            where starts-with($target, $location)
+            return $v)[1]
+         return
+         if ($visit) then $visit else (collection($config:tls-texts-root)//tei:TEI[@xml:id=$location]//tei:body/tei:div)[1]
+
       let $targetseg := if ($firstdiv//tei:seg) then ($firstdiv//tei:seg)[1] else  ($firstdiv/following::tei:seg)[1] 
       return
        tlslib:display-chunk($targetseg, $model, 0, $prec + $foll)
