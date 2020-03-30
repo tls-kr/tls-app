@@ -593,8 +593,8 @@ declare function tlslib:swl-form-dialog($context as xs:string){
         <p> { if (sm:is-authenticated() and not(contains(sm:id()//sm:group, 'tls-test'))) then <span>
         <span class="badge badge-primary">Use</span> one of the following syntactic words (SW), 
         create a <span class="mb-2 badge badge-secondary">New SW</span> 
-         or add a new concept to the word here: 
-         <span class="btn badge badge-light ml-2" data-toggle="modal" onclick="show_new_concept()">Concept</span> 
+         ,add an <span class="font-weight-bold">existing</span> <span class="btn badge badge-primary ml-2" onclick="show_new_concept('existing')">Concept</span> to the word
+         or create a <span class="btn badge badge-primary ml-2" onclick="show_new_concept('new')">New Concept</span>.
          </span>
          else <span>You do not have permission to make attributions.</span>
          }

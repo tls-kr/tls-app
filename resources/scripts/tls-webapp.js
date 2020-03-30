@@ -232,14 +232,22 @@ function save_swl(){
 };
 
 // here we ask for a concept, to combine with a character to form a new SW and then assign a SWL
-function show_new_concept(){
+function show_new_concept(mode){
   var word = $("#swl-query-span").text();
   var line_id= $( "#swl-line-id-span" ).text();  
   var line = $( "#swl-line-text-span" ).text();
+  if (mode == "new"){
+      cname = prompt("Please enter the name of the new concept:", "");
+      if (cname){
+      var uri = "api/get_swl.xql?type=concept&word="+word+"&concept="+cname+"&line-id="+line_id+"&line="+line;      } else {var uri = null}
+  } else {
+      var uri = "api/get_swl.xql?type=concept&word="+word+"&mode="+mode+"&line-id="+line_id+"&line="+line;
+  }    
+  if (uri){
   $.ajax({
   type : "GET",
   dataType : "html",  
-  url : "api/get_swl.xql?type=concept&word="+word+"&line-id="+line_id+"&line="+line, 
+  url : uri, 
   success : function(resp){
   $('#remoteDialog').html(resp);
   console.log("Initializing autocomplete functions");
@@ -248,6 +256,7 @@ function show_new_concept(){
   $('#editSWLDialog').modal('show');
   }
   });
+  }
 };
 
 // save one sw OR one new word
@@ -1014,10 +1023,53 @@ function add_to_tax(){
   var relcon = $("#select-concept").val()
   var relcon_id = $("#concept-id-span").html()
   var chtml = $("#stag-"+ptr+"-span").html()
-  $("#stag-"+ptr+"-span").html(chtml+"<span class='badge badge-dark' data-cid='"+relcon_id+"' title='"+relcon_id+"'>"+relcon+"</span>")
+  $("#stag-"+ptr+"-span").html(chtml+"<span class='badge badge-dark staged' data-cid='"+relcon_id+"' title='"+relcon_id+"'>"+relcon+"</span>")
   $("#stag-"+ptr).show();
   $("#staging").show();
   $("#select-concept").val("")
   $("#concept-id-span").html("")
   
 };
+
+function reset_tax(){
+    $(".staging-span").html("")
+}
+
+function save_new_concept (uuid, concept, word){
+  var och_val = $("#name-och" ).val();
+  var zh_val = $("#name-zh" ).val();
+  var def_val = $("#input-def" ).val();
+  var crit_val = $("#input-crit" ).val();
+  var notes_val = $("#input-notes" ).val();
+  var ont_ant = $("#stag-antonymy-span .staged").map(function(){
+    if ($(this).attr("data-cid")){
+      return $(this).text() + "::" + $(this).attr("data-cid");
+    } else {return "yyy"} }).get().join("xxx");
+  var ont_hyp = $("#stag-hypernymy-span .staged").map(function(){
+    if ($(this).attr("data-cid")){
+      return $(this).text() + "::" + $(this).attr("data-cid");
+    } else {return "yyy"} }).get().join("xxx");
+  var ont_see = $("#stag-see-span .staged").map(function(){
+    if ($(this).attr("data-cid")){
+      return $(this).text() + "::" + $(this).attr("data-cid");
+    } else {return "yyy"} }).get().join("xxx");
+  var ont_tax = $("#stag-taxonymy-span .staged").map(function(){
+    if ($(this).attr("data-cid")){
+      return $(this).text() + "::" + $(this).attr("data-cid");
+    } else {return "yyy"} }).get().join("xxx");
+  var labels = $("#select-labels").val();
+  $.ajax({
+  type : "PUT",
+  dataType : "html",
+  url : "api/responder.xql?func=save-new-concept&concept_id="+uuid+"&concept="+concept+"&crit="+crit_val+"&def="+def_val+"&notes="+notes_val+"&ont_ant="+ont_ant+"&ont_hyp="+ont_hyp+"&ont_see="+ont_see+"&ont_tax="+ont_tax+"&labels="+labels+"&och="+och_val+"&zh="+zh_val+"&word="+word,
+  success : function(resp){
+    $( "#editSWLDialog" ).modal('hide');      
+    toastr.info("New concept " + concept + " saved.", "HXWD says:");
+  },
+  error : function(resp){
+  console.log(resp);
+    alert("PROBLEM: "+resp.statusText + "\n " + resp.responseText);
+  }
+  });    
+};
+

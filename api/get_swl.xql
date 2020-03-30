@@ -20,6 +20,7 @@ declare option output:media-type "text/html";
 let $rpara := map {"uuid" : request:get-parameter("uid", "xx"),
 "type" : request:get-parameter("type", "swl"),
 "word" : request:get-parameter("word", "xx"),
+"mode" : request:get-parameter("mode", "new"),
 "wid" : request:get-parameter("wid", "xx"),
 "py" : request:get-parameter("py", "xx"),
 "line-id" : request:get-parameter("line-id", "xx"),

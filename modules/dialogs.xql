@@ -48,10 +48,20 @@ declare function dialogs:new-concept-dialog($options as map(*)){
    <div id="editSWLDialog" class="modal" tabindex="-1" role="dialog" style="display: none;">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
-            <div class="modal-header"><h5>Define a new concept: {$name}</h5>
+            <div class="modal-header"><h5>Define a new concept: <span class="font-weight-bold">{$name}</span></h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close" title="Close">x</button>
             </div>
             <div class="modal-body">
+            <div class="form-row">
+              <div id="input-def-group" class="col-md-6">
+                 <label for="name-och" class="font-weight-bold">Old Chinese name:</label>
+                 <input id="name-och" class="form-control" required="true" value=""></input>
+              </div>
+              <div id="input-def-group" class="col-md-6">
+                 <label for="name-zh" class="font-weight-bold">Modern Chinese name:</label>
+                 <input id="name-zh" class="form-control" required="true" value=""></input>
+              </div>
+            </div>
             <div class="form-row">
               <div id="input-def-group" class="col-md-6">
                     <label for="input-def" class="font-weight-bold">Definition </label>
@@ -60,16 +70,16 @@ declare function dialogs:new-concept-dialog($options as map(*)){
               <div id="select-name-group" class="form-group ui-widget col-md-6">
                  <label for="select-name" class="font-weight-bold">Alternate labels</label>
                  <small class="text-muted"><br/>Comma separated list of other names for this concept</small>
-                 <input id="select-name" class="form-control" required="true" value="{$name}"></input>
+                 <input id="select-labels" class="form-control" required="true" value=""></input>
                  <span id="name-id-span" style="display:none;">{$uuid}</span>
               </div>
             </div>
-            <h6 class="font-weight-bold">Place of this concept within the ontology</h6>
+            <h6 class="font-weight-bold">Place this concept within the ontology</h6>
             <div id="staging" style="display:none;" class="form-row">
-              <div id="stag-taxonymy" class="col-md-3"><label class="font-weight-bold mr-3" for="stag-taxonymy">Taxonymy</label><span id="stag-taxonymy-span"></span></div>
-              <div id="stag-antonymy"  class="col-md-3"><label  class="font-weight-bold  mr-3" for="stag-antonymy">Antonymy</label><span id="stag-antonymy-span"></span></div>
-              <div id="stag-hypernymy"  class="col-md-3"><label  class="font-weight-bold  mr-3" for="stag-hypernymy">Kind Of</label><span id="stag-hypernymy-span"></span></div>
-              <div id="stag-see"  class="col-md-3"><label  class="font-weight-bold  mr-3" for="stag-see">See also</label><span id="stag-see-span"></span></div>
+              <div id="stag-taxonymy" class="col-md-3"><label class="font-weight-bold mr-3" for="stag-taxonymy">Taxonymy</label><span id="stag-taxonymy-span" class="staging-span"></span></div>
+              <div id="stag-antonymy"  class="col-md-3"><label  class="font-weight-bold  mr-3" for="stag-antonymy">Antonymy</label><span id="stag-antonymy-span"  class="staging-span"></span></div>
+              <div id="stag-hypernymy"  class="col-md-3"><label  class="font-weight-bold  mr-3" for="stag-hypernymy">Kind Of</label><span id="stag-hypernymy-span"  class="staging-span"></span></div>
+              <div id="stag-see"  class="col-md-3"><label  class="font-weight-bold  mr-3" for="stag-see">See also</label><span id="stag-see-span" class="staging-span"></span></div>
             </div>
             <div class="form-row">
               <div id="select-tax-group" class="form-group col-md-4">
@@ -93,6 +103,7 @@ declare function dialogs:new-concept-dialog($options as map(*)){
               <div class="form-group col-md-4">
                 <label>Press here to add the concept</label>
                 <button class="btn btn-primary" type="button" onclick="add_to_tax()" id="add-to-pointers">Add to ontology</button>
+                <button class="btn btn-secondary" type="button" onclick="reset_tax()" title="Remove the selected concepts from the ontology and start fresh" id="reset-to-pointers">Reset</button>
               </div>   
               </div>  
             <div class="form-row">
@@ -101,14 +112,14 @@ declare function dialogs:new-concept-dialog($options as map(*)){
                     <textarea id="input-crit" class="form-control"></textarea>                   
               </div>
               <div id="input-notes-group" class="col-md-6">
-                    <label for="input-notes" class="font-weight-bold">Notes</label>
+                    <label for="input-notes" class="font-weight-bold">Modern Chinese Criteria &amp; other notes</label>
                     <textarea id="input-notes" class="form-control"></textarea>                   
               </div>
             </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="save_new_concept('{$uuid}')">Save New Concept</button>
+                <button type="button" class="btn btn-primary" onclick="save_new_concept('{$uuid}', '{$name}', '{$options?char}')">Save New Concept</button>
            </div>
          </div>
      </div>

@@ -221,9 +221,10 @@ let $swl:= if ($rpara?uuid = "xx") then <empty/> else collection($config:tls-dat
           ""
 }
 return
-if ($concept-defined) then 
+if ($concept-defined or $rpara?mode="existing") then 
  tlsapi:swl-dialog($para, $rpara?type)
 else
+ (: TODO: first check if concept exists, maybe with another name? --> labels :)
  dialogs:new-concept-dialog($para)
 };
 
@@ -1289,7 +1290,83 @@ declare function tlsapi:reload-selector($map as map(*)){
 };
 
 declare function tlsapi:save-new-concept($map as map(*)){
-()
+let $ont-ant := if ($map?ont_ant) then 
+  <list type="antonymy" xmlns="http://www.tei-c.org/ns/1.0" >
+  {for $e in tokenize($map?ont_ant, "xxx")
+   let $f := tokenize($e, "::")
+   return 
+   <item xmlns="http://www.tei-c.org/ns/1.0"><ref target="#{$f[2]}">{$f[1]}</ref></item>
+  }
+  </list>
+  else (),
+ $ont-hyp := if ($map?ont_hyp) then 
+  <list type="hypernymy" xmlns="http://www.tei-c.org/ns/1.0" >
+  {for $e in tokenize($map?ont_hyp, "xxx")
+   let $f := tokenize($e, "::")
+   return 
+   <item xmlns="http://www.tei-c.org/ns/1.0"><ref target="#{$f[2]}">{$f[1]}</ref></item>
+  }
+  </list>
+  else (),
+ $ont-see := if ($map?ont_see) then 
+  <list type="see" xmlns="http://www.tei-c.org/ns/1.0" >
+  {for $e in tokenize($map?ont_see, "xxx")
+   let $f := tokenize($e, "::")
+   return 
+   <item xmlns="http://www.tei-c.org/ns/1.0"><ref target="#{$f[2]}">{$f[1]}</ref></item>
+  }
+  </list>
+  else (),
+ $ont-tax := if ($map?ont_tax) then 
+  <list type="taxonymy" xmlns="http://www.tei-c.org/ns/1.0" >
+  {for $e in tokenize($map?ont_tax, "xxx")
+   let $f := tokenize($e, "::")
+   return 
+   <item xmlns="http://www.tei-c.org/ns/1.0"><ref target="#{$f[2]}">{$f[1]}</ref></item>
+  }
+  </list>
+  else (),
+  $labels := if ($map?labels) then 
+  <list type="altnames" xmlns="http://www.tei-c.org/ns/1.0" >
+  {for $l in tokenize($map?labels, ",")
+  return 
+   <item xmlns="http://www.tei-c.org/ns/1.0">{normalize-space($l)}</item>
+  }
+  </list> else (),
+ $och := if ($map?och) then <item xmlns="http://www.tei-c.org/ns/1.0" xml:lang="och">{$map?och}</item> else (),
+ $zh := if ($map?zh) then <item xmlns="http://www.tei-c.org/ns/1.0" xml:lang="zh">{$map?zh}</item> else ()
+
+  (: <?xml-model href="../schema/tls.rnc" type="application/relax-ng-compact-syntax"?>, :)
+let $new-concept := (
+<div xmlns="http://www.tei-c.org/ns/1.0" xmlns:mods="http://www.loc.gov/mods/v3" xmlns:tls="http://hxwd.org/ns/1.0" xmlns:xlink="http://www.w3.org/1999/xlink" type="concept" xml:id="{$map?concept_id}">
+<head>{$map?concept}</head>{$labels}
+<list type="translations">{$och,$zh}</list>
+<div type="definition">
+<p>{$map?def}</p></div>
+<div type="notes">    
+ <div type="old-chinese-criteria"><p>{$map?crit}</p></div>
+ <div type="modern-chinese-criteria"><p>{$map?notes}</p></div>
+</div>    
+<div type="pointers">
+{$ont-ant,$ont-hyp,$ont-see,$ont-tax}
+</div>
+<div type="source-references">
+        <listBibl>
+        </listBibl>
+    </div>
+<div type="words">
+<entry type="word" xml:id="uuid-{util:uuid()}">
+<form><orth>{$map?word}</orth>
+</form>
+</entry>
+</div>
+</div>)
+let $uri := xmldb:store($config:tls-data-root || "/concepts", $map?concept||".xml", $new-concept)
+return (
+    sm:chmod(xs:anyURI($uri), "rwxrwxr--"),
+    sm:chown(xs:anyURI($uri), "tls"),
+    sm:chgrp(xs:anyURI($uri), "tls-user")
+    )
 };
 
 
