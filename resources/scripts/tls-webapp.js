@@ -295,9 +295,22 @@ function save_newsw(){
     var concept_id = $("#concept-id-span" ).text();
     var def_val = $("#input-def" ).val();
   if (synfunc_id.length == 0){
-          alert("No syntactic function defined. Can not save SW to concept.");
-          $("#select-synfunc" ).val("");
-      }
+          var ndef = prompt("No syntactic function '" + synfunc_val + "' defined.  If you want to define a new one, please enter the definition here:") 
+          if (ndef) {
+            $.ajax({
+              type: "PUT",
+              datatype : "json",
+              url : "api/save_sf.xql?sf_val="+synfunc_val+"&sf_id=xxx&def="+ndef,
+              success : function(resp){
+                toastr.info("New syntactic function has been saved.", "HXWD says:");
+                alert("Please re-enter and select the new syntactic function.");   
+              }
+          })
+          } else {
+              $("#select-synfunc" ).val("");          
+          }
+//          alert("No syntactic function defined. Can not save SW to concept.");
+  }
   else if(def_val.length < 1) {
       alert("Newly defined SW need a definition. Can not save SW to concept.")
       $("#input-def").val("");
