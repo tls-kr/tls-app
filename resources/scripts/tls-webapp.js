@@ -119,7 +119,7 @@ function get_sf(senseid){
   $.ajax({
   type : "GET",
   dataType : "html",
-  url : "api/responder.xql?func=get_sf&senseid=" + senseid, 
+  url : "api/get_sf.xql?senseid=" + senseid, 
   success : function(resp){
   $('#remoteDialog').html(resp);
   initialize_sf_autocomplete();  
