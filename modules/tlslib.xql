@@ -760,7 +760,7 @@ declare function tlslib:display-sense($sw as node(), $count as xs:int, $display-
     $sm := $sw//tls:sem-feat/text(),
     $user := sm:id()//sm:real/sm:username/text(),
     $def := $sw//tei:def/text(),
-    $char := $sw/preceding-sibling::tei:form/tei:orth/text()
+    $char := $sw/preceding-sibling::tei:form[1]/tei:orth/text()
     return
     <li id="{$id}">
     {if ($display-word) then <span class="ml-2">{$char}</span> else ()}
@@ -778,7 +778,8 @@ declare function tlslib:display-sense($sw as node(), $count as xs:int, $display-
       <img class="icon-small" src="resources/icons/open-iconic-master/svg/magnifying-glass.svg"/>
       </button>,
       if ($count = 0) then
-      tlslib:format-button("delete_word_from_concept('"|| $id || "')", "Delete the syntactic word "|| $sf || ".", "open-iconic-master/svg/x.svg", "", "", "tls-editor") else ()
+      tlslib:format-button("delete_word_from_concept('"|| $id || "')", "Delete the syntactic word "|| $sf || ".", "open-iconic-master/svg/x.svg", "", "", "tls-editor") else 
+      tlslib:format-button("move_word('"|| $char || "', '"|| $id ||"', '"||$count||"')", "Move the SW  '"|| $sf || " including "|| $count ||"attribution(s) to a different concept.", "open-iconic-master/svg/move.svg", "", "", "tls-editor")       
       }
       <div id="{$id}-resp" class="collapse container"></div>
       <div id="{$id}-resp1" class="collapse container"></div>
@@ -974,12 +975,15 @@ return $doc
  @param $src-concept: uuid of concept where the word is currently defined
  @param $trg-concept: uuid of concept where the words should be moved to, must exist and the word must not exist there already
 :)
-declare function tlslib:move-word-to-conceptx($map as map(*)){
-"OK, Dummy"
-};
-
 declare function tlslib:move-word-to-concept($map as map(*)){
  util:declare-option("exist:serialize", "method=json media-type=application/json"),
+if ($map?type = "word") then 
+tlslib:move-entry-to-concept($map)
+else 
+tlslib:move-sw-to-concept($map)
+};
+
+declare function tlslib:move-entry-to-concept($map as map(*)){
  let $sc := collection($config:tls-data-root || "/concepts")//tei:div[@xml:id=$map?src-concept]
  ,$tc := collection($config:tls-data-root || "/concepts")//tei:div[@xml:id=$map?trg-concept]
  ,$tc-name := $tc/tei:head/text()
@@ -1017,6 +1021,60 @@ declare function tlslib:move-word-to-concept($map as map(*)){
  
  ) else "NO!! no words div in concept file"
  else map{'uuid': (), 'mes' : "ERROR: Word already exists in concept " || $tc-name || "."}
+};
+
+(: actually, move  SW , depending on $map?type  :)
+declare function tlslib:move-sw-to-concept($map as map(*)){
+ let $sc := collection($config:tls-data-root || "/concepts")//tei:div[@xml:id=$map?src-concept]
+ ,$tc := collection($config:tls-data-root || "/concepts")//tei:div[@xml:id=$map?trg-concept]
+ ,$tc-name := $tc/tei:head/text()
+ ,$sc-name := $sc/tei:head/text()
+ ,$tw := $tc//tei:div[@type="words"]
+ ,$sw := $sc//tei:orth[. = $map?word]/ancestor::tei:entry
+ ,$wid :=  "uuid-" || util:uuid()
+ ,$scsw := $sc//tei:sense[@xml:id=$map?wid]
+ ,$swl := for $a in collection($config:tls-data-root||"/notes")//tls:ann[@concept-id=$map?src-concept] 
+         let $wx :=  $map?wid = substring($a/tei:sense/@corresp, 2)
+         where ($wx)
+        return $a
+  (: rec :)      
+ ,$resp-uuid := "uuid-" || util:uuid()       
+ ,$user := sm:id()//sm:real/sm:username/text()
+ ,$cm := substring(string(current-date()), 1, 7)
+ ,$rdoc := tlslib:get-crypt-file("changes")
+ ,$rec :=  <respStmt xml:id="{$resp-uuid}" xmlns="http://www.tei-c.org/ns/1.0" resp="#{$user}"><name>{$user}</name><resp notBefore="{current-dateTime()}">started moving SW {$scsw} of {$map?word} and {count($swl)} attribution(s) from 
+ <ref corresp="#{$map?src-concept}">{$sc-name}</ref>to <ref corresp="#{$map?trg-concept}">{$tc-name}</ref>. </resp></respStmt>
+ , $tce := <entry  xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$wid}">
+       {$sw//tei:form}
+       {$scsw}
+     </entry>
+ return     
+ (
+ if (not($tw)) then "NO!! no words div in concept file" else 
+  (: if ($scsw) then $scsw else :)
+   if ($sc and count($tc//tei:orth[. = $map?word]) = 0) then
+      (update insert $tce into $tw,
+       update delete $scsw)
+     else 
+   (: word exists already in tc, we just move the sense over :)
+    let $te := $tw//tei:orth[. = $map?word]/ancestor::tei:entry
+    return 
+    (update insert $scsw into $te
+     ,update delete $scsw )
+    (: and now, finally, we update the swls :) 
+    ,
+     for $a in $swl 
+       return
+     (
+     if ($a/tls:metadata/@concept) then 
+     update replace $a/tls:metadata/@concept with $tc-name else
+     update insert attribute concept {$tc-name}  into $a ,
+     if ($a/tls:metadata/@concept-id) then 
+     update replace $a/tls:metadata/@concept-id with $map?trg-concept else
+     update insert attribute concept-id {$map?trg-concept}  into $a) 
+     ,
+     map {'uuid': $resp-uuid,  'mes' : "OK! Moved " || $map?word || " and "|| count($swl) ||" attribution(s) to concept " || $tc-name || ".'"} 
+  )   
 };
 
 declare function tlslib:move-done($map as map(*)){

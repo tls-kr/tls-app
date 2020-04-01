@@ -153,8 +153,9 @@ function app:browse($node as node()*, $model as map(*), $type as xs:string?, $fi
     </tr></thead><tbody class="table-striped">{
     for $h in $hits
     let $n := $h/tei:head/text()
-    ,$id := $h/@xml:id,
-    $d := $h/tei:div[@type="definition"]
+    ,$id := $h/@xml:id
+    ,$edit := sm:id()//sm:groups/sm:group[. = "tls-editor"]
+    ,$d := $h/tei:div[@type="definition"]
     ,$def := if ($type = 'concept') then ($d/tei:p, <small>{$d/tei:note}</small>) else ($h/tei:p, <small>{$h/tei:note}</small>)
     order by $n
     return
@@ -165,7 +166,8 @@ function app:browse($node as node()*, $model as map(*), $type as xs:string?, $fi
         case  "concept" return <a href="concept.html?uuid={$id}">{$n}</a>
         default return <a onclick="show_use_of('{$type}', '{$id}')">{$n}</a>
     }</td>
-    <td>{$def}</td>
+    <td>{for $p in $def return
+         $p }</td>
     <td><ul id="{$id}-resp"/></td>
     </tr>)
     }</tbody></table></div>
@@ -925,7 +927,7 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
     {if ($wc = 0) then
     tlslib:format-button("delete_word_from_concept('"|| $entry-id || "', 'word')", "Delete the word "|| $zi || ", including all syntactic words.", "open-iconic-master/svg/x.svg", "", "", "tls-editor") else 
     (: move :)
-    tlslib:format-button("move_word('"|| $zi || "', '"|| $entry-id ||"', '"||$wc||"')", "Move the word "|| $zi || ", including all syntactic words to another concept.", "open-iconic-master/svg/move.svg", "", "", "tls-editor")
+    tlslib:format-button("move_word('"|| $zi || "', '"|| $entry-id ||"', '"||$wc||"', 'word')", "Move the word "|| $zi || ", including all syntactic words to another concept.", "open-iconic-master/svg/move.svg", "", "", "tls-editor")
     }
     </h5>
     {if ($def) then <p class="ml-4">{$def}</p> else ()}

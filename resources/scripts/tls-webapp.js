@@ -698,11 +698,11 @@ function edit_swl(uid){
   });
 };
 
-function move_word(word, wid, count){
+function move_word(word, wid, count, type){
   $.ajax({
   type : "GET",
   dataType : "html",  
-  url : "api/responder.xql?func=dialogs:move-word&word=" + word+"&wid="+wid+"&count="+count, 
+  url : "api/responder.xql?func=dialogs:move-word&word=" + word+"&wid="+wid+"&count="+count+"&type="+type, 
   success : function(resp){
   $('#remoteDialog').html(resp);
   console.log("Initializing autocomplete functions");
@@ -713,7 +713,7 @@ function move_word(word, wid, count){
   });
 };
 
-function do_move_word(word, wid){
+function do_move_word(word, wid, type){
   var sc = $("#concept-id").attr("data-id");
   var tc = $("#concept-id-span").text();
   if (tc.length < 1) {
@@ -723,11 +723,11 @@ function do_move_word(word, wid){
   $.ajax({
   type : "GET",
   dataType : "json",  
-  url : "api/responder.xql?func=tlslib:move-word-to-concept&word=" + word + "&src-concept="+sc+"&trg-concept="+tc, 
+  url : "api/responder.xql?func=tlslib:move-word-to-concept&word=" + word + "&src-concept="+sc+"&trg-concept="+tc+"&type="+type+"&wid="+wid, 
   success : function(resp){
      console.log(resp.uuid, resp.mes)
      if (resp.uuid) {
-       $('#'+wid).html("");
+       $('#'+wid).parent().html("");
        toastr.info(resp.mes, "HXWD says:");
        move_word_done(resp.uuid, word);
      } else {

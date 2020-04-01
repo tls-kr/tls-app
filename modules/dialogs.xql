@@ -238,7 +238,7 @@ declare function dialogs:move-word($map as map(*)){
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="do_move_word('{$map?word}', '{$map?wid}')">Move</button>
+                <button type="button" class="btn btn-primary" onclick="do_move_word('{$map?word}', '{$map?wid}', '{$map?type}')">Move</button>
            </div>
          </div>
      </div>
