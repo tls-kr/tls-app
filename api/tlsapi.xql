@@ -1093,11 +1093,13 @@ let $res := for $r in util:eval($str)
 return
 
 if (count($res) > 0) then
-(<li>Found {count($res)}</li>, 
+(<li>Found {count($res)} attributions</li>, 
 for $r in subsequence($res, 1, 10)
   let $sw := $r/ancestor::tei:sense
+  , $cr := $sw/@corresp
+  group by $cr
   return
-  tlslib:display-sense($sw, -1, true())
+  tlslib:display-sense($sw[1], -1, true())
 )  
 else 
 
@@ -1106,6 +1108,7 @@ concat("No usage examples found for key: ", $key, " type: ", $type )
 };
 
 (: safe_sf.xql tlsapi:save-sf($sense-id, $synfunc-id, $def) :)
+
 declare function tlsapi:save-sf($sense-id as xs:string, $synfunc-id as xs:string, $synfunc-val as xs:string, $def as xs:string){
 let $newsf-id := if ($synfunc-id = 'xxx') then (
   tlslib:new-syn-func ($synfunc-val, $def)
@@ -1369,4 +1372,38 @@ return (
     )
 };
 
+declare function tlsapi:save-sf-def($map as map(*)){
+let $sfdoc := doc($config:tls-data-root || "/core/syntactic-functions.xml")
+let $sf := $sfdoc//tei:div[@xml:id=$map?id],
+$head := $sf/tei:head,
+$firstp := $sf/tei:p,
+$user := sm:id()//sm:real/sm:username/text(),
+$def := <p xmlns="http://www.tei-c.org/ns/1.0" resp="#{$user}" modified="{current-dateTime()}">{$map?def}</p>
+return
+ (if ($firstp) then update delete $firstp else (),
+ update insert $def following $head
+ )
+};
 
+declare function tlsapi:do-delete-sf($map as map(*)){
+let $sfdoc := if ($map?type = "syn-func") 
+    then doc($config:tls-data-root || "/core/syntactic-functions.xml") 
+    else doc($config:tls-data-root || "/core/semantic-features.xml"),
+  $sf := $sfdoc//tei:div[@xml:id=$map?uid]
+return
+  if ($sf) then update delete $sf 
+   else if ($map?ok = "true") then 
+   (: yes we delete the sf and all dependents :)
+    (update delete $sf,
+      let $key := "#" || $map?uid
+         ,$str := 'collection($config:tls-data-root||"/notes")//tls:' || $map?type || '[@corresp ="' || $key || '"]'
+      for $r in util:eval($str)
+        let $sw := $r/ancestor::tls:ann
+        return update delete $sw
+    )
+else () 
+};
+
+declare function tlsapi:stub($map as map(*)){
+()
+};

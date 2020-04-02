@@ -773,13 +773,16 @@ declare function tlslib:display-sense($sw as node(), $count as xs:int, $display-
           {if ($count = 1) then " Attribution" else  " Attributions" }
       </button>
      {if ($user = "guest") then () else 
+      if ($count != -1 and not($display-word)) then
      <button title="Search for this word" class="btn badge btn-outline-success ml-2" type="button" 
      data-toggle="collapse" data-target="#{$id}-resp1" onclick="search_and_att('{$id}')">
       <img class="icon-small" src="resources/icons/open-iconic-master/svg/magnifying-glass.svg"/>
-      </button>,
+      </button> else (),
       if ($count = 0) then
       tlslib:format-button("delete_word_from_concept('"|| $id || "')", "Delete the syntactic word "|| $sf || ".", "open-iconic-master/svg/x.svg", "", "", "tls-editor") else 
+      if ($count > 0) then
       tlslib:format-button("move_word('"|| $char || "', '"|| $id ||"', '"||$count||"')", "Move the SW  '"|| $sf || " including "|| $count ||"attribution(s) to a different concept.", "open-iconic-master/svg/move.svg", "", "", "tls-editor")       
+      else ()
       }
       <div id="{$id}-resp" class="collapse container"></div>
       <div id="{$id}-resp1" class="collapse container"></div>
@@ -795,14 +798,17 @@ declare function tlslib:display-sense($sw as node(), $count as xs:int, $display-
  
 declare function tlslib:new-syn-func ($sf as xs:string, $def as xs:string){
  let $uuid := concat("uuid-", util:uuid()),
+ $sfdoc := doc($config:tls-data-root || "/core/syntactic-functions.xml"),
+ $sf := normalize-space($sf),
+ $sfexist := $sfdoc//tei:head[. = $sf],
  $user := sm:id()//sm:real/sm:username/text(),
 $el := <div xmlns:tls="http://hxwd.org/ns/1.0" xmlns="http://www.tei-c.org/ns/1.0" type="syn-func" xml:id="{$uuid}" resp="#{$user}" tls:created="{current-dateTime()}">
 <head>{$sf}</head>
 <p>{$def}</p>
 </div>,
-$last := doc($config:tls-data-root || "/core/syntactic-functions.xml")//tei:div[@type="syn-func"][last()]
-,$ret := update insert $el following $last 
-return $uuid
+$last := $sfdoc//tei:div[@type="syn-func"][last()]
+,$ret := if (not($sfexist)) then update insert $el following $last else ()
+return if ($sfexist) then $sfexist/parent::tei:div/@xml:id else $uuid
  };
  
  (:~

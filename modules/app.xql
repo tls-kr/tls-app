@@ -147,7 +147,7 @@ function app:browse($node as node()*, $model as map(*), $type as xs:string?, $fi
     </div>
     <div class="card-body"><table class="table">
     <thead><tr>
-    <th scope="col">Abbreviation</th>
+    <th scope="col">Formula</th>
     <th scope="col">Definition</th>
     <th scope="col">Remarks</th>    
     </tr></thead><tbody class="table-striped">{
@@ -164,10 +164,12 @@ function app:browse($node as node()*, $model as map(*), $type as xs:string?, $fi
     <td>{
     switch ($type) 
         case  "concept" return <a href="concept.html?uuid={$id}">{$n}</a>
-        default return <a onclick="show_use_of('{$type}', '{$id}')">{$n}</a>
+        default return (tlslib:format-button("delete_sf('"||$id||"', '"||$type||"')", "Delete this syntactic definition.", "open-iconic-master/svg/x.svg", "", "", "tls-editor"),
+        <a id="{$id}-abbr" onclick="show_use_of('{$type}', '{$id}')">{$n}</a>)
     }</td>
-    <td>{for $p in $def return
-         $p }</td>
+    <td><p id="{$id}-sf" class="sf" contenteditable="{if ($edit) then 'true' else 'false'}">
+        {string-join(for $p in $def return
+         $p/text(), " ")}&#160;</p></td>
     <td><ul id="{$id}-resp"/></td>
     </tr>)
     }</tbody></table></div>

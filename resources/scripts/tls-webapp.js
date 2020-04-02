@@ -417,7 +417,7 @@ function get_sw(sel, xid, line){
    $( "#swl-query" ).val( sel);
    $( "#swl-query-span" ).html(sel);
 //   $( "#swl-form" ).removeAttr("style");
-   $( "#swl-form" ).css("max-height", dh - 65);
+   $( "#swl-form" ).css("max-height", dh - 51);
    $( "#swl-form" ).css("max-width", new_width - 10);
    $( "#swl-form" ).show();
    $( "#swl-form" ).scrollTop( 0 );
@@ -727,7 +727,7 @@ function do_move_word(word, wid, type){
   success : function(resp){
      console.log(resp.uuid, resp.mes)
      if (resp.uuid) {
-       $('#'+wid).parent().html("");
+       $('#'+wid).html("");
        toastr.info(resp.mes, "HXWD says:");
        move_word_done(resp.uuid, word);
      } else {
@@ -843,6 +843,35 @@ function save_swl_review(uid){
    $('#review-swl-dialog').modal('hide');
 };
 
+$( ".sf").keyup(function ( event ) {
+}).keydown( function( event ){
+  if ( event.which == 9 ) {
+    var sfid = $(this).attr('id');
+    //var def = document.getElementById( sfid ).innerText;
+    var sf = $(this).text()
+    console.log("tab", $(this).data('before') , "h", sf)
+    if ($(this).data('before') !== sf){    
+        save_sf_def (sfid.slice(0, -3), sf)
+        $(this).data('before', sf)
+    }}
+    });
+        
+function save_sf_def (sfid, def){
+  console.log(sfid)
+  $.ajax({
+  type : "PUT",
+  dataType : "html",
+  url : "api/responder.xql?func=save-sf-def&id="+sfid+"&def="+def,
+  success : function(resp){
+    toastr.info("Modification for definition saved.", "HXWD says:");
+  },
+  error : function(resp){
+  console.log(resp);
+    alert("PROBLEM: "+resp.statusText + "\n " + resp.responseText);
+  }
+  });    
+};
+
 
 // for the translations (class "tr"), we save on keyup, so we check for our event
 $( ".tr" ).keyup(function( event ) {
@@ -852,16 +881,17 @@ $( ".tr" ).keyup(function( event ) {
     var line = document.getElementById( lineid ).innerText;
   if (event.ctrlKey == true){
     //var hlineid = lineid.split(".").join("\\.")
-    event.preventDefault();
     console.log("key: ", event.which)
     if (event.which > 48 & event.which < 58) {
+     event.preventDefault();
       //var line = $("#"+hlineid).text()
       var pos = event.which - 49
       var sel = line.slice(pos,pos+1)
       get_sw(sel, lineid, line)
     } else
     if (event.which == 59){
-      var sw = document.getElementById( lineid + "-swl" ).parentNode;
+     event.preventDefault();
+     var sw = document.getElementById( lineid + "-swl" ).parentNode;
       if (sw.style.display === "block") {
           sw.style.display = "none";          
       } else {
@@ -1086,3 +1116,31 @@ function save_new_concept (uuid, concept, word){
   });    
 };
 
+
+function delete_sf(uid, type){
+    var abbr = $("#"+uid+'-abbr').text()
+    $.get("api/show_use_of.xql?uid=" + uid + "&type=" + type, "html", 
+    function(resp){
+        if (resp.startsWith("No usage")){
+        console.log(uid, resp)
+        do_delete_sf(uid, type, false);
+        } else {
+         $('#'+uid+'-resp').html(resp)
+         var ok=confirm("'"+ abbr +"' has been used in attributions, do you want to proceed? All attributions will be deleted as well.")
+         if (ok) {
+         console.log("OK", ok)
+         do_delete_sf(uid, type, ok)
+         } else {
+             //change ??
+         }
+        }
+    })
+    toastr.info("Checking for usage, please wait.", "HXWD says:");
+}
+
+function do_delete_sf(uid, type, confirmed){
+    $.get("api/responder.xql?func=do-delete-sf&uid=" + uid+"&ok="+confirmed+"&type="+type, "html", function(resp){
+         toastr.info("Syntactic function entry had been deleted.", "HXWD says:");
+         $('#'+uid).html("")
+    })
+}
