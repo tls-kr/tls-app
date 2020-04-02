@@ -889,7 +889,7 @@ $( ".tr" ).keyup(function( event ) {
       var sel = line.slice(pos,pos+1)
       get_sw(sel, lineid, line)
     } else
-    if (event.which == 59 || event.which == 188){
+    if (event.which == 191 || event.which == 173){
      event.preventDefault();
      var sw = document.getElementById( lineid + "-swl" ).parentNode;
       if (sw.style.display === "block") {
@@ -898,6 +898,18 @@ $( ".tr" ).keyup(function( event ) {
           sw.style.display = "block";
       }
 //      console.log(sw);      
+    } else if (event.which == 188 || event.which == 190){
+        event.preventDefault();
+        var sel = $( "#swl-query-span" ).text();
+        var ix = line.indexOf(sel)
+        if (event.which == 188){
+            var ex = -1
+        } else {
+            var ex = +1
+        }   
+        var newsel = line.slice(ix, ix+sel.length+ex);
+        get_sw(newsel, lineid, line);
+      //  console.log("IX", newsel);
     }
    }
 // this is disabled for the moment. procline.xql does not exist
