@@ -889,7 +889,7 @@ $( ".tr" ).keyup(function( event ) {
       var sel = line.slice(pos,pos+1)
       get_sw(sel, lineid, line)
     } else
-    if (event.which == 59){
+    if (event.which == 59 || event.which == 188){
      event.preventDefault();
      var sw = document.getElementById( lineid + "-swl" ).parentNode;
       if (sw.style.display === "block") {
