@@ -437,7 +437,7 @@ declare function tlslib:generate-toc($node){
  if ($node/tei:head) then
   let $locseg := if ($node//tei:seg/@xml:id) then ($node//tei:seg/@xml:id)[1] else $node/following::tei:seg[1]/@xml:id
   return 
-    <a class="dropdown-item" title="{$locseg}" href="textview.html?location={$locseg}&amp;prec=0&amp;foll=30">{$node/tei:head/text()}</a>
+    <a class="dropdown-item" title="{$locseg}" href="textview.html?location={$locseg}&amp;prec=0&amp;foll=30">{$node/tei:head//text()}</a>
   else (),
  for $d in $node/child::tei:div
  return tlslib:generate-toc($d)
@@ -593,8 +593,8 @@ declare function tlslib:swl-form-dialog($context as xs:string){
         <p> { if (sm:is-authenticated() and not(contains(sm:id()//sm:group, 'tls-test'))) then <span>
         <span class="badge badge-primary">Use</span> one of the following syntactic words (SW), 
         create a <span class="mb-2 badge badge-secondary">New SW</span> 
-         ,add an <span class="font-weight-bold">existing</span> <span class="btn badge badge-primary ml-2" onclick="show_new_concept('existing')">Concept</span> to the word
-         or create a <span class="btn badge badge-primary ml-2" onclick="show_new_concept('new')">New Concept</span>.
+         ,add an <span class="font-weight-bold">existing</span> <span class="btn badge badge-primary ml-2" onclick="show_new_concept('existing', '')">Concept</span> to the word
+         or create a <span class="btn badge badge-primary ml-2" onclick="show_new_concept('new', '')">New Concept</span>.
          </span>
          else <span>You do not have permission to make attributions.</span>
          }
@@ -712,6 +712,7 @@ declare function tlslib:display-seg($seg as node()*, $options as map(*) ) {
  $show-transl := not(contains(sm:id()//sm:group/text(), "guest")),
  $testuser := contains(sm:id()//sm:group, ('tls-test', 'guest'))
  let $link := concat('#', $seg/@xml:id),
+  (: we are displaying in a reduced context, only 2 rows  :)
   $ann := lower-case(map:get($options, "ann")),
   $loc := map:get($options, "loc"),
   $mark := if (data($seg/@xml:id) = $loc) then "mark" else ()
@@ -726,7 +727,7 @@ declare function tlslib:display-seg($seg as node()*, $options as map(*) ) {
 return
 (
 <div class="row {$mark}">
-<div class="{if ($ann='false') then 'col-sm-4' else 'col-sm-2'} zh {$alpheios-class}" lang="{$lang}" id="{$seg/@xml:id}">{$seg/text()}</div>　
+<div class="{if ($seg/parent::tei:head) then 'tls-head ' else () }{if ($ann='false') then 'col-sm-4' else 'col-sm-2'} zh {$alpheios-class}" lang="{$lang}" id="{$seg/@xml:id}">{$seg/text()}</div>　
 <div class="col-sm-5 tr" tabindex="{$options('pos')+500}" id="{$seg/@xml:id}-tr" contenteditable="{if (not($testuser)) then 'true' else 'false'}">{$slot1//tei:seg[@corresp="#"||$seg/@xml:id]/text()}</div>
  {if ($ann = 'false') then () else 
   <div class="col-sm-4 tr" tabindex="{$options('pos')+1000}" id="{$seg/@xml:id}-ex" contenteditable="{if (not($testuser)) then 'true' else 'false'}">

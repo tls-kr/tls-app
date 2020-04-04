@@ -1271,6 +1271,7 @@ function app:dialogs($node as node()*, $model as map(*))
         {app:settings($node, $model)}
         </div>
         <div id="remoteDialog"/>
+        <div id="remDialog2"/>
    </div>
 };
 (:: xx :)

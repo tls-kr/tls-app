@@ -159,3 +159,7 @@
   max-height: 300px;
   overflow-y: auto;
 }
+
+.tls-head {
+  font-size: larger;  
+}

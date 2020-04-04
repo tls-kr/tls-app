@@ -38,14 +38,19 @@ declare variable $dialogs:lmap := map{
 };
 
 declare function dialogs:new-concept-dialog($options as map(*)){
+ let $ex := collection($config:tls-data-root || "/concepts")//tei:head[. = $options?concept]
+ return
+ if ($ex) then "Concept exists!" else 
+
  let $uuid := if (map:contains($options, "concept-id")) 
     then $options?concept-id else
     if (map:contains($options, "name")) then map:get($con:new-concepts($options?name), "id") else 
     "uuid-" || util:uuid()
    , $def := if ($uuid) then if (map:contains($con:new-concept-defs, $uuid)) then $con:new-concept-defs($uuid) else () else ()
-   , $name := if(map:contains($options, "concept")) then $options?concept else ()
+   , $name := if(map:contains($options, "concept")) then $options?concept else 
+    if (not($options?mode = "new" or $options?mode = "existing")) then $options?mode else ()
    return
-   <div id="editSWLDialog" class="modal" tabindex="-1" role="dialog" style="display: none;">
+   <div id="new-concept-dialog" class="modal" tabindex="-1" role="dialog" style="display: none;">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header"><h5>Define a new concept: <span class="font-weight-bold">{$name}</span></h5>
@@ -95,10 +100,10 @@ declare function dialogs:new-concept-dialog($options as map(*)){
                    } 
                  </select>                 
               </div>
-              <div id="select-concept-group" class="form-group ui-widget col-md-4">
-                 <label for="select-concept">Name of related concept: </label>
-                 <input id="select-concept" class="form-control" required="true" value=""/>
-                 <span id="concept-id-span" style="display:none;"></span>
+              <div id="select-concept-group-nc" class="form-group ui-widget col-md-4">
+                 <label for="select-concept-nc">Name of related concept: </label>
+                 <input id="select-concept-nc" class="form-control" required="true" value=""/>
+                 <span id="concept-id-span-nc" style="display:none;"></span>
                 </div>
               <div class="form-group col-md-4">
                 <label>Press here to add the concept</label>
@@ -119,7 +124,7 @@ declare function dialogs:new-concept-dialog($options as map(*)){
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="save_new_concept('{$uuid}', '{$name}', '{$options?char}')">Save New Concept</button>
+                <button type="button" class="btn btn-primary" onclick="save_new_concept('{$uuid}', '{$name}')">Save New Concept</button>
            </div>
          </div>
      </div>

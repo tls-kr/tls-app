@@ -232,28 +232,42 @@ function save_swl(){
 };
 
 // here we ask for a concept, to combine with a character to form a new SW and then assign a SWL
-function show_new_concept(mode){
+function show_new_concept(mode, py){
   var word = $("#swl-query-span").text();
   var line_id= $( "#swl-line-id-span" ).text();  
   var line = $( "#swl-line-text-span" ).text();
   if (mode == "new"){
       cname = prompt("Please enter the name of the new concept:", "");
       if (cname){
-      var uri = "api/get_swl.xql?type=concept&word="+word+"&concept="+cname+"&line-id="+line_id+"&line="+line;      } else {var uri = null}
-  } else {
+       var uri = "api/get_swl.xql?type=concept&word="+word+"&concept="+cname+"&line-id="+line_id+"&line="+line;      } 
+       else {var uri = null}
+  } else if (mode == "existing") {
       var uri = "api/get_swl.xql?type=concept&word="+word+"&mode="+mode+"&line-id="+line_id+"&line="+line;
-  }    
+  } else {
+      var uri = "api/get_swl.xql?type=concept&word="+word+"&concept="+mode+"&line-id="+line_id+"&line="+line+"&py="+py;      
+  }   
   if (uri){
   $.ajax({
   type : "GET",
   dataType : "html",  
   url : uri, 
   success : function(resp){
-  $('#remoteDialog').html(resp);
-  console.log("Initializing autocomplete functions");
-  // lets see if this works better
-  initialize_autocomplete();
-  $('#editSWLDialog').modal('show');
+   if(resp.startsWith("Concept")){
+       alert("Concept already exists.")
+   } else {
+   // lets see if this works better
+   if (mode == "existing"){
+   $('#remoteDialog').html(resp);
+     initialize_autocomplete();
+     console.log("Initializing autocomplete functions");
+    $('#editSWLDialog').modal('show');       
+   } else {
+   $('#remDialog2').html(resp);
+    initialize_autocomplete_nc();
+     console.log("Initializing autocomplete nc functions");
+    $('#new-concept-dialog').modal('show');
+   }
+   }
   }
   });
   }
@@ -365,6 +379,8 @@ function save_to_concept(){
       var strconfirm = confirm("No existing concept selected. Do you want create a new concept named "+concept_val+" ?")
       if (strconfirm == true){
           // new concept
+          show_new_concept(concept_val)
+          $('#editSWLDialog').modal('hide');
       } else {
           $("#select-concept").val("")
       }
@@ -383,10 +399,10 @@ function save_to_concept(){
   dataType : "json",
   url : "api/save_to_concept.xql?line="+line_id+"&word="+word+"&concept="+concept_id+"&concept-val="+concept_val+"&synfunc="+synfunc_id+"&synfunc-val="+synfunc_val+"&semfeat="+semfeat_id+"&semfeat-val="+semfeat_val+"&def="+def_val+"&guangyun="+guangyun_id,
   success : function(resp){
-    var strconfirm = confirm("Saved concept. Do you want to save attribution now?");
-    if (strconfirm == true) {
+  //  var strconfirm = confirm("Saved concept. Do you want to save attribution now?");
+  //  if (strconfirm == true) {
         save_this_swl(resp.sense_id)
-    }
+  //  }
 //    alert(resp.sense_id);
   },
   error : function(resp){
@@ -498,6 +514,31 @@ function initialize_sf_autocomplete(){
     } );
 };
 
+
+function initialize_autocomplete_nc(){
+    $( "#select-concept-nc" ).autocomplete({
+      appendTo: "#select-concept-group-nc",
+      source: function( request, response ) {
+        $.ajax( {
+          url: "api/autocomplete.xql",
+          dataType: "jsonp",
+          data: {
+            term: request.term.toUpperCase(),
+	        type: "concept"
+          },
+          success: function( data ) {
+            response( data );
+          }
+        } );
+      },
+      minLength: 2,
+      select: function( event, ui ) {
+        $("#concept-id-span-nc" ).html(ui.item.id);     
+        console.log( "NC Selected: " + ui.item.value + " aka " + ui.item.id );
+      }
+    } );
+};
+
 function initialize_autocomplete(){
     $( "#select-concept" ).autocomplete({
       appendTo: "#select-concept-group",
@@ -568,6 +609,7 @@ function initialize_autocomplete(){
 
 // add this anonyomous function to the #new-concept dialog, so that on hiding 
 // its content gets cleared away.
+// 2020-04-04: is this still in use?
 $('#new-concept').on('hidden.bs.modal', function(e){
         console.log("Clearing form");
         $("#select-synfunc" ).val("");
@@ -805,25 +847,6 @@ function review_swl_dialog(uid){
 };
 
 
-function save_new_concept(uid){
-   //stub!
-   var com_val = $("#input-comment" ).val();
-   var action_val = $("input[name='actions']:checked").attr('id');
-     $.ajax({
-     type : "GET",
-     dataType : "html",  
-     url : "api/responder.xql?func=save-new-concept"+com_val+"&uid=" + uid + "&action="+action_val, 
-     success : function(resp){
-     console.log("RESP" + resp, resp.startsWith('"Error'))
-     if (resp.startsWith('"Error')) {
-     toastr.error(resp, "HXWD says:");
-     } else {
-     toastr.info("Review has been saved. Thank you for your effort!", "HXWD says:");
-     }
-   }});
-   $('#review-swl-dialog').modal('hide');
-};
-
 
 function save_swl_review(uid){
    var com_val = $("#input-comment" ).val();
@@ -888,6 +911,7 @@ $( ".tr" ).keyup(function( event ) {
       var pos = event.which - 49
       var sel = line.slice(pos,pos+1)
       get_sw(sel, lineid, line)
+      //copyToClipboard($( "#swl-query-span" ));
     } else
     if (event.which == 191 || event.which == 173){
      event.preventDefault();
@@ -909,6 +933,7 @@ $( ".tr" ).keyup(function( event ) {
         }   
         var newsel = line.slice(ix, ix+sel.length+ex);
         get_sw(newsel, lineid, line);
+        //copyToClipboard($( "#swl-query-span" ));
       //  console.log("IX", newsel);
     }
    }
@@ -1075,14 +1100,14 @@ function new_concept_dialog(){
 
 function add_to_tax(){
   var ptr = $("#select-tax").val();
-  var relcon = $("#select-concept").val()
-  var relcon_id = $("#concept-id-span").html()
+  var relcon = $("#select-concept-nc").val()
+  var relcon_id = $("#concept-id-span-nc").html()
   var chtml = $("#stag-"+ptr+"-span").html()
   $("#stag-"+ptr+"-span").html(chtml+"<span class='badge badge-dark staged' data-cid='"+relcon_id+"' title='"+relcon_id+"'>"+relcon+"</span>")
   $("#stag-"+ptr).show();
   $("#staging").show();
-  $("#select-concept").val("")
-  $("#concept-id-span").html("")
+  $("#select-concept-nc").val("")
+  $("#concept-id-span-nc").html("")
   
 };
 
@@ -1090,7 +1115,7 @@ function reset_tax(){
     $(".staging-span").html("")
 }
 
-function save_new_concept (uuid, concept, word){
+function save_new_concept (uuid, concept){
   var och_val = $("#name-och" ).val();
   var zh_val = $("#name-zh" ).val();
   var def_val = $("#input-def" ).val();
@@ -1116,9 +1141,9 @@ function save_new_concept (uuid, concept, word){
   $.ajax({
   type : "PUT",
   dataType : "html",
-  url : "api/responder.xql?func=save-new-concept&concept_id="+uuid+"&concept="+concept+"&crit="+crit_val+"&def="+def_val+"&notes="+notes_val+"&ont_ant="+ont_ant+"&ont_hyp="+ont_hyp+"&ont_see="+ont_see+"&ont_tax="+ont_tax+"&labels="+labels+"&och="+och_val+"&zh="+zh_val+"&word="+word,
+  url : "api/responder.xql?func=save-new-concept&concept_id="+uuid+"&concept="+concept+"&crit="+crit_val+"&def="+def_val+"&notes="+notes_val+"&ont_ant="+ont_ant+"&ont_hyp="+ont_hyp+"&ont_see="+ont_see+"&ont_tax="+ont_tax+"&labels="+labels+"&och="+och_val+"&zh="+zh_val,
   success : function(resp){
-    $( "#editSWLDialog" ).modal('hide');      
+    $( "#new-concept-dialog" ).modal('hide');      
     toastr.info("New concept " + concept + " saved.", "HXWD says:");
   },
   error : function(resp){
@@ -1155,4 +1180,16 @@ function do_delete_sf(uid, type, confirmed){
          toastr.info("Syntactic function entry had been deleted.", "HXWD says:");
          $('#'+uid).html("")
     })
+}
+
+function copyToClipboard(element) {
+    var $temp = $("<input>");
+    var focused = document.activeElement;
+    var tx = $(element).text()
+    console.log(tx)
+    $("body").append($temp);
+    $temp.val($(element).text()).select();
+    document.execCommand("copy");
+    $temp.remove();
+    focused.focus();
 }

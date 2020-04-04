@@ -203,7 +203,8 @@ declare function tlsapi:get-swl($rpara as map(*)){
 
 let $swl:= if ($rpara?uuid = "xx") then <empty/> else collection($config:tls-data-root|| "/notes")//tls:ann[@xml:id=$rpara?uuid]
 ,$concept-defined := collection($config:tls-data-root || "/concepts")//tei:div[@xml:id=$rpara?concept-id]
-,$para := map{
+,
+$para := map{
 "char" : if ($rpara?word = "xx") then $swl//tei:form/tei:orth/text() else $rpara?word,
 "line-id" : if ($rpara?line-id = "xx") then tokenize(substring($swl//tei:link/@target, 2), " #")[1] else $rpara?line-id,
 "line" : if ($rpara?line = "xx") then $swl//tls:srcline/text() else $rpara?line,
@@ -234,7 +235,7 @@ declare function tlsapi:swl-dialog($para as map(), $type as xs:string){
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                {if ($type = "concept") then
+                {if ($type = "concept" or string-length($para?pinyin) = 0) then
                 <h5 class="modal-title">{$para?title} <strong class="ml-2"><span id="{$type}-query-span">{$para?char}</span></strong>
                     <button class="btn badge badge-primary ml-2" type="button" onclick="get_guangyun()">
                         廣韻
@@ -266,7 +267,7 @@ declare function tlsapi:swl-dialog($para as map(), $type as xs:string){
                     <span id="semfeat-id-span" style="display:none;">{$para?semfeat-id}</span>
                     
                 </div>
-                   {if ($type = "concept") then 
+                   {if ($type = "concept"  or string-length($para?pinyin) = 0) then 
                 <div class="form-group" id="guangyun-group">                
                     <span class="text-muted" id="guangyun-group-pl"> Press the 廣韻 button above and select the pronounciation</span>
                 </div> else if ($type = "swl") then
@@ -297,7 +298,7 @@ declare function tlsapi:swl-dialog($para as map(), $type as xs:string){
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                   {if ($type = "concept") then 
+                   {if ($type = "concept" or string-length($para?pinyin) = 0) then 
                 <button type="button" class="btn btn-primary" onclick="save_to_concept()">Save changes</button>
                 else if ($type = "swl") then
                 <button type="button" class="btn btn-primary" onclick="save_swl()">Save SWL</button>
@@ -1337,11 +1338,12 @@ let $ont-ant := if ($map?ont_ant) then
   }
   </list> else (),
  $och := if ($map?och) then <item xmlns="http://www.tei-c.org/ns/1.0" xml:lang="och">{$map?och}</item> else (),
- $zh := if ($map?zh) then <item xmlns="http://www.tei-c.org/ns/1.0" xml:lang="zh">{$map?zh}</item> else ()
+ $zh := if ($map?zh) then <item xmlns="http://www.tei-c.org/ns/1.0" xml:lang="zh">{$map?zh}</item> else (),
+ $uuid := if ($map?concept_id) then $map?concept_id else "uuid-" || util:uuid()
 
   (: <?xml-model href="../schema/tls.rnc" type="application/relax-ng-compact-syntax"?>, :)
 let $new-concept := (
-<div xmlns="http://www.tei-c.org/ns/1.0" xmlns:mods="http://www.loc.gov/mods/v3" xmlns:tls="http://hxwd.org/ns/1.0" xmlns:xlink="http://www.w3.org/1999/xlink" type="concept" xml:id="{$map?concept_id}">
+<div xmlns="http://www.tei-c.org/ns/1.0" xmlns:mods="http://www.loc.gov/mods/v3" xmlns:tls="http://hxwd.org/ns/1.0" xmlns:xlink="http://www.w3.org/1999/xlink" type="concept" xml:id="{$uuid}">
 <head>{$map?concept}</head>{$labels}
 <list type="translations">{$och,$zh}</list>
 <div type="definition">
@@ -1358,10 +1360,6 @@ let $new-concept := (
         </listBibl>
     </div>
 <div type="words">
-<entry type="word" xml:id="uuid-{util:uuid()}">
-<form><orth>{$map?word}</orth>
-</form>
-</entry>
 </div>
 </div>)
 let $uri := xmldb:store($config:tls-data-root || "/concepts", $map?concept||".xml", $new-concept)
