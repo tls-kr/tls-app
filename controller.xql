@@ -86,7 +86,9 @@ else if (ends-with($exist:resource, ".html")) then (
     (: the html page is run through view.xql to expand templates :)
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
         <view>
-            <forward url="{$exist:controller}/modules/view.xql"/>
+            <forward url="{$exist:controller}/modules/view.xql">
+                <set-header name="Last-Modified" value="{current-dateTime()}"/>
+            </forward>
         </view>
 		<error-handler>
 			<forward url="{$exist:controller}/error-page.html" method="get"/>
