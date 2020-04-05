@@ -865,7 +865,7 @@ function save_swl_review(uid){
    }});
    $('#review-swl-dialog').modal('hide');
 };
-
+// this is for editing the definitions in the syntactic functions and semantic features
 $( ".sf").keyup(function ( event ) {
 }).keydown( function( event ){
   if ( event.which == 9 ) {
@@ -1009,7 +1009,7 @@ function save_tr (trid, tr, line){
 };
 
 // save modified definition of swl
-
+// 2020-04-04: I think this is not used, we use the save button now
 $( ".swedit" ).keyup(function( event ) {
 }).keydown(function( event ) {
   alert(event);
@@ -1017,10 +1017,10 @@ $( ".swedit" ).keyup(function( event ) {
     var defid = $(this).attr('id');
     var defel = document.getElementById( defid ).innerText;
     var def = $(this).text()
-    save_def(defid, def);    
+    save_def(defid);    
   }
 });
-
+// called from save button
 function save_def (defid){
   console.log(defid)
   var def = document.getElementById( defid ).innerText;
@@ -1084,7 +1084,7 @@ function comment_this_line(){
     
 };
 
-
+// new concept definition dialog etc.
 function new_concept_dialog(){
      $.ajax({
      type : "GET",
@@ -1153,7 +1153,7 @@ function save_new_concept (uuid, concept){
   });    
 };
 
-
+// delete syntactic function or semantic feature (called from browse page)
 function delete_sf(uid, type){
     var abbr = $("#"+uid+'-abbr').text()
     $.get("api/show_use_of.xql?uid=" + uid + "&type=" + type, "html", 
@@ -1182,6 +1182,7 @@ function do_delete_sf(uid, type, confirmed){
     })
 }
 
+// not working properly.
 function copyToClipboard(element) {
     var $temp = $("<input>");
     var focused = document.activeElement;
