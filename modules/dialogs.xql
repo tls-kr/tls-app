@@ -24,9 +24,9 @@ declare variable $dialogs:lmap := map{
 "old-chinese-criteria" : "Old Chinese Criteria",
 "modern-chinese-criteria" : "Modern Chinese Criteria",
 "tax-def" : map{
-"taxonymy" : "Taxonymy",
-"antonymy" : "Antonymy",
-"hypernymy" : "Kind Of",
+"taxonymy" : "Hypernym",
+"antonymy" : "Antonym",
+"hypernymy" : "Hyponym",
 "see" : "See also"},
 "source-references" : "Bibliography",
 "warring-states-currency" : "Warring States Currency",

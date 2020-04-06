@@ -405,20 +405,21 @@ declare function tlslib:tv-header($node as node()*, $model as map(*)){
        <div class="dropdown-menu">
        {$toc}
        </div>
-      </li>
-      ,<button title="Please wait, SWL are still loading." class="btn btn-primary ml-2" type="button" data-toggle="collapse" data-target=".swl">
-            
-     <img class="icon" src="resources/icons/open-iconic-master/svg/eye.svg"/>
-
-      </button>,
+      </li>,
+     <li class="nav-item">
+      <button title="Please wait, SWL are still loading." class="btn btn-primary ml-2" type="button" data-toggle="collapse" data-target=".swl">
+       <img class="icon" src="resources/icons/open-iconic-master/svg/eye.svg"/>
+      </button>
+   </li>
+   ,
       <li class="nav-item">
-      <small class="nav-brand ml-2" title="Text provided by">Source: 
+      <span class="navbar-text ml-2" title="Text provided by">Source: 
       {if ($textid and map:contains($config:txtsource-map, $textid)) then 
           map:get($config:txtsource-map, $textid) 
       else 
          if (substring($model('textid'), 1, 3) = "KR6") then "CBETA" 
          else <a href="http://www.chant.org/">CHANT</a>}
-      </small>
+      </span>
       {if ($model("transl")) then 
       (<br/>,<small class="nav-brand ml-2">Translation by {$model("transl")}</small>) else () }
       </li>
@@ -640,7 +641,7 @@ $type := $options?type,
 $context := $options?context
 let $concept := data($node/@concept),
 $creator-id := substring($node/tls:metadata/@resp, 2),
-$zi := $node/tei:form[1]/tei:orth[1]/text(),
+$zi := string-join($node/tei:form/tei:orth/text(), "/"),
 $py := $node/tei:form[1]/tei:pron[starts-with(@xml:lang, 'zh-Latn')][1]/text(),
 $sf := $node//tls:syn-func,
 $sm := $node//tls:sem-feat
@@ -679,10 +680,10 @@ else ()}
  (
 (:   tlslib:format-button("delete_swl('" || data($node/@xml:id) || "')", "Request deletion of SWL for "||$zi, "open-iconic-master/svg/x.svg", "small", "close", "tls-editor"),:)
 if (not($context='review')) then
-   (<span class="rp-5">{tlslib:format-button("review_swl_dialog('" || data($node/@xml:id) || "')", "Review the SWL for " || $zi, "octicons/svg/unverified.svg", "", "close", "tls-editor")}&#160;&#160;</span>,
+   (<span class="rp-5">{tlslib:format-button("review_swl_dialog('" || data($node/@xml:id) || "')", "Review the SWL for " || $zi[1], "octicons/svg/unverified.svg", "", "close", "tls-editor")}&#160;&#160;</span>,
    (: for my own swls: delete, otherwise approve :)
    if ($user = $creator-id) then 
-    tlslib:format-button("delete_swl('" || data($node/@xml:id) || "')", "Immediately delete this SWL for "||$zi, "open-iconic-master/svg/x.svg", "", "close", "tls-editor")
+    tlslib:format-button("delete_swl('" || data($node/@xml:id) || "')", "Immediately delete this SWL for "||$zi[1], "open-iconic-master/svg/x.svg", "", "close", "tls-editor")
    else
     tlslib:format-button("save_swl_review('" || data($node/@xml:id) || "')", "Approve the SWL for " || $zi, "octicons/svg/thumbsup.svg", "", "close", "tls-editor")) else ()
 )
@@ -1129,5 +1130,44 @@ return
     tlslib:display-seg($d, map{"transl" : $transl[1], "ann": "false", "loc": $loc})
     }
 </div>
+};
+
+
+(: query in texts :)
+
+declare function tlslib:ngram-query($queryStr as xs:string?, $mode as xs:string?)
+{
+    let $dataroot := ($config:tls-data-root, $config:tls-texts-root, $config:tls-user-root)
+    let $qs := tokenize($queryStr, "\s"),
+    $user := sm:id()//sm:real/sm:username/text(),
+    $ratings := doc($config:tls-user-root || $user || "/ratings.xml")//text,
+    $dates := if (exists(doc("/db/users/" || $user || "/textdates.xml")//date)) then 
+      doc("/db/users/" || $user || "/textdates.xml")//date else 
+      doc($config:tls-texts-root || "/tls/textdates.xml")//date,
+    (: HACK: if no login, use date mode for sorting :)
+    $mode := if ($user = "guest") then "date" else $mode,
+    $matches := if  (count($qs) > 1) then 
+      collection($dataroot)//tei:seg[ngram:contains(., $qs[1]) and ngram:contains(., $qs[2])]
+      else
+      collection($dataroot)//tei:seg[ngram:contains(., $qs[1])]
+    for $hit in $matches
+      let $textid := substring-before(tokenize(document-uri(root($hit)), "/")[last()], ".xml"),
+      (: for the CHANT text no text date data exist, so we use this flag to cheat a bit :)
+      $flag := substring($textid, 1, 3),
+      $r := 
+      if ($mode = "rating") then 
+        (: the order by is ascending because of the dates, so here we inverse the rating :)
+        if ($ratings[@id=$textid]) then - xs:int($ratings[@id=$textid]/@rating) else 0
+      else
+        switch ($flag)
+         case "CH1" return 0
+         case "CH2" return 300
+         case "CH7" return 700
+         case "CH8" return -200
+         default return
+         if (string-length($dates[@corresp="#" || $textid]/@notafter) > 0) then tlslib:getdate($dates[@corresp="#" || $textid]) else 0
+(:    let $id := $hit/ancestor::tei:TEI/@xml:id :)     
+    order by $r ascending
+    return $hit 
 };
 

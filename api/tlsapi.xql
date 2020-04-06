@@ -431,18 +431,18 @@ let $user := sm:id()//sm:real/sm:username/text()
 , $taxdoc := doc($config:tls-data-root ||"/core/taxchar.xml")
 (: creating a map as a combination of the concepts in taxchar and the existing concepts :)
 , $wm := map:merge((
+    for $c in $taxdoc//tei:div[tei:head[. = $word]]//tei:ref
+        let $s := $c/ancestor::tei:list/preceding::tei:item[@type='pron'][1]/text()
+        let $pys := tokenize(normalize-space($s), '\s+')        
+        , $py := if (tlslib:iskanji($pys[1])) then $pys[2] else $pys[1]
+        return map:entry(substring($c/@target, 2), map {"concept": $c/text(), "py" : $py, "zi" : $word})
+    ,
     for $w in $words
     let $concept := $w/ancestor::tei:div/tei:head/text(),
     $concept-id := $w/ancestor::tei:div/@xml:id,
     $py := $w/parent::tei:form/tei:pron[starts-with(@xml:lang, 'zh-Latn')]/text(),
     $zi := $w/parent::tei:form/tei:orth/text()
     return map:entry($concept-id, map {"concept": $concept, "py" : $py, "zi" : $zi})
-    ,
-    for $c in $taxdoc//tei:div[tei:head[. = $word]]//tei:ref
-        let $s := $c/ancestor::tei:list/preceding::tei:item[@type='pron'][1]/text()
-        let $pys := tokenize(normalize-space($s), '\s+')        
-        , $py := if (tlslib:iskanji($pys[1])) then $pys[2] else $pys[1]
-        return map:entry(substring($c/@target, 2), map {"concept": $c/text(), "py" : $py, "zi" : $word})
     ))          
 return
 if (map:size($wm) > 0) then
@@ -1401,6 +1401,35 @@ return
     )
 else () 
 };
+
+declare function tlsapi:quick-search($map as map(*)){
+let $hits := tlslib:ngram-query($map?query, $map?mode)
+, $disp := subsequence($hits, $map?start, $map?count)
+, $qs := tokenize($map?query, "\s")
+return
+<div><p>Total: {count($hits)}</p>
+{
+for $h at $n in $disp
+    let $head := $h/ancestor::tei:div[1]/tei:head[1],
+    $title := $h/ancestor::tei:TEI//tei:titleStmt/tei:title/text(),
+    $loc := $h/@xml:id
+(:  :)
+
+return
+<div class="row">
+<div class="col-md-1">{xs:int($map?start)+$n - 1}</div>
+<div class="col-md-3"><a href="textview.html?location={$loc}&amp;query={$map?query}">{$title, " / ", $head}</a></div>
+<div class="col-md-8">{ $h/preceding-sibling::tei:seg[1,3],
+        if (count($qs) > 1) then $h else
+        (substring-before($h, $map?query), 
+        <mark>{$map?query}</mark> 
+        ,substring-after($h, $map?query)), 
+        $h/following-sibling::tei:seg[1,3]}</div>
+</div>
+}
+</div>
+};
+
 
 declare function tlsapi:stub($map as map(*)){
 ()

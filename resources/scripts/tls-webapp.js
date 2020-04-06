@@ -913,6 +913,10 @@ $( ".tr" ).keyup(function( event ) {
       get_sw(sel, lineid, line)
       //copyToClipboard($( "#swl-query-span" ));
     } else
+    if (event.which == 83) {
+     event.preventDefault();
+     quick_search();   
+    } else
     if (event.which == 191 || event.which == 173){
      event.preventDefault();
      var sw = document.getElementById( lineid + "-swl" ).parentNode;
@@ -1193,4 +1197,14 @@ function copyToClipboard(element) {
     document.execCommand("copy");
     $temp.remove();
     focused.focus();
+}
+
+function quick_search(){
+    var word = $("#swl-query-span").text();
+    $.get("api/responder.xql?func=quick-search&query="+word+"&start=1&count=20&mode=rating", "html", 
+    function(resp){
+         $('#swl-select').html(resp)
+        }
+    )
+    
 }

@@ -241,7 +241,7 @@ function app:query($node as node()*, $model as map(*), $query as xs:string?, $mo
 {
     session:create(),
     let $hits := if (tlslib:iskanji($query)) 
-      then app:ngram-query($query, $mode) else 
+      then tlslib:ngram-query($query, $mode) else 
       app:do-query($query, $mode)
     let $store := session:set-attribute($app:SESSION, $hits)
     return
@@ -263,42 +263,6 @@ declare function app:do-query($queryStr as xs:string?, $mode as xs:string?)
     for $hit in $hits
     order by ft:score($hit) descending
     return $hit
-};
-
-declare function app:ngram-query($queryStr as xs:string?, $mode as xs:string?)
-{
-    let $dataroot := ($config:tls-data-root, $config:tls-texts-root, $config:tls-user-root)
-    let $qs := tokenize($queryStr, "\s"),
-    $user := sm:id()//sm:real/sm:username/text(),
-    $ratings := doc("/db/users/" || $user || "/ratings.xml")//text,
-    $dates := if (exists(doc("/db/users/" || $user || "/textdates.xml")//date)) then 
-      doc("/db/users/" || $user || "/textdates.xml")//date else 
-      doc($config:tls-texts-root || "/tls/textdates.xml")//date,
-    (: HACK: if no login, use date mode for sorting :)
-    $mode := if ($user = "guest") then "date" else $mode,
-    $matches := if  (count($qs) > 1) then 
-      collection($dataroot)//tei:seg[ngram:contains(., $qs[1]) and ngram:contains(., $qs[2])]
-      else
-      collection($dataroot)//tei:seg[ngram:contains(., $qs[1])]
-    for $hit in $matches
-      let $textid := substring-before(tokenize(document-uri(root($hit)), "/")[last()], ".xml"),
-      (: for the CHANT text no text date data exist, so we use this flag to cheat a bit :)
-      $flag := substring($textid, 1, 3),
-      $r := 
-      if ($mode = "rating") then 
-        (: the order by is ascending because of the dates, so here we inverse the rating :)
-        if ($ratings[@id=$textid]) then - xs:int($ratings[@id=$textid]/@rating) else 0
-      else
-        switch ($flag)
-         case "CH1" return 0
-         case "CH2" return 300
-         case "CH7" return 700
-         case "CH8" return -200
-         default return
-         if (string-length($dates[@corresp="#" || $textid]/@notafter) > 0) then tlslib:getdate($dates[@corresp="#" || $textid]) else 0
-(:    let $id := $hit/ancestor::tei:TEI/@xml:id :)     
-    order by $r ascending
-    return $hit 
 };
 
 
@@ -390,12 +354,12 @@ function app:show-hits($node as node()*, $model as map(*), $start as xs:int, $ty
         <td>{$c + $start -1}</td>
         <td><a href="textview.html?location={$loc}&amp;query={$query}">{$title, " / ", $head}</a>
         </td>
-        <td>{ $h/preceding-sibling::tei:seg[1],
+        <td>{ $h/preceding-sibling::tei:seg[1,3],
         if (count($qs) > 1) then $h else
         (substring-before($h, $query), 
         <mark>{$query}</mark> 
         ,substring-after($h, $query)), 
-        $h/following-sibling::tei:seg[1]}</td>
+        $h/following-sibling::tei:seg[1,3]}</td>
         </tr>
     }
     </table>
@@ -1025,13 +989,16 @@ return
                         tlslib:navbar-link())}
                         {if (not($testuser)) then tlslib:navbar-bookmarks() else ()}
                         {if (contains(sm:id()//sm:group, "tls-editor")) then tlslib:navbar-review() else ()}
-                    </ul>
+                        </ul><ul class="navbar-nav">
+                    <li class="nav-item">
                     <form action="search.html" class="form-inline my-2 my-lg-0" method="get">
                         <input id="query-inp" name="query" class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search"/>
                         <button class="btn btn-outline-success my-2 my-sm-0" type="submit">
                             <img class="icon" src="resources/icons/open-iconic-master/svg/magnifying-glass.svg"/>
                         </button>
                     </form>
+                    </li>
+                    </ul>
                     <!--
                     <div class="btn-nav">
                         <a href="#" class="btn btn-default navbar-btn" data-toggle="modal" data-target="#searchDialog">Advanced Search</a>
@@ -1174,7 +1141,7 @@ function app:footer($node as node()*, $model as map(*)){
                 <p>Developed at the <strong>Center for Informatics in East-Asian Studies, Institute for Research in Humanities, Kyoto University</strong>, with support from the 
                 <strong>Dean for Research, Department of East Asian Studies</strong>, and
                 <strong>Program in East Asian Studies, Princeton University</strong>.</p>    
-                <p>Hosted by <strong>Princeton University, Department of East Asian Studies</strong>, in cooperation with <strong>Ruhr University Bochum, Forschungszentrum für traditionelle chinesische Kulturen</strong>.  </p>
+                <p>Hosted by <strong>Princeton University, Department of East Asian Studies</strong>, in cooperation with <strong>Ruhr University Bochum, Center for the Study of Traditional Chinese Cultures </strong>.  </p>
                 <p>Support from 
                     <strong>Heidelberg University - Cluster of Excellence - Asia and Europe in a Global Context</strong>
                     and <strong>IKOS - University of Oslo</strong>
