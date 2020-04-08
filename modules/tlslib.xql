@@ -121,16 +121,19 @@ let $user := sm:id()//sm:real/sm:username/text()
    let $t := $ed/ancestor::tei:TEI
    , $tid := data($t/@xml:id)
    , $type := if ($t/@type) then if ($t/@type = "transl") then "Translation" else "Comments" else "Translation"
-   , $lg := if ($type = "Translation") then $t//tei:bibl[@corresp="#"||$textid]/following-sibling::tei:lang/text() else  if ($t//tei:bibl[@corresp="#"||$textid]/following-sibling::tei:ref) then 
-       let $rel-tr:= substring($t//tei:bibl[@corresp="#"||$textid]/following-sibling::tei:ref/@target, 2) 
-       , $this-tr := ($t1, $t2)[ancestor::tei:TEI[@xml:id=$rel-tr]] 
+   , $lg := if ($type = "Translation") then
+       $t//tei:bibl[@corresp="#"||$textid]/following-sibling::tei:lang/text() 
+       else  
+       if ($t//tei:bibl[@corresp="#"||$textid]/following-sibling::tei:ref) then 
+        let $rel-tr:= substring($t//tei:bibl[@corresp="#"||$textid]/following-sibling::tei:ref/@target, 2) 
+        , $this-tr := ($t1, $t2)[ancestor::tei:TEI[@xml:id=$rel-tr]] 
        return
-       "to transl. by " || $this-tr/text()
+        "to transl. by " || $this-tr/text()
        else "n/a" 
    , $lic := $t//tei:availability/@status
    , $resp := if ($ed/text()) then $ed/text() else "anon"
    return
-   map:entry($tid, ($t, $resp, $lg, if ($lic) then xs:int($lic) else 3, $type))
+   map:entry($tid, ($t, $resp, if ($lg) then $lg else "en", if ($lic) then xs:int($lic) else 3, $type))
    )
    return $tr
 };
