@@ -465,8 +465,10 @@ return
 
 {if ($doann and sm:is-authenticated() and not(contains(sm:id()//sm:group, 'tls-test'))) then 
  if ($wid) then     
+ let $esc := replace($concept, "'", "\\'")
+ return
  <button class="btn badge badge-secondary ml-2" type="button" 
- onclick="show_newsw({{'wid':'{$wid}','py': '{$py}','concept' : '{$concept}', 'concept_id' : '{$id}'}})">
+ onclick="show_newsw({{'wid':'{$wid}','py': '{$py}','concept' : '{$esc}', 'concept_id' : '{$id}'}})">
            New SW
       </button>
 else 
