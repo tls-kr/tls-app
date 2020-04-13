@@ -1,3 +1,5 @@
+var dirty = false;
+
 $(function() {
     console.log( "ready!" );
     //get_swl_for_page();
@@ -895,6 +897,23 @@ function save_sf_def (sfid, def){
   });    
 };
 
+$( ".tr" ).blur(function (event) {
+    var trid = $(this).attr('id');
+    var lineid = trid.slice(0, -3);
+    var line = document.getElementById( lineid ).innerText;
+    var tr = $(this).text()
+    console.log("blur", $(this).data('before') , "h", tr)
+    if ($(this).data('before') !== tr){    
+         cname = confirm("Unsaved data exist, do you want to save?");
+         if (cname){
+           save_tr(trid, tr, line);
+          }
+          // save this, in case there are more changes
+          $(this).data('before', tr)
+    }
+  dirty = false;
+});
+
 
 // for the translations (class "tr"), we save on keyup, so we check for our event
 $( ".tr" ).keyup(function( event ) {
@@ -902,6 +921,7 @@ $( ".tr" ).keyup(function( event ) {
     var trid = $(this).attr('id');
     var lineid = trid.slice(0, -3);
     var line = document.getElementById( lineid ).innerText;
+    dirty = true;
   if (event.ctrlKey == true){
     //var hlineid = lineid.split(".").join("\\.")
     console.log("key: ", event.which)
@@ -1003,6 +1023,7 @@ function save_tr (trid, tr, line){
     toastr.error("Could not save translation for "+line+".", "HXWD says:");        
     } else {
     toastr.info("Translation for line "+line+" saved.", "HXWD says:");
+    dirty = false;
     }
   },
   error : function(resp){
@@ -1167,7 +1188,7 @@ function delete_sf(uid, type){
         do_delete_sf(uid, type, false);
         } else {
          $('#'+uid+'-resp').html(resp)
-         var ok=confirm("'"+ abbr +"' has been used in attributions, do you want to proceed? All attributions will be deleted as well.")
+         var ok=("'"+ abbr +"' has been used in attributions, do you want to proceed? All attributions will be deleted as well.")
          if (ok) {
          console.log("OK", ok)
          do_delete_sf(uid, type, ok)
@@ -1179,8 +1200,8 @@ function delete_sf(uid, type){
     toastr.info("Checking for usage, please wait.", "HXWD says:");
 }
 
-function do_delete_sf(uid, type, confirmed){
-    $.get("api/responder.xql?func=do-delete-sf&uid=" + uid+"&ok="+confirmed+"&type="+type, "html", function(resp){
+function do_delete_sf(uid, type, ed){
+    $.get("api/responder.xql?func=do-delete-sf&uid=" + uid+"&ok="+ed+"&type="+type, "html", function(resp){
          toastr.info("Syntactic function entry had been deleted.", "HXWD says:");
          $('#'+uid).html("")
     })
@@ -1208,3 +1229,19 @@ function quick_search(){
     )
     
 }
+
+// need to think about where to use this:
+/*window.onbeforeunload = function() {
+  return "";
+}
+ * 
+ * or this:
+ * 
+*/
+
+window.onbeforeunload = function() {
+    return dirty ? "If you leave this page you will lose your unsaved changes." : null;
+    // next: check for unsaved tr, save, then report: done
+    dirty = false;
+}
+
