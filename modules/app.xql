@@ -583,7 +583,7 @@ declare function app:textlist(){
     $chantpath := concat($config:tls-texts-root, '/chant/'),
     $chantcount := if (xmldb:collection-available($chantpath)) then 1184 else 0,
     $user := sm:id()//sm:real/sm:username/text(),
-    $ratings := doc("/db/users/" || $user || "/ratings.xml")//text,
+    $ratings := doc( $config:tls-user-root || $user || "/ratings.xml")//text,
     $starredcount := count($ratings)
     return
     <div>
@@ -933,13 +933,23 @@ function app:login($node as node()*, $model as map(*))
 let $user := request:get-parameter("user", ())
 return
 if (sm:is-authenticated() and not($user)) then 
-<a href="#" class="btn btn-default navbar-btn" data-toggle="modal" data-target="#settingsDialog">
+<li class="nav-item dropdown">
+<a class="nav-link dropdown-toggle" href="#" id="settingsDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
 <img class="icon mr-2" 
 src="resources/icons/open-iconic-master/svg/person.svg"/>{sm:id()//sm:real/sm:username/text()}</a>
+<div class="dropdown-menu" aria-labelledby="settingsDropdown">
+<a onclick="dologout()" class="dropdown-item bg-danger">Logout</a>
+<a class="dropdown-item" href="settings.html">Settings</a>
+</div>
+</li>
 else
+<li class="nav-item">
+<div class="btn-nav">
 <a href="#" class="btn btn-default navbar-btn" data-toggle="modal" data-target="#loginDialog">
 <img class="icon icon-account-login mr-2" 
 src="resources/icons/open-iconic-master/svg/account-login.svg"/>Login</a>
+</div>
+</li>
 };
 
 (:~
@@ -998,19 +1008,16 @@ return
                         </button>
                     </form>
                     </li>
+                        {app:login($node, $model)}
                     </ul>
                     <!--
                     <div class="btn-nav">
                         <a href="#" class="btn btn-default navbar-btn" data-toggle="modal" data-target="#searchDialog">Advanced Search</a>
                     </div>
                     -->
-                    <div class="btn-nav">
-                        {app:login($node, $model)}
-                    </div>
                 </div>
             </nav>
 };
-
 
 (:~
  This is called from review.html
@@ -1031,7 +1038,7 @@ return
  <div class="container">
  {for $att in subsequence($review-items, 1, 20)
   let  $px := substring($att/tls:metadata/@resp, 2)
-  let $un := doc("/db/apps/tls-data/vault/members.xml")//tei:person[@xml:id=$px]//tei:persName/text()
+  let $un := doc($config:tls-data-root || "/vault/members.xml")//tei:person[@xml:id=$px]//tei:persName/text()
   , $created := $att/tls:metadata/@created
   return 
   (
@@ -1058,10 +1065,10 @@ declare
 function app:recent($node as node()*, $model as map(*)){
 (: attributions and translations, with API calls to actual activity :)
 
-<div><h2>Recent activity</h2>
+<div><h2>Recent activity as of {current-dateTime()}</h2>
 {
-let $notes := "/db/apps/tls-data/notes"
-, $trans := "/db/apps/tls-data/translations"
+let $notes := $config:tls-data-root || "/notes"
+, $trans := $config:tls-data-root || "/translations"
 let $atts := for $a in collection($notes)//tls:ann/tls:metadata
  let $date := xs:dateTime($a/@created)
  where $date > xs:dateTime("2019-08-29T19:51:15.425+09:00")
@@ -1079,7 +1086,7 @@ return
 <ul>
 {for $p in $pers
 let $px := substring-after($p,"#")
-let $un := doc("/db/apps/tls-data/vault/members.xml")//tei:person[@xml:id=$px]//tei:persName/text()
+let $un := doc($config:tls-data-root || "/vault/members.xml")//tei:person[@xml:id=$px]//tei:persName/text()
 (:,$un := $px
 :), $cnt := count($atts[@resp=$p])
 order by $cnt descending
@@ -1101,14 +1108,14 @@ tlslib:format-swl($att, map{"type" : "row"})
 },
 
 {
-let $trans := "/db/apps/tls-data/translations"
+let $trans := $config:tls-data-root || "/translations"
 let $atts := for $a in collection($trans)//tei:seg
  let $date := xs:dateTime($a/@modified)
  where $date > xs:dateTime("2019-08-29T19:51:15.425+09:00")
  order by $date descending
  return $a
-,$pers := for $a in distinct-values($atts/@resp)
-  return $a
+,$pers := distinct-values(for $a in distinct-values($atts/@resp)
+  return replace($a, '#', ''))
   
 return  
 
@@ -1117,9 +1124,9 @@ return
 <p>Total number of lines translated since Aug. 28, 2019: {count($atts)}</p>
 <ul>
 {for $px in $pers
-let $un := doc("/db/apps/tls-data/vault/members.xml")//tei:person[@xml:id=$px]//tei:persName/text()
+let $un := doc($config:tls-data-root || "/vault/members.xml")//tei:person[@xml:id=$px]//tei:persName/text()
 (:let $un := "xx":)
-let $cnt := count($atts[@resp=$px])
+let $cnt := count($atts[@resp=$px]) + count($atts[@resp='#'|| $px])
 order by $cnt descending
 return
 (:<li>{if (not($un)) then $px else $un}, {$cnt}</li>:)
@@ -1170,6 +1177,15 @@ function app:page-title($node as node()*, $model as map(*))
 return concat ("TLS - ", $ts)
 };
 
+declare function app:theme($node as node()*, $model as map(*)){
+let $user := sm:id()//sm:real/sm:username/text()
+return
+if ($user = "chris") then 
+<link rel="stylesheet" type="text/css" data-template="app:theme" href="resources/bootstrap-4.2.1/css/bootstrap.solar.min.css"/>
+else
+<link rel="stylesheet" type="text/css" data-template="app:theme" href="resources/bootstrap-4.2.1/css/bootstrap.min.css"/>
+};
+
 declare function app:recent-activity(){
   let $userref := concat('#', sm:id()//sm:username/text())
   for $r in collection($config:tls-data-root)//*/@tls:resp=$userref
@@ -1181,24 +1197,32 @@ declare
     %templates:wrap
 function app:settings($node as node()*, $model as map(*))
 {
-<div class="modal-dialog" style="z-index: 1080;" role="document">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h4 class="modal-title">Settings for user {sm:id()//sm:username/text()}</h4>
-                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
-                    </div>
-                        <div class="modal-body">
-                        <p>Recent Activity</p>
-                        <ul class="list-unstyled">
-                        <!-- app:recent-activity() -->
-                        </ul>
-                        </div>
-                        <div class="modal-footer">
-                            <button onclick="dologout()" class="btn btn-danger">Logout</button>
-                            <button type="submit" class="btn btn-primary">Save</button>
-                        </div>
-                </div>
-            </div>
+let $user := sm:id()//sm:real/sm:username/text()
+, $settings := tlslib:get-settings()
+, $px := doc($config:tls-data-root || "/vault/members.xml")//tei:person[@xml:id=$user]//tei:persName/text()
+return
+<div><h2>Settings for {$px}</h2>
+<h3>Most recently visited</h3>
+<ul></ul>
+<h3>Display</h3>
+<div>
+<input type="checkbox" name="theme" data-toggle="toggle" checked="true" aria-label="Dark theme"/>
+Dark theme
+</div>
+<h3>Bookmarks</h3>
+<ul>
+{for $b in doc($config:tls-user-root || $user || "/bookmarks.xml")//tei:item
+  let $segid := $b/tei:ref/@target,
+  $id := $b/@xml:id,
+  $date := xs:dateTime($b/@modified)
+  order by $date descending
+
+return
+<li>{tlslib:format-button("delete_bm('"||$id||"')", "Delete this bookmark.", "open-iconic-master/svg/x.svg", "", "", "tls-user")}
+<a href="textview.html?location={substring($segid, 2)}">{$b/tei:ref/tei:title/text()}: {$b/tei:seg}</a></li>
+}
+</ul>
+</div>
 };
 
 declare
@@ -1233,9 +1257,6 @@ function app:dialogs($node as node()*, $model as map(*))
                         <input type="hidden" name="duration" value="P7D"/>
                 </div>
             </div>
-        </div>
-        <div id="settingsDialog" class="modal" tabindex="-1" role="dialog" style="display: none;">
-        {app:settings($node, $model)}
         </div>
         <div id="remoteDialog"/>
         <div id="remDialog2"/>
