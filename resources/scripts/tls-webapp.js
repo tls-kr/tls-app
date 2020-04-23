@@ -1020,7 +1020,8 @@ function save_tr (trid, tr, line){
   url : "api/save_tr.xql?trid="+trid+"&tr="+tr,
   success : function(resp){
     if (resp.startsWith("Could not")) {
-    toastr.error("Could not save translation for "+line+".", "HXWD says:");        
+    toastr.error(resp, "漢學文典 says:");
+/*    toastr.error("Could not save translation for "+line+".", "HXWD says:");        */
     } else {
     toastr.info("Translation for line "+line+" saved.", "HXWD says:");
     dirty = false;

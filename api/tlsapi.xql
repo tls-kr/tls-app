@@ -1176,9 +1176,11 @@ if ($node) then (
 else 
 if ($transl//tei:p[@xml:id=concat($txtid, "-start")]) then 
   update insert $seg  into $transl//tei:p[@xml:id=concat($txtid, "-start")] 
-else 
+else
+if ($transl) then
  (: mostly for existing translations.  Here we simple append it to the very end. :)
  update insert $seg  into ($transl//tei:p[last()])[1]
+else "Could not save translation.  Please create a translation file first."
 };
 
 declare function tlsapi:new-anonymous-translation(){
