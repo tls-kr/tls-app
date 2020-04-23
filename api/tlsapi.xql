@@ -453,7 +453,7 @@ $w := collection(concat($config:tls-data-root, '/concepts/'))//tei:div[@xml:id =
 $wid := $w/ancestor::tei:entry/@xml:id,
 $form := $w/parent::tei:form/@corresp,
 $zi := map:get($wm($id), "zi"),
-$py := map:get($wm($id), "py"),
+$py := normalize-space(map:get($wm($id), "py")),
 $scnt := count($w/ancestor::tei:entry/tei:sense)
 (:group by $concept:)
 order by $concept
