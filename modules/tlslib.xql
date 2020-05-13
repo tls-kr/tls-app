@@ -837,8 +837,10 @@ return
 <div class="col-sm-3"><span data-target="{$target}" data-toggle="popover">{$line}</span></div>
 <div class="col-sm-7"><span>{$tr/text()}</span>
 {if ((sm:has-access(document-uri(fn:root($a)), "w") and $a/@xml:id) and not(contains(sm:id()//sm:group, 'tls-test'))) then 
-tlslib:format-button("review_swl_dialog('" || data($a/@xml:id) || "')", "Review this attribution", "octicons/svg/unverified.svg", "small", "close", "tls-editor")
-(:tlslib:format-button("delete_swl('" || data($a/@xml:id) || "')", "Delete this attribution", "open-iconic-master/svg/x.svg", "small", "close", "tls-editor"):)
+(
+(:tlslib:format-button("review_swl_dialog('" || data($a/@xml:id) || "')", "Review this attribution", "octicons/svg/unverified.svg", "small", "close", "tls-editor"),:)
+tlslib:format-button("delete_swl('" || data($a/@xml:id) || "')", "Delete this attribution", "open-iconic-master/svg/x.svg", "small", "close", "tls-editor")
+)
 else ()}
 </div>
 </div>
