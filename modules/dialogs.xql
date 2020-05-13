@@ -81,9 +81,9 @@ declare function dialogs:new-concept-dialog($options as map(*)){
             </div>
             <h6 class="font-weight-bold">Place this concept within the ontology</h6>
             <div id="staging" style="display:none;" class="form-row">
-              <div id="stag-taxonymy" class="col-md-3"><label class="font-weight-bold mr-3" for="stag-taxonymy">Taxonymy</label><span id="stag-taxonymy-span" class="staging-span"></span></div>
+              <div id="stag-taxonymy" class="col-md-3"><label class="font-weight-bold mr-3" for="stag-taxonymy">Hypernym</label><span id="stag-taxonymy-span" class="staging-span"></span></div>
               <div id="stag-antonymy"  class="col-md-3"><label  class="font-weight-bold  mr-3" for="stag-antonymy">Antonymy</label><span id="stag-antonymy-span"  class="staging-span"></span></div>
-              <div id="stag-hypernymy"  class="col-md-3"><label  class="font-weight-bold  mr-3" for="stag-hypernymy">Kind Of</label><span id="stag-hypernymy-span"  class="staging-span"></span></div>
+              <div id="stag-hypernymy"  class="col-md-3"><label  class="font-weight-bold  mr-3" for="stag-hypernymy">Hyponym</label><span id="stag-hypernymy-span"  class="staging-span"></span></div>
               <div id="stag-see"  class="col-md-3"><label  class="font-weight-bold  mr-3" for="stag-see">See also</label><span id="stag-see-span" class="staging-span"></span></div>
             </div>
             <div class="form-row">
