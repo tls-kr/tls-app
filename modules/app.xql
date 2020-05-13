@@ -337,7 +337,7 @@ function app:show-hits($node as node()*, $model as map(*), $start as xs:int, $ty
     <h4>Found {count($model("hits"))} matches {if (not($search-type="2")) then <span>, showing {$start} to {$start + 10 -1}</span> else ()}</h4>,
     if ($search-type = "1") then 
     <p>
-    {if ($start = 1) then ("Characters: ", for $c in $qc return  <a class="btn badge badge-light" title="Show analysis of {$c}" href="char.html?char={$c}">{$c}</a>) else ()}
+    {if ($start = 1) then ("Character analysis: ", for $c in $qc return  <a class="btn badge badge-light" title="Show analysis of {$c}" href="char.html?char={$c}">{$c}</a>) else ()}
     { if ($user = "guest") then () else
     if ($mode = "rating") then 
     (
@@ -355,6 +355,7 @@ function app:show-hits($node as node()*, $model as map(*), $start as xs:int, $ty
     else (count($model("hits")), <span> matches</span>)}</h4>}    
     {if ($search-type = "2") then 
     <div>
+    <p>{if ($start = 1) then ("Character analysis: ", for $c in $qc return  <a class="btn badge badge-light" title="Show analysis of {$c}" href="char.html?char={$c}">{$c}</a>) else ()}</p>
     <table class="table">
     {for $h at $c in map:get($model, "hits")
     return $h
@@ -981,7 +982,8 @@ src="resources/icons/open-iconic-master/svg/account-login.svg"/>Login</a>
 :)
 declare
     %templates:wrap
-function app:main-navbar($node as node()*, $model as map(*))
+    %templates:default("query", "")
+function app:main-navbar($node as node()*, $model as map(*), $query as xs:string?)
 {
 let $context := substring-before(tokenize(request:get-uri(), "/")[last()], ".html")
  ,$testuser := contains(sm:id()//sm:group, ('tls-test', 'guest'))
@@ -1027,7 +1029,7 @@ return
                     <li class="nav-item">
                     
                     <form action="search.html" class="form-inline my-2 my-lg-0" method="get">
-                        <input id="query-inp" name="query" class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search"/> in 
+                        <input id="query-inp" name="query" class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search" value="{if (string-length($query) > 0) then $query else ()}"/> in 
         <select class="form-control" name="search-type">
           <option selected="true" value="1">{$app:tmap?1}</option>
           <option value="2">{$app:tmap?2}</option>
