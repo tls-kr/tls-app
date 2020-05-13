@@ -736,7 +736,7 @@ function app:char($node as node()*, $model as map(*), $char as xs:string?, $id a
     return
     <div class="card">
     <div class="card-header">
-    <h4 class="card-title">{if ($n) then <span>Analysis of {$n/tei:head/text()}:</span> else 
+    <h4 class="card-title">{if ($n) then <span>Taxonomy of meanings for {$n/tei:head/text()}:</span> else 
     <span>The character {$char} has not been analyzed yet.</span>
     }</h4>
     </div>
