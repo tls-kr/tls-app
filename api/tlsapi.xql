@@ -984,7 +984,7 @@ declare function tlsapi:store-new-translation($lang as xs:string, $txtid as xs:s
    else
    (xmldb:create-collection($config:tls-translation-root, $lang),
     sm:chmod(xs:anyURI($trcoll), "rwxrwxr--"),
-    sm:chown(xs:anyURI($trcoll), "tls"),
+(:    sm:chown(xs:anyURI($trcoll), "tls"),:)
     sm:chgrp(xs:anyURI($trcoll), "tls-user")
     )
   )
@@ -1055,7 +1055,7 @@ if (not($vis="option3")) then
  return
  (
     sm:chmod(xs:anyURI($uri), "rwxrwxr--"),
-    sm:chown(xs:anyURI($uri), "tls"),
+(:    sm:chown(xs:anyURI($uri), "tls"),:)
     sm:chgrp(xs:anyURI($uri), "tls-user")
  )
  else ()
@@ -1369,7 +1369,7 @@ let $new-concept := (
 let $uri := xmldb:store($config:tls-data-root || "/concepts", $map?concept||".xml", $new-concept)
 return (
     sm:chmod(xs:anyURI($uri), "rwxrwxr--"),
-    sm:chown(xs:anyURI($uri), "tls"),
+(:    sm:chown(xs:anyURI($uri), "tls"),:)
     sm:chgrp(xs:anyURI($uri), "tls-user")
     )
 };
