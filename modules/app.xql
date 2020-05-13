@@ -33,7 +33,7 @@ declare variable $app:lmap := map{
 "sem-feat" : "Semantic Features",
 "word" : "Words",
 "char" : "Chars",
-"taxchar" : "Character analysis",
+"taxchar" : "Taxonomy of meanings for character",
 "concept" : "Concepts",
 "definition" : "Definition",
 "notes" : "Criteria and general notes",
@@ -337,7 +337,7 @@ function app:show-hits($node as node()*, $model as map(*), $start as xs:int, $ty
     <h4>Found {count($model("hits"))} matches {if (not($search-type="2")) then <span>, showing {$start} to {$start + 10 -1}</span> else ()}</h4>,
     if ($search-type = "1") then 
     <p>
-    {if ($start = 1) then ("Taxonomy of meanings: ", for $c in $qc return  <a class="btn badge badge-light" title="Show analysis of {$c}" href="char.html?char={$c}">{$c}</a>) else ()}
+    {if ($start = 1) then ("Taxonomy of meanings: ", for $c in $qc return  <a class="btn badge badge-light" title="Show taxonomy of meanings for {$c}" href="char.html?char={$c}">{$c}</a>) else ()}
     { if ($user = "guest") then () else
     if ($mode = "rating") then 
     (
@@ -355,7 +355,7 @@ function app:show-hits($node as node()*, $model as map(*), $start as xs:int, $ty
     else (count($model("hits")), <span> matches</span>)}</h4>}    
     {if ($search-type = "2") then 
     <div>
-    <p>{if ($start = 1) then ("Taxonomy of meanings: ", for $c in $qc return  <a class="btn badge badge-light" title="Show analysis of {$c}" href="char.html?char={$c}">{$c}</a>) else ()}</p>
+    <p>{if ($start = 1) then ("Taxonomy of meanings: ", for $c in $qc return  <a class="btn badge badge-light" title="Show taxonomy of meanings for {$c}" href="char.html?char={$c}">{$c}</a>) else ()}</p>
     <table class="table">
     {for $h at $c in map:get($model, "hits")
     return $h
