@@ -341,11 +341,11 @@ function app:show-hits($node as node()*, $model as map(*), $start as xs:int, $ty
     { if ($user = "guest") then () else
     if ($mode = "rating") then 
     (
-    "&#160;Sorting by text rating. ", <a class="btn badge badge-light" href="search.html?query={$query}&amp;start=1&amp;mode=date">Click here to sort by text date instead. </a> 
+    "&#160;Sorting by text rating. ", <a class="btn badge badge-light" href="search.html?query={$query}&amp;start=1&amp;search-type={$search-type}&amp;mode=date">Click here to sort by text date instead. </a> 
     )
      else
     (
-    "&#160;Sorting by text date. ", <a class="btn badge badge-light" href="search.html?query={$query}&amp;start=1&amp;mode=rating" title="{$rat}">Click here to sort your favorite texts first. </a> 
+    "&#160;Sorting by text date. ", <a class="btn badge badge-light" href="search.html?query={$query}&amp;start=1&amp;search-type={$search-type}&amp;mode=rating" title="{$rat}">Click here to sort your favorite texts first. </a> 
     )
     }
     </p> else ()
@@ -399,8 +399,8 @@ function app:show-hits($node as node()*, $model as map(*), $start as xs:int, $ty
       app:get-more($type, xs:int($start), 10)}
     <nav aria-label="Page navigation">
       <ul class="pagination">
-        <li class="page-item"><a class="page-link {if (xs:int($start) = 1) then "disabled" else ()}" href="search.html?query={$query}&amp;type={$type}&amp;start={$start - 10}">&#171;</a></li>
-        <li class="page-item"><a class="page-link" href="search.html?query={$query}&amp;type={$type}&amp;start={$start + 10}">&#187;</a></li>
+        <li class="page-item"><a class="page-link {if (xs:int($start) = 1) then "disabled" else ()}" href="search.html?query={$query}&amp;search-type={$search-type}&amp;type={$type}&amp;start={$start - 10}">&#171;</a></li>
+        <li class="page-item"><a class="page-link" href="search.html?query={$query}&amp;search-type={$search-type}&amp;type={$type}&amp;start={$start + 10}">&#187;</a></li>
       </ul>
      </nav>
      </div>
@@ -418,7 +418,7 @@ function app:show-hits($node as node()*, $model as map(*), $start as xs:int, $ty
      <ul>{      app:get-more($t, 1, 3) }
      </ul>
      { if ($hitcount > 3) then 
-     <a href="search.html?query={$query}&amp;type={$t}&amp;start=1">Show more...</a>
+     <a href="search.html?query={$query}&amp;search-type={$search-type}&amp;type={$t}&amp;start=1">Show more...</a>
      else ()}
      </div>
      }
