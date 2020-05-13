@@ -21,7 +21,11 @@ import module namespace tlslib="http://hxwd.org/lib" at "tlslib.xql";
 
 
 declare variable $app:SESSION := "tls:results";
-
+declare variable $app:tmap := map{
+"1" : "texts",
+"2" : "dictionary",
+"3" : "translations"
+};
 declare variable $app:lmap := map{
 "zh" : "Modern Chinese",
 "och" : "Old Chinese",
@@ -234,15 +238,25 @@ declare function app:do-browse($type as xs:string?, $filter as xs:string?)
 (:~
 : This is called from search.html
 : @param  $query  This is the querystring from the search dialog
+: @param  $search-type The type of search: 1=text, 2=dictionary 3=translation
 :)
 declare 
     %templates:wrap
-function app:query($node as node()*, $model as map(*), $query as xs:string?, $mode as xs:string?)
+function app:query($node as node()*, $model as map(*), $query as xs:string?, $mode as xs:string?, $search-type as xs:string?)
 {
     session:create(),
-    let $hits := if (tlslib:iskanji($query)) 
+    let $hits := 
+     if ($search-type = "1") then
+      if (tlslib:iskanji($query)) 
       then tlslib:ngram-query($query, $mode) else 
       app:do-query($query, $mode)
+      else if ($search-type = "2") then 
+      (: searching for kanji in dictionary, eg. the words in concepts :)
+      tlslib:dic-query($query, $mode)
+      else if ($search-type = "3") then 
+      (: searching for word in translations :)
+      tlslib:tr-query($query, $mode)
+      else "Unknown search type"
     let $store := session:set-attribute($app:SESSION, $hits)
     return
     map:merge((
@@ -302,9 +316,10 @@ declare function app:create-query($queryStr as xs:string?, $mode as xs:string?)
 
 declare 
 %templates:default("start", 1)
-%templates:default("type", "")
-%templates:default("mode", "")
-function app:show-hits($node as node()*, $model as map(*), $start as xs:int, $type as xs:string, $mode as xs:string)
+%templates:default("type", "")  (: type is only relevant for advanced search starting from the search landing page for non-Kanji generell search :)
+%templates:default("mode", "")   (: for text display sort by date or rating :)
+%templates:default("search-type", "1")
+function app:show-hits($node as node()*, $model as map(*), $start as xs:int, $type as xs:string, $mode as xs:string, $search-type as xs:string)
 {   let $query := map:get($model, "query")
     ,$iskanji := tlslib:iskanji($query) 
     ,$map := session:get-attribute($app:SESSION || ".types")
@@ -313,12 +328,14 @@ function app:show-hits($node as node()*, $model as map(*), $start as xs:int, $ty
     ,$rat := "Go to the menu -> Browse -> Texts to rate your favorite texts."
     ,$qc := for $c in string-to-codepoints($query) return  codepoints-to-string($c)
     return
-    <div><h1>Searching for <mark>{$query}</mark>{if (string-length($type) > 0) then 
+    <div><h1>Searching in {map:get($app:tmap, $search-type)} for <mark>{$query}</mark>
+    {if (string-length($type) > 0) then 
     <span>in {map:get($app:lmap, $type)}</span>
     else ()}</h1>
     {if ($iskanji) then
     (
-    <h4>Found {count($model("hits"))} matches, showing {$start} to {$start + 10 -1}</h4>,
+    <h4>Found {count($model("hits"))} matches {if (not($search-type="2")) then <span>, showing {$start} to {$start + 10 -1}</span> else ()}</h4>,
+    if ($search-type = "1") then 
     <p>
     {if ($start = 1) then ("Characters: ", for $c in $qc return  <a class="btn badge badge-light" title="Show analysis of {$c}" href="char.html?char={$c}">{$c}</a>) else ()}
     { if ($user = "guest") then () else
@@ -331,42 +348,48 @@ function app:show-hits($node as node()*, $model as map(*), $start as xs:int, $ty
     "&#160;Sorting by text date. ", <a class="btn badge badge-light" href="search.html?query={$query}&amp;start=1&amp;mode=rating" title="{$rat}">Click here to sort your favorite texts first. </a> 
     )
     }
-    </p>
+    </p> else ()
     )
     else
     <h4>Found {if (string-length($type) > 0) then (count(map:get($map, $type)),<span>; displaying matches {$start} to {min((count(map:get($map, $type)), xs:int($start) + 10))}</span>)
     else (count($model("hits")), <span> matches</span>)}</h4>}    
-    {if ($iskanji) then
+    {if ($search-type = "2") then 
+    <div>
+    <table class="table">
+    {for $h at $c in map:get($model, "hits")
+    return $h
+    }
+    </table>
+    </div>    
+    else if ($search-type = "3" or $iskanji) then
     <div>
     <table class="table">
     {for $h at $c in subsequence(map:get($model, "hits"), $start, 10)
-      let $head := $h/ancestor::tei:div[1]/tei:head[1],
-      $title := $h/ancestor::tei:TEI//tei:titleStmt/tei:title/text(),
-(:      let $head :="head", $title := "title",:)
-      $loc := $h/@xml:id
-(:              <td>{$h/preceding-sibling::tei:seg[1], 
-        substring-before($h, $query) }
-        <mark>{$query}</mark> {substring-after($h, $query),
-        $h/following-sibling::tei:seg[1]}</td>
-:)
+      let $loc := if ($search-type="3") then substring($h/@corresp,2) else $h/@xml:id,
+      $cseg := if ($search-type="3") then collection($config:tls-texts-root)//tei:seg[@xml:id=$loc] else (),
+      $head := if ($search-type="3") then $cseg/ancestor::tei:div[1]/tei:head[1] else $h/ancestor::tei:div[1]/tei:head[1],
+      $title := if ($search-type="3") then $cseg/ancestor::tei:TEI//tei:titleStmt/tei:title/text() else $h/ancestor::tei:TEI//tei:titleStmt/tei:title/text()
     return
       <tr>
         <td>{$c + $start -1}</td>
         <td><a href="textview.html?location={$loc}&amp;query={$query}">{$title, " / ", $head}</a>
         </td>
+        {if ($search-type = "3") then  
+        (<td>{$cseg}</td>,<td>{$h}</td>) else
         <td>{ $h/preceding-sibling::tei:seg[1,3],
         if (count($qs) > 1) then $h else
         (substring-before($h, $query), 
         <mark>{$query}</mark> 
         ,substring-after($h, $query)), 
         $h/following-sibling::tei:seg[1,3]}</td>
+        }
         </tr>
     }
     </table>
     <nav aria-label="Page navigation">
   <ul class="pagination">
-    <li class="page-item"><a class="page-link {if ($start = 1) then "disabled" else ()}" href="search.html?query={$query}&amp;start={$start - 10}{if ($mode) then concat("&amp;mode=", $mode) else ()}">&#171;</a></li>
-    <li class="page-item"><a class="page-link" href="search.html?query={$query}&amp;start={$start + 10}{if ($mode) then concat("&amp;mode=", $mode) else ()}">&#187;</a></li>
+    <li class="page-item"><a class="page-link {if ($start = 1) then "disabled" else ()}" href="search.html?query={$query}&amp;start={$start - 10}&amp;search-type={$search-type}{if ($mode) then concat("&amp;mode=", $mode) else ()}">&#171;</a></li>
+    <li class="page-item"><a class="page-link" href="search.html?query={$query}&amp;start={$start + 10}&amp;search-type={$search-type}{if ($mode) then concat("&amp;mode=", $mode) else ()}">&#187;</a></li>
   </ul>
 </nav>
     </div>
@@ -999,10 +1022,18 @@ return
                         tlslib:navbar-link())}
                         {if (not($testuser)) then tlslib:navbar-bookmarks() else ()}
                         {if (contains(sm:id()//sm:group, "tls-editor")) then tlslib:navbar-review() else ()}
-                        </ul><ul class="navbar-nav">
+                        </ul>
+                    <ul class="navbar-nav">
                     <li class="nav-item">
+                    
                     <form action="search.html" class="form-inline my-2 my-lg-0" method="get">
-                        <input id="query-inp" name="query" class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search"/>
+                        <input id="query-inp" name="query" class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search"/> in 
+        <select class="form-control" name="search-type">
+          <option selected="true" value="1">{$app:tmap?1}</option>
+          <option value="2">{$app:tmap?2}</option>
+          <option value="3">{$app:tmap?3}</option>
+<!--          <option value="4">Three</option> -->
+        </select>
                         <button class="btn btn-outline-success my-2 my-sm-0" type="submit">
                             <img class="icon" src="resources/icons/open-iconic-master/svg/magnifying-glass.svg"/>
                         </button>

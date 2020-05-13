@@ -1137,6 +1137,128 @@ return
 </div>
 };
 
+declare function tlslib:get-sw($word as xs:string, $context as xs:string) as item()* {
+let $words := if ($context = "dic") then 
+  collection(concat($config:tls-data-root, '/concepts/'))//tei:orth[contains(.,$word)] else
+  collection(concat($config:tls-data-root, '/concepts/'))//tei:orth[. = $word]
+  
+let $user := sm:id()//sm:real/sm:username/text()
+, $doann := contains($context, 'textview')  (: the page we were called from can annotate :)
+, $taxdoc := doc($config:tls-data-root ||"/core/taxchar.xml")
+(: creating a map as a combination of the concepts in taxchar and the existing concepts :)
+, $wm := map:merge((
+    for $c in $taxdoc//tei:div[tei:head[. = $word]]//tei:ref
+        let $s := $c/ancestor::tei:list/preceding::tei:item[@type='pron'][1]/text()
+        let $pys := tokenize(normalize-space($s), '\s+')        
+        , $py := if (tlslib:iskanji($pys[1])) then $pys[2] else $pys[1]
+        return map:entry(substring($c/@target, 2), map {"concept": $c/text(), "py" : $py, "zi" : $word})
+    ,
+    for $w in $words
+    let $concept := $w/ancestor::tei:div/tei:head/text(),
+    $concept-id := $w/ancestor::tei:div/@xml:id,
+    $py := $w/parent::tei:form/tei:pron[starts-with(@xml:lang, 'zh-Latn')]/text(),
+    $zi := $w/parent::tei:form/tei:orth/text()
+    return map:entry($concept-id, map {"concept": $concept, "py" : $py, "zi" : $zi})
+    ))          
+return
+if (map:size($wm) > 0) then
+for $id in map:keys($wm)
+let $concept := map:get($wm($id), "concept"),
+$w := collection(concat($config:tls-data-root, '/concepts/'))//tei:div[@xml:id = $id]//tei:orth[. = $word]
+,$cdef := $w/ancestor::tei:div/tei:div[@type="definition"]/tei:p/text(),
+$wid := $w/ancestor::tei:entry/@xml:id,
+$form := $w/parent::tei:form/@corresp,
+$zi := map:get($wm($id), "zi"),
+$py := normalize-space(map:get($wm($id), "py")),
+$scnt := count($w/ancestor::tei:entry/tei:sense)
+(:group by $concept:)
+order by $concept
+return
+<li class="mb-3">
+{if ($zi) then
+<span><strong>{$zi}</strong>&#160;({$py})&#160;</span> else ()}
+<strong><a href="concept.html?uuid={$id}" title="{$cdef}" class="{if ($scnt = 0) then 'text-muted' else ()}">{$concept}</a></strong> 
+
+{if ($doann and sm:is-authenticated() and not(contains(sm:id()//sm:group, 'tls-test'))) then 
+ if ($wid) then     
+ let $esc := replace($concept, "'", "\\'")
+ return
+ <button class="btn badge badge-secondary ml-2" type="button" 
+ onclick="show_newsw({{'wid':'{$wid}','py': '{$py}','concept' : '{$esc}', 'concept_id' : '{$id}'}})">
+           New SW
+      </button>
+else 
+<button class="btn badge badge-secondary ml-2" type="button" 
+onclick="show_newsw({{'wid':'xx', 'py': '{$py}','concept' : '{$concept}', 'concept_id' : '{$id}'}})">
+           New Word
+      </button>
+   else ()}
+
+{if ($scnt > 0) then      
+<span>      
+<button title="click to reveal {count($w/ancestor::tei:entry/tei:sense)} syntactic words" class="btn badge badge-light" type="button" data-toggle="collapse" data-target="#{$id}-concept">{$scnt}</button>
+<ul class="list-unstyled collapse" id="{$id}-concept" style="swl-bullet">{for $s in $w/ancestor::tei:entry/tei:sense
+let $sf := $s//tls:syn-func,
+$sfid := substring($sf/@corresp, 2),
+$sm := $s//tls:sem-feat/text(),
+$def := $s//tei:def/text(),
+$sid := $s/@xml:id,
+$edit := sm:id()//sm:groups/sm:group[. = "tls-editor"] and $doann,
+$click := if ($edit) then concat("get_sf('" , $sid , "')") else "",
+$atts := count(collection(concat($config:tls-data-root, '/notes/'))//tls:ann[tei:sense/@corresp = "#" || $sid])
+order by $sf
+(:  :)
+return
+<li>
+<span id="pop-{$s/@xml:id}" class="small btn">●</span>
+
+<a href="#" onclick="{$click}" title="{tlslib:get-sf-def($sfid)}">{$sf/text()}</a>&#160;{$sm}: 
+<span class="swedit" id="def-{$sid}" contenteditable="{if ($edit) then 'true' else 'false'}">{ $def}</span>
+    {if ($edit) then 
+     <button class="btn badge badge-warning ml-2" type="button" onclick="save_def('def-{$sid}')">
+           Save
+     </button>
+    else ()}
+     { if (sm:is-authenticated()) then 
+     (
+     if ($user != 'test' and $doann) then
+     <button class="btn badge badge-primary ml-2" type="button" onclick="save_this_swl('{$s/@xml:id}')">
+           Use
+      </button> else ()) else ()}
+     <button class="btn badge badge-light ml-2" type="button" 
+     data-toggle="collapse" data-target="#{$sid}-resp" onclick="show_att('{$sid}')">
+      <span class="ml-2">SWL: {$atts}</span>
+      </button> 
+      
+      <div id="{$sid}-resp" class="collapse container"></div>
+</li>
+}
+</ul>
+</span> 
+else ()
+}
+</li>
+else 
+<li class="list-group-item">No word selected or no existing syntactic word found.</li>
+};
+
+
+
+(: query in dictionary :)
+declare function tlslib:dic-query($queryStr as xs:string?, $mode as xs:string?)
+{
+tlslib:get-sw($queryStr, "dic")
+};
+
+(: query in dictionary :)
+declare function tlslib:tr-query($queryStr as xs:string?, $mode as xs:string?)
+{
+  let $dataroot := ($config:tls-data-root, $config:tls-user-root)
+  let $w := collection( "/db/apps/tls-data/translations")//tei:seg[contains(. , $queryStr)]
+  for $a in $w
+  return $a
+};
+
 
 (: query in texts :)
 
