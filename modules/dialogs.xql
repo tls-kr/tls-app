@@ -251,7 +251,7 @@ declare function dialogs:assign-guangyun($para as map(), $type as xs:string){
                     <span class="text-muted" id="guangyun-group-pl"> Press the 廣韻 button above and select the pronounciation</span>
                 </div> else if ($type = "swl") then
                 <div class="form-group" id="guangyun-group">     
-                   {tlsapi:get-guangyun($para?char, $para?pinyin)}
+                   tlsapi:get-guangyun($para?char, $para?pinyin)
                 </div>
                 else (),
                 if ($type = ("concept", "swl")) then
