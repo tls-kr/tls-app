@@ -24,7 +24,8 @@ declare variable $app:SESSION := "tls:results";
 declare variable $app:tmap := map{
 "1" : "texts",
 "2" : "dictionary",
-"3" : "translations"
+"3" : "translations",
+"4" : "fields"
 };
 declare variable $app:lmap := map{
 "zh" : "Modern Chinese",
@@ -247,15 +248,15 @@ function app:query($node as node()*, $model as map(*), $query as xs:string?, $mo
     session:create(),
     let $hits := 
      if ($search-type = "1") then
-      if (tlslib:iskanji($query)) 
-      then tlslib:ngram-query($query, $mode) else 
-      app:do-query($query, $mode)
+      tlslib:ngram-query($query, $mode) 
       else if ($search-type = "2") then 
       (: searching for kanji in dictionary, eg. the words in concepts :)
       tlslib:dic-query($query, $mode)
       else if ($search-type = "3") then 
       (: searching for word in translations :)
       tlslib:tr-query($query, $mode)
+      else if ($search-type = "4") then 
+      app:do-query($query, $mode)
       else "Unknown search type"
     let $store := session:set-attribute($app:SESSION, $hits)
     return
@@ -326,13 +327,15 @@ function app:show-hits($node as node()*, $model as map(*), $start as xs:int, $ty
     ,$user := sm:id()//sm:real/sm:username/text()
     ,$qs := tokenize($query, "\s")
     ,$rat := "Go to the menu -> Browse -> Texts to rate your favorite texts."
-    ,$qc := for $c in string-to-codepoints($query) return  codepoints-to-string($c)
+    ,$qc := for $c in string-to-codepoints($query) 
+       where $c > 255
+       return  codepoints-to-string($c)
     return
     <div><h1>Searching in {map:get($app:tmap, $search-type)} for <mark>{$query}</mark>
     {if (string-length($type) > 0) then 
     <span>in {map:get($app:lmap, $type)}</span>
     else ()}</h1>
-    {if ($iskanji) then
+    {if (not($search-type="4")) then
     (
     <h4>Found {count($model("hits"))} matches {if (not($search-type="2")) then <span>, showing {$start} to {$start + 10 -1}</span> else ()}</h4>,
     if ($search-type = "1") then 
@@ -362,7 +365,7 @@ function app:show-hits($node as node()*, $model as map(*), $start as xs:int, $ty
     }
     </table>
     </div>    
-    else if ($search-type = "3" or $iskanji) then
+    else if ($search-type = "3" or $search-type="1") then
     <div>
     <table class="table">
     {for $h at $c in subsequence(map:get($model, "hits"), $start, 10)
@@ -378,7 +381,7 @@ function app:show-hits($node as node()*, $model as map(*), $start as xs:int, $ty
         {if ($search-type = "3") then  
         (<td>{$cseg}</td>,<td>{$h}</td>) else
         <td>{ $h/preceding-sibling::tei:seg[1,3],
-        if (count($qs) > 1) then $h else
+        if (count($qs) > 1 or not($iskanji)) then $h else
         (substring-before($h, $query), 
         <mark>{$query}</mark> 
         ,substring-after($h, $query)), 
@@ -1034,6 +1037,7 @@ return
           <option selected="true" value="1">{$app:tmap?1}</option>
           <option value="2">{$app:tmap?2}</option>
           <option value="3">{$app:tmap?3}</option>
+          <option value="4">{$app:tmap?4}</option>
 <!--          <option value="4">Three</option> -->
         </select>
                         <button class="btn btn-outline-success my-2 my-sm-0" type="submit">
@@ -1213,7 +1217,7 @@ return concat ("TLS - ", $ts)
 declare function app:theme($node as node()*, $model as map(*)){
 let $user := sm:id()//sm:real/sm:username/text()
 return
-if ($user = "chris") then 
+if ($user = "chrisx") then 
 <link rel="stylesheet" type="text/css" data-template="app:theme" href="resources/bootstrap-4.2.1/css/bootstrap.solar.min.css"/>
 else
 <link rel="stylesheet" type="text/css" data-template="app:theme" href="resources/bootstrap-4.2.1/css/bootstrap.min.css"/>

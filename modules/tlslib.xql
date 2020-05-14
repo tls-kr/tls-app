@@ -1176,7 +1176,7 @@ order by $concept
 return
 <li class="mb-3">
 {if ($zi) then
-<span><strong>{$zi}</strong>&#160;({$py})&#160;</span> else ()}
+<span onclick="alert('{$wid}')"><strong>{$zi}</strong>&#160;({$py})&#160;</span> else ""}
 <strong><a href="concept.html?uuid={$id}" title="{$cdef}" class="{if ($scnt = 0) then 'text-muted' else ()}">{$concept}</a></strong> 
 
 {if ($doann and sm:is-authenticated() and not(contains(sm:id()//sm:group, 'tls-test'))) then 
@@ -1253,8 +1253,9 @@ tlslib:get-sw($queryStr, "dic")
 (: query in dictionary :)
 declare function tlslib:tr-query($queryStr as xs:string?, $mode as xs:string?)
 {
-  let $dataroot := ($config:tls-data-root, $config:tls-user-root)
-  let $w := collection( "/db/apps/tls-data/translations")//tei:seg[contains(. , $queryStr)]
+  let $user := sm:id()//sm:real/sm:username/text()
+  let $dataroot := ($config:tls-translation-root, $config:tls-user-root || $user || "/translations")
+  let $w := collection($dataroot)//tei:seg[contains(. , $queryStr)]
   for $a in $w
   return $a
 };
@@ -1274,9 +1275,9 @@ declare function tlslib:ngram-query($queryStr as xs:string?, $mode as xs:string?
     (: HACK: if no login, use date mode for sorting :)
     $mode := if ($user = "guest") then "date" else $mode,
     $matches := if  (count($qs) > 1) then 
-      collection($dataroot)//tei:seg[ngram:contains(., $qs[1]) and ngram:contains(., $qs[2])]
+      collection($dataroot)//tei:seg[ngram:wildcard-contains(., $qs[1]) and ngram:wildcard-contains(., $qs[2])]
       else
-      collection($dataroot)//tei:seg[ngram:contains(., $qs[1])]
+      collection($dataroot)//tei:seg[ngram:wildcard-contains(., $qs[1])]
     for $hit in $matches
       let $textid := substring-before(tokenize(document-uri(root($hit)), "/")[last()], ".xml"),
       (: for the CHANT text no text date data exist, so we use this flag to cheat a bit :)

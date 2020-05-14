@@ -1,7 +1,47 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <div xmlns="http://www.w3.org/1999/xhtml" data-template="templates:surround" data-template-with="templates/page.html" data-template-at="content">
-    <div id="results" data-template="app:doc">
+    <div>
         <h1>About the TLS project</h1>
         <p>Under construction</p>
+        <h2>Searching</h2>
+        <p>The scope for searching can be provided in the dropdown following the input field for search.  Currently, the following are available:</p>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th scope="col">fieldname</th>
+                    <th scope="col">meaning</th>
+                    <th scope="col">type of input</th>
+                </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td>texts</td>
+                <td>Fulltext search in the Chinese texts.</td>
+                <td>Chinese characters, optionally also wildcards as explained below</td>
+            </tr>
+            <tr>
+                <td>dictionary</td>
+                <td>Search in the syntactic words defined</td>
+                <td>One or more chinese characters. The search will try to find the character in every position</td>
+            </tr>
+            <tr>
+                <td>translations</td>
+                <td>Fulltext search in the translations available</td>
+                <td>Words in the language of the translation. Subwords are found as well. The search distinguishes between uppercase and lowercase letters</td>
+            </tr>
+            <tr>
+                <td>fields</td>
+                <td>Search in all fields of the TLS</td>
+                <td>Chinese or alphabetical input is possible.</td>
+            </tr>
+            </tbody>    
+        </table>
+        <h3>Wildcards</h3>
+        <p>A full stop, '.', (not between brackets), without any qualifiers: Matches a single arbitrary character.</p>
+        <p>A full stop, '.', (not between brackets), immediately followed by a single question mark, '?': Matches either no characters or one character.</p>
+        <p>A full stop, '.', (not between brackets), immediately followed by a single asterisk, '*': Matches zero or more characters.</p>
+        <p>A full stop, '.', (not between brackets), immediately followed by a single plus sign, '+': Matches one or more characters.</p>
+        <p>A full stop, '.', immediately followed by a sequence of characters that matches the regular expression {[0-9]+,[0-9]+}: Matches a number of characters, where the number is no less than the number represented by the series of digits before the comma, and no greater than the number represented by the series of digits following the comma.</p>
+        <p>An expression "[…]" matches a single character, namely any of the charactersenclosed by the brackets. The string enclosed by the brackets cannot be empty; therefore ']' can be allowed between the brackets, provided that it is the first character.(Thus, "[][?]" matches the three characters '[', ']' and '?'.)A circumflex accent, '^', at the start of the search string matches the start of the element content.A dollar sign, '$', at the end of the search string matches the end of the element content.One can remove the special meaning of any character mentioned above by preceding them by a backslash.Between brackets these characters stand for themselves. Thus, "[[?*\]" matchesthe four characters '[', '?', '*' and '\'.'?', '*', '+' and character sequences matching the regular expression {[0-9]+,[0-9]+} not immediately preceeded by an unescaped period, '.', stand for themselves.'^' and '$' not at the very beginning or end of the search string, respectively, stand for themselves.</p>
     </div>        
 </div>
