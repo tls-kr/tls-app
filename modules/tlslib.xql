@@ -1138,9 +1138,9 @@ return
 };
 
 declare function tlslib:get-sw($word as xs:string, $context as xs:string) as item()* {
-let $words := if ($context = "dic") then 
-  collection(concat($config:tls-data-root, '/concepts/'))//tei:orth[contains(.,$word)] else
-  collection(concat($config:tls-data-root, '/concepts/'))//tei:orth[. = $word]
+let $words := (:if ($context = "dic") then:) 
+  collection(concat($config:tls-data-root, '/concepts/'))//tei:orth[contains(.,$word)] (:|
+  collection(concat($config:tls-data-root, '/concepts/'))//tei:orth[. = $word]:)
   
 let $user := sm:id()//sm:real/sm:username/text()
 , $doann := contains($context, 'textview')  (: the page we were called from can annotate :)
@@ -1155,29 +1155,40 @@ let $user := sm:id()//sm:real/sm:username/text()
     ,
     for $w in $words
     let $concept := $w/ancestor::tei:div/tei:head/text(),
+    $wid := $w/ancestor::tei:entry/@xml:id,
     $concept-id := $w/ancestor::tei:div/@xml:id,
     $py := $w/parent::tei:form/tei:pron[starts-with(@xml:lang, 'zh-Latn')]/text(),
-    $zi := $w/parent::tei:form/tei:orth/text()
-    return map:entry($concept-id, map {"concept": $concept, "py" : $py, "zi" : $zi})
+    $zi := $w/parent::tei:form/tei:orth/text(),
+    $cwid := concat(data($concept-id), "::", data($wid))
+    group by $concept-id
+    return map:entry($concept-id, map {"concept": $concept, "py" : $py, "zi" : $zi, "w" : $w})
     ))          
 return
 if (map:size($wm) > 0) then
 for $id in map:keys($wm)
 let $concept := map:get($wm($id), "concept"),
+(:$w := map:get($wm($id), "w"):)
+(:$w := collection(concat($config:tls-data-root, '/concepts/'))//tei:entry[@xml:id = $cid[2]]//tei:orth:)
 $w := collection(concat($config:tls-data-root, '/concepts/'))//tei:div[@xml:id = $id]//tei:orth[. = $word]
 ,$cdef := $w/ancestor::tei:div/tei:div[@type="definition"]/tei:p/text(),
-$wid := $w/ancestor::tei:entry/@xml:id,
 $form := $w/parent::tei:form/@corresp,
-$zi := map:get($wm($id), "zi"),
-$py := normalize-space(map:get($wm($id), "py")),
-$scnt := count($w/ancestor::tei:entry/tei:sense)
+$z := map:get($wm($id), "zi"),
+$py := for $p in map:get($wm($id), "py")
+        return normalize-space($p)
 (:group by $concept:)
-order by $concept
+order by $concept[1]
+return
+(: since I used "order by" for populating the map, some values are sequences now, need to disentangle that here  :)
+for $zi at $pos in $z 
+let $wx := collection(concat($config:tls-data-root, '/concepts/'))//tei:div[@xml:id = $id]//tei:orth[. = $zi],
+$scnt := count($wx/ancestor::tei:entry/tei:sense),
+$wid := $wx/ancestor::tei:entry/@xml:id
+
 return
 <li class="mb-3">
 {if ($zi) then
-<span onclick="alert('{$wid}')"><strong>{$zi}</strong>&#160;({$py})&#160;</span> else ""}
-<strong><a href="concept.html?uuid={$id}" title="{$cdef}" class="{if ($scnt = 0) then 'text-muted' else ()}">{$concept}</a></strong> 
+<span onclick="alert('{$wid}')"><strong>{$zi}</strong>&#160;({$py[$pos]})&#160;</span> else ""}
+<strong><a href="concept.html?uuid={$id}" title="{$cdef}" class="{if ($scnt = 0) then 'text-muted' else ()}">{$concept[1]}</a></strong> 
 
 {if ($doann and sm:is-authenticated() and not(contains(sm:id()//sm:group, 'tls-test'))) then 
  if ($wid) then     
@@ -1196,8 +1207,8 @@ onclick="show_newsw({{'wid':'xx', 'py': '{$py}','concept' : '{$concept}', 'conce
 
 {if ($scnt > 0) then      
 <span>      
-<button title="click to reveal {count($w/ancestor::tei:entry/tei:sense)} syntactic words" class="btn badge badge-light" type="button" data-toggle="collapse" data-target="#{$id}-concept">{$scnt}</button>
-<ul class="list-unstyled collapse" id="{$id}-concept" style="swl-bullet">{for $s in $w/ancestor::tei:entry/tei:sense
+<button title="click to reveal {count($wx/ancestor::tei:entry/tei:sense)} syntactic words" class="btn badge badge-light" type="button" data-toggle="collapse" data-target="#{$wid}-concept">{$scnt}</button>
+<ul class="list-unstyled collapse" id="{$wid}-concept" style="swl-bullet">{for $s in $wx/ancestor::tei:entry/tei:sense
 let $sf := $s//tls:syn-func,
 $sfid := substring($sf/@corresp, 2),
 $sm := $s//tls:sem-feat/text(),
