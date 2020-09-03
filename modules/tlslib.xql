@@ -18,7 +18,7 @@ declare namespace tls="http://hxwd.org/ns/1.0";
 
 declare function local:string-to-ncr($s as xs:string){
  string-join(for $a in string-to-codepoints($s)
- return "&amp;#" || number($a) || ";" 
+ return "&#x26;#x" || number($a) || ";" 
  , "")
 };
 
@@ -727,7 +727,6 @@ declare function tlslib:display-seg($seg as node()*, $options as map(*) ) {
      else map:get($options, $options?slot1)[1] else ()
   ,$slot2 := if ($show-transl and not($ann = 'false')) then map:get($options, $options?slot2)[1] else ()
   (: check if transl + comment are related, if yes than do not manipulate tab-index :)
-  
 return
 (
 <div class="row {$mark}">
@@ -1138,9 +1137,9 @@ return
 };
 
 declare function tlslib:get-sw($word as xs:string, $context as xs:string) as item()* {
-let $words := (:if ($context = "dic") then:) 
-  collection(concat($config:tls-data-root, '/concepts/'))//tei:orth[contains(.,$word)] (:|
-  collection(concat($config:tls-data-root, '/concepts/'))//tei:orth[. = $word]:)
+let $words := if (($context = "dic") or contains($context, "concept")) then 
+  collection(concat($config:tls-data-root, '/concepts/'))//tei:orth[contains(.,$word)] else
+  collection(concat($config:tls-data-root, '/concepts/'))//tei:orth[. = $word]
   
 let $user := sm:id()//sm:real/sm:username/text()
 , $doann := contains($context, 'textview')  (: the page we were called from can annotate :)
