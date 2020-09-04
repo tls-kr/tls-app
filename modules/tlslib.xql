@@ -640,6 +640,7 @@ return $def
 
 declare function tlslib:format-swl($node as node(), $options as map(*)){
 let $user := sm:id()//sm:real/sm:username/text(),
+$usergroups := sm:id()//sm:group/text(),
 $type := $options?type,
 $context := $options?context
 let $concept := data($node/@concept),
@@ -685,7 +686,7 @@ else ()}
 if (not($context='review')) then
    (<span class="rp-5">{tlslib:format-button("review_swl_dialog('" || data($node/@xml:id) || "')", "Review the SWL for " || $zi[1], "octicons/svg/unverified.svg", "", "close", "tls-editor")}&#160;&#160;</span>,
    (: for my own swls: delete, otherwise approve :)
-   if ($user = $creator-id) then 
+   if (($user = $creator-id) or contains($usergroups, "tls-editor" )) then 
     tlslib:format-button("delete_swl('" || data($node/@xml:id) || "')", "Immediately delete this SWL for "||$zi[1], "open-iconic-master/svg/x.svg", "", "close", "tls-editor")
    else
     tlslib:format-button("save_swl_review('" || data($node/@xml:id) || "')", "Approve the SWL for " || $zi, "octicons/svg/thumbsup.svg", "", "close", "tls-editor")) else ()
