@@ -323,6 +323,8 @@ declare
 function app:show-hits($node as node()*, $model as map(*), $start as xs:int, $type as xs:string, $mode as xs:string, $search-type as xs:string)
 {   let $query := map:get($model, "query")
     ,$iskanji := tlslib:iskanji($query) 
+    (: no of results to display :)
+    ,$resno := 50
     ,$map := session:get-attribute($app:SESSION || ".types")
     ,$user := sm:id()//sm:real/sm:username/text()
     ,$qs := tokenize($query, "\s")
@@ -337,7 +339,7 @@ function app:show-hits($node as node()*, $model as map(*), $start as xs:int, $ty
     else ()}</h1>
     {if (not($search-type="4")) then
     (
-    <h4>Found {count($model("hits"))} matches {if (not($search-type="2")) then <span>, showing {$start} to {$start + 10 -1}</span> else ()}</h4>,
+    <h4>Found {count($model("hits"))} matches {if (not($search-type="2")) then <span>, showing {$start} to {$start + $resno -1}</span> else ()}</h4>,
     if ($search-type = "1") then 
     <p>
     {if ($start = 1) then ("Taxonomy of meanings: ", for $c in $qc return  <a class="btn badge badge-light" title="Show taxonomy of meanings for {$c}" href="char.html?char={$c}">{$c}</a>) else ()}
@@ -354,7 +356,7 @@ function app:show-hits($node as node()*, $model as map(*), $start as xs:int, $ty
     </p> else ()
     )
     else
-    <h4>Found {if (string-length($type) > 0) then (count(map:get($map, $type)),<span>; displaying matches {$start} to {min((count(map:get($map, $type)), xs:int($start) + 10))}</span>)
+    <h4>Found {if (string-length($type) > 0) then (count(map:get($map, $type)),<span>; displaying matches {$start} to {min((count(map:get($map, $type)), xs:int($start) + $resno))}</span>)
     else (count($model("hits")), <span> matches</span>)}</h4>}    
     {if ($search-type = "2") then 
     <div>
@@ -368,7 +370,7 @@ function app:show-hits($node as node()*, $model as map(*), $start as xs:int, $ty
     else if ($search-type = "3" or $search-type="1") then
     <div>
     <table class="table">
-    {for $h at $c in subsequence(map:get($model, "hits"), $start, 10)
+    {for $h at $c in subsequence(map:get($model, "hits"), $start, $resno)
       let $loc := if ($search-type="3") then substring($h/@corresp,2) else $h/@xml:id,
       $cseg := if ($search-type="3") then collection($config:tls-texts-root)//tei:seg[@xml:id=$loc] else (),
       $head := if ($search-type="3") then $cseg/ancestor::tei:div[1]/tei:head[1] else $h/ancestor::tei:div[1]/tei:head[1],
@@ -392,18 +394,18 @@ function app:show-hits($node as node()*, $model as map(*), $start as xs:int, $ty
     </table>
     <nav aria-label="Page navigation">
   <ul class="pagination">
-    <li class="page-item"><a class="page-link {if ($start = 1) then "disabled" else ()}" href="search.html?query={$query}&amp;start={$start - 10}&amp;search-type={$search-type}{if ($mode) then concat("&amp;mode=", $mode) else ()}">&#171;</a></li>
-    <li class="page-item"><a class="page-link" href="search.html?query={$query}&amp;start={$start + 10}&amp;search-type={$search-type}{if ($mode) then concat("&amp;mode=", $mode) else ()}">&#187;</a></li>
+    <li class="page-item"><a class="page-link {if ($start = 1) then "disabled" else ()}" href="search.html?query={$query}&amp;start={$start - $resno}&amp;search-type={$search-type}{if ($mode) then concat("&amp;mode=", $mode) else ()}">&#171;</a></li>
+    <li class="page-item"><a class="page-link" href="search.html?query={$query}&amp;start={$start + $resno}&amp;search-type={$search-type}{if ($mode) then concat("&amp;mode=", $mode) else ()}">&#187;</a></li>
   </ul>
 </nav>
     </div>
     else if (string-length($type) > 0) then 
      <div>{
-      app:get-more($type, xs:int($start), 10)}
+      app:get-more($type, xs:int($start), $resno)}
     <nav aria-label="Page navigation">
       <ul class="pagination">
-        <li class="page-item"><a class="page-link {if (xs:int($start) = 1) then "disabled" else ()}" href="search.html?query={$query}&amp;search-type={$search-type}&amp;type={$type}&amp;start={$start - 10}">&#171;</a></li>
-        <li class="page-item"><a class="page-link" href="search.html?query={$query}&amp;search-type={$search-type}&amp;type={$type}&amp;start={$start + 10}">&#187;</a></li>
+        <li class="page-item"><a class="page-link {if (xs:int($start) = 1) then "disabled" else ()}" href="search.html?query={$query}&amp;search-type={$search-type}&amp;type={$type}&amp;start={$start - $resno}">&#171;</a></li>
+        <li class="page-item"><a class="page-link" href="search.html?query={$query}&amp;search-type={$search-type}&amp;type={$type}&amp;start={$start + $resno}">&#187;</a></li>
       </ul>
      </nav>
      </div>
