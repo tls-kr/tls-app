@@ -1272,16 +1272,26 @@ return (
     sm:chgrp(xs:anyURI($uri), "tls-user")
     )
 };
-
+(: originally written for saving the sf-definitions in browse mode 
+2020-10-14: updated for editing also the concept definitions in browse mode
+:)
 declare function tlsapi:save-sf-def($map as map(*)){
 let $sfdoc := doc($config:tls-data-root || "/core/syntactic-functions.xml")
-let $sf := $sfdoc//tei:div[@xml:id=$map?id],
+,$sfnode := $sfdoc//tei:div[@xml:id=$map?id]
+let $sf := 
+if (empty($sfnode)) then (
+ collection($config:tls-data-root || "/concepts")//tei:div[@xml:id=$map?id]/tei:div[@type='definition']
+ )
+ else $sfnode,
 $head := $sf/tei:head,
 $firstp := $sf/tei:p,
 $user := sm:id()//sm:real/sm:username/text(),
 $def := <p xmlns="http://www.tei-c.org/ns/1.0" resp="#{$user}" modified="{current-dateTime()}">{$map?def}</p>
 return
  (if ($firstp) then update delete $firstp else (),
+ if (empty($sfnode)) then
+ update insert $def into $sf 
+ else 
  update insert $def following $head
  )
 };
