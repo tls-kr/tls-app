@@ -40,9 +40,9 @@ declare variable $app:lmap := map{
 "notes" : "Criteria and general notes",
 "old-chinese-criteria" : "Old Chinese Criteria",
 "modern-chinese-criteria" : "Modern Chinese Criteria",
-"taxonymy" : "Taxonoymy",
-"antonymy" : "Antonymy",
-"hypernymy" : "Kind Of",
+"taxonymy" : "Hypernym",
+"antonymy" : "Antonym",
+"hypernymy" : "Hyponym",
 "see" : "See also",
 "source-references" : "Bibliography",
 "warring-states-currency" : "Warring States Currency",
@@ -50,7 +50,7 @@ declare variable $app:lmap := map{
 "words" : "Words",
 "none" : "Texts or Translation",
 "old-chinese-contrasts" : "Old Chinese Contrasts",
-"pointers" : "Pointers",
+"pointers" : "Ontology",
 "huang-jingui" : "黄金貴：古漢語同義詞辨釋詞典",
 "KR1" : "經部",
 "KR2" : "史部",
@@ -771,7 +771,7 @@ function app:char($node as node()*, $model as map(*), $char as xs:string?, $id a
 (: concept display :)
 declare 
     %templates:wrap
-function app:concept($node as node()*, $model as map(*), $concept as xs:string?, $uuid as xs:string?)
+function app:concept($node as node()*, $model as map(*), $concept as xs:string?, $uuid as xs:string?, $ontshow as xs:string?)
 {
     (session:create(),
     let $user := sm:id()//sm:real/sm:username/text()
@@ -781,6 +781,7 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
      else
        collection($config:tls-data-root || "/concepts")//tei:div[tei:head[. = $concept]],
     $key := $c/@xml:id,
+    $show := if (string-length($ontshow) > 0) then " show" else "",
     $tr := $c//tei:list[@type="translations"]//tei:item
     let $ann := for $c in collection($config:tls-data-root||"/notes")//tls:ann[@concept-id=$key]
      return $c
@@ -815,19 +816,54 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
     <div class="card-header" id="pointers-head">
       <h5 class="mb-0 mt-2">
         <button class="btn" data-toggle="collapse" data-target="#pointers" >
-          Pointers
+         {$app:lmap?pointers} of {$c/tei:head/text()}
         </button>
       </h5>
       </div>
-     <div id="pointers" class="collapse" data-parent="#concept-content">
-     {for $p in $c//tei:div[@type="pointers"]//tei:list
+     <div id="pointers" class="collapse{$show}" data-parent="#concept-content">
+     {for $p in $c//tei:div[@type="pointers"]//tei:list[not(@type = "taxonymy")]
+     order by $p/@type
      return
-     (<h5 class="ml-2">{map:get($app:lmap, data($p/@type))}{tlslib:capitalize-first(data($p/@type/text()))}</h5>,
-     <p>{for $r in $p//tei:ref return
-     <span class="badge badge-light"><a href="concept.html?uuid={replace($r/@target, "#", "")}">{$r/text()}</a></span>
+     (<h5 class="ml-2">
+     {map:get($app:lmap, data($p/@type))}
+     {tlslib:capitalize-first(data($p/@type/text()))}</h5>,
+     (: we assume that clicking here implies an interest in the ontology, so we load in open state:)
+     <p>
+     {for $r in $p//tei:ref 
+     let $lk := replace($r/@target, "#", "")
+     return
+     (<span class="badge badge-light">
+     <a href="concept.html?uuid={$lk}&amp;ontshow=true">{$r/text()}</a>
+     </span>,
+     if ($p[@type = "hypernymy"]) then
+     for $u in tlslib:ontology-up($lk, -5) return
+     <span> -> <span class="badge">
+     <a href="concept.html?uuid={substring($u/@target, 2)}&amp;ontshow=true">{$u/text()}</a>
+     </span>
+     </span>
+     else ())} </p>)}
+     
+     {for $p in $c//tei:div[@type="pointers"]//tei:list[@type = "taxonymy"]
+     return
+     (<h5 class="ml-2">
+     {map:get($app:lmap, data($p/@type))}
+     {tlslib:capitalize-first(data($p/@type/text()))}</h5>,
+     <ul>{
+     for $r in $p//tei:ref 
+     let $lk := replace($r/@target, "#", "")
+     return
+  
+     <li><span class="badge">
+     <a href="concept.html?uuid={$lk}&amp;ontshow=true">{$r/text()}</a>
+     </span><ul>{
+     for $u in tlslib:ontology-links($lk, "taxonymy", 2 ) return
+     $u
+     }</ul></li>
+     }</ul>
+     )
      }
      
-     </p>)}
+    
      </div>
     </div>
     <!-- notes -->

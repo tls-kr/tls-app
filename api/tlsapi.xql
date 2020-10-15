@@ -1290,6 +1290,7 @@ $def := <p xmlns="http://www.tei-c.org/ns/1.0" resp="#{$user}" modified="{curren
 return
  (if ($firstp) then update delete $firstp else (),
  if (empty($sfnode)) then
+ (: notwithstanding the naming, this is updating the definition in the concept :)
  update insert $def into $sf 
  else 
  update insert $def following $head

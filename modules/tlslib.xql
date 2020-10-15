@@ -91,6 +91,40 @@ declare function tlslib:getdate($node as node()) as xs:int{
  xs:int(($na + $nb) div 2)
 };
   
+(: Helper for ontology  I guess I need to return a map? :)  
+declare function tlslib:ontology-up($uid as xs:string, $cnt as xs:int){
+  let $concept := collection($config:tls-data-root || "/concepts")//tei:div[@xml:id=$uid],
+  $type := "hypernymy",
+  $hyp := $concept//tei:list[@type=$type]//tei:ref
+  return
+  for $r in $hyp
+  return
+  ($r, tlslib:ontology-up(substring($r/@target, 2), $cnt))
+};
+
+declare function tlslib:ontology-links($uid as xs:string, $type as xs:string, $cnt as xs:int){
+  let $concept := collection($config:tls-data-root || "/concepts")//tei:div[@xml:id=$uid],
+  $hyp := $concept//tei:list[@type=$type]//tei:ref
+  return
+    for $r in $hyp
+     return
+     <li>
+      <span class="badge">
+      <a href="concept.html?uuid={substring($r/@target, 2)}&amp;ontshow=true">{$r/text()}</a>
+      </span>
+      {
+      if ($cnt < 3) then 
+      <ul>
+      {tlslib:ontology-links(substring($r/@target, 2), $type, $cnt + 1)}
+      </ul>
+      else 
+      if (count(tlslib:ontology-links(substring($r/@target, 2), $type, $cnt)) > 0) then
+        <span>...</span>
+      else ()  
+      }
+      </li>
+};
+  
 (:~
  : Get the content source for the given slot, either 1 or 2
  : @param $seg the line for which we need content
