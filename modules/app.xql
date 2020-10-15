@@ -895,10 +895,11 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
       </h5>
       </div>
      <div id="bibl" class="collapse" data-parent="#concept-content">
+     <ul>
      {for $d in $c//tei:div[@type="source-references"]//tei:bibl
      return
-     $d
-     }     
+     tlslib:display-bibl($d)
+     }</ul>  
      </div>
     </div>
     <!-- -->

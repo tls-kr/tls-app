@@ -149,7 +149,9 @@ return $retmap
 
 declare function tlslib:get-translations($textid as xs:string){
 let $user := sm:id()//sm:real/sm:username/text()
-  (: this is trying to work around a bug in fn:collection :)
+  (: this is trying to work around a bug in fn:collection 
+  TODO: This fails if the user is guest.  Make a guest collection /db/users/guest? No, guest can't access the translation
+  :)
   , $t1 := collection($config:tls-user-root || $user || "/translations")//tei:bibl[@corresp="#"||$textid]/ancestor::tei:fileDesc//tei:editor[@role='translator' or @role='creator'] 
   , $t2 := collection($config:tls-translation-root)//tei:bibl[@corresp="#"||$textid]/ancestor::tei:fileDesc//tei:editor[@role='translator' or @role='creator']
  let $tr := map:merge(
@@ -534,6 +536,16 @@ declare function tlslib:trsubmenu($textid as xs:string, $slot as xs:string, $tri
   </div>
 </div>
 
+};
+
+declare function tlslib:display-bibl($bibl as node()){
+<li><span class="font-weight-bold">{$bibl/tei:title/text()}</span>
+(<span class="badge">{$bibl/tei:ref}</span>)
+<span>p. {$bibl/tei:biblScope}</span>
+{for $p in $bibl/tei:note/tei:p return
+<p>{$p/text()}</p>}
+
+</li>
 };
 
 (:~
