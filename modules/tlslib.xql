@@ -118,7 +118,9 @@ declare function tlslib:ontology-links($uid as xs:string, $type as xs:string, $c
       {tlslib:ontology-links(substring($r/@target, 2), $type, $cnt + 1)}
       </ul>
       else 
-      if (count(tlslib:ontology-links(substring($r/@target, 2), $type, $cnt)) > 0) then
+      if (count( 
+      collection($config:tls-data-root || "/concepts")//tei:div[@xml:id=substring($r/@target, 2)]//tei:list[@type=$type]//tei:ref
+      ) > 1) then
         <span>...</span>
       else ()  
       }
