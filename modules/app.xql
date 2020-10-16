@@ -767,6 +767,35 @@ function app:char($node as node()*, $model as map(*), $char as xs:string?, $id a
 )};   
 
    
+(: rhetdev display :)
+declare 
+    %templates:wrap
+function app:rhetdev($node as node()*, $model as map(*), $uuid as xs:string?, $ontshow as xs:string?)
+{
+    (session:create(),
+    let $user := sm:id()//sm:real/sm:username/text()
+    let $key := replace($uuid, '^#', '')
+    let $rd :=  
+       collection($config:tls-data-root || "/core")//tei:div[@xml:id=$key],        
+    $show := if (string-length($ontshow) > 0) then " show" else "",
+    $tr := $rd//tei:list[@type="translations"]//tei:item
+
+    return 
+    <div class="row" id="rhetdev-id" data-id="{$key}">
+    <div class="card col-sm-12" style="max-width: 1000px;">
+    <div class="card-body">
+    <h4 class="card-title">{$rd/tei:head/text()}&#160;&#160;{for $t in $tr return 
+      <span class="badge badge-light" title="{map:get($app:lmap, $t/@xml:lang)}">{$t/text()}</span>} 
+      </h4>
+    <h5 class="card-subtitle" id="rd-test" >{($rd/tei:div[@type="definition"]//tei:p)[1]/text()}</h5>
+    <div id="rhetdev-content" class="accordion">
+      </div>
+      
+      </div>
+      </div>
+      </div>    
+    )
+};   
    
 (: concept display :)
 declare 
@@ -781,6 +810,7 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
      else
        collection($config:tls-data-root || "/concepts")//tei:div[tei:head[. = $concept]],
     $key := $c/@xml:id,
+    $edit := sm:id()//sm:groups/sm:group[. = "tls-editor"],
     $show := if (string-length($ontshow) > 0) then " show" else "",
     $tr := $c//tei:list[@type="translations"]//tei:item
     let $ann := for $c in collection($config:tls-data-root||"/notes")//tls:ann[@concept-id=$key]
@@ -789,7 +819,7 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
     <div class="row" id="concept-id" data-id="{$key}">
     <div class="card col-sm-12" style="max-width: 1000px;">
     <div class="card-body">
-    <h4 class="card-title">{$c/tei:head/text()}&#160;&#160;{for $t in $tr return 
+    <h4 class="card-title"><span id="{$key}-la" class="sf" contenteditable="{if ($edit) then 'true' else 'false'}">{$c/tei:head/text()}</span>&#160;&#160;{for $t in $tr return 
       <span class="badge badge-light" title="{map:get($app:lmap, $t/@xml:lang)}">{$t/text()}</span>} 
       {if  ("tls-admin" = sm:get-user-groups($user)) then 
       <a target="_blank" class="float-right badge badge-pill badge-light" href="{

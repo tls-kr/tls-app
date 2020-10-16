@@ -208,7 +208,9 @@ $para := map{
 "char" : if ($rpara?word = "xx") then $swl//tei:form/tei:orth/text() else $rpara?word,
 "line-id" : if ($rpara?line-id = "xx") then tokenize(substring($swl//tei:link/@target, 2), " #")[1] else $rpara?line-id,
 "line" : if ($rpara?line = "xx") then $swl//tls:srcline/text() else $rpara?line,
-"concept" : if ($rpara?concept = "xx") then data($swl/@concept) else $rpara?concept,
+"concept" : if ($rpara?concept = "xx") then
+  if (not(empty($concept-defined))) then $concept-defined/tei:head/text() else 
+  data($swl/@concept) else $rpara?concept,
 "concept-id" : if ($rpara?concept-id = "xx") then data($swl/@xml:id) else $rpara?concept-id,
 "synfunc-id" : data($swl//tls:syn-func/@corresp)=>substring(2),
 "synfunc" : data($swl//tei:sense/tei:gramGrp/tls:syn-func/text()),
@@ -1277,21 +1279,38 @@ return (
 :)
 declare function tlsapi:save-sf-def($map as map(*)){
 let $sfdoc := doc($config:tls-data-root || "/core/syntactic-functions.xml")
+,$type := $map?type
 ,$sfnode := $sfdoc//tei:div[@xml:id=$map?id]
 let $sf := 
 if (empty($sfnode)) then (
+ if ($type = "-la") then
+ collection($config:tls-data-root || "/concepts")//tei:div[@xml:id=$map?id]
+ else
  collection($config:tls-data-root || "/concepts")//tei:div[@xml:id=$map?id]/tei:div[@type='definition']
  )
  else $sfnode,
 $head := $sf/tei:head,
 $firstp := $sf/tei:p,
 $user := sm:id()//sm:real/sm:username/text(),
-$def := <p xmlns="http://www.tei-c.org/ns/1.0" resp="#{$user}" modified="{current-dateTime()}">{$map?def}</p>
+$def := if ($type = '-la') then 
+<head xmlns="http://www.tei-c.org/ns/1.0" resp="#{$user}" modified="{current-dateTime()}">{normalize-space($map?def)}</head>
+else
+<p xmlns="http://www.tei-c.org/ns/1.0" resp="#{$user}" modified="{current-dateTime()}">{normalize-space($map?def)}</p>
 return
  (if ($firstp) then update delete $firstp else (),
  if (empty($sfnode)) then
+ if ($type = '-la') then 
+   (
+   (: updating the label :)
+   update replace $head with $def,
+   (: also update the ref elements in other concepts :)
+   for $r in collection($config:tls-data-root || "/concepts")//tei:ref[@target="#"||$map?id]
+   return 
+   update replace $r with <ref xmlns="http://www.tei-c.org/ns/1.0" resp="#{$user}" modified="{current-dateTime()}" target="#{$map?id}">{normalize-space($map?def)}</ref> 
+   )
+ else
  (: notwithstanding the naming, this is updating the definition in the concept :)
- update insert $def into $sf 
+   update insert $def into $sf 
  else 
  update insert $def following $head
  )

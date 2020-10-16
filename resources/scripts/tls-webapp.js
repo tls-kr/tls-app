@@ -876,17 +876,18 @@ $( ".sf").keyup(function ( event ) {
     var sf = $(this).text()
     console.log("tab", $(this).data('before') , "h", sf)
     if ($(this).data('before') !== sf){    
-        save_sf_def (sfid.slice(0, -3), sf)
+        // we keep the end of the id to distinguish different use cases
+        save_sf_def (sfid.slice(0, -3), sf, sfid.slice(-3))
         $(this).data('before', sf)
     }}
     });
         
-function save_sf_def (sfid, def){
+function save_sf_def (sfid, def, tp){
   console.log(sfid)
   $.ajax({
   type : "PUT",
   dataType : "html",
-  url : "api/responder.xql?func=save-sf-def&id="+sfid+"&def="+def,
+  url : "api/responder.xql?func=save-sf-def&id="+sfid+"&def="+def+"&type="+tp,
   success : function(resp){
     toastr.info("Modification for definition saved.", "HXWD says:");
   },
