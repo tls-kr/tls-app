@@ -1330,6 +1330,19 @@ return
 </ul>
 </div>
 };
+declare
+    %templates:wrap
+function app:stats($node as node()*, $model as map(*)){
+let $d := for $d1 in collection($config:tls-data-root||"/statistics/")//div[@type="statistics"]
+   let $m := xs:dateTime($d1/@modified)
+   order by $m descending
+   return $d1
+return
+<div>
+<h3>Overview of the content of the database (last updated: {format-dateTime(xs:dateTime(data($d[1]/@modified)), "[MNn] [D], [Y]", "en", (), ())})</h3>
+{$d[1]//table[@id='stat-overview']}
+</div>
+};
 
 declare
     %templates:wrap
