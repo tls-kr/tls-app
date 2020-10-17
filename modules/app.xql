@@ -130,7 +130,7 @@ function app:browse($node as node()*, $model as map(*), $type as xs:string?, $fi
     return
     if ($type = "word") then app:browse-word($type, $filterString)
     else if ($type = "taxchar") then app:browse-char($type, $filterString)
-    else if (("concept", "syn-func", "sem-feat") = $type) then    
+    else if (("concept", "syn-func", "sem-feat", "rhet-dev") = $type) then    
     let $hits :=  app:do-browse($type, $filterString)      
     let $store := session:set-attribute("tls-browse", $hits)
     return
@@ -161,7 +161,12 @@ function app:browse($node as node()*, $model as map(*), $type as xs:string?, $fi
     ,$id := $h/@xml:id
     ,$edit := sm:id()//sm:groups/sm:group[. = "tls-editor"]
     ,$d := $h/tei:div[@type="definition"]
-    ,$def := if ($type = 'concept') then ($d/tei:p, <small>{$d/tei:note}</small>) else ($h/tei:p, <small>{$h/tei:note}</small>)
+    ,$def := if ($type = 'concept') then
+       ($d/tei:p, <small>{$d/tei:note}</small>) else 
+       if ($type = 'rhet-dev') then 
+        ($d/tei:p, <small>{$d/tei:note}</small>)    
+       else
+        ($h/tei:p, <small>{$h/tei:note}</small>)
     order by $n
     return
     (
@@ -169,6 +174,7 @@ function app:browse($node as node()*, $model as map(*), $type as xs:string?, $fi
     <td>{
     switch ($type) 
         case  "concept" return <a href="concept.html?uuid={$id}">{$n}</a>
+        case  "rhet-dev" return <a href="rhetdev.html?uuid={$id}">{$n}</a>
         default return (tlslib:format-button("delete_sf('"||$id||"', '"||$type||"')", "Delete this syntactic definition.", "open-iconic-master/svg/x.svg", "", "", "tls-editor"),
         <a id="{$id}-abbr" onclick="show_use_of('{$type}', '{$id}')">{$n}</a>)
     }</td>
@@ -781,16 +787,111 @@ function app:rhetdev($node as node()*, $model as map(*), $uuid as xs:string?, $o
     $tr := $rd//tei:list[@type="translations"]//tei:item
 
     return 
-    <div class="row" id="rhetdev-id" data-id="{$key}">
-    <div class="card col-sm-12" style="max-width: 1000px;">
-    <div class="card-body">
+    <div class="row" id="rhetdev-id" data-id="{$key}" >
+    <div class="card col-sm-12" style="max-width: 1000px;background-color:honeydew;">
+    <div class="card-body" >
     <h4 class="card-title">{$rd/tei:head/text()}&#160;&#160;{for $t in $tr return 
       <span class="badge badge-light" title="{map:get($app:lmap, $t/@xml:lang)}">{$t/text()}</span>} 
       </h4>
     <h5 class="card-subtitle" id="rd-test" >{($rd/tei:div[@type="definition"]//tei:p)[1]/text()}</h5>
     <div id="rhetdev-content" class="accordion">
+    
+    <!-- pointers -->
+    <div class="card">
+    <div class="card-header" id="pointers-head">
+      <h5 class="mb-0 mt-2">
+        <button class="btn" data-toggle="collapse" data-target="#pointers" >
+         {$app:lmap?pointers} of {$rd/tei:head/text()}
+        </button>
+      </h5>
       </div>
-      
+     <div id="pointers" class="collapse{$show}" data-parent="#rhetdev-content">
+     {for $p in $rd//tei:div[@type="pointers"]//tei:list[not(@type = "taxonymy")]
+     order by $p/@type
+     return
+     (<h5 class="ml-2">
+     {map:get($app:lmap, data($p/@type))}
+     {tlslib:capitalize-first(data($p/@type/text()))}</h5>,
+     (: we assume that clicking here implies an interest in the ontology, so we load in open state:)
+     <p>
+     {for $r in $p//tei:ref 
+     let $lk := replace($r/@target, "#", "")
+     return
+     (<span class="badge badge-light">
+     <a href="rhetdev.html?uuid={$lk}&amp;ontshow=true">{$r/text()}</a>
+     </span>,
+     if ($p[@type = "hypernymy"]) then
+     for $u in tlslib:ontology-up($lk, -5) return
+     <span> -> <span class="badge">
+     <a href="rhetdev.html?uuid={substring($u/@target, 2)}&amp;ontshow=true">{$u/text()}</a>
+     </span>
+     </span>
+     else ())} </p>)}
+     
+     {for $p in $rd//tei:div[@type="pointers"]//tei:list[@type = "taxonymy"]
+     return
+     (<h5 class="ml-2">
+     {map:get($app:lmap, data($p/@type))}
+     {tlslib:capitalize-first(data($p/@type/text()))}</h5>,
+     <ul>{
+     for $r in $p//tei:ref 
+     let $lk := replace($r/@target, "#", "")
+     return
+  
+     <li><span class="badge">
+     <a href="rhetdev.html?uuid={$lk}&amp;ontshow=true">{$r/text()}</a>
+     </span><ul>{
+     for $u in tlslib:ontology-links($lk, "taxonymy", 2 ) return
+     $u
+     }</ul></li>
+     }</ul>
+     )
+     }
+     
+    
+     </div>
+    </div>
+<!-- end pointers -->
+    <!-- notes -->
+    <div class="card">
+    <div class="card-header" id="notes-head">
+      <h5 class="mb-0 mt-2">
+        <button class="btn" data-toggle="collapse" data-target="#notes" >
+          {$app:lmap?notes}
+        </button>
+      </h5>
+      </div>
+     <div id="notes" class="collapse" data-parent="#rhetdev-content">
+     {for $d in $rd//tei:note
+     return
+     (
+     <div>{for $p in $d//tei:p return
+     <p>{$p}</p>
+     }     
+     </div>)}
+     </div>
+    </div>
+    <!-- bibl -->
+    <div class="card">
+    <div class="card-header" id="bibl-head">
+      <h5 class="mb-0 mt-2">
+        <button class="btn" data-toggle="collapse" data-target="#bibl" >
+          Source references
+        </button>
+      </h5>
+      </div>
+     <div id="bibl" class="collapse" data-parent="#rhetdev-content">
+     <ul>
+     {for $d in $rd//tei:div[@type="source-references"]//tei:bibl
+     return
+     tlslib:display-bibl($d)
+     }</ul>  
+     </div>
+    </div>
+    
+      </div>
+    <div><h5>Rhetorical device locations: {$rd/tei:div[@type='rhet-dev-loc']//tei:p/text()}</h5>
+    </div>  
       </div>
       </div>
       </div>    
@@ -1084,6 +1185,7 @@ return
                                 -->
                                 <a class="dropdown-item" href="browse.html?type=syn-func">Syntactical functions</a>
                                 <a class="dropdown-item" href="browse.html?type=sem-feat">Semantic features</a>
+                                <a class="dropdown-item" href="browse.html?type=rhet-dev">Rhetorical devices</a>
                                 <div class="dropdown-divider"/>
                                 <!-- will need to make another menu level here for the bookmarks -->
                                 <a class="dropdown-item" href="textlist.html">Texts</a>
