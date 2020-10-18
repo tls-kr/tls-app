@@ -856,9 +856,7 @@ function app:rhetdev($node as node()*, $model as map(*), $uuid as xs:string?, $o
     <div class="card">
     <div class="card-header" id="notes-head">
       <h5 class="mb-0 mt-2">
-        <button class="btn" data-toggle="collapse" data-target="#notes" >
-          {$app:lmap?notes}
-        </button>
+        <button class="btn" data-toggle="collapse" data-target="#notes" >Notes ({string-length($rd//tei:note)} characters)</button>
       </h5>
       </div>
      <div id="notes" class="collapse" data-parent="#rhetdev-content">
@@ -876,7 +874,7 @@ function app:rhetdev($node as node()*, $model as map(*), $uuid as xs:string?, $o
     <div class="card-header" id="bibl-head">
       <h5 class="mb-0 mt-2">
         <button class="btn" data-toggle="collapse" data-target="#bibl" >
-          Source references
+          Source references ({count($rd//tei:div[@type="source-references"]//tei:bibl)} items) 
         </button>
       </h5>
       </div>
@@ -933,7 +931,7 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
     <div class="card-header" id="altnames-head">
       <h5 class="mb-0">
         <button class="btn" data-toggle="collapse" data-target="#altnames" >
-          Alternate labels
+          Alternate labels ({count($c//tei:list[@type="altnames"]/tei:item)})
         </button>
       </h5>
       </div>
@@ -1002,7 +1000,7 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
     <div class="card-header" id="notes-head">
       <h5 class="mb-0 mt-2">
         <button class="btn" data-toggle="collapse" data-target="#notes" >
-          {$app:lmap?notes}
+          {$app:lmap?notes} ({string-length(string-join($c//tei:div[@type="notes"]//tei:div, ''))} characters)
         </button>
       </h5>
       </div>
@@ -1021,7 +1019,7 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
     <div class="card-header" id="bibl-head">
       <h5 class="mb-0 mt-2">
         <button class="btn" data-toggle="collapse" data-target="#bibl" >
-          Source references
+          Source references ({count($c//tei:div[@type="source-references"]//tei:bibl)} items)
         </button>
       </h5>
       </div>
@@ -1041,7 +1039,7 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
      <div class="card-header" id="look-head">
       <h5 class="mb-0 mt-2">
         <button class="btn" data-toggle="collapse" data-target="#look" >
-          Attributions overview <span class="btn badge badge-light">{count($ann)} attested</span>
+          Attributions overview (<span class="btn badge badge-light">{count($ann)} attested)</span>
         </button>
       </h5>
       </div>

@@ -561,7 +561,10 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
         else (),
       $pseg := if ($prec > 0) then $targetseg/preceding::tei:seg[fn:position() < $prec] 
         else (),
-      $head := $targetseg/ancestor::tei:div[1]/tei:head[1],
+      $d := $targetseg/ancestor::tei:div[1],
+      $head := $d/tei:head[1],
+      $sc := count($d//tei:seg),
+      $xpos := index-of($d//tei:seg/@xml:id, $targetseg/@xml:id),
 (:      $title := $model('title')/text(),:)
       $dseg := ($pseg, $targetseg, $fseg),
       $show-transl := not(contains(sm:id()//sm:group/text(), "guest")),
@@ -577,7 +580,7 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
       {(:  this is the same structure as the one display-seg will fill it 
       with selection for translation etc, we use this as a header line :)()}
        <div class="row">
-        <div class="col-sm-2" id="toprow-1"><!-- zh --></div>
+        <div class="col-sm-2" id="toprow-1"><span class="font-weight-bold">{$head}</span><span class="btn badge badge-light">line {$xpos} / {($xpos * 100) idiv $sc}%</span><!-- zh --></div>
         <div class="col-sm-5" id="toprow-2"><!-- tr -->
         {if ($show-transl) then tlslib:trsubmenu($model?textid, "slot1", $slot1-id, $tr) else ()}
         </div>
