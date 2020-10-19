@@ -1181,7 +1181,7 @@ return
                                 <!--
                                 <a class="dropdown-item" href="browse.html?type=word">Words</a>
                                 -->
-                                <a class="dropdown-item" href="browse.html?type=syn-func">Syntactical functions</a>
+                                <a class="dropdown-item" href="browse.html?type=syn-func">Syntactic functions</a>
                                 <a class="dropdown-item" href="browse.html?type=sem-feat">Semantic features</a>
                                 <a class="dropdown-item" href="browse.html?type=rhet-dev">Rhetorical devices</a>
                                 <div class="dropdown-divider"/>
