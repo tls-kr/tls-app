@@ -91,15 +91,15 @@ return
 </tr>
 <tr id="stat-ov-syn-func">
 <td>Syntactical functions</td>
-<td title="Total number of syntactical functions defined">{count($syn)}</td>
-<td title="Number of unique syntactical functions used in attributions">{count(distinct-values($ann//tls:syn-func/@corresp))}</td>
+<td title="Total number of syntactic functions defined">{count($syn)}</td>
+<td title="Number of unique syntactic functions used in attributions">{count(distinct-values($ann//tls:syn-func/@corresp))}</td>
 <td title="Total number of syntactical functions in attributions">{count($ann//tls:syn-func/@corresp)}</td>
 </tr>
 <tr id="stat-ov-sem-feat">
 <td>Semantical features</td>
-<td title="Total number of semantical features defined">{count($sem)}</td>
-<td title="Number of unique semantical features used in attributions">{count(distinct-values($ann//tls:sem-feat/@corresp))}</td>
-<td title="Total number of semantical features in attributions">{count($ann//tls:sem-feat/@corresp)}</td>
+<td title="Total number of semantic features defined">{count($sem)}</td>
+<td title="Number of unique semantic features used in attributions">{count(distinct-values($ann//tls:sem-feat/@corresp))}</td>
+<td title="Total number of semantic features in attributions">{count($ann//tls:sem-feat/@corresp)}</td>
 </tr>
 <tr>
 <td id="stat-ov-rhet-dev">Rhetorical devices</td>
@@ -154,10 +154,7 @@ local:translations()}
 </div>   
 )) 
  else doc($docpath)
-return 
-    (sm:chmod(xs:anyURI($docpath), "rw-rw-rw-"),
-     sm:chgrp(xs:anyURI($docpath), "tls-user"),
-     sm:chown(xs:anyURI($docpath), "tls"))
+return $docpath
 };
 
 local:save-stats()
