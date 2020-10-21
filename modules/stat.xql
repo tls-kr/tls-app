@@ -90,13 +90,13 @@ return
 <td title="Total number of syntactic words in attributions">{count($ann//tei:sense/@corresp)}</td>
 </tr>
 <tr id="stat-ov-syn-func">
-<td>Syntactical functions</td>
+<td>Syntactic functions</td>
 <td title="Total number of syntactic functions defined">{count($syn)}</td>
 <td title="Number of unique syntactic functions used in attributions">{count(distinct-values($ann//tls:syn-func/@corresp))}</td>
 <td title="Total number of syntactical functions in attributions">{count($ann//tls:syn-func/@corresp)}</td>
 </tr>
 <tr id="stat-ov-sem-feat">
-<td>Semantical features</td>
+<td>Semantic features</td>
 <td title="Total number of semantic features defined">{count($sem)}</td>
 <td title="Number of unique semantic features used in attributions">{count(distinct-values($ann//tls:sem-feat/@corresp))}</td>
 <td title="Total number of semantic features in attributions">{count($ann//tls:sem-feat/@corresp)}</td>
