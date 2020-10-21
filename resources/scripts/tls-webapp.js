@@ -450,6 +450,16 @@ function get_sw(sel, xid, line){
   $('#swl-select').html(resp)
   }
   });
+  } else {
+      console.log("No selection, show variants?");
+      $.ajax({
+      type : "GET",
+      dataType : "html",
+      url : "api/responder.xql?func=tlslib:get-related&line="+line+"&seg="+xid, 
+      success : function(resp){
+      $('#swl-select').html(resp)
+  }
+  });
   }
 };
 

@@ -12,6 +12,8 @@ module namespace tlslib="http://hxwd.org/lib";
 
 import module namespace config="http://hxwd.org/config" at "config.xqm";
 
+import module namespace krx="http://hxwd.org/krx-utils" at "/db/apps/tls-app/modules/krx-utils.xql";
+
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
 
@@ -635,7 +637,7 @@ declare function tlslib:swl-form-dialog($context as xs:string){
 <div id="swl-form" class="card ann-dialog overflow-auto">
 {if ($context = 'textview') then
  <div class="card-body">
-    <h5 class="card-title">{if (sm:is-authenticated()) then "New Attribution:" else "Existing SW for " }<strong class="ml-2"><span id="swl-query-span">Word or char to annotate</span>:</strong>
+    <h5 id="new-att-title" class="card-title">{if (sm:is-authenticated()) then "New Attribution:" else "Existing SW for " }<strong class="ml-2"><span id="swl-query-span">Word or char to annotate</span>:</strong>
      <button type="button" class="close" onclick="hide_new_att()" aria-label="Close" title="Close">
      <img class="icon" src="resources/icons/open-iconic-master/svg/circle-x.svg"/>  
      </button></h5>
@@ -659,7 +661,7 @@ declare function tlslib:swl-form-dialog($context as xs:string){
     </div>    
 else 
  <div class="card-body">
-    <h5 class="card-title">Existing SW for <strong class="ml-2"><span id="swl-query-span"></span></strong>
+    <h5 id="new-att-title" class="card-title">Existing SW for <strong class="ml-2"><span id="swl-query-span"></span></strong>
      <button type="button" class="close" onclick="hide_new_att()" aria-label="Close" title="Close">
      <img class="icon" src="resources/icons/open-iconic-master/svg/circle-x.svg"/>  
      </button></h5>
@@ -1362,3 +1364,17 @@ declare function tlslib:ngram-query($queryStr as xs:string?, $mode as xs:string?
     return $hit 
 };
 
+(: get related texts: look at Manifest.xml? not yet :)
+
+declare function tlslib:get-related($map as map(*)){
+let $line := $map?line
+,$sid := $map?seg
+, $res := krx:get-variants($sid)
+, $edid := string-join(tokenize($sid, "_")[1,2], "_")
+,$ltab := collection("/db/apps/tls-texts/aux/lnk")/Q{}div[@ed=$edid]
+return
+<li class="mb-3">
+{$line}, {$sid}
+<p>{count($ltab//Q{}seg)}</p>
+</li>
+};
