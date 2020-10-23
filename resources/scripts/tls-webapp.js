@@ -434,6 +434,13 @@ function get_sw(sel, xid, line){
    $( "#swl-line-text-span" ).html(line);      
    $( "#swl-query" ).val( sel);
    $( "#swl-query-span" ).html(sel);
+   $( "#swl-select").html("");
+   if (sel.length == 0) {
+       $ ("#new-att-title").html("In other editions: ");
+       $ ("#new-att-no-perm").html("");
+   } else {
+       $ ("#new-att-title").html('Existing SW for <strong class="ml-2"><span id="swl-query-span">'+sel+'</span></strong>');       
+   }
 //   $( "#swl-form" ).removeAttr("style");
    $( "#swl-form" ).css("max-height", dh - 51);
    $( "#swl-form" ).css("max-width", new_width - 10);
