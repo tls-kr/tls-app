@@ -107,10 +107,12 @@ declare function tlslib:ontology-links($uid as xs:string, $type as xs:string, $c
   $hyp := $concept//tei:list[@type=$type]//tei:ref
   return
     for $r in $hyp
+    let $def := collection($config:tls-data-root || "/concepts")//tei:div[@xml:id=substring($r/@target, 2)]/tei:div[@type='definition']/tei:p/text()
      return
      <li>
       <span class="badge">
       <a href="concept.html?uuid={substring($r/@target, 2)}&amp;ontshow=true">{$r/text()}</a>
+      <small style="display:inline;">　{$def}</small>
       </span>
       {
       if ($cnt < 3) then 

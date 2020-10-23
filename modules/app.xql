@@ -960,15 +960,19 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
      <p>
      {for $r in $p//tei:ref 
      let $lk := replace($r/@target, "#", "")
+     ,$def := collection($config:tls-data-root || "/concepts")//tei:div[@xml:id=$lk]/tei:div[@type='definition']/tei:p/text()
      return
      (<span class="badge badge-light">
      <a href="concept.html?uuid={$lk}&amp;ontshow=true">{$r/text()}</a>
-     </span>,
+     </span>,<small style="display:block;">{$def}</small>,
      if ($p[@type = "hypernymy"]) then
-     for $u in tlslib:ontology-up($lk, -5) return
+     for $u in tlslib:ontology-up($lk, -5) 
+     let $def := collection($config:tls-data-root || "/concepts")//tei:div[@xml:id=substring($u/@target, 2)]/tei:div[@type='definition']/tei:p/text()
+     return
      <span> -> <span class="badge">
      <a href="concept.html?uuid={substring($u/@target, 2)}&amp;ontshow=true">{$u/text()}</a>
      </span>
+     <small style="display:block;">{$def}</small>
      </span>
      else ())} </p>)}
      
@@ -980,13 +984,14 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
      <ul>{
      for $r in $p//tei:ref 
      let $lk := replace($r/@target, "#", "")
+      ,$def := collection($config:tls-data-root || "/concepts")//tei:div[@xml:id=$lk]/tei:div[@type='definition']/tei:p/text()
      return
   
      <li><span class="badge">
      <a href="concept.html?uuid={$lk}&amp;ontshow=true">{$r/text()}</a>
+     <small style="display:inline;">　{$def}</small>
      </span><ul>{
-     for $u in tlslib:ontology-links($lk, "taxonymy", 2 ) return
-     $u
+     for $u in tlslib:ontology-links($lk, "taxonymy", 2 ) return $u
      }</ul></li>
      }</ul>
      )
