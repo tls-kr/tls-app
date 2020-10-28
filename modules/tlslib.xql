@@ -1236,8 +1236,8 @@ return
 for $zi at $pos in $z 
 let $wx := collection(concat($config:tls-data-root, '/concepts/'))//tei:div[@xml:id = $id]//tei:orth[. = $zi],
 $scnt := count($wx/ancestor::tei:entry/tei:sense),
-$wid := $wx/ancestor::tei:entry/@xml:id
-
+$wid := $wx/ancestor::tei:entry/@xml:id,
+$syn := $wx/ancestor::tei:div[@xml:id = $id]//tei:div[@type="old-chinese-criteria"]//tei:p
 return
 <li class="mb-3">
 {if ($zi) then
@@ -1261,7 +1261,15 @@ onclick="show_newsw({{'wid':'xx', 'py': '{$py}','concept' : '{$concept}', 'conce
 
 {if ($scnt > 0) then      
 <span>      
+{if (count($syn) > 0) then
+<button title="Click to view {count($syn)} synonyms" class="btn badge badge-info" data-toggle="collapse" data-target="#{$wid}-syn">SYN</button> else ()}
 <button title="click to reveal {count($wx/ancestor::tei:entry/tei:sense)} syntactic words" class="btn badge badge-light" type="button" data-toggle="collapse" data-target="#{$wid}-concept">{$scnt}</button>
+<ul class="list-unstyled collapse" id="{$wid}-syn" style="swl-bullet">{
+for $l in $syn
+return
+<li>{$l}</li>
+}
+</ul>
 <ul class="list-unstyled collapse" id="{$wid}-concept" style="swl-bullet">{for $s in $wx/ancestor::tei:entry/tei:sense
 let $sf := $s//tls:syn-func,
 $sfid := substring($sf/@corresp, 2),
