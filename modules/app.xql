@@ -889,6 +889,16 @@ function app:rhetdev($node as node()*, $model as map(*), $uuid as xs:string?, $o
     
       </div>
     <div><h5>Rhetorical device locations: {$rd/tei:div[@type='rhet-dev-loc']//tei:p/text()}</h5>
+    <ul>
+    {for $rdl in collection($config:tls-data-root || "/notes/rdl")//tls:span[@rhet-dev-id=$key]
+    let $tl := substring(($rdl//tls:srcline[1]/@target)[1], 2)
+    , $ti := data(($rdl//tls:srcline[1]/@title)[1])
+    return
+    <li><a href="textview.html?location={$tl}">{$ti}</a><span>{($rdl//tls:srcline[1])[1]}</span>
+    {if ($rdl/tls:note) then <p>{$rdl/tls:note}</p> else ()}
+    </li>
+    }
+    </ul>
     </div>  
       </div>
       </div>

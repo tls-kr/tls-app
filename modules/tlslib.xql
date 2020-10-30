@@ -799,7 +799,14 @@ for $swl in collection($config:tls-data-root|| "/notes")//tls:srcline[@target=$l
 let $pos := if (string-length($swl/@pos) > 0) then xs:int(tokenize($swl/@pos)[1]) else 0
 order by $pos
 return
-tlslib:format-swl($swl/ancestor::tls:ann, map{'type' : 'row'})}
+if ($swl/ancestor::tls:ann) then
+tlslib:format-swl($swl/ancestor::tls:ann, map{'type' : 'row'})
+else 
+<div class="row bg-light ">
+<div class="col-sm-1">Rhet:</div>
+<div class="col-sm-4"><a href="rhetdev.html?uuid={$swl/ancestor::tls:span/@rhet-dev-id}">{data($swl/ancestor::tls:span/@rhet-dev)}</a></div>
+</div>
+}
 </div>
 <div class="col-sm-2"></div>
 </div>
