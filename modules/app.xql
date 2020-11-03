@@ -1239,7 +1239,20 @@ return
                 </div>
             </nav>
 };
-
+(:~
+ This is called from translations.html
+:)
+declare 
+    %templates:wrap
+function app:translations($node as node()*, $model as map(*)){
+let $d := (for $d1 in collection($config:tls-data-root||"/statistics/")//div[@type="statistics"]
+   let $m := xs:dateTime($d1/@modified)
+   order by $m descending
+   return $d1)[1]
+, $tab := $d/table[@id="stat-translations"]   
+return
+$tab
+};
 (:~
  This is called from review.html
 :)

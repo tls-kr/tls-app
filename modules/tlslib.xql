@@ -1379,3 +1379,13 @@ declare function tlslib:ngram-query($queryStr as xs:string?, $mode as xs:string?
     return $hit 
 };
 
+declare function tlslib:translation-firstseg($transid as xs:string){
+let $dataroot := ($config:tls-translation-root, $config:tls-user-root)
+, $doc := collection($dataroot)//tei:TEI[@xml:id=$transid]
+, $firstseg := substring((for $s in $doc//tei:seg
+                let $id := $s/@corresp
+                order by $id
+                return $id)[1], 2)
+  return $firstseg
+};
+
