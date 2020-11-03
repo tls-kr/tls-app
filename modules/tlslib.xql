@@ -1350,8 +1350,8 @@ declare function tlslib:ngram-query($queryStr as xs:string?, $mode as xs:string?
     $user := sm:id()//sm:real/sm:username/text(),
     $ratings := doc($config:tls-user-root || $user || "/ratings.xml")//text,
     $dates := if (exists(doc("/db/users/" || $user || "/textdates.xml")//date)) then 
-      doc("/db/users/" || $user || "/textdates.xml")//date else 
-      doc($config:tls-texts-root || "/tls/textdates.xml")//date,
+      doc("/db/users/" || $user || "/textdates.xml")//data else 
+      doc($config:tls-texts-root || "/tls/textdates.xml")//data,
     (: HACK: if no login, use date mode for sorting :)
     $mode := if ($user = "guest") then "date" else $mode,
     $matches := if  (count($qs) > 1) then 
