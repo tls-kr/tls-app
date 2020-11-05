@@ -1336,7 +1336,7 @@ else ()
 };
 
 declare function tlsapi:quick-search($map as map(*)){
-let $hits := tlslib:ngram-query($map?query, $map?mode)
+let $hits := tlslib:ngram-query($map?query, $map?mode, $map?search-type, $map?textid)
 , $disp := subsequence($hits, $map?start, $map?count)
 , $qs := tokenize($map?query, "\s")
 return

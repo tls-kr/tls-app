@@ -1253,7 +1253,7 @@ return
 
 {if ($doann and sm:is-authenticated() and not(contains(sm:id()//sm:group, 'tls-test'))) then 
  if ($wid) then     
- let $esc := replace($concept, "'", "\\'")
+ let $esc := replace($concept[1], "'", "\\'")
  return
  <button class="btn badge badge-secondary ml-2" type="button" 
  onclick="show_newsw({{'wid':'{$wid}','py': '{$py}','concept' : '{$esc}', 'concept_id' : '{$id}'}})">
@@ -1343,7 +1343,7 @@ declare function tlslib:tr-query($queryStr as xs:string?, $mode as xs:string?)
 
 (: query in texts :)
 
-declare function tlslib:ngram-query($queryStr as xs:string?, $mode as xs:string?)
+declare function tlslib:ngram-query($queryStr as xs:string?, $mode as xs:string?, $search-type as xs:string?, $stextid as xs:string?)
 {
     let $dataroot := ($config:tls-data-root, $config:tls-texts-root, $config:tls-user-root)
     let $qs := tokenize($queryStr, "\s"),
@@ -1362,6 +1362,11 @@ declare function tlslib:ngram-query($queryStr as xs:string?, $mode as xs:string?
       let $textid := substring-before(tokenize(document-uri(root($hit)), "/")[last()], ".xml"),
       (: for the CHANT text no text date data exist, so we use this flag to cheat a bit :)
       $flag := substring($textid, 1, 3),
+      $filter := if ($search-type = "5") then $stextid = $textid else 
+       if ($search-type = "6") then 
+        let $x := "#" || $hit/@xml:id
+        return collection($config:tls-translation-root)//tei:seg[@corresp=$x]
+      else true(),
       $r := 
       if ($mode = "rating") then 
         (: the order by is ascending because of the dates, so here we inverse the rating :)
@@ -1376,6 +1381,7 @@ declare function tlslib:ngram-query($queryStr as xs:string?, $mode as xs:string?
          if (string-length($dates[@corresp="#" || $textid]/@notafter) > 0) then tlslib:getdate($dates[@corresp="#" || $textid]) else 0
 (:    let $id := $hit/ancestor::tei:TEI/@xml:id :)     
     order by $r ascending
+    where $filter
     return $hit 
 };
 

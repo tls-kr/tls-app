@@ -25,7 +25,9 @@ declare variable $app:tmap := map{
 "1" : "texts",
 "2" : "dictionary",
 "3" : "translations",
-"4" : "fields"
+"4" : "fields",
+"5" : "one text only",
+"6" : "lines with translation"
 };
 declare variable $app:lmap := map{
 "zh" : "Modern Chinese",
@@ -249,12 +251,12 @@ declare function app:do-browse($type as xs:string?, $filter as xs:string?)
 :)
 declare 
     %templates:wrap
-function app:query($node as node()*, $model as map(*), $query as xs:string?, $mode as xs:string?, $search-type as xs:string?)
+function app:query($node as node()*, $model as map(*), $query as xs:string?, $mode as xs:string?, $search-type as xs:string?, $textid as xs:string?)
 {
     session:create(),
     let $hits := 
-     if ($search-type = "1") then
-      tlslib:ngram-query($query, $mode) 
+     if ($search-type = ("1", "5", "6")) then
+      tlslib:ngram-query($query, $mode, $search-type, $textid) 
       else if ($search-type = "2") then 
       (: searching for kanji in dictionary, eg. the words in concepts :)
       tlslib:dic-query($query, $mode)
@@ -319,6 +321,8 @@ declare function app:create-query($queryStr as xs:string?, $mode as xs:string?)
 (:~
  : This is also called from search.html, nested within app:query. 
  : Paged result display is achieved here.
+ : Search type 5 is "limit search to text id"
+ : Search type 6 is "Search only in text lines with translation"
 :)
 
 declare 
@@ -326,9 +330,11 @@ declare
 %templates:default("type", "")  (: type is only relevant for advanced search starting from the search landing page for non-Kanji generell search :)
 %templates:default("mode", "")   (: for text display sort by date or rating :)
 %templates:default("search-type", "1")
-function app:show-hits($node as node()*, $model as map(*), $start as xs:int, $type as xs:string, $mode as xs:string, $search-type as xs:string)
+%templates:default("textid", "")
+function app:show-hits($node as node()*, $model as map(*), $start as xs:int, $type as xs:string, $mode as xs:string, $search-type as xs:string, $textid as xs:string?)
 {   let $query := map:get($model, "query")
     ,$iskanji := tlslib:iskanji($query) 
+    ,$title := if (string-length($textid) > 0) then collection($config:tls-texts-root)//tei:TEI[@xml:id=$textid]//tei:titleStmt/tei:title/text() else ()
     (: no of results to display :)
     ,$resno := 50
     ,$map := session:get-attribute($app:SESSION || ".types")
@@ -344,11 +350,26 @@ function app:show-hits($node as node()*, $model as map(*), $start as xs:int, $ty
     <span>in {map:get($app:lmap, $type)}</span>
     else ()}</h1>
     {if (not($search-type="4")) then
+    let $txtmatchcount := count(for $h in map:get($model, "hits") let $x := $h/@xml:id where starts-with($x, $textid) return $h)
+    , $trmatch := count(for $h in map:get($model, "hits") let $x := "#" || $h/@xml:id
+    return collection($config:tls-translation-root)//tei:seg[@corresp=$x])
+    return
+    (: insert option to limit to textid here? tell the user how many matches etc. :)
     (
     <h4>Found {count($model("hits"))} matches {if (not($search-type="2")) then <span>, showing {$start} to {$start + $resno -1}</span> else ()}</h4>,
-    if ($search-type = "1") then 
+    if ($search-type = ("1", "5", "6")) then 
     <p>
-    {if ($start = 1) then ("Taxonomy of meanings: ", for $c in $qc return  <a class="btn badge badge-light" title="Show taxonomy of meanings for {$c}" href="char.html?char={$c}">{$c}</a>) else ()}
+    {if ($start = 1) then (
+     if (string-length($title) > 0 and $txtmatchcount > 0) then
+      if ($search-type = "5") then 
+       (<a class="btn badge badge-light" href="search.html?query={$query}&amp;start=1&amp;search-type=1&amp;textid={$textid}&amp;mode={$mode}">Click here to display all  matches</a>,<br/>)
+       else  (<a class="btn badge badge-light" href="search.html?query={$query}&amp;start=1&amp;search-type=5&amp;textid={$textid}&amp;mode={$mode}">Click here to display only {$txtmatchcount} matches in {$title}</a>,<br/>) else (),
+     if ($trmatch > 0 and not ($search-type="6")) then
+     (<a class="btn badge badge-light" href="search.html?query={$query}&amp;start=1&amp;search-type=6&amp;mode={$mode}">Click here to display only {$trmatch} matching lines that have a translation</a>,<br/>)
+     else 
+    (<a class="btn badge badge-light" href="search.html?query={$query}&amp;start=1&amp;search-type=1&amp;mode={$mode}">Click here to display all  matches</a>,<br/>)
+,
+    "Taxonomy of meanings: ", for $c in $qc return  <a class="btn badge badge-light" title="Show taxonomy of meanings for {$c}" href="char.html?char={$c}">{$c}</a>,<br/>) else ()}
     { if ($user = "guest") then () else
     if ($mode = "rating") then 
     (
@@ -358,12 +379,15 @@ function app:show-hits($node as node()*, $model as map(*), $start as xs:int, $ty
     (
     "&#160;Sorting by text date. ", <a class="btn badge badge-light" href="search.html?query={$query}&amp;start=1&amp;search-type={$search-type}&amp;mode=rating" title="{$rat}">Click here to sort your favorite texts first. </a> 
     )
+    (: end of if $search-type = "1" :)
     }
     </p> else ()
     )
     else
-    <h4>Found {if (string-length($type) > 0) then (count(map:get($map, $type)),<span>; displaying matches {$start} to {min((count(map:get($map, $type)), xs:int($start) + $resno))}</span>)
-    else (count($model("hits")), <span> matches</span>)}</h4>}    
+    (: this is search-type = "4" :)
+    <h4>Found {if (string-length($type) > 0) then (count(map:get($map, $type)),<span>; 
+    displaying matches {$start} to {min((count(map:get($map, $type)), xs:int($start) + $resno))}</span>)
+    else (count($model("hits")), <span> matches</span>)} </h4>}    
     {if ($search-type = "2") then 
     <div>
     <p>{if ($start = 1) then ("Taxonomy of meanings: ", for $c in $qc return  <a class="btn badge badge-light" title="Show taxonomy of meanings for {$c}" href="char.html?char={$c}">{$c}</a>) else ()}</p>
@@ -373,7 +397,7 @@ function app:show-hits($node as node()*, $model as map(*), $start as xs:int, $ty
     }
     </table>
     </div>    
-    else if ($search-type = "3" or $search-type="1") then
+    else if ($search-type = "3" or $search-type=("1", "5", "6")) then
     <div>
     <table class="table">
     {for $h at $c in subsequence(map:get($model, "hits"), $start, $resno)
@@ -400,8 +424,8 @@ function app:show-hits($node as node()*, $model as map(*), $start as xs:int, $ty
     </table>
     <nav aria-label="Page navigation">
   <ul class="pagination">
-    <li class="page-item"><a class="page-link {if ($start = 1) then "disabled" else ()}" href="search.html?query={$query}&amp;start={$start - $resno}&amp;search-type={$search-type}{if ($mode) then concat("&amp;mode=", $mode) else ()}">&#171;</a></li>
-    <li class="page-item"><a class="page-link" href="search.html?query={$query}&amp;start={$start + $resno}&amp;search-type={$search-type}{if ($mode) then concat("&amp;mode=", $mode) else ()}">&#187;</a></li>
+    <li class="page-item"><a class="page-link {if ($start = 1) then "disabled" else ()}" href="search.html?query={$query}&amp;start={$start - $resno}&amp;textid={$textid}&amp;search-type={$search-type}{if ($mode) then concat("&amp;mode=", $mode) else ()}">&#171;</a></li>
+    <li class="page-item"><a class="page-link" href="search.html?query={$query}&amp;start={$start + $resno}&amp;textid={$textid}&amp;search-type={$search-type}{if ($mode) then concat("&amp;mode=", $mode) else ()}">&#187;</a></li>
   </ul>
 </nav>
     </div>
@@ -1216,6 +1240,7 @@ return
                     <li class="nav-item">
                     
                     <form action="search.html" class="form-inline my-2 my-lg-0" method="get">
+                    <input type="hidden" name="textid" value="{map:get($model, 'textid')}"/>
                         <input id="query-inp" name="query" class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search" value="{if (string-length($query) > 0) then $query else ()}"/> in 
         <select class="form-control" name="search-type">
           <option selected="true" value="1">{$app:tmap?1}</option>
