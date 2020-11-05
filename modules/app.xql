@@ -11,6 +11,7 @@ module namespace app="http://hxwd.org/app";
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
+declare namespace xls="http://exist-db.org/tls";
 declare namespace json = "http://www.json.org";
 
 import module namespace templates="http://exist-db.org/xquery/templates" ;
@@ -176,6 +177,7 @@ function app:browse($node as node()*, $model as map(*), $type as xs:string?, $fi
     <td>{
     switch ($type) 
         case  "concept" return <a href="concept.html?uuid={$id}">{$n}</a>
+        case  "syllables" return <a href="syllables.html?uuid={$id}">{$n}</a>
         case  "rhet-dev" return <a href="rhetdev.html?uuid={$id}">{$n}</a>
         default return (tlslib:format-button("delete_sf('"||$id||"', '"||$type||"')", "Delete this syntactic definition.", "open-iconic-master/svg/x.svg", "", "", "tls-editor"),
         <a id="{$id}-abbr" onclick="show_use_of('{$type}', '{$id}')">{$n}</a>)
@@ -397,14 +399,15 @@ function app:show-hits($node as node()*, $model as map(*), $start as xs:int, $ty
     }
     </table>
     </div>    
-    else if ($search-type = "3" or $search-type=("1", "5", "6")) then
+    else if ($search-type=("1", "3", "5", "6")) then
     <div>
     <table class="table">
     {for $h at $c in subsequence(map:get($model, "hits"), $start, $resno)
       let $loc := if ($search-type="3") then substring($h/@corresp,2) else $h/@xml:id,
       $cseg := if ($search-type="3") then collection($config:tls-texts-root)//tei:seg[@xml:id=$loc] else (),
       $head := if ($search-type="3") then $cseg/ancestor::tei:div[1]/tei:head[1] else $h/ancestor::tei:div[1]/tei:head[1],
-      $title := if ($search-type="3") then $cseg/ancestor::tei:TEI//tei:titleStmt/tei:title/text() else $h/ancestor::tei:TEI//tei:titleStmt/tei:title/text()
+      $title := if ($search-type="3") then $cseg/ancestor::tei:TEI//tei:titleStmt/tei:title/text() else $h/ancestor::tei:TEI//tei:titleStmt/tei:title/text(),
+      $tr := collection($config:tls-translation-root)//tei:seg[@corresp="#"||$h/@xml:id]
     return
       <tr>
         <td>{$c + $start -1}</td>
@@ -417,7 +420,7 @@ function app:show-hits($node as node()*, $model as map(*), $start as xs:int, $ty
         (substring-before($h, $query), 
         <mark>{$query}</mark> 
         ,substring-after($h, $query)), 
-        $h/following-sibling::tei:seg[1,3]}</td>
+        $h/following-sibling::tei:seg[1,3]}{if ($tr) then (<br/>,"..." || $tr || "...") else ()}</td>
         }
         </tr>
     }
@@ -1533,5 +1536,51 @@ function app:dialogs($node as node()*, $model as map(*))
         <div id="remoteDialog"/>
         <div id="remDialog2"/>
    </div>
+};
+
+declare
+    %templates:wrap
+function app:syllables($node as node()*, $model as map(*), $uuid as xs:string?){
+    (session:create(),
+    let $user := sm:id()//sm:real/sm:username/text()
+    let $key := replace($uuid, '^#', '')
+    let $gy := collection($config:tls-data-root||"/guangyun")//xls:guangyun-entry[@xml:id=$key]
+    , $mand-jin := $gy//xls:pronunciation/xls:mandarin/xls:jin
+    , $gloss := $gy//xls:gloss/text()
+    , $zi := $gy//xls:graphs
+    return 
+  <div class="row" id="syllables-id" data-id="{$key}" >
+   <div class="card col-sm-12" style="max-width: 1000px;background-color:palegreen  ;">
+    <div class="card-body" >
+     <h4 class="card-title">{$zi}&#160;&#160; {$mand-jin/text()}</h4>
+    <h5 class="card-subtitle" id="mand-jin" >{$gloss}</h5>
+    <div class="row">
+     <div class="col-sm-4">A</div>
+     <div class="col-sm-4">B</div>
+    </div>
+    <div class="row">
+     <div class="col-sm-4">A</div>
+     <div class="col-sm-4">B</div>
+    </div>
+    <div id="syllables-content" class="accordion">
+    
+    <!-- pointers -->
+    <div class="card">
+     <div class="card-header" id="pointers-head">
+      <h5 class="mb-0 mt-2">
+        <button class="btn" data-toggle="collapse" data-target="#pointers" >
+         Reconstructions
+        </button>
+      </h5>
+      </div>
+     <div id="pointers" class="collapse" data-parent="#syllables-content">
+     <p>Content</p>
+     </div>
+     </div>
+     </div>
+     </div>
+     </div>
+     </div>
+    ) 
 };
 (:: xx :)

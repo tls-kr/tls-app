@@ -14,6 +14,7 @@ import module namespace config="http://hxwd.org/config" at "config.xqm";
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
+declare namespace xls="http://exist-db.org/tls";
 
 
 declare function local:string-to-ncr($s as xs:string){

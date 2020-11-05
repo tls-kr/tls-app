@@ -926,7 +926,7 @@ $( ".tr" ).keyup(function( event ) {
   if (event.ctrlKey == true){
     //var hlineid = lineid.split(".").join("\\.")
     console.log("key: ", event.which)
-    if (event.which > 48 & event.which < 58) {
+    if (event.which > 48 & event.which < 58) { // ctrl 1 to 9 selects the nth character
      event.preventDefault();
       //var line = $("#"+hlineid).text()
       var pos = event.which - 49
@@ -934,7 +934,7 @@ $( ".tr" ).keyup(function( event ) {
       get_sw(sel, lineid, line)
       //copyToClipboard($( "#swl-query-span" ));
     } else
-    if (event.which == 83) {
+    if (event.which == 83) { // the key is ctrl-s
      event.preventDefault();
      quick_search();   
     } else
@@ -1224,7 +1224,7 @@ function copyToClipboard(element) {
 
 function quick_search(){
     var word = $("#swl-query-span").text();
-    $.get("api/responder.xql?func=quick-search&query="+word+"&start=1&count=20&mode=rating", "html", 
+    $.get("api/responder.xql?func=quick-search&query="+word+"&start=1&count=20&mode=rating&search-type=6&textid=", "html", 
     function(resp){
          $('#swl-select').html(resp)
         }

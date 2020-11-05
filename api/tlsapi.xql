@@ -1345,7 +1345,8 @@ return
 for $h at $n in $disp
     let $head := $h/ancestor::tei:div[1]/tei:head[1],
     $title := $h/ancestor::tei:TEI//tei:titleStmt/tei:title/text(),
-    $loc := $h/@xml:id
+    $loc := $h/@xml:id,
+    $tr := collection($config:tls-translation-root)//tei:seg[@corresp="#"||$loc]
 (:  :)
 
 return
@@ -1357,7 +1358,8 @@ return
         (substring-before($h, $map?query), 
         <mark>{$map?query}</mark> 
         ,substring-after($h, $map?query)), 
-        $h/following-sibling::tei:seg[1,3]}</div>
+        $h/following-sibling::tei:seg[1,3],
+        if ($tr) then (<br/>, $tr) else ()}</div>
 </div>
 }
 </div>
