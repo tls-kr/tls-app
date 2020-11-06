@@ -1396,3 +1396,8 @@ let $dataroot := ($config:tls-translation-root, $config:tls-user-root)
   return $firstseg
 };
 
+declare function tlslib:title-query($query, $mode){
+let $dataroot := ($config:tls-texts-root, $config:tls-user-root)
+for $t in collection($dataroot)//tei:titleStmt/tei:title[contains(., $query)]
+return $t
+};

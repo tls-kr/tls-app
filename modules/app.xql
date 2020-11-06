@@ -28,7 +28,8 @@ declare variable $app:tmap := map{
 "3" : "translations",
 "4" : "fields",
 "5" : "one text only",
-"6" : "lines with translation"
+"6" : "lines with translation",
+"7" : "titles"
 };
 declare variable $app:lmap := map{
 "zh" : "Modern Chinese",
@@ -265,6 +266,9 @@ function app:query($node as node()*, $model as map(*), $query as xs:string?, $mo
       else if ($search-type = "3") then 
       (: searching for word in translations :)
       tlslib:tr-query($query, $mode)
+      else if ($search-type = "7") then 
+      (: searching for word in titles :)
+      tlslib:title-query($query, $mode)
       else if ($search-type = "4") then 
       app:do-query($query, $mode)
       else "Unknown search type"
@@ -325,6 +329,7 @@ declare function app:create-query($queryStr as xs:string?, $mode as xs:string?)
  : Paged result display is achieved here.
  : Search type 5 is "limit search to text id"
  : Search type 6 is "Search only in text lines with translation"
+ : 7 is title search
 :)
 
 declare 
@@ -351,7 +356,18 @@ function app:show-hits($node as node()*, $model as map(*), $start as xs:int, $ty
     {if (string-length($type) > 0) then 
     <span>in {map:get($app:lmap, $type)}</span>
     else ()}</h1>
-    {if (not($search-type="4")) then
+    {
+    if ($search-type = "7") then 
+    <ul>{
+    for $h in map:get($model, "hits")
+    let $loc := $h/ancestor::tei:TEI/@xml:id
+    return
+    <li><a href="textview.html?location={$loc}">{$h/text()}</a></li>
+    }
+    </ul>
+    else
+    (: not search in fields :)
+    if (not($search-type="4")) then
     let $txtmatchcount := count(for $h in map:get($model, "hits") let $x := $h/@xml:id where starts-with($x, $textid) return $h)
     , $trmatch := count(for $h in map:get($model, "hits") let $x := "#" || $h/@xml:id
     return collection($config:tls-translation-root)//tei:seg[@corresp=$x])
@@ -386,11 +402,13 @@ function app:show-hits($node as node()*, $model as map(*), $start as xs:int, $ty
     </p> else ()
     )
     else
-    (: this is search-type = "4" :)
+    (: this is search-type = "4", in fields :)
     <h4>Found {if (string-length($type) > 0) then (count(map:get($map, $type)),<span>; 
     displaying matches {$start} to {min((count(map:get($map, $type)), xs:int($start) + $resno))}</span>)
     else (count($model("hits")), <span> matches</span>)} </h4>}    
-    {if ($search-type = "2") then 
+    
+    { (: search in dictionary :)
+    if ($search-type = "2") then 
     <div>
     <p>{if ($start = 1) then ("Taxonomy of meanings: ", for $c in $qc return  <a class="btn badge badge-light" title="Show taxonomy of meanings for {$c}" href="char.html?char={$c}">{$c}</a>) else ()}</p>
     <table class="table">
@@ -399,7 +417,10 @@ function app:show-hits($node as node()*, $model as map(*), $start as xs:int, $ty
     }
     </table>
     </div>    
-    else if ($search-type=("1", "3", "5", "6")) then
+    else 
+    if ($search-type = "7") then () else
+    (: this is all for text / translation search :) 
+    if ($search-type=("1", "3", "5", "6")) then
     <div>
     <table class="table">
     {for $h at $c in subsequence(map:get($model, "hits"), $start, $resno)
@@ -1247,6 +1268,7 @@ return
                         <input id="query-inp" name="query" class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search" value="{if (string-length($query) > 0) then $query else ()}"/> in 
         <select class="form-control" name="search-type">
           <option selected="true" value="1">{$app:tmap?1}</option>
+          <option value="7">{$app:tmap?7}</option>
           <option value="2">{$app:tmap?2}</option>
           <option value="3">{$app:tmap?3}</option>
           <option value="4">{$app:tmap?4}</option>
