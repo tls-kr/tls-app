@@ -14,7 +14,7 @@ import module namespace config="http://hxwd.org/config" at "config.xqm";
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
-declare namespace xls="http://exist-db.org/tls";
+declare namespace tx="http://exist-db.org/tls";
 
 
 declare function local:string-to-ncr($s as xs:string){
@@ -1245,17 +1245,17 @@ for $zi at $pos in $z
 let $wx := collection(concat($config:tls-data-root, '/concepts/'))//tei:div[@xml:id = $id]//tei:orth[. = $zi],
 $scnt := count($wx/ancestor::tei:entry/tei:sense),
 $wid := $wx/ancestor::tei:entry/@xml:id,
-$syn := $wx/ancestor::tei:div[@xml:id = $id]//tei:div[@type="old-chinese-criteria"]//tei:p
+$syn := $wx/ancestor::tei:div[@xml:id = $id]//tei:div[@type="old-chinese-criteria"]//tei:p,
+$esc := replace($concept[1], "'", "\\'")
 return
 <li class="mb-3">
 {if ($zi) then
-<span onclick="alert('{$wid}')"><strong>{$zi}</strong>&#160;({$py[$pos]})&#160;</span> else ""}
+(: todo : check for permissions :)
+<span onclick="assign_guangyun_dialog({{'zi':'{$zi}', 'wid':'{$wid}','py': '{$py}','concept' : '{$esc}', 'concept_id' : '{$id}'}})"><strong>{$zi}</strong>&#160;({$py[$pos]})&#160;</span> else ""}
 <strong><a href="concept.html?uuid={$id}" title="{$cdef}" class="{if ($scnt = 0) then 'text-muted' else ()}">{$concept[1]}</a></strong> 
 
 {if ($doann and sm:is-authenticated() and not(contains(sm:id()//sm:group, 'tls-test'))) then 
  if ($wid) then     
- let $esc := replace($concept[1], "'", "\\'")
- return
  <button class="btn badge badge-secondary ml-2" type="button" 
  onclick="show_newsw({{'wid':'{$wid}','py': '{$py}','concept' : '{$esc}', 'concept_id' : '{$id}'}})">
            New SW
@@ -1331,7 +1331,7 @@ declare function tlslib:dic-query($queryStr as xs:string?, $mode as xs:string?)
 tlslib:get-sw($queryStr, "dic")
 };
 
-(: query in dictionary :)
+(: query in translation :)
 declare function tlslib:tr-query($queryStr as xs:string?, $mode as xs:string?)
 {
   let $user := sm:id()//sm:real/sm:username/text()
@@ -1400,4 +1400,170 @@ declare function tlslib:title-query($query, $mode){
 let $dataroot := ($config:tls-texts-root, $config:tls-user-root)
 for $t in collection($dataroot)//tei:titleStmt/tei:title[contains(., $query)]
 return $t
+};
+
+(: $gyonly controls wether we offer to override GY.  Most probably true.. :)
+declare function tlslib:get-guangyun($chars as xs:string, $pron as xs:string, $gyonly as xs:boolean){
+(: loop through the characters of the string $chars :)
+for $char at $cc in  analyze-string($chars, ".")//fn:match/text()
+return
+<div id="guangyun-input-dyn-{$cc}">
+<h5><strong class="ml-2">{$char}</strong></h5>
+{let $r:= collection(concat($config:tls-data-root, "/guangyun"))//tx:attested-graph/tx:graph[contains(.,$char)]
+return 
+(
+if ($r) then
+for $g at $count in $r
+let $e := $g/ancestor::tx:guangyun-entry,
+$p := for $s in $e//tx:mandarin/tx:jin 
+       return 
+       if (string-length(normalize-space($s)) > 0) then $s else (),
+$py := normalize-space(string-join($p, ';'))
+return
+
+<div class="form-check">
+   { if (contains($py, $pron)) then (: todo: handle pron for binomes and more :)
+   <input class="form-check-input guangyun-input" type="radio" name="guangyun-input-{$cc}" id="guangyun-input-{$cc}-{$count}" 
+   value="{$e/@xml:id}" checked="checked"/>
+   else
+   <input class="form-check-input guangyun-input" type="radio" name="guangyun-input-{$cc}" id="guangyun-input-{$cc}-{$count}" 
+   value="{$e/@xml:id}"/>
+   }
+   <label class="form-check-label" for="guangyun-input-{$cc}-{$count}">
+     {$e/tx:gloss/text()} -  {$py}
+   </label>
+  </div>
+  else (),
+  if (not ($gyonly) or not ($r)) then
+  <div class="form-check">
+   { if (not ($r)) then
+   <label class="form-check-label" for="guangyun-input-{$cc}-9">
+     Character not in 廣韻, please enter pinyin directly after ‘{$char}:’ 
+   </label> 
+   else
+   <label class="form-check-label" for="guangyun-input-{$cc}-9">
+     For a different reading, please enter pinyin directly after ‘{$char}:’ 
+   </label>
+   }
+  <input class="guangyun-input-checked" name="guangyun-input-{$cc}" id="guangyun-input-{$cc}-9" type="text" value="{$char}:"/>
+  </div> else ()
+)}
+</div>
+};
+
+
+declare function tlslib:save-new-syllable($map as map(*)){
+let $uid := "uuid-"||util:uuid()
+,$timestamp := current-dateTime()
+,$user := sm:id()//sm:real/sm:username/text()
+,$path := $config:tls-data-root || "/guangyun/" || substring($uid, 6, 1)
+let $res:=xmldb:store($path, $uid || ".xml",
+<guangyun-entry xmlns="http://exist-db.org/tls" xml:id="{$uid}">
+    <graphs>
+        <attested-graph>
+            <unemended-graph>
+                <graph/>
+            </unemended-graph>
+            <emended-graph>
+                <graph/>
+            </emended-graph>
+            <graph/>
+        </attested-graph>
+        <standardised-graph>
+            <graph>{$map?zi}</graph>
+        </standardised-graph>
+    </graphs>
+    <gloss>Added by {$user} at {$timestamp}</gloss>
+    <xiaoyun>
+        <headword/>
+        <graph-count/>
+    </xiaoyun>
+    <fanqie>
+        <fanqie-shangzi>
+            <fanqie-shangzi-attested>
+                <graph/>
+            </fanqie-shangzi-attested>
+            <fanqie-shangzi-standard>
+                <graph/>
+            </fanqie-shangzi-standard>
+        </fanqie-shangzi>
+        <fanqie-xiazi>
+            <fanqie-xiazi-attested>
+                <graph/>
+            </fanqie-xiazi-attested>
+            <fanqie-xiazi-standard>
+                <graph/>
+            </fanqie-xiazi-standard>
+        </fanqie-xiazi>
+    </fanqie>
+    <ids>
+        <guangyun-jiaoshi-id/>
+        <pan-wuyun-id/>
+    </ids>
+    <locations>
+        <guangyun-location/>
+        <baxter-location/>
+        <pan-wuyun-location/>
+    </locations>
+    <pan-wuyun-note-on-guangyun/>
+    <pan-wuyun-note/>
+    <pronunciation>
+        <mandarin>
+            <jin>{$map?jin}</jin>
+            <wen/>
+            <yi/>
+            <bai/>
+            <jiu/>
+        </mandarin>
+        <middle-chinese>
+            <categories>
+                <聲/>
+                <等/>
+                <呼/>
+                <韻部/>
+                <調/>
+                <重紐/>
+                <攝/>
+            </categories>
+            <yundianwang-reconstructions>
+                <li-rong/>
+                <pan-wuyun/>
+                <wang-li/>
+                <pulleyblank/>
+                <shao-rongfen/>
+                <zhengzhang-shangfang/>
+                <karlgren/>
+            </yundianwang-reconstructions>
+            <authorial-reconstructions>
+                <baxter/>
+            </authorial-reconstructions>
+        </middle-chinese>
+        <old-chinese>
+            <pan-wuyun>
+                <yunbu/>
+                <phonetic/>
+                <oc/>
+            </pan-wuyun>
+            <zhengzhang-shangfang>
+                <oc/>
+                <yunbu/>
+                <phonetic/>
+                <notes/>
+            </zhengzhang-shangfang>
+        </old-chinese>
+    </pronunciation>
+    <note>{$map?note}</note>
+    <sources>{$map?sources}</sources>
+    <tls:metadata xmlns:tls="http://hxwd.org/ns/1.0" resp="#{$user}" created="{$timestamp}">
+        <respStmt>
+            <resp>added and approved</resp>
+            <name>{$user}</name>
+        </respStmt>
+    </tls:metadata>
+</guangyun-entry>)
+return 
+(sm:chmod(xs:anyURI($res), "rw-rw-rw-"),
+ sm:chgrp(xs:anyURI($res), "tls-user"),
+ sm:chown(xs:anyURI($res), "tls"))
+
 };

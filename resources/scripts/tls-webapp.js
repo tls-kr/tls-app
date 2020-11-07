@@ -359,6 +359,38 @@ function save_newsw(){
 }
 
 };
+// save updated pinyin
+function save_updated_pinyin(concept_id, wid, zi){
+    var guangyun_id = $(".guangyun-input:checked,.guangyun-input-checked").map(function(){
+    console.log($(this).text());
+    return $(this).val();
+    }).get().join("xxx");
+    var sources = $("#sources" ).val();
+    var note = $("#input-note").val();
+  if (typeof guangyun_id !== 'undefined' && guangyun_id.length > 0){
+  console.log(guangyun_id);
+  $.ajax({
+  type : "PUT",
+  url : "api/responder.xql?func=update-pinyin&wid="+wid+"&concept="+concept_id+"&sources="+sources+"&notes="+note+"&guangyun="+guangyun_id+"&zi="+zi,
+  success : function(resp){
+    if(resp.startsWith("OK")){
+      $('#assign-guangyun').modal('hide');
+      toastr.info("Pinyin has been saved.", "HXWD says:")  
+    } else {
+       alert("PROBLEM: "+resp);
+    }
+  },
+  error : function(resp){
+  console.log(resp)
+    alert("PROBLEM"+resp);
+  }
+  });
+} else {
+  alert("Guangyun has not been selected!");    
+}
+
+};
+
 
 // saving the concept, from editSWLDialog, with the new SW 
 function save_to_concept(){
@@ -399,7 +431,7 @@ function save_to_concept(){
   $.ajax({
   type : "PUT",
   dataType : "json",
-  url : "api/save_to_concept.xql?line="+line_id+"&word="+word+"&concept="+concept_id+"&concept-val="+concept_val+"&synfunc="+synfunc_id+"&synfunc-val="+synfunc_val+"&semfeat="+semfeat_id+"&semfeat-val="+semfeat_val+"&def="+def_val+"&guangyun="+guangyun_id,
+  url : "api/save_to_concept.xql?line="+line_id+"&word="+word+"&concept="+concept_id+"&concept-val="+concept_val+"&synfunc="+synfunc_id+"&synfunc-val="+synfunc_val+"&semfeat="+semfeat_id+"&semfeat-val="+semfeat_val+"&def="+def_val+"&guangyun-id="+guangyun_id,
   success : function(resp){
   //  var strconfirm = confirm("Saved concept. Do you want to save attribution now?");
   //  if (strconfirm == true) {
@@ -1231,7 +1263,31 @@ function quick_search(){
     )
     
 }
-
+// delete_zi_from_word('uuid-f1f8819f-cfae-4128-a9ed-8e9586c9e146','1','咳欬')
+function delete_zi_from_word(wid, pos, ch){
+$.get("api/responder.xql?func=delete-zi-from-word&wid="+wid+"&pos="+pos+"&char="+ch, "html", 
+    function(resp){
+       toastr.info(ch+" has been deleted.", "HXWD says:");
+       //$('#' + wid + '-' + pos).html()
+       document.getElementById(wid + '-' + pos).style.display = "none";
+       }
+    )
+    
+}
+// {{'zi':'{$zi}', 'wid':'{$wid}','py': '{$py}','concept' : '{$esc}', 'concept_id' : '{$id}'}}
+function assign_guangyun_dialog(para){
+     $.ajax({
+     type : "GET",
+     dataType : "html",  
+     url : "api/responder.xql?func=dialogs:assign-guangyun&char="+para.zi+"&concept_id=" + para.concept_id + "&pinyin="+para.py+"&concept="+para.concept+"&wid="+para.wid, 
+     success : function(resp){
+     $('#remoteDialog').html(resp);
+     // initialize_autocomplete();
+     $('#assign-guangyun').modal('show');
+   }
+  });
+    
+}
 // need to think about where to use this:
 /*window.onbeforeunload = function() {
   return "";

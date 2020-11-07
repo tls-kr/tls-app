@@ -11,7 +11,7 @@ module namespace app="http://hxwd.org/app";
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
-declare namespace xls="http://exist-db.org/tls";
+declare namespace tx="http://exist-db.org/tls";
 declare namespace json = "http://www.json.org";
 
 import module namespace templates="http://exist-db.org/xquery/templates" ;
@@ -338,8 +338,9 @@ declare
 %templates:default("mode", "")   (: for text display sort by date or rating :)
 %templates:default("search-type", "1")
 %templates:default("textid", "")
-function app:show-hits($node as node()*, $model as map(*), $start as xs:int, $type as xs:string, $mode as xs:string, $search-type as xs:string, $textid as xs:string?)
-{   let $query := map:get($model, "query")
+
+function app:show-hits($node as node()*, $model as map(*), $start as xs:int, $type as xs:string, $mode as xs:string, $search-type as xs:string, $textid as xs:string?){   
+let $query := map:get($model, "query")
     ,$iskanji := tlslib:iskanji($query) 
     ,$title := if (string-length($textid) > 0) then collection($config:tls-texts-root)//tei:TEI[@xml:id=$textid]//tei:titleStmt/tei:title/text() else ()
     (: no of results to display :)
@@ -362,7 +363,7 @@ function app:show-hits($node as node()*, $model as map(*), $start as xs:int, $ty
     for $h in map:get($model, "hits")
     let $loc := $h/ancestor::tei:TEI/@xml:id
     return
-    <li><a href="textview.html?location={$loc}">{$h/text()}</a></li>
+    <li><a href="textview.html?location={$loc}">{data($loc) || " " || $h/text()}</a></li>
     }
     </ul>
     else
@@ -387,7 +388,14 @@ function app:show-hits($node as node()*, $model as map(*), $start as xs:int, $ty
      else 
     (<a class="btn badge badge-light" href="search.html?query={$query}&amp;start=1&amp;search-type=1&amp;mode={$mode}">Click here to display all  matches</a>,<br/>)
 ,
-    "Taxonomy of meanings: ", for $c in $qc return  <a class="btn badge badge-light" title="Show taxonomy of meanings for {$c}" href="char.html?char={$c}">{$c}</a>,<br/>) else ()}
+    "Taxonomy of meanings: ", 
+     for $c in $qc return  
+     <a class="btn badge badge-light" title="Show taxonomy of meanings for {$c}" href="char.html?char={$c}">{$c}</a>,
+     <span>{" / Phonetic profile: ",
+     for $c in $qc return  
+     <a class="btn badge badge-light" style="background-color:palegreen" title="Show phonetic profile for {$c}" href="syllables.html?char={$c}">{$c}</a>}
+     </span>,
+     <br/>) else ()}
     { if ($user = "guest") then () else
     if ($mode = "rating") then 
     (
@@ -410,12 +418,16 @@ function app:show-hits($node as node()*, $model as map(*), $start as xs:int, $ty
     { (: search in dictionary :)
     if ($search-type = "2") then 
     <div>
-    <p>{if ($start = 1) then ("Taxonomy of meanings: ", for $c in $qc return  <a class="btn badge badge-light" title="Show taxonomy of meanings for {$c}" href="char.html?char={$c}">{$c}</a>) else ()}</p>
-    <table class="table">
+    <p>{if ($start = 1) then ("Taxonomy of meanings: ", for $c in $qc return  <a class="btn badge badge-light" title="Show taxonomy of meanings for {$c}" href="char.html?char={$c}">{$c}</a>,
+         " Phonetic profile: ",
+     for $c in $qc return  
+     <a class="btn badge badge-light" style="background-color:palegreen" title="Show phonetic profile for {$c}" href="syllables.html?char={$c}">{$c}</a>
+) else ()}</p>
+    <ul>
     {for $h at $c in map:get($model, "hits")
     return $h
     }
-    </table>
+    </ul>
     </div>    
     else 
     if ($search-type = "7") then () else
@@ -441,7 +453,7 @@ function app:show-hits($node as node()*, $model as map(*), $start as xs:int, $ty
         (substring-before($h, $query), 
         <mark>{$query}</mark> 
         ,substring-after($h, $query)), 
-        $h/following-sibling::tei:seg[1,3]}{if ($tr) then (<br/>,"..." || $tr || "...") else ()}</td>
+        $h/following-sibling::tei:seg[1,3]}{if ($tr) then (<br/>,"..." || $tr[1] || "...") else ()}</td>
         }
         </tr>
     }
@@ -1144,18 +1156,47 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
     order by $wc descending    
 (:    count $count :)
     return 
-    <div id="{$entry-id}"><h5><span class="zh">{$zi}</span>&#160;&#160; {for $p in $pr return <span>{
-    if (ends-with($p/@xml:lang, "oc")) then "OC: " else 
-    if (ends-with($p/@xml:lang, "mc")) then "MC: " else (),
-    $p/text()}&#160;</span>}  <small>{$wc} {if ($wc = 1) then " Attribution" else " Attributions"}</small>
+    <div id="{$entry-id}"><h5>
+    {let $seq := for $f at $pos in $e/tei:form 
+    let $zi := $f/tei:orth/text()
+    , $p := $f/tei:pron
+    return
+    (<span id="{$entry-id}-{$pos}">
+    <span class="zh">{$zi}</span>
+    {for $l in $p return
+    switch ($l/@xml:lang) 
+    case "zh-x-oc" return <span>&#160;OC: {$l/text()}</span>
+    case "zh-x-mc" return <span>&#160;MC: {$l/text()}</span>
+    (: assign_guangyun_dialog( 
+    '{$zi}','{$entry-id}', '{$l/text()}':)
+    default 
+    return  let $px := normalize-space($l/text()) return
+    (: todo: check for permissions! :)
+    <span title="Click here to change pinyin" onclick="assign_guangyun_dialog({{'zi':'{$zi}', 'wid':'{$entry-id}','py': '{$l/text()}','concept' : '{$c/tei:head/text()}', 'concept_id' : '{$key}'}})">&#160;&#160;{
+    if (string-length($px) = 0) then "Click here to add pinyin" else $px}</span>,
+    if (count($e/tei:form) > 1) then 
+    tlslib:format-button("delete_zi_from_word('"|| $entry-id || "','" || $pos ||"','"|| $zi ||"')", "Delete " || $zi || " and pronounciation from this word.", "open-iconic-master/svg/x.svg", "", "", "tls-editor")
+    else ()
+    }
+    </span>
+    )
+    , $len := count($seq)
+    return 
+    for $s at $pos in $seq
+    return
+    if ($pos < $len) then ($s, <br/>) else ($s)
+    
+    }    
+    
+    <small>{"  " || $wc} {if ($wc = 1) then " Attribution" else " Attributions"}</small>
     {if ($wc = 0) then
     tlslib:format-button("delete_word_from_concept('"|| $entry-id || "', 'word')", "Delete the word "|| $zi || ", including all syntactic words.", "open-iconic-master/svg/x.svg", "", "", "tls-editor") else 
     (: move :)
     tlslib:format-button("move_word('"|| $zi || "', '"|| $entry-id ||"', '"||$wc||"', 'word')", "Move the word "|| $zi || ", including all syntactic words to another concept.", "open-iconic-master/svg/move.svg", "", "", "tls-editor")
     }
     </h5>
-    {if ($def) then <p class="ml-4">{$def}</p> else ()}
-    <ul>{for $sw in $e//tei:sense
+    {if ($def) then <p class="ml-4">{$def[1]}</p> else ()}
+    <ul>{for $sw in $e/tei:sense
     return
     tlslib:display-sense($sw, count($ann//tei:sense[@corresp="#" || $sw/@xml:id]), false())
     }</ul>
@@ -1562,14 +1603,18 @@ function app:dialogs($node as node()*, $model as map(*))
 
 declare
     %templates:wrap
-function app:syllables($node as node()*, $model as map(*), $uuid as xs:string?){
+function app:syllables($node as node()*, $model as map(*), $uuid as xs:string?, $char as xs:string?){
     (session:create(),
     let $user := sm:id()//sm:real/sm:username/text()
-    let $key := replace($uuid, '^#', '')
-    let $gy := collection($config:tls-data-root||"/guangyun")//xls:guangyun-entry[@xml:id=$key]
-    , $mand-jin := $gy//xls:pronunciation/xls:mandarin/xls:jin
-    , $gloss := $gy//xls:gloss/text()
-    , $zi := $gy//xls:graphs
+    , $gys := if (string-length($uuid) > 0) then 
+      collection($config:tls-data-root||"/guangyun")//tx:guangyun-entry[@xml:id=$uuid]
+      else
+      collection($config:tls-data-root||"/guangyun")//tx:attested-graph/tx:graph[. = $char]/ancestor::tx:guangyun-entry
+    for $gy in $gys
+    let $mand-jin := $gy//tx:pronunciation/tx:mandarin/tx:jin
+    , $key := $gy/@xml:id
+    , $gloss := $gy//tx:gloss/text()
+    , $zi := $gy//tx:graphs
     return 
   <div class="row" id="syllables-id" data-id="{$key}" >
    <div class="card col-sm-12" style="max-width: 1000px;background-color:palegreen  ;">
@@ -1577,7 +1622,7 @@ function app:syllables($node as node()*, $model as map(*), $uuid as xs:string?){
      <h4 class="card-title">{$zi}&#160;&#160; {$mand-jin/text()}</h4>
     <h5 class="card-subtitle" id="mand-jin" >{$gloss}</h5>
     <div class="row">
-     <div class="col-sm-4">A</div>
+     <div class="col-sm-4">{data($key)}</div>
      <div class="col-sm-4">B</div>
     </div>
     <div class="row">

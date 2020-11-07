@@ -274,7 +274,7 @@ declare function tlsapi:swl-dialog($para as map(), $type as xs:string){
                     <span class="text-muted" id="guangyun-group-pl"> Press the 廣韻 button above and select the pronounciation</span>
                 </div> else if ($type = "swl") then
                 <div class="form-group" id="guangyun-group">     
-                   {tlsapi:get-guangyun($para?char, $para?pinyin)}
+                   {tlslib:get-guangyun($para?char, $para?pinyin, true())}
                 </div>
                 else (),
                 if ($type = ("concept", "swl")) then
@@ -319,46 +319,6 @@ declare function tlsapi:swl-dialog($para as map(), $type as xs:string){
 : Called from tlsapi:swl-dialog to fill in the guangyun pronounciation, returns 
 : input fields for form
 :)
-
-declare function tlsapi:get-guangyun($chars as xs:string, $pron as xs:string){
-(: loop through the characters of the string $chars :)
-for $char at $cc in  analyze-string($chars, ".")//fn:match/text()
-return
-<div id="guangyun-input-dyn-{$cc}">
-<h5><strong class="ml-2">{$char}</strong></h5>
-{let $r:= collection(concat($config:tls-data-root, "/guangyun"))//tx:attested-graph/tx:graph[contains(.,$char)]
-return 
-if ($r) then
-for $g at $count in $r
-let $e := $g/ancestor::tx:guangyun-entry,
-$p := for $s in $e//tx:mandarin/tx:jin 
-       return 
-       if (string-length(normalize-space($s)) > 0) then $s else (),
-$py := normalize-space(string-join($p, ';'))
-return
-
-<div class="form-check">
-   { if (contains($py, $pron)) then (: todo: handle pron for binomes and more :)
-   <input class="form-check-input guangyun-input" type="radio" name="guangyun-input-{$cc}" id="guangyun-input-{$cc}-{$count}" 
-   value="{$e/@xml:id}" checked="checked"/>
-   else
-   <input class="form-check-input guangyun-input" type="radio" name="guangyun-input-{$cc}" id="guangyun-input-{$cc}-{$count}" 
-   value="{$e/@xml:id}"/>
-   }
-   <label class="form-check-label" for="guangyun-input-{$cc}-{$count}">
-     {$e/tx:gloss/text()} -  {$py}
-   </label>
-  </div>
-  else 
-  <div class="form-check">
-  <input class="guangyun-input-checked" name="guangyun-input-{$cc}" id="guangyun-input-{$cc}-1" type="text" value="{$char}:"/>
-   <label class="form-check-label" for="guangyun-input-{$cc}-1">
-     No entry found in Guangyun. Please enter the pinyin after the character and : 
-   </label>
-  </div>
-}
-</div>
-};
 
 (: prepare the parameters for edit-sf-dialog :)
 declare function tlsapi:get-sf($senseid as xs:string){
@@ -514,12 +474,38 @@ else
 
 };
 
-declare function tlsapi:save-to-concept($rpara as map(*)) {
+(: todo actually delete the form :)
+declare function tlsapi:delete-zi-from-word($rpara as map(*)){
+"OK"
+};
 
-let $user := sm:id()//sm:real/sm:username/text()
+declare function tlsapi:update-pinyin($rpara as map(*)) {
+(:let $
+tlslib:save-new-syllable($rpara):)
+let $cid := $rpara?concept
+, $zi := $rpara?zi
+ (: check if we got the count right :)
+, $gc := count(for $gid in tokenize(normalize-space($rpara?guangyun-id), "xxx")
+     let $nid := if (contains($gid, ":")) then let $t := tokenize($gid, ":")[2] 
+                 return if (string-length($t) > 0) then 
+                  (: todo: create a new entry and return the uuid :)
+                  $t 
+                 else ()
+                 else $gid return $nid)
+return
+if (starts-with($cid, "uuid")) then
+  if ($gc = string-length($zi)) then
+   "OK" || $gc || " - " || string-length($zi)
+  else
+   "Number of pinyin definitions not correct." || $gc || " - " || string-length($zi)
+else
+"Concept not found"
+};
+
+declare function local:make-form($guangyun-id as xs:string){
 (:  if no gy record is found, we return a string like this for guangyun-id "黃:huangxxx蘗:bo" :)
 let $gys :=    
-   for $gid in tokenize(normalize-space($rpara?guangyun-id), "xxx") 
+   for $gid in tokenize(normalize-space($guangyun-id), "xxx") 
    let $r :=  collection(concat($config:tls-data-root, "/guangyun"))//tx:guangyun-entry[@xml:id=$gid]
    return
    if ($r) then $r else $gid
@@ -546,13 +532,20 @@ let $gys :=
       return
       if ($r) then $r else tokenize($gy, ":")[1] 
 return
-    <form xmlns="http://www.tei-c.org/ns/1.0" corresp="#{replace($rpara?guangyun-id, "xxx", " #")}">
+    <form xmlns="http://www.tei-c.org/ns/1.0" corresp="#{replace($guangyun-id, "xxx", " #")}">
     <orth>{string-join($gr, "")}</orth>
     <pron xml:lang="zh-Latn-x-pinyin">{string-join($p, " ")}</pron>
     <pron xml:lang="zh-x-mc" resp="rec:baxter">{string-join($mc, " ")}</pron>
     <pron xml:lang="zh-x-oc" resp="rec:pan-wuyun">{string-join($oc, " ")}</pron>
-    </form>,
+    </form>
+return
+$form
+};
 
+declare function tlsapi:save-to-concept($rpara as map(*)) {
+
+let $user := sm:id()//sm:real/sm:username/text()
+let $form := local:make-form($rpara?guangyun-id),
  
  $concept-doc := collection($config:tls-data-root)//tei:div[@xml:id=$rpara?concept-id]//tei:div[@type="words"],
  $wuid := concat("uuid-", util:uuid()),
