@@ -397,13 +397,13 @@ return
      :)
 
 declare function tlslib:navbar-review(){
-   <li class="nav-item">
-     <a class="nav-item" href="review.html?type=swl">
-      <button class="btn btn-secondary my-2 my-sm-0" title="Review">
-       <img class="icon" src="resources/icons/octicons/svg/diff.svg"/>
-     </button>
-     </a>
-   </li>
+ <li class="nav-item dropdown">
+  <a class="nav-link dropdown-toggle" href="#"  id="navbarDropdownEditors" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Editors</a>
+   <div class="dropdown-menu" aria-labelledby="navbarDropdownEditors">
+     <a class="dropdown-item" href="review.html?type=swl">Review SWLs</a>
+     <a class="dropdown-item" href="review.html?type=special">Special pages</a>
+   </div>
+ </li>
 };
 
 (:~ 
@@ -682,8 +682,10 @@ let $cnode := collection("/db/apps/tls-data")//tei:sense[@xml:id=$uuid]
 ,$def := $cnode/tei:def[1]/text()
 return $def
 };
+
 (: 2020-02-23 : because of defered update in tlsapi:save-def, we use the master definition instead of the local definition of the swl 
  : 2020-02-26 : this now works indeed.
+ : 2020-11-09 : zi also uses master definition
 :) 
 (:~
 : formats a single syntactic word location for display either in a row (as in the textview, made visible by the blue eye) or as a list item, this is used in the left hand display for the annotations
@@ -691,7 +693,6 @@ return $def
 : @param $type  type of the display, currently 'row' for selecting the row style, anything else will be list style
 : called from api/show_swl_for_line.xql
 :)
-
 declare function tlslib:format-swl($node as node(), $options as map(*)){
 let $user := sm:id()//sm:real/sm:username/text(),
 $usergroups := sm:id()//sm:group/text(),
@@ -705,7 +706,10 @@ $sf := $node//tls:syn-func,
 $sm := $node//tls:sem-feat
 ,$link := substring(tokenize($node/tei:link/@target)[2], 2)
 (: damnit, why does this not work?  3 days later... seems to work now :)
-,$cdef := collection("/db/apps/tls-data")//tei:sense[@xml:id=$link]/ancestor::tei:div/tei:div[@type="definition"]/tei:p/text()
+, $w := collection($config:tls-data-root)//tei:sense[@xml:id=$link]/ancestor::tei:entry
+, $czi := string-join($w/tei:form/tei:orth/text(), " / ")
+, $cpy := string-join($w/tei:form/tei:pron[@xml:lang='zh-Latn-x-pinyin']/text(), " / ")
+,$cdef := $w/ancestor::tei:div/tei:div[@type="definition"]/tei:p/text()
 ,$def := tlslib:get-sense-def($link)
 (:$pos := concat($sf, if ($sm) then (" ", $sm) else "")
 :)
@@ -715,7 +719,7 @@ if ($type = "row") then
 {if (not($context = 'review')) then 
 <div class="col-sm-1">&#160;</div>
 else ()}
-<div class="col-sm-2"><span class="zh">{$zi}</span> ({$py})
+<div class="col-sm-2"><span class="zh">{$czi}</span> ({$cpy})
 {if  ("tls-admin.x" = sm:get-user-groups($user)) then (data(($node//tls:srcline/@pos)[1]),
  <a href="{
       concat($config:exide-url, "?open=", document-uri(root($node)))}">eXide</a>)
@@ -1198,7 +1202,7 @@ return
     }
 </div>
 };
-
+(: This displays the list of words by concept in the right hand popup pane  :)
 declare function tlslib:get-sw($word as xs:string, $context as xs:string) as item()* {
 let $words := if (($context = "dic") or contains($context, "concept")) then 
   collection(concat($config:tls-data-root, '/concepts/'))//tei:orth[contains(.,$word)] else
@@ -1251,8 +1255,9 @@ return
 <li class="mb-3">
 {if ($zi) then
 (: todo : check for permissions :)
-<span onclick="assign_guangyun_dialog({{'zi':'{$zi}', 'wid':'{$wid}','py': '{$py}','concept' : '{$esc}', 'concept_id' : '{$id}'}})"><strong>{$zi}</strong>&#160;({$py[$pos]})&#160;</span> else ""}
-<strong><a href="concept.html?uuid={$id}" title="{$cdef}" class="{if ($scnt = 0) then 'text-muted' else ()}">{$concept[1]}</a></strong> 
+(<strong><span id="{$wid}-{$pos}-zi">{$zi}</span></strong>,<span id="{$wid}-{$pos}-py" title="Click here to change pinyin" onclick="assign_guangyun_dialog({{'zi':'{$zi}', 'wid':'{$wid}','py': '{$py}','concept' : '{$esc}', 'concept_id' : '{$id}', 'pos' : '{$pos}'}})">&#160;({$py[$pos]})&#160;</span>)
+else ""}
+<strong><a href="concept.html?uuid={$id}#{$wid}" title="{$cdef}" class="{if ($scnt = 0) then 'text-muted' else ()}">{$concept[1]}</a></strong> 
 
 {if ($doann and sm:is-authenticated() and not(contains(sm:id()//sm:group, 'tls-test'))) then 
  if ($wid) then     
@@ -1402,14 +1407,15 @@ for $t in collection($dataroot)//tei:titleStmt/tei:title[contains(., $query)]
 return $t
 };
 
-(: $gyonly controls wether we offer to override GY.  Most probably true.. :)
+(: $gyonly controls wether we offer to override GY.  Most probably false.. :)
+
 declare function tlslib:get-guangyun($chars as xs:string, $pron as xs:string, $gyonly as xs:boolean){
 (: loop through the characters of the string $chars :)
 for $char at $cc in  analyze-string($chars, ".")//fn:match/text()
 return
 <div id="guangyun-input-dyn-{$cc}">
 <h5><strong class="ml-2">{$char}</strong></h5>
-{let $r:= collection(concat($config:tls-data-root, "/guangyun"))//tx:attested-graph/tx:graph[contains(.,$char)]
+{let $r:= collection(concat($config:tls-data-root, "/guangyun"))//tx:graphs//tx:graph[contains(.,$char)]
 return 
 (
 if ($r) then
@@ -1422,7 +1428,7 @@ $py := normalize-space(string-join($p, ';'))
 return
 
 <div class="form-check">
-   { if (contains($py, $pron)) then (: todo: handle pron for binomes and more :)
+   { if (contains($py, $pron) and $gyonly) then (: todo: handle pron for binomes and more :)
    <input class="form-check-input guangyun-input" type="radio" name="guangyun-input-{$cc}" id="guangyun-input-{$cc}-{$count}" 
    value="{$e/@xml:id}" checked="checked"/>
    else
@@ -1473,7 +1479,7 @@ let $res:=xmldb:store($path, $uid || ".xml",
             <graph>{$map?zi}</graph>
         </standardised-graph>
     </graphs>
-    <gloss>Added by {$user} at {$timestamp}</gloss>
+    <gloss>Added by {$user} at {substring($timestamp, 1, 10)}</gloss>
     <xiaoyun>
         <headword/>
         <graph-count/>
@@ -1564,6 +1570,76 @@ let $res:=xmldb:store($path, $uid || ".xml",
 return 
 (sm:chmod(xs:anyURI($res), "rw-rw-rw-"),
  sm:chgrp(xs:anyURI($res), "tls-user"),
- sm:chown(xs:anyURI($res), "tls"))
+ sm:chown(xs:anyURI($res), "tls"),
+ $uid)
 
+};
+declare function tlslib:review-special($issue as xs:string){
+let $user := "#" || sm:id()//sm:username
+, $issues := map{
+"missing-pinyin" : "Concepts with missing pinyin reading",
+"duplicate" : "Concepts with duplicate word entries"
+}
+
+return
+<div>
+<h3>Special pages : {map:get($issues, $issue)}</h3>
+ <div class="container">
+ <ul>
+ {switch ($issue)
+ case "missing-pinyin" return 
+  for $p in collection($config:tls-data-root||"/concepts")//tei:pron[@xml:lang="zh-Latn-x-pinyin" and (string-length(.) = 0)]
+  let $w := $p/ancestor::tei:entry
+  , $c := $p/ancestor::tei:div[@type="concept"]
+  let $z := $p/ancestor::tei:form/tei:orth/text()
+  where string-length($z) > 0
+  return
+  <li>{$z}　<a href="concept.html?uuid={$c/@xml:id}#{$w/@xml:id}">{$c/tei:head/text()}</a></li>
+(:  tlslib:get-sw($z, "concept"):)
+ case "duplicate" return 
+   (: not ready! :)
+   for $p in subsequence(collection($config:tls-data-root||"/concepts")//tei:orth, 1, 10)
+ return
+ $p
+ default return 
+  for $i in map:keys($issues)
+  order by $i
+  return
+  <li><a href="review.html?type=special&amp;issue={$i}">{map:get($issues, $i)}</a></li>
+ }
+ </ul>
+ </div>
+</div> 
+};
+
+declare function tlslib:review-swl(){
+let $user := "#" || sm:id()//sm:username
+  ,$review-items := for $r in collection($config:tls-data-root || "/notes")//tls:metadata[not(@resp= $user)]
+       let $score := if ($r/@score) then data($r/@score) else 0
+       , $date := xs:dateTime($r/@created)
+       where $score < 1 and $date > xs:dateTime("2019-08-29T19:51:15.425+09:00")
+       order by $date descending
+       return $r/parent::tls:ann
+return
+<div>
+<h3>Reviews due: {count($review-items)}</h3>
+ <div class="container">
+ {for $att in subsequence($review-items, 1, 20)
+  let  $px := substring($att/tls:metadata/@resp, 2)
+  let $un := doc($config:tls-data-root || "/vault/members.xml")//tei:person[@xml:id=$px]//tei:persName/text()
+  , $created := $att/tls:metadata/@created
+  return 
+  (
+  <div class="row border-top pt-4">
+  <div class="col-sm-4"><img class="icon" src="resources/icons/octicons/svg/pencil.svg"/>
+By <span class="font-weight-bold">{$un}</span>(@{$px})</div>
+  <div class="col-sm-5" title="{$created}">created {tlslib:display-duration(current-dateTime()- xs:dateTime($created))} ago</div>
+  </div>,
+tlslib:show-att-display($att),
+tlslib:format-swl($att, map{"type" : "row", "context" : "review"})
+  )
+ }
+ </div>
+ <p>Refresh page to see more items.</p>
+</div>
 };

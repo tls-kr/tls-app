@@ -133,10 +133,19 @@ function get_sf(senseid){
 function get_guangyun(){
 // this is assuming one char, TODO make this work for multiple
 var word = $("#swl-query-span").text();
+  var ch = $("#input-char").val();
+  if (ch.length > 0){
+      w = ch
+      $('#guangyun-group').html("")
+      gyonly = false
+  } else {
+      w = word
+      gyonly = true
+  }
   $.ajax({
   type : "GET",
   dataType : "html",
-  url : "api/get_guangyun.xql?char=" + word, 
+  url : "api/get_guangyun.xql?char=" + w+"&gyonly="+gyonly, 
   success : function(resp){
   console.log(resp)
   $('#guangyun-group').append(resp)
@@ -356,37 +365,6 @@ function save_newsw(){
   }
   });
  
-}
-
-};
-// save updated pinyin
-function save_updated_pinyin(concept_id, wid, zi){
-    var guangyun_id = $(".guangyun-input:checked,.guangyun-input-checked").map(function(){
-    console.log($(this).text());
-    return $(this).val();
-    }).get().join("xxx");
-    var sources = $("#sources" ).val();
-    var note = $("#input-note").val();
-  if (typeof guangyun_id !== 'undefined' && guangyun_id.length > 0){
-  console.log(guangyun_id);
-  $.ajax({
-  type : "PUT",
-  url : "api/responder.xql?func=update-pinyin&wid="+wid+"&concept="+concept_id+"&sources="+sources+"&notes="+note+"&guangyun="+guangyun_id+"&zi="+zi,
-  success : function(resp){
-    if(resp.startsWith("OK")){
-      $('#assign-guangyun').modal('hide');
-      toastr.info("Pinyin has been saved.", "HXWD says:")  
-    } else {
-       alert("PROBLEM: "+resp);
-    }
-  },
-  error : function(resp){
-  console.log(resp)
-    alert("PROBLEM"+resp);
-  }
-  });
-} else {
-  alert("Guangyun has not been selected!");    
 }
 
 };
@@ -1273,13 +1251,54 @@ $.get("api/responder.xql?func=delete-zi-from-word&wid="+wid+"&pos="+pos+"&char="
        }
     )
     
+};
+
+// save updated pinyin
+function save_updated_pinyin(concept_id, wid, ch, pos){
+    var guangyun_id = $(".guangyun-input:checked,.guangyun-input-checked").map(function(){
+    console.log($(this).text());
+    return $(this).val();
+    }).get().join("xxx");
+    var zi = $("#input-char" ).val();
+    var sources = $("#sources" ).val();
+    var note = $("#input-note").val();
+  if (typeof guangyun_id !== 'undefined' && guangyun_id.length > 0){
+  console.log(guangyun_id);
+  $.ajax({
+  type : "PUT",
+  url : "api/responder.xql?func=update-pinyin&wid="+wid+"&concept="+concept_id+"&sources="+sources+"&notes="+note+"&guangyun-id="+guangyun_id+"&zi="+zi+"&char="+ch,
+  success : function(resp){
+    if(resp.startsWith("OK")){
+      var zih = '#'+wid+'-'+pos+'-zi';
+      var pyh = '#'+wid+'-'+pos+'-py';
+      console.log(zih, zi)
+      $('#assign-guangyun').modal('hide');
+      toastr.info("Pinyin has been saved. Please reload page to see all changes.", "HXWD says:")  
+      // todo: show changes on page!
+      $(zih).html(zi)
+      $(pyh).html("　"+resp.substring(2))
+    } else {
+       alert("PROBLEM: "+resp);
+    }
+  },
+  error : function(resp){
+  console.log(resp)
+    alert("PROBLEM"+resp);
+  }
+  });
+} else {
+  alert("Guangyun has not been selected!");    
 }
+
+};
+
+
 // {{'zi':'{$zi}', 'wid':'{$wid}','py': '{$py}','concept' : '{$esc}', 'concept_id' : '{$id}'}}
 function assign_guangyun_dialog(para){
      $.ajax({
      type : "GET",
      dataType : "html",  
-     url : "api/responder.xql?func=dialogs:assign-guangyun&char="+para.zi+"&concept_id=" + para.concept_id + "&pinyin="+para.py+"&concept="+para.concept+"&wid="+para.wid, 
+     url : "api/responder.xql?func=dialogs:assign-guangyun&char="+para.zi+"&concept_id=" + para.concept_id + "&pinyin="+para.py+"&concept="+para.concept+"&wid="+para.wid+"&pos="+para.pos, 
      success : function(resp){
      $('#remoteDialog').html(resp);
      // initialize_autocomplete();

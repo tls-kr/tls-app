@@ -115,7 +115,7 @@
 .ann-dialog {
 /*  background: white;*/
   position: fixed;
-  top: 55px;
+  top: 54px;
   right: 0;
   max-width: 600px;
   max-height: 900px;
@@ -162,4 +162,12 @@
 
 .tls-head {
   font-size: larger;  
+}
+
+.tls-div:before {
+    height: 54px;
+    margin-top: -54px;
+    content: "";
+    display:block;     
+    visibility: hidden;    
 }

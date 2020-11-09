@@ -217,19 +217,28 @@ return
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Assign pinyin for: <strong class="ml-2"><span id="{$type}-query-span">{$para?char}</span></strong> in <strong>{$para?concept}</strong></h5>
+                <h5 class="modal-title">Assign pinyin for: <strong class="ml-2"><span id="{$type}-query-span">{$para?char}</span></strong> in <strong>{$para?concept}</strong>
+                </h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close" title="Close">
                     ×
                 </button>
             </div>
             <div class="modal-body">
-            {if (string-length($para?pinyin) > 0 and string-length($para?wid) > 0) then <p>Currently {$para?pinyin} is assigned.</p> else <p class="text-muted">Please select a pronounciation or enter a new one</p>}
+                 <div id="input-char-group">
+                    <label for="input-char"><strong>Characters</strong> <br/><small class="text-muted">If you alter the characters, please press <button class="btn badge badge-primary ml-2" type="button" onclick="get_guangyun()">
+                        廣韻
+                    </button> to update the readings. </small></label>
+                    <input id="input-char" class="form-control" value="{$para?char}"/>                   
+                </div>
+
+            <p class="text-muted"><small>{if (string-length($para?pinyin) > 0 and string-length($para?wid) > 0) then <span>Currently {$para?pinyin} is assigned. </span> else (), <span>Please select a pronounciation or enter a new one:</span>}</small></p>
                 <div class="form-group" id="guangyun-group">               
                 {tlslib:get-guangyun($para?char, 'xx', false())}
                 </div>
+                <small class="text-muted">Sources and notes are only used for readings not from 廣韻</small>
                 <div class="form-row">
                 <div id="sources-group" class="form-group ui-widget col-md-12">
-                    <label for="sources">Sources: </label>
+                    <label for="sources"><strong>Sources:</strong> </label>
                     <input id="sources" class="form-control" required="true" value="{$para?sources}"/>
                 </div>
                 <!--
@@ -239,13 +248,13 @@ return
                 </div> -->
                 </div>
                 <div id="input-note-group">
-                    <label for="input-note">Notes </label>
-                    <textarea id="input-note" class="form-control">{$para?note}{$para?concept_id}</textarea>                   
+                    <label for="input-note"><strong>Notes:</strong> </label>
+                    <textarea id="input-note" class="form-control">{$para?note}</textarea>
                 </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" onclick="save_updated_pinyin('{$para?concept_id}', '{$para?wid}', '{$para?char}')">Save changes</button>
+                <button type="button" class="btn btn-primary" onclick="save_updated_pinyin('{$para?concept_id}', '{$para?wid}','{$para?char}', '{$para?pos}')">Save changes</button>
             </div>
         </div>
     </div>    

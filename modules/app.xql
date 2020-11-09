@@ -395,6 +395,10 @@ let $query := map:get($model, "query")
      for $c in $qc return  
      <a class="btn badge badge-light" style="background-color:palegreen" title="Show phonetic profile for {$c}" href="syllables.html?char={$c}">{$c}</a>}
      </span>,
+     <span>{" / 國學大師: ", 
+     for $c in $qc return
+     <a class="btn badge badge-light" title="External link to 國學大師" style="background-color:paleturquoise" href="http://www.guoxuedashi.com/so.php?sokeytm={$c}&amp;ka=100">{$c}</a>
+     }</span>,
      <br/>) else ()}
     { if ($user = "guest") then () else
     if ($mode = "rating") then 
@@ -421,7 +425,11 @@ let $query := map:get($model, "query")
     <p>{if ($start = 1) then ("Taxonomy of meanings: ", for $c in $qc return  <a class="btn badge badge-light" title="Show taxonomy of meanings for {$c}" href="char.html?char={$c}">{$c}</a>,
          " Phonetic profile: ",
      for $c in $qc return  
-     <a class="btn badge badge-light" style="background-color:palegreen" title="Show phonetic profile for {$c}" href="syllables.html?char={$c}">{$c}</a>
+     <a class="btn badge badge-light" style="background-color:palegreen" title="Show phonetic profile for {$c}" href="syllables.html?char={$c}">{$c}</a>,
+     <span>{" 國學大師: ", 
+     for $c in $qc return
+     <a class="btn badge badge-light" title="Search {$c} in 國學大師字典 (External link)" style="background-color:paleturquoise" href="http://www.guoxuedashi.com/so.php?sokeytm={$c}&amp;ka=100">{$c}</a>
+     }</span>
 ) else ()}</p>
     <ul>
     {for $h at $c in map:get($model, "hits")
@@ -1156,13 +1164,14 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
     order by $wc descending    
 (:    count $count :)
     return 
-    <div id="{$entry-id}"><h5>
+    (: tls-div will, together with the defs in style.css allow jumps to here land accurately :)
+    <div class="tls-div" id="{$entry-id}"><h5>
     {let $seq := for $f at $pos in $e/tei:form 
     let $zi := $f/tei:orth/text()
     , $p := $f/tei:pron
     return
     (<span id="{$entry-id}-{$pos}">
-    <span class="zh">{$zi}</span>
+    <span id="{$entry-id}-{$pos}-zi" class="zh">{$zi}</span>
     {for $l in $p return
     switch ($l/@xml:lang) 
     case "zh-x-oc" return <span>&#160;OC: {$l/text()}</span>
@@ -1172,7 +1181,7 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
     default 
     return  let $px := normalize-space($l/text()) return
     (: todo: check for permissions! :)
-    <span title="Click here to change pinyin" onclick="assign_guangyun_dialog({{'zi':'{$zi}', 'wid':'{$entry-id}','py': '{$l/text()}','concept' : '{$c/tei:head/text()}', 'concept_id' : '{$key}'}})">&#160;&#160;{
+    <span id="{$entry-id}-{$pos}-py" title="Click here to change pinyin" onclick="assign_guangyun_dialog({{'zi':'{$zi}', 'wid':'{$entry-id}','py': '{$l/text()}','concept' : '{$c/tei:head/text()}', 'concept_id' : '{$key}', 'pos':'{$pos}'}})">&#160;&#160;{
     if (string-length($px) = 0) then "Click here to add pinyin" else $px}</span>,
     if (count($e/tei:form) > 1) then 
     tlslib:format-button("delete_zi_from_word('"|| $entry-id || "','" || $pos ||"','"|| $zi ||"')", "Delete " || $zi || " and pronounciation from this word.", "open-iconic-master/svg/x.svg", "", "", "tls-editor")
@@ -1349,36 +1358,12 @@ $tab
 :)
 declare 
     %templates:wrap
-function app:review($node as node()*, $model as map(*), $type as xs:string){
-let $user := "#" || sm:id()//sm:username
-  ,$review-items := for $r in collection($config:tls-data-root || "/notes")//tls:metadata[not(@resp= $user)]
-       let $score := if ($r/@score) then data($r/@score) else 0
-       , $date := xs:dateTime($r/@created)
-       where $score < 1 and $date > xs:dateTime("2019-08-29T19:51:15.425+09:00")
-       order by $date descending
-       return $r/parent::tls:ann
-return
-<div>
-<h3>Reviews due: {count($review-items)}</h3>
- <div class="container">
- {for $att in subsequence($review-items, 1, 20)
-  let  $px := substring($att/tls:metadata/@resp, 2)
-  let $un := doc($config:tls-data-root || "/vault/members.xml")//tei:person[@xml:id=$px]//tei:persName/text()
-  , $created := $att/tls:metadata/@created
-  return 
-  (
-  <div class="row border-top pt-4">
-  <div class="col-sm-4"><img class="icon" src="resources/icons/octicons/svg/pencil.svg"/>
-By <span class="font-weight-bold">{$un}</span>(@{$px})</div>
-  <div class="col-sm-5" title="{$created}">created {tlslib:display-duration(current-dateTime()- xs:dateTime($created))} ago</div>
-  </div>,
-tlslib:show-att-display($att),
-tlslib:format-swl($att, map{"type" : "row", "context" : "review"})
-  )
- }
- </div>
- <p>Refresh page to see more items.</p>
-</div>
+    %templates:default("issue", "")    
+function app:review($node as node()*, $model as map(*), $type as xs:string, $issue as xs:string){
+ switch($type) 
+  case "swl" return tlslib:review-swl()
+  case "special" return tlslib:review-special($issue)
+  default return ""
 };
 
 
@@ -1608,8 +1593,8 @@ function app:syllables($node as node()*, $model as map(*), $uuid as xs:string?, 
     let $user := sm:id()//sm:real/sm:username/text()
     , $gys := if (string-length($uuid) > 0) then 
       collection($config:tls-data-root||"/guangyun")//tx:guangyun-entry[@xml:id=$uuid]
-      else
-      collection($config:tls-data-root||"/guangyun")//tx:attested-graph/tx:graph[. = $char]/ancestor::tx:guangyun-entry
+      else 
+      collection($config:tls-data-root||"/guangyun")//tx:graphs//tx:graph[. = $char]/ancestor::tx:guangyun-entry
     for $gy in $gys
     let $mand-jin := $gy//tx:pronunciation/tx:mandarin/tx:jin
     , $key := $gy/@xml:id
@@ -1626,8 +1611,8 @@ function app:syllables($node as node()*, $model as map(*), $uuid as xs:string?, 
      <div class="col-sm-4">B</div>
     </div>
     <div class="row">
-     <div class="col-sm-4">A</div>
-     <div class="col-sm-4">B</div>
+     <div class="col-sm-4">Source: {$gy//tx:sources}</div>
+     <div class="col-sm-4">{$gy//tx:note}</div>
     </div>
     <div id="syllables-content" class="accordion">
     
