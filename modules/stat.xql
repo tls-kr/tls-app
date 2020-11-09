@@ -78,9 +78,9 @@ return
 <table id="stat-overview">
 <thead><tr>
 <th>Feature</th>
-<th>Defined #</th>
-<th>Used unique #</th>
-<th>Used total #</th>
+<th>Defined</th>
+<th>Types</th>
+<th>Tokens</th>
 </tr></thead>
 <tbody>
 <tr id="stat-ov-concepts">
@@ -91,8 +91,8 @@ return
 </tr>
 <tr id="stat-ov-words">
 <td>Words</td>
-<td title="Total number of words defined">{count($words)}</td>
-<td title="Number of unique syntactic words used in attributions">{count(distinct-values($ann//tei:sense/@corresp))}</td>
+<td title="Total number of words defined">{count(distinct-values($ann//tei:sense/@corresp))}</td>
+<td title="Number of unique syntactic words used in attributions">{count($words)}</td>
 <td title="Total number of syntactic words in attributions">{count($ann//tei:sense/@corresp)}</td>
 </tr>
 <tr id="stat-ov-syn-func">
