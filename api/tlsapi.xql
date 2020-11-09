@@ -476,7 +476,12 @@ else
 
 (: todo actually delete the form :)
 declare function tlsapi:delete-zi-from-word($rpara as map(*)){
-"OK"
+(: &wid="+wid+"&pos="+pos+"&char="+ch, "html",  :)
+let $pos := xs:int($rpara?pos)
+let $orth := collection($config:tls-data-root || "/concepts")//tei:entry[@xml:id=$rpara?wid]/tei:form[$pos]/tei:orth[.=$rpara?char]
+, $form := $orth/ancestor::tei:form
+return
+(update delete $form, "OK")
 };
 
 declare function tlsapi:update-pinyin($rpara as map(*)) {
