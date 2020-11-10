@@ -1586,37 +1586,54 @@ function app:dialogs($node as node()*, $model as map(*))
    </div>
 };
 
+
 declare
     %templates:wrap
 function app:syllables($node as node()*, $model as map(*), $uuid as xs:string?, $char as xs:string?){
     (session:create(),
     let $user := sm:id()//sm:real/sm:username/text()
+    , $grc := collection($config:tls-data-root||"/guangyun")
     , $gys := if (string-length($uuid) > 0) then 
-      collection($config:tls-data-root||"/guangyun")//tx:guangyun-entry[@xml:id=$uuid]
+      $grc//tx:guangyun-entry[@xml:id=$uuid]
       else 
-      collection($config:tls-data-root||"/guangyun")//tx:graphs//tx:graph[. = $char]/ancestor::tx:guangyun-entry
+      $grc//tx:graphs//tx:graph[. = $char]/ancestor::tx:guangyun-entry
     for $gy in $gys
     let $mand-jin := $gy//tx:pronunciation/tx:mandarin/tx:jin
     , $key := $gy/@xml:id
     , $gloss := $gy//tx:gloss/text()
-    , $zi := $gy//tx:graphs
+    , $zis := $gy//tx:graphs/tx:attested-graph/tx:graph
+    , $zi := if (string-length(translate(normalize-space($gy//tx:graphs/tx:standardised-graph/tx:graph), ' ', ''))> 0) then
+                $gy//tx:graphs/tx:standardised-graph/tx:graph else
+                $gy//tx:graphs//tx:graph
+    , $fq := ($gy//tx:fanqie/tx:fanqie-shangzi//tx:graph/text(),
+     $gy//tx:fanqie/tx:fanqie-xiazi//tx:graph/text())
     return 
   <div class="row" id="syllables-id" data-id="{$key}" >
    <div class="card col-sm-12" style="max-width: 1000px;background-color:palegreen  ;">
     <div class="card-body" >
-     <h4 class="card-title">{$zi}&#160;&#160; {$mand-jin/text()}</h4>
-    <h5 class="card-subtitle" id="mand-jin" >{$gloss}</h5>
+    <h3>Phonetic profile</h3>
+     <h4 class="card-title">{$zis}&#160;&#160; {$mand-jin/text()}&#160;&#160; <small>
+     <span class="text-muted">廣韻韻目：</span>{$gy//tx:headword}&#160;&#160; 
+     <span class="text-muted">反切：</span><strong>{$fq}</strong>　　
+     <span class="text-muted">聲調：</span><strong>{$gy//tx:調/text()}</strong>　
+     <span class="text-muted">等：</span> <strong>{$gy//tx:等/text()}</strong>&#160;&#160; 
+     <span class="text-muted">聲母：</span><strong>{$gy//tx:聲/text()}</strong></small></h4>
+    <h5 class="card-subtitle" id="mand-jin" >Gloss: {$gloss}</h5>
+    <!--
     <div class="row">
-     <div class="col-sm-4">{data($key)}</div>
+     <div class="col-sm-4">
+     <div class="row"></div>
+     </div>
      <div class="col-sm-4">B</div>
     </div>
     <div class="row">
      <div class="col-sm-4">Source: {$gy//tx:sources}</div>
      <div class="col-sm-4">{$gy//tx:note}</div>
     </div>
+    -->
     <div id="syllables-content" class="accordion">
     
-    <!-- pointers -->
+    <!-- Reconstructions -->
     <div class="card">
      <div class="card-header" id="pointers-head">
       <h5 class="mb-0 mt-2">
@@ -1626,13 +1643,129 @@ function app:syllables($node as node()*, $model as map(*), $uuid as xs:string?, 
       </h5>
       </div>
      <div id="pointers" class="collapse" data-parent="#syllables-content">
-     <p>Content</p>
+    <div class="row">
+     <div class="col-sm-4"><strong>Middle Chinese</strong>
+     {for $s in ($gy//tx:middle-chinese/tx:yundianwang-reconstructions/tx:*|$gy//tx:middle-chinese/tx:authorial-reconstructions/tx:*) return
+     <div class="row">
+      <div class="col-sm-6"><span class="text-muted">{local-name($s)}</span></div>
+      <div class="col-sm-6">{$s}</div>
      </div>
+     }
+    </div>
+    <div class="col-sm-4"><strong>Old Chinese</strong>
+    <div><span>潘悟云</span>
+      {for $s in $gy//tx:old-chinese/tx:pan-wuyun/tx:* 
+      return
+     <div class="row">
+     <div class="col-sm-6"><span class="text-muted">{local-name($s)}</span></div>
+     <div class="col-sm-6">{$s}    </div>
+    </div>
+    }</div>
+    <div><span>鄭張尚芳</span>
+    {for $s in $gy//tx:old-chinese/tx:zhengzhang-shangfang/tx:* 
+     return
+     <div class="row">
+     <div class="col-sm-6"><span class="text-muted">{local-name($s)}</span></div>
+     <div class="col-sm-6">{$s}    </div>
+    </div>
+    }</div>
+    </div>    
+    </div>
+    <div class="row">
+     <div class="col-sm-4">Source: {$gy//tx:sources}</div>
+     <div class="col-sm-4">{$gy//tx:note}</div>
+    </div>
+    </div>
      </div>
+    <!-- Refs -->
+    <div class="card">
+     <div class="card-header" id="ref-head">
+      <h5 class="mb-0 mt-2">
+        <button class="btn" data-toggle="collapse" data-target="#ref" >
+         References
+        </button>
+      </h5>
+      </div>
+     <div id="ref" class="collapse" data-parent="#syllables-content">
+    <div class="row">
+     <div class="col-sm-4"><strong>Character references</strong>
+     {for $s in ($gy//tx:middle-chinese/tx:yundianwang-reconstructions/tx:*|$gy//tx:middle-chinese/tx:authorial-reconstructions/tx:*) return
+     <div class="row">
+      <div class="col-sm-6"><span class="text-muted">{local-name($s)}</span></div>
+      <div class="col-sm-6">{$s}</div>
      </div>
+     }
+    </div>
+    <div class="col-sm-4"><strong>Old Chinese</strong>
+    <div><span>潘悟云</span>
+      {for $s in $gy//tx:old-chinese/tx:pan-wuyun/tx:* 
+      return
+     <div class="row">
+     <div class="col-sm-6"><span class="text-muted">{local-name($s)}</span></div>
+     <div class="col-sm-6">{$s}    </div>
+    </div>
+    }</div>
+    <div><span>鄭張尚芳</span>
+    {for $s in $gy//tx:old-chinese/tx:zhengzhang-shangfang/tx:* 
+     return
+     <div class="row">
+     <div class="col-sm-6"><span class="text-muted">{local-name($s)}</span></div>
+     <div class="col-sm-6">{$s}    </div>
+    </div>
+    }</div>
+    </div>    
+    </div>
+    <div class="row">
+     <div class="col-sm-4">Source: {$gy//tx:sources}</div>
+     <div class="col-sm-4">{$gy//tx:note}</div>
+    </div>
+    </div>
+    </div>
+    </div>
+     <div><h4>Phonetically related characters</h4>
+     <div><h5>Same 反切</h5>
+     <div class="row"> 
+       <div class="col-sm-1">字</div>
+       <div class="col-sm-1">反切</div>
+       <div class="col-sm-1">聲母</div>
+       <div class="col-sm-1">等</div>
+       <div class="col-sm-1">呼</div>
+       <div class="col-sm-1">韻部</div>
+       <div class="col-sm-1">聲調</div>
+       <div class="col-sm-1">重紐</div>
+       <div class="col-sm-1">攝</div>
+       <div class="col-sm-1">OC</div>
      </div>
+     {for $c in $grc//tx:guangyun-entry[.//tx:fanqie/tx:fanqie-shangzi//tx:graph=$fq[1] and .//tx:fanqie/tx:fanqie-xiazi//tx:graph=$fq[2]]
+     return tlslib:format-phonetic($c)}
      </div>
+     <div><h5>Same 潘悟云 OC reconstruction</h5>
+     {for $c in $grc//tx:guangyun-entry[.//tx:old-chinese/tx:pan-wuyun/tx:oc=$gy//tx:old-chinese/tx:pan-wuyun/tx:oc/text()]
+     return tlslib:format-phonetic($c)}
      </div>
-    ) 
+     <div><h5>Same 聲母 and 韻部 </h5></div>
+     {for $c in $grc//tx:guangyun-entry[.//tx:聲=$gy//tx:聲/text() and .//tx:韻部=$gy//tx:韻部/text()]
+     return tlslib:format-phonetic($c)}
+     <!--
+     <div><h5>Same phonetic</h5></div>
+     -->
+     </div>
+     <div><h4>TLS Usage: Words using {$zi}</h4>
+     <ul>
+     {for $z in collection($config:tls-data-root || "/concepts")//tei:entry[.//tei:orth[. = $zi//text()]]
+     let $c:= $z/ancestor::tei:div[@type="concept"]
+     , $w:= $z/ancestor::tei:entry
+     return
+     <li>{$zi}　<a href="concept.html?uuid={$c/@xml:id}#{$z/@xml:id}">{$c/tei:head/text()}</a></li>}
+     </ul>
+     </div>
+     <!-- end of card content -->
+     </div>
+  <!-- end of card body -->   
+  </div>
+ </div>
+    )
 };
+
+
 (:: xx :)

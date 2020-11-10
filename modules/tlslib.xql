@@ -726,7 +726,7 @@ else ()}
       else ()
   }    
 </div>
-<div class="col-sm-3"><a href="concept.html?concept={$concept}" title="{$cdef}">{$concept}</a></div>
+<div class="col-sm-3"><a href="concept.html?concept={$concept}#{$w/@xml:id}" title="{$cdef}">{$concept}</a></div>
 <div class="col-sm-6">
 <span><a href="browse.html?type=syn-func&amp;id={data($sf/@corresp)}">{$sf/text()}</a>&#160;</span>
 {if ($sm) then 
@@ -1111,6 +1111,7 @@ declare function tlslib:move-sw-to-concept($map as map(*)){
  ,$tw := $tc//tei:div[@type="words"]
  ,$sw := $sc//tei:orth[. = $map?word]/ancestor::tei:entry
  ,$wid :=  "uuid-" || util:uuid()
+ (: for swl the map?wid actuallt holds the sense id :)
  ,$scsw := $sc//tei:sense[@xml:id=$map?wid]
  ,$swl := for $a in collection($config:tls-data-root||"/notes")//tls:ann[@concept-id=$map?src-concept] 
          let $wx :=  $map?wid = substring($a/tei:sense/@corresp, 2)
@@ -1135,8 +1136,10 @@ declare function tlslib:move-sw-to-concept($map as map(*)){
       (update insert $tce into $tw,
        update delete $scsw)
      else 
-   (: word exists already in tc, we just move the sense over :)
-    let $te := $tw//tei:orth[. = $map?word]/ancestor::tei:entry
+   (: word exists already in tc, we just move the sense over 
+    need to make sure to use only one tei:entry.  How do we know this is the right one?
+   :)
+    let $te := ($tw//tei:orth[. = $map?word]/ancestor::tei:entry[not(.//tei:sense[@xml:id=$map?wid])])[1]
     return 
     (update insert $scsw into $te
      ,update delete $scsw )
@@ -1205,8 +1208,9 @@ return
 (: This displays the list of words by concept in the right hand popup pane  :)
 declare function tlslib:get-sw($word as xs:string, $context as xs:string) as item()* {
 let $words := if (($context = "dic") or contains($context, "concept")) then 
-  collection(concat($config:tls-data-root, '/concepts/'))//tei:orth[contains(.,$word)] else
-  collection(concat($config:tls-data-root, '/concepts/'))//tei:orth[. = $word]
+  collection(concat($config:tls-data-root, '/concepts/'))//tei:entry[./tei:form/tei:orth[contains(. , $word)]]/tei:form[1]/tei:orth[contains(. , $word)][1]
+  else
+  collection(concat($config:tls-data-root, '/concepts/'))//tei:entry[./tei:form/tei:orth[. = $word]]/tei:form[1]/tei:orth[. = $word][1]
   
 let $user := sm:id()//sm:real/sm:username/text()
 , $doann := contains($context, 'textview')  (: the page we were called from can annotate :)
@@ -1580,7 +1584,6 @@ let $user := "#" || sm:id()//sm:username
 "missing-pinyin" : "Concepts with missing pinyin reading",
 "duplicate" : "Concepts with duplicate word entries"
 }
-
 return
 <div>
 <h3>Special pages : {map:get($issues, $issue)}</h3>
@@ -1588,19 +1591,31 @@ return
  <ul>
  {switch ($issue)
  case "missing-pinyin" return 
-  for $p in collection($config:tls-data-root||"/concepts")//tei:pron[@xml:lang="zh-Latn-x-pinyin" and (string-length(.) = 0)]
+  let $missing := for $p in collection($config:tls-data-root||"/concepts")//tei:pron[@xml:lang="zh-Latn-x-pinyin" and (string-length(.) = 0)] 
+  let $z := $p/ancestor::tei:form/tei:orth/text()
+  where string-length($z) > 0
+  return $p
+
+  for $p in $missing
   let $w := $p/ancestor::tei:entry
   , $c := $p/ancestor::tei:div[@type="concept"]
   let $z := $p/ancestor::tei:form/tei:orth/text()
-  where string-length($z) > 0
+
   return
   <li>{$z}　<a href="concept.html?uuid={$c/@xml:id}#{$w/@xml:id}">{$c/tei:head/text()}</a></li>
 (:  tlslib:get-sw($z, "concept"):)
  case "duplicate" return 
-   (: not ready! :)
-   for $p in subsequence(collection($config:tls-data-root||"/concepts")//tei:orth, 1, 10)
- return
- $p
+ let $dup := 
+  for $c in collection($config:tls-data-root||"/concepts")//tei:div[@type="concept"]
+    for $e in $c//tei:entry
+      let $cx := for $o in $e//tei:orth
+        let $x := count($c//tei:entry[.//tei:orth[. = $o]])
+        let $w := $o/ancestor::tei:entry/@xml:id
+              return ($x, $o, $o/ancestor::tei:entry/@xml:id, $w)
+    where $cx[1] > 1
+   return 
+   <li>{$cx[2]/text()}　<a href="concept.html?uuid={$c/@xml:id}#{$cx[4]}">{$c/tei:head/text()}</a> {$cx[1]}</li>
+  return (count($dup), $dup)
  default return 
   for $i in map:keys($issues)
   order by $i
@@ -1642,4 +1657,22 @@ tlslib:format-swl($att, map{"type" : "row", "context" : "review"})
  </div>
  <p>Refresh page to see more items.</p>
 </div>
+};
+
+declare function tlslib:format-phonetic($gy as node()){
+    let $mand-jin := $gy//tx:pronunciation/tx:mandarin/tx:jin
+    , $key := $gy/@xml:id
+    , $gloss := $gy//tx:gloss/text()
+    , $zi := $gy//tx:graphs
+    , $fq := ($gy//tx:fanqie/tx:fanqie-shangzi//tx:graph/text(),
+     $gy//tx:fanqie/tx:fanqie-xiazi//tx:graph/text())
+  return 
+  <div class="row">
+  <div class="col-sm-1"><a href="syllables.html?uuid={$key}" class="btn badge badge-light">{$zi}</a></div>
+  <div class="col-sm-1">{$fq}</div>
+  {for $c in $gy//tx:categories/tx:* return 
+  <div class="col-sm-1">{$c//text()}</div>
+  }
+  <div class="col-sm-1">{$gy//tx:old-chinese/tx:pan-wuyun/tx:oc/text()}</div>
+  </div>
 };
