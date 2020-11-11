@@ -1215,11 +1215,15 @@ return
 };
 (: This displays the list of words by concept in the right hand popup pane  :)
 declare function tlslib:get-sw($word as xs:string, $context as xs:string) as item()* {
-let $words := if (($context = "dic") or contains($context, "concept")) then 
-  collection(concat($config:tls-data-root, '/concepts/'))//tei:entry[./tei:form/tei:orth[contains(. , $word)]]/tei:form[1]/tei:orth[contains(. , $word)][1]
+let $words-tmp := if (($context = "dic") or contains($context, "concept")) then 
+  collection(concat($config:tls-data-root, '/concepts/'))//tei:orth[contains(. , $word)]
   else
-  collection(concat($config:tls-data-root, '/concepts/'))//tei:entry[./tei:form/tei:orth[. = $word]]/tei:form[1]/tei:orth[. = $word][1]
-  
+  collection(concat($config:tls-data-root, '/concepts/'))//tei:entry/tei:form/tei:orth[. = $word]
+  (: this is to filter out characters that occur multiple times in a entry definition (usually with different pronounciations, however we actually might want to get rid of them :)
+, $words := for $w in $words-tmp
+   let $e := $w/ancestor::tei:entry
+   group by $e
+   return $w[1]
 let $user := sm:id()//sm:real/sm:username/text()
 , $doann := contains($context, 'textview')  (: the page we were called from can annotate :)
 , $taxdoc := doc($config:tls-data-root ||"/core/taxchar.xml")
