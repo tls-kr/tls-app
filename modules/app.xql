@@ -13,6 +13,7 @@ declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
 declare namespace tx="http://exist-db.org/tls";
 declare namespace json = "http://www.json.org";
+declare namespace ucd = "http://www.unicode.org/ns/2003/ucd/1.0";
 
 import module namespace templates="http://exist-db.org/xquery/templates" ;
 import module namespace config="http://hxwd.org/config" at "config.xqm";
@@ -1685,40 +1686,70 @@ function app:syllables($node as node()*, $model as map(*), $uuid as xs:string?, 
         </button>
       </h5>
       </div>
+      {let $ucd := doc($config:tls-data-root||"/guangyun/ucd.unihan.flat.xml")
+      , $cp := tlslib:num2hex(string-to-codepoints($zis))
+      , $cpr := $ucd//ucd:char[@cp=$cp]
+      , $cinfo := ("kDefinition", "kRSUnicode", "kFrequency", "kGradeLevel", "kHanyuPinlu", "kFourCornerCode", "kTotalStrokes", "kIICore", "kUnihanCore2020")
+      , $read := ("kVietnamese", "kMandarin", "kHanyuPinyin", "kTang", "kJapaneseKun", "kJapaneseOn", "kCantonese", "kXHC1983", "")
+      , $dics := ("kHanYu", "kCihaiT", "kSBGY", "kNelson", "kCowles", "kMatthews", "kPhonetic", "kGSR", "kFenn", "kFennIndex", "kKarlgren", "kMeyerWempe", "kLau", "kKangXi", "kDaeJaweon", "kMorohashi", "")
+      , $csets := ("cp", "kBigFive", "kCCCII", "kEACC", "kIRG_JSource")
+      return
      <div id="ref" class="collapse" data-parent="#syllables-content">
     <div class="row">
-     <div class="col-sm-4"><strong>Character references</strong>
-     {for $s in ($gy//tx:middle-chinese/tx:yundianwang-reconstructions/tx:*|$gy//tx:middle-chinese/tx:authorial-reconstructions/tx:*) return
+     <div class="col-sm-12"><h5>Based on {$ucd//ucd:description/text()}</h5></div>
+    </div> 
+    <div class="row">
+     <div class="col-sm-4">
+     <strong>Dictionary references</strong>
+     {for $v in $cpr/@* 
+      let $n := local-name($v)      
+      where $n = $dics
+     return
      <div class="row">
-      <div class="col-sm-6"><span class="text-muted">{local-name($s)}</span></div>
-      <div class="col-sm-6">{$s}</div>
+      <div class="col-sm-6"><span class="text-muted">{$n}</span></div>
+      <div class="col-sm-6">{data($v)}</div>
      </div>
      }
     </div>
-    <div class="col-sm-4"><strong>Old Chinese</strong>
-    <div><span>潘悟云</span>
-      {for $s in $gy//tx:old-chinese/tx:pan-wuyun/tx:* 
-      return
-     <div class="row">
-     <div class="col-sm-6"><span class="text-muted">{local-name($s)}</span></div>
-     <div class="col-sm-6">{$s}    </div>
-    </div>
-    }</div>
-    <div><span>鄭張尚芳</span>
-    {for $s in $gy//tx:old-chinese/tx:zhengzhang-shangfang/tx:* 
+    <div class="col-sm-4"><strong>Readings</strong>
+    {for $v in $cpr/@* 
+      let $n := local-name($v)      
+      where $n = $read
      return
      <div class="row">
-     <div class="col-sm-6"><span class="text-muted">{local-name($s)}</span></div>
-     <div class="col-sm-6">{$s}    </div>
-    </div>
-    }</div>
-    </div>    
+      <div class="col-sm-6"><span class="text-muted">{$n}</span></div>
+      <div class="col-sm-6">{data($v)}</div>
+     </div>
+     }
+   </div>    
     </div>
     <div class="row">
-     <div class="col-sm-4">Source: {$gy//tx:sources}</div>
-     <div class="col-sm-4">{$gy//tx:note}</div>
+     <div class="col-sm-4"><strong>Character Info</strong>
+    {for $v in $cpr/@* 
+      let $n := local-name($v)      
+      where $n = $cinfo
+     return
+     <div class="row">
+      <div class="col-sm-6"><span class="text-muted">{$n}</span></div>
+      <div class="col-sm-6">{data($v)}</div>
+     </div>
+     }
+     </div>
+     <div class="col-sm-4"><strong>Codepoints</strong>
+    {for $v in $cpr/@* 
+      let $n := local-name($v)      
+      where $n = $csets
+     return
+     <div class="row">
+      <div class="col-sm-6"><span class="text-muted">{$n}</span></div>
+      <div class="col-sm-6">{data($v)}</div>
+     </div>
+     }
+     </div>
     </div>
     </div>
+    (: end of ref card :)
+    }
     </div>
     </div>
      <div><h4>Phonetically related characters</h4>

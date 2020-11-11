@@ -27,6 +27,24 @@ declare function local:string-to-ncr($s as xs:string){
 : Helper functions
 :)
 
+declare function tlslib:num2hex($num as xs:int) as xs:string {
+let $h := "0123456789ABCDEF"
+, $s := if ($num > 65535) then
+  (tlslib:num2hex($num idiv 65536),
+  tlslib:num2hex($num mod 65536))
+  else if ($num < 65536 and $num > 255) then
+  (tlslib:num2hex($num idiv 256),
+  tlslib:num2hex($num mod 256))
+  else if ($num < 256 and $num > 15) then
+  (tlslib:num2hex($num idiv 16),
+  tlslib:num2hex($num mod 16))
+  else if ($num < 16) then
+   substring($h, $num + 1, 1)
+  else ()
+  return
+  string-join($s, "")
+};
+
 declare function tlslib:expath-descriptor() as element() {
     <rl/>
 };
