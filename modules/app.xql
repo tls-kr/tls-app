@@ -179,7 +179,7 @@ function app:browse($node as node()*, $model as map(*), $type as xs:string?, $fi
     switch ($type) 
         case  "concept" return <a href="concept.html?uuid={$id}">{$n}</a>
         case  "syllables" return <a href="syllables.html?uuid={$id}">{$n}</a>
-        case  "rhet-dev" return <a href="rhetdev.html?uuid={$id}">{$n}</a>
+        case  "rhet-dev" return <a href="rhet-dev.html?uuid={$id}">{$n}</a>
         default return (tlslib:format-button("delete_sf('"||$id||"', '"||$type||"')", "Delete this syntactic definition.", "open-iconic-master/svg/x.svg", "", "", "tls-editor"),
         <a id="{$id}-abbr" onclick="show_use_of('{$type}', '{$id}')">{$n}</a>)
     }</td>
@@ -397,7 +397,7 @@ let $query := map:get($model, "query")
      </span>,
      <span>{" / 國學大師: ", 
      for $c in $qc return
-     <a class="btn badge badge-light" title="External link to 國學大師" style="background-color:paleturquoise" href="http://www.guoxuedashi.com/so.php?sokeytm={$c}&amp;ka=100">{$c}</a>
+     tlslib:guoxuedashi($c)
      }</span>,
      <br/>) else ()}
     { if ($user = "guest") then () else
@@ -881,20 +881,20 @@ function app:rhetdev($node as node()*, $model as map(*), $uuid as xs:string?, $o
      {map:get($app:lmap, data($p/@type))}
      {tlslib:capitalize-first(data($p/@type/text()))}</h5>,
      (: we assume that clicking here implies an interest in the ontology, so we load in open state:)
-     <p>
+     <ul>
      {for $r in $p//tei:ref 
      let $lk := replace($r/@target, "#", "")
      return
-     (<span class="badge badge-light">
-     <a href="rhetdev.html?uuid={$lk}&amp;ontshow=true">{$r/text()}</a>
-     </span>,
+     (<li >
+     <a class="badge badge-light" href="rhet-dev.html?uuid={$lk}&amp;ontshow=true">{$r/text()}</a>
+     </li>,
+     <ul>{
      if ($p[@type = "hypernymy"]) then
-     for $u in tlslib:ontology-up($lk, -5) return
-     <span> -> <span class="badge">
-     <a href="rhetdev.html?uuid={substring($u/@target, 2)}&amp;ontshow=true">{$u/text()}</a>
-     </span>
-     </span>
-     else ())} </p>)}
+     for $u in reverse(tlslib:ontology-up($lk, -5)) 
+     return $u
+     else ()
+     }</ul>
+     )} </ul>)}
      
      {for $p in $rd//tei:div[@type="pointers"]//tei:list[@type = "taxonymy"]
      return
@@ -906,9 +906,9 @@ function app:rhetdev($node as node()*, $model as map(*), $uuid as xs:string?, $o
      let $lk := replace($r/@target, "#", "")
      return
   
-     <li><span class="badge">
-     <a href="rhetdev.html?uuid={$lk}&amp;ontshow=true">{$r/text()}</a>
-     </span><ul>{
+     <li>
+     <a class="badge badge-light" href="rhet-dev.html?uuid={$lk}&amp;ontshow=true">{$r/text()}</a>
+     <ul>{
      for $u in tlslib:ontology-links($lk, "taxonymy", 2 ) return
      $u
      }</ul></li>
@@ -976,8 +976,9 @@ function app:rhetdev($node as node()*, $model as map(*), $uuid as xs:string?, $o
    
 (: concept display :)
 declare 
-    %templates:wrap
-function app:concept($node as node()*, $model as map(*), $concept as xs:string?, $uuid as xs:string?, $ontshow as xs:string?)
+%templates:wrap 
+%templates:default("bychar", 0) 
+function app:concept($node as node()*, $model as map(*), $concept as xs:string?, $uuid as xs:string?, $ontshow as xs:string?, $bychar as xs:boolean)
 {
     (session:create(),
     let $user := sm:id()//sm:real/sm:username/text()
@@ -1035,24 +1036,21 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
      {map:get($app:lmap, data($p/@type))}
      {tlslib:capitalize-first(data($p/@type/text()))}</h5>,
      (: we assume that clicking here implies an interest in the ontology, so we load in open state:)
-     <p>
+     <ul>
      {for $r in $p//tei:ref 
      let $lk := replace($r/@target, "#", "")
      ,$def := collection($config:tls-data-root || "/concepts")//tei:div[@xml:id=$lk]/tei:div[@type='definition']/tei:p/text()
      return
-     (<span class="badge badge-light">
-     <a href="concept.html?uuid={$lk}&amp;ontshow=true">{$r/text()}</a>
-     </span>,<small style="display:block;">{$def}</small>,
-     if ($p[@type = "hypernymy"]) then
-     for $u in tlslib:ontology-up($lk, -5) 
-     let $def := collection($config:tls-data-root || "/concepts")//tei:div[@xml:id=substring($u/@target, 2)]/tei:div[@type='definition']/tei:p/text()
-     return
-     <span> -> <span class="badge">
-     <a href="concept.html?uuid={substring($u/@target, 2)}&amp;ontshow=true">{$u/text()}</a>
-     </span>
+     (<li>
+     <a class="badge badge-light" href="concept.html?uuid={$lk}&amp;ontshow=true">{$r/text()}</a>
      <small style="display:block;">{$def}</small>
-     </span>
-     else ())} </p>)}
+     <ul>{
+     if ($p[@type = "hypernymy"]) then
+     for $u in reverse(tlslib:ontology-up($lk, -5)) 
+     return $u
+     else ()
+     }</ul></li>)} 
+     </ul>)}
      
      {for $p in $c//tei:div[@type="pointers"]//tei:list[@type = "taxonymy"]
      return
@@ -1065,10 +1063,10 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
       ,$def := collection($config:tls-data-root || "/concepts")//tei:div[@xml:id=$lk]/tei:div[@type='definition']/tei:p/text()
      return
   
-     <li><span class="badge">
-     <a href="concept.html?uuid={$lk}&amp;ontshow=true">{$r/text()}</a>
+     <li>
+     <a  class="badge badge-light" href="concept.html?uuid={$lk}&amp;ontshow=true">{$r/text()}</a>
      <small style="display:inline;">　{$def}</small>
-     </span><ul>{
+     <ul>{
      for $u in tlslib:ontology-links($lk, "taxonymy", 2 ) return $u
      }</ul></li>
      }</ul>
@@ -1161,7 +1159,7 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
     ,$def := $e/tei:def/text()
     ,$wc := sum(for $sw in $e//tei:sense 
              return count($ann//tei:sense[@corresp="#" || $sw/@xml:id]))
-    order by $wc descending    
+    order by if (xs:boolean($bychar)) then $zi else $wc descending    
 (:    count $count :)
     return 
     (: tls-div will, together with the defs in style.css allow jumps to here land accurately :)
@@ -1181,7 +1179,7 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
     default 
     return  let $px := normalize-space($l/text()) return
     (: todo: check for permissions! :)
-    <span id="{$entry-id}-{$pos}-py" title="Click here to change pinyin" onclick="assign_guangyun_dialog({{'zi':'{$zi}', 'wid':'{$entry-id}','py': '{$l/text()}','concept' : '{$c/tei:head/text()}', 'concept_id' : '{$key}', 'pos':'{$pos}'}})">&#160;&#160;{
+    <span id="{$entry-id}-{$pos}-py" title="Click here to change pinyin" onclick="assign_guangyun_dialog({{'zi':'{$zi}', 'wid':'{$entry-id}','py': '{normalize-space($l/text())}','concept' : '{$c/tei:head/text()}', 'concept_id' : '{$key}', 'pos':'{$pos}'}})">&#160;&#160;{
     if (string-length($px) = 0) then "Click here to add pinyin" else $px}</span>,
     if (count($e/tei:form) > 1) then 
     tlslib:format-button("delete_zi_from_word('"|| $entry-id || "','" || $pos ||"','"|| $zi ||"')", "Delete " || $zi || " and pronounciation from this word.", "open-iconic-master/svg/x.svg", "", "", "tls-editor")
@@ -1528,7 +1526,7 @@ Dark theme
   order by $date descending
 
 return
-<li>{tlslib:format-button("delete_bm('"||$id||"')", "Delete this bookmark.", "open-iconic-master/svg/x.svg", "", "", "tls-user")}
+<li id="{$id}">{tlslib:format-button("delete_bm('"||$id||"')", "Delete this bookmark.", "open-iconic-master/svg/x.svg", "", "", "tls-user")}
 <a href="textview.html?location={substring($segid, 2)}">{$b/tei:ref/tei:title/text()}: {$b/tei:seg}</a></li>
 }
 </ul>
@@ -1600,7 +1598,7 @@ function app:syllables($node as node()*, $model as map(*), $uuid as xs:string?, 
     for $gy in $gys
     let $mand-jin := $gy//tx:pronunciation/tx:mandarin/tx:jin
     , $key := $gy/@xml:id
-    , $gloss := $gy//tx:gloss/text()
+    , $gloss := $gy//tx:gloss
     , $zis := $gy//tx:graphs/tx:attested-graph/tx:graph
     , $zi := if (string-length(translate(normalize-space($gy//tx:graphs/tx:standardised-graph/tx:graph), ' ', ''))> 0) then
                 $gy//tx:graphs/tx:standardised-graph/tx:graph else
@@ -1766,6 +1764,5 @@ function app:syllables($node as node()*, $model as map(*), $uuid as xs:string?, 
  </div>
     )
 };
-
 
 (:: xx :)

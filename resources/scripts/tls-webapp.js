@@ -134,7 +134,7 @@ function get_guangyun(){
 // this is assuming one char, TODO make this work for multiple
 var word = $("#swl-query-span").text();
   var ch = $("#input-char").val();
-  if (ch.length > 0){
+  if (ch){
       w = ch
       $('#guangyun-group').html("")
       gyonly = false
@@ -1304,9 +1304,25 @@ function assign_guangyun_dialog(para){
      // initialize_autocomplete();
      $('#assign-guangyun').modal('show');
    }
+  });   
+}
+
+function delete_bm(uuid){
+  $.ajax({
+  type : "GET",
+  dataType : "html",  
+  url : "api/responder.xql?func=delete-bm&uuid=" + uuid, 
+  success : function(resp){
+//     console.log(resp.uuid)
+     $("#"+uuid).html("");
+     toastr.info("Bookmark has been deleted.", "HXWD says:");
+  }
   });
     
 }
+
+
+
 // need to think about where to use this:
 /*window.onbeforeunload = function() {
   return "";

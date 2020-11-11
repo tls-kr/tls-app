@@ -93,28 +93,36 @@ declare function tlslib:getdate($node as node()) as xs:int{
 };
   
 (: Helper for ontology  I guess I need to return a map? :)  
+(: this covers now also the rhet-dev ontology :)
+
 declare function tlslib:ontology-up($uid as xs:string, $cnt as xs:int){
-  let $concept := collection($config:tls-data-root || "/concepts")//tei:div[@xml:id=$uid],
+  let $concept := collection($config:tls-data-root)//tei:div[@xml:id=$uid],
+  $dtype := $concept/@type,
   $type := "hypernymy",
   $hyp := $concept//tei:list[@type=$type]//tei:ref
   return
   for $r in $hyp
+  let $def := collection($config:tls-data-root)//tei:div[@xml:id=substring($r/@target, 2)]/tei:div[@type='definition']/tei:p/text()
   return
-  ($r, tlslib:ontology-up(substring($r/@target, 2), $cnt))
+  <li>{<a class="badge badge-light" href="{$dtype}.html?uuid={substring($r/@target, 2)}&amp;ontshow=true">{$r/text()}</a>, 
+  <small style="display:block;">{$def}</small>, 
+  <ul>{tlslib:ontology-up(substring($r/@target, 2), $cnt)}</ul>}
+  </li>
 };
 
+(: this covers now also the rhet-dev ontology :)
+
 declare function tlslib:ontology-links($uid as xs:string, $type as xs:string, $cnt as xs:int){
-  let $concept := collection($config:tls-data-root || "/concepts")//tei:div[@xml:id=$uid],
+  let $concept := collection($config:tls-data-root)//tei:div[@xml:id=$uid],
+  $dtype := $concept/@type,
   $hyp := $concept//tei:list[@type=$type]//tei:ref
   return
     for $r in $hyp
-    let $def := collection($config:tls-data-root || "/concepts")//tei:div[@xml:id=substring($r/@target, 2)]/tei:div[@type='definition']/tei:p/text()
+    let $def := collection($config:tls-data-root)//tei:div[@xml:id=substring($r/@target, 2)]/tei:div[@type='definition']/tei:p/text()
      return
      <li>
-      <span class="badge">
-      <a href="concept.html?uuid={substring($r/@target, 2)}&amp;ontshow=true">{$r/text()}</a>
+      <a  class="badge badge-light" href="{$dtype}.html?uuid={substring($r/@target, 2)}&amp;ontshow=true">{$r/text()}</a>
       <small style="display:inline;">　{$def}</small>
-      </span>
       {
       if ($cnt < 3) then 
       <ul>
@@ -398,7 +406,7 @@ return
 
 declare function tlslib:navbar-review(){
  <li class="nav-item dropdown">
-  <a class="nav-link dropdown-toggle" href="#"  id="navbarDropdownEditors" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Editors</a>
+  <a class="nav-link dropdown-toggle" href="#"  id="navbarDropdownEditors" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">內部</a>
    <div class="dropdown-menu" aria-labelledby="navbarDropdownEditors">
      <a class="dropdown-item" href="review.html?type=swl">Review SWLs</a>
      <a class="dropdown-item" href="review.html?type=special">Special pages</a>
@@ -809,7 +817,7 @@ tlslib:format-swl($swl/ancestor::tls:ann, map{'type' : 'row'})
 else 
 <div class="row bg-light ">
 <div class="col-sm-1">Rhet:</div>
-<div class="col-sm-4"><a href="rhetdev.html?uuid={$swl/ancestor::tls:span/@rhet-dev-id}">{data($swl/ancestor::tls:span/@rhet-dev)}</a></div>
+<div class="col-sm-4"><a href="rhet-dev.html?uuid={$swl/ancestor::tls:span/@rhet-dev-id}">{data($swl/ancestor::tls:span/@rhet-dev)}</a></div>
 </div>
 }
 </div>
@@ -1418,7 +1426,7 @@ declare function tlslib:get-guangyun($chars as xs:string, $pron as xs:string, $g
 for $char at $cc in  analyze-string($chars, ".")//fn:match/text()
 return
 <div id="guangyun-input-dyn-{$cc}">
-<h5><strong class="ml-2">{$char}</strong></h5>
+<h5><strong class="ml-2">{$char}</strong>　{tlslib:guoxuedashi($char)}</h5>
 {let $r:= collection(concat($config:tls-data-root, "/guangyun"))//tx:graphs//tx:graph[contains(.,$char)]
 return 
 (
@@ -1440,7 +1448,7 @@ return
    value="{$e/@xml:id}"/>
    }
    <label class="form-check-label" for="guangyun-input-{$cc}-{$count}">
-     {$e/tx:gloss/text()} -  {$py}
+     {$e/tx:gloss} -  {$py}
    </label>
   </div>
   else (),
@@ -1614,7 +1622,7 @@ return
               return ($x, $o, $o/ancestor::tei:entry/@xml:id, $w)
     where $cx[1] > 1
    return 
-   <li>{$cx[2]/text()}　<a href="concept.html?uuid={$c/@xml:id}#{$cx[4]}">{$c/tei:head/text()}</a> {$cx[1]}</li>
+   <li>{$cx[2]/text()}　<a href="concept.html?uuid={$c/@xml:id}&amp;bychar=1#{$cx[4]}">{$c/tei:head/text()}</a> {$cx[1]}</li>
   return (count($dup), $dup)
  default return 
   for $i in map:keys($issues)
@@ -1675,4 +1683,9 @@ declare function tlslib:format-phonetic($gy as node()){
   }
   <div class="col-sm-1">{$gy//tx:old-chinese/tx:pan-wuyun/tx:oc/text()}</div>
   </div>
+};
+
+
+declare function tlslib:guoxuedashi($c as xs:string){
+<a class="btn badge badge-light" target="GXDS" title="External link to 國學大師" style="background-color:paleturquoise" href="http://www.guoxuedashi.com/so.php?sokeytm={$c}&amp;ka=100">{$c}</a>
 };

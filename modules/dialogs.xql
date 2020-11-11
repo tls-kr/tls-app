@@ -285,10 +285,12 @@ declare function dialogs:dialog-stub(){
 };
 
 declare function dialogs:move-word($map as map(*)){
+let $cid := collection($config:tls-data-root||"/concepts")//tei:*[@xml:id=$map?wid]/ancestor::tei:div[@type="concept"]
+return
 <div id="move-word-dialog" class="modal" tabindex="-1" role="dialog" style="display: none;">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
-            <div class="modal-header"><h5>Move {$map?word} to another concept</h5>
+            <div class="modal-header"><h5>Move {$map?word} from {$cid/tei:head/text()} to another concept</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close" title="Close">x</button>
             </div>
             <div class="modal-body">

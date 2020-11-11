@@ -532,11 +532,11 @@ let $gys :=
         return if ($rec) then $rec else "--"
     ,$p := for $gy in $gys 
          let $rec := if ($gy instance of element()) then
-            for $s in $gy//tx:mandarin/*
+            for $s in $gy//tx:mandarin/tx:jin
              return
              if (string-length(normalize-space($s)) > 0) then normalize-space($s/text()) else () else ()
          return 
-         if ($rec) then $rec else
+         if (count($rec) > 0) then $rec else
          tokenize($gy, ":")[2] ,
     $gr := for $gy in $gys
       let $r := if ($gy instance of element()) then 
@@ -995,10 +995,6 @@ let $item := if ($type = 'word') then
  return $ret
 };
 
-declare function tlsapi:delete-bookmark($id as xs:string){
-()
-};
-
 (:~
 : For syn-func and sem-feat: show examples of usage
 : TODO get the stuff from the CONCEPTS, then collect usage examples.?
@@ -1382,6 +1378,13 @@ return
 </div>
 };
 
+declare function tlsapi:delete-bm($map as map(*)){
+let $user := sm:id()//sm:real/sm:username/text()
+,$bmdoc := doc($config:tls-user-root || $user|| "/bookmarks.xml")
+,$bm := $bmdoc//tei:item[@xml:id = $map?uuid]
+return
+if ($bm) then (update delete $bm, "OK") else "Could not delete bookmark."
+};
 
 declare function tlsapi:stub($map as map(*)){
 ()
