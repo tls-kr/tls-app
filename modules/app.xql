@@ -1687,11 +1687,12 @@ function app:syllables($node as node()*, $model as map(*), $uuid as xs:string?, 
       </h5>
       </div>
       {let $ucd := doc($config:tls-data-root||"/guangyun/ucd.unihan.flat.xml")
-      , $cp := tlslib:num2hex(string-to-codepoints($zis))
+      , $cp := tlslib:num2hex(string-to-codepoints($zis)[1])
       , $cpr := $ucd//ucd:char[@cp=$cp]
       , $cinfo := ("kDefinition", "kRSUnicode", "kFrequency", "kGradeLevel", "kHanyuPinlu", "kFourCornerCode", "kTotalStrokes", "kIICore", "kUnihanCore2020")
-      , $read := ("kVietnamese", "kMandarin", "kHanyuPinyin", "kTang", "kJapaneseKun", "kJapaneseOn", "kCantonese", "kXHC1983", "")
-      , $dics := ("kHanYu", "kCihaiT", "kSBGY", "kNelson", "kCowles", "kMatthews", "kPhonetic", "kGSR", "kFenn", "kFennIndex", "kKarlgren", "kMeyerWempe", "kLau", "kKangXi", "kDaeJaweon", "kMorohashi", "")
+      , $read := ("kVietnamese", "kMandarin", "kHanyuPinyin", "kTang", "kJapaneseKun", "kJapaneseOn", "kCantonese", "")
+      , $dics := ("kHanYu", "kCihaiT", "kSBGY", "kNelson", "kCowles", "kMatthews", "kPhonetic", "kGSR", "kFenn", "kFennIndex", "kKarlgren", "kMeyerWempe", "kLau", "kKangXi", "kDaeJaweon", "kMorohashi", "kTGHZ2013", "kXHC1983", "kPhonetic")
+      , $vars := ("kTraditionalVariant", "kSimplifiedVariant", "kSemanticVariant", "kSpecializedSemanticVariant")
       , $csets := ("cp", "kBigFive", "kCCCII", "kEACC", "kIRG_JSource")
       return
      <div id="ref" class="collapse" data-parent="#syllables-content">
