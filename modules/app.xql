@@ -1046,7 +1046,7 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
      <small style="display:block;">{$def}</small>
      <ul>{
      if ($p[@type = "hypernymy"]) then
-     for $u in reverse(tlslib:ontology-up($lk, -5)) 
+     for $u in reverse(tlslib:ontology-up($lk, 1)) 
      return $u
      else ()
      }</ul></li>)} 
@@ -1067,7 +1067,8 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
      <a  class="badge badge-light" href="concept.html?uuid={$lk}&amp;ontshow=true">{$r/text()}</a>
      <small style="display:inline;">　{$def}</small>
      <ul>{
-     for $u in tlslib:ontology-links($lk, "taxonymy", 2 ) return $u
+     (: a higher cnt means less levels displayed. use 2 or 3 :)
+     for $u in tlslib:ontology-links($lk, "taxonymy", 3 ) return $u
      }</ul></li>
      }</ul>
      )

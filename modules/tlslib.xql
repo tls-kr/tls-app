@@ -106,7 +106,9 @@ declare function tlslib:ontology-up($uid as xs:string, $cnt as xs:int){
   return
   <li>{<a class="badge badge-light" href="{$dtype}.html?uuid={substring($r/@target, 2)}&amp;ontshow=true">{$r/text()}</a>, 
   <small style="display:block;">{$def}</small>, 
-  <ul>{tlslib:ontology-up(substring($r/@target, 2), $cnt)}</ul>}
+  if ($cnt < 3) then 
+  <ul>{tlslib:ontology-up(substring($r/@target, 2), $cnt+1)}</ul>
+  else "..."}
   </li>
 };
 
