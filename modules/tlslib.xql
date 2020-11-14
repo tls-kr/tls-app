@@ -723,7 +723,7 @@ return $def
 :)
 declare function tlslib:format-swl($node as node(), $options as map(*)){
 let $user := sm:id()//sm:real/sm:username/text(),
-$usergroups := sm:id()//sm:group/text(),
+$usergroups := sm:get-user-groups($user),
 $type := $options?type,
 $context := $options?context
 let $concept := data($node/@concept),
@@ -760,27 +760,35 @@ else ()}
 {if ($sm) then 
 <span><a href="browse.html?type=sem-feat&amp;id={$sm/@corresp}">{$sm/text()}</a>&#160;</span> else ()}
 {$def}
-{if (sm:has-access(document-uri(fn:root($node)), "w") and $node/@xml:id) then 
-(: for the time being removing the button, don't really now what I want to edit here:-)
+{
+if ("tls-editor"=sm:get-user-groups($user) and $node/@xml:id) then 
+(: for the time being removing the button, don't really know what I would want to edit here:-)
  <button type="button" class="btn" onclick="edit_swl('{$node/@xml:id}')" style="width:10px;height:20px;" 
  title="Edit Attribution">
  <img class="icon" onclick="edit_swl('{$node/@xml:id}')" style="width:10px;height:13px;top:0;align:top" src="resources/icons/open-iconic-master/svg/pencil.svg"/>
  </button> 
  :)
- (
-(:   tlslib:format-button("delete_swl('" || data($node/@xml:id) || "')", "Request deletion of SWL for "||$zi, "open-iconic-master/svg/x.svg", "small", "close", "tls-editor"),:)
-if (not($context='review')) then
-   (<span class="rp-5">{tlslib:format-button("review_swl_dialog('" || data($node/@xml:id) || "')", "Review the SWL for " || $zi[1], "octicons/svg/unverified.svg", "", "close", "tls-editor")}&#160;&#160;</span>,
+(
+ (:   tlslib:format-button("delete_swl('" || data($node/@xml:id) || "')", "Request deletion of SWL for "||$zi, "open-iconic-master/svg/x.svg", "small", "close", "tls-editor"),:)
+ (: for reviews, we display the buttons in tlslib:show-att-display, so we do not need them here :)
+  if (not($context='review')) then
+   (
    (: for my own swls: delete, otherwise approve :)
    if (($user = $creator-id) or contains($usergroups, "tls-editor" )) then 
     tlslib:format-button("delete_swl('" || data($node/@xml:id) || "')", "Immediately delete this SWL for "||$zi[1], "open-iconic-master/svg/x.svg", "", "close", "tls-editor")
-   else
-    tlslib:format-button("save_swl_review('" || data($node/@xml:id) || "')", "Approve the SWL for " || $zi, "octicons/svg/thumbsup.svg", "", "close", "tls-editor")) else ()
+   else (),
+   if (not ($user = $creator-id)) then
+   (
+<span class="rp-5">{tlslib:format-button("review_swl_dialog('" || data($node/@xml:id) || "')", "Review the SWL for " || $zi[1], "octicons/svg/unverified.svg", "", "close", "tls-editor")}&#160;&#160;</span>,   
+    tlslib:format-button("save_swl_review('" || data($node/@xml:id) || "')", "Approve the SWL for " || $zi, "octicons/svg/thumbsup.svg", "", "close", "tls-editor") 
+   ) else ()
+  ) else ()
 )
 else ()
 }
 </div>
 </div>
+(: not in the row :)
 else 
 <li class="list-group-item" id="{$concept}">{$py} {$concept} {$sf} {$sm} {
 if (string-length($def) > 10) then concat(substring($def, 10), "...") else $def}</li>
@@ -933,7 +941,9 @@ return
 {if ((sm:has-access(document-uri(fn:root($a)), "w") and $a/@xml:id) and not(contains(sm:id()//sm:group, 'tls-test'))) then 
 (
 (:tlslib:format-button("review_swl_dialog('" || data($a/@xml:id) || "')", "Review this attribution", "octicons/svg/unverified.svg", "small", "close", "tls-editor"),:)
-tlslib:format-button("delete_swl('" || data($a/@xml:id) || "')", "Delete this attribution", "open-iconic-master/svg/x.svg", "small", "close", "tls-editor")
+tlslib:format-button("delete_swl('" || data($a/@xml:id) || "')", "Delete this attribution", "open-iconic-master/svg/x.svg", "", "close", "tls-editor"),
+ if (not ($user = substring($a/tls:metadata/@resp, 2))) then
+    tlslib:format-button("save_swl_review('" || data($a/@xml:id) || "')", "Approve the SWL", "octicons/svg/thumbsup.svg", "", "close", "tls-editor") else ()
 )
 else ()}
 </div>
