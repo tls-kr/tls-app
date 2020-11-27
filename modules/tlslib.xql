@@ -18,7 +18,7 @@ declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
 declare namespace mf="http://kanripo.org/ns/KRX/Manifest/1.0";
 
-declare function local:string-to-ncr($s as xs:string){
+declare function local:string-to-ncr($s as xs:string) as xs:string{
  string-join(for $a in string-to-codepoints($s)
  return "&#x26;#x" || number($a) || ";" 
  , "")
