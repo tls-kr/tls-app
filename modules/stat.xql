@@ -9,6 +9,7 @@ xquery version "3.1";
 
 
 import module namespace config="http://hxwd.org/config" at "config.xqm";
+import module namespace tlslib="http://hxwd.org/lib" at "tlslib.xql";
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
@@ -31,8 +32,13 @@ $translations := for $d in collection($config:tls-translation-root)
     let $lc := count($t//tei:seg)
     order by $lc descending
     return
-    <li><span>{$lc}</span> 
-    <a href="{$t//tei:TEI/@xml:id}">{$t//tei:titleStmt/tei:title/text()} // by  {$t//tei:titleStmt/tei:editor/text()}</a></li>}</ul></td></tr>
+    <li>
+        {if ($lc > 0) then
+    <a href="textview.html?location={tlslib:translation-firstseg($t//tei:TEI/@xml:id)}">{$t//tei:titleStmt/tei:title/text()} // by  {$t//tei:titleStmt/tei:editor/text()} (<span>{$lc}</span> lines)</a>
+    else 
+    <span>{$t//tei:titleStmt/tei:title/text()} // by  {$t//tei:titleStmt/tei:editor/text()} ({$lc} lines)</span>        
+        }
+    </li>}</ul></td></tr>
 return <table id="stat-translations">
 <thead><tr>
 <th>Lines</th>
@@ -72,9 +78,9 @@ return
 <table id="stat-overview">
 <thead><tr>
 <th>Feature</th>
-<th>Defined #</th>
-<th>Used unique #</th>
-<th>Used total #</th>
+<th>Defined</th>
+<th>Types</th>
+<th>Tokens</th>
 </tr></thead>
 <tbody>
 <tr id="stat-ov-concepts">
@@ -85,21 +91,21 @@ return
 </tr>
 <tr id="stat-ov-words">
 <td>Words</td>
-<td title="Total number of words defined">{count($words)}</td>
-<td title="Number of unique syntactic words used in attributions">{count(distinct-values($ann//tei:sense/@corresp))}</td>
+<td title="Total number of words defined">{count(distinct-values($ann//tei:sense/@corresp))}</td>
+<td title="Number of unique syntactic words used in attributions">{count($words)}</td>
 <td title="Total number of syntactic words in attributions">{count($ann//tei:sense/@corresp)}</td>
 </tr>
 <tr id="stat-ov-syn-func">
-<td>Syntactical functions</td>
-<td title="Total number of syntactical functions defined">{count($syn)}</td>
-<td title="Number of unique syntactical functions used in attributions">{count(distinct-values($ann//tls:syn-func/@corresp))}</td>
+<td>Syntactic functions</td>
+<td title="Total number of syntactic functions defined">{count($syn)}</td>
+<td title="Number of unique syntactic functions used in attributions">{count(distinct-values($ann//tls:syn-func/@corresp))}</td>
 <td title="Total number of syntactical functions in attributions">{count($ann//tls:syn-func/@corresp)}</td>
 </tr>
 <tr id="stat-ov-sem-feat">
-<td>Semantical features</td>
-<td title="Total number of semantical features defined">{count($sem)}</td>
-<td title="Number of unique semantical features used in attributions">{count(distinct-values($ann//tls:sem-feat/@corresp))}</td>
-<td title="Total number of semantical features in attributions">{count($ann//tls:sem-feat/@corresp)}</td>
+<td>Semantic features</td>
+<td title="Total number of semantic features defined">{count($sem)}</td>
+<td title="Number of unique semantic features used in attributions">{count(distinct-values($ann//tls:sem-feat/@corresp))}</td>
+<td title="Total number of semantic features in attributions">{count($ann//tls:sem-feat/@corresp)}</td>
 </tr>
 <tr>
 <td id="stat-ov-rhet-dev">Rhetorical devices</td>
@@ -117,7 +123,7 @@ return
 </tr>
 {
     <tr id="stat-ov-translations">
-    <td>Translations</td>
+    <td><a href="translations.html">Translations</a></td>
     <td title="Total number of translations">{count(collection($config:tls-translation-root))}</td>
     <td title="Number of translated texts">{count(distinct-values($translations))}</td>    
     <td title="Number of translated lines">{count($trlines)}</td>

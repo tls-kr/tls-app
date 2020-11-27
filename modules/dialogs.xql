@@ -206,84 +206,55 @@ declare function dialogs:review-swl-dialog($uuid as xs:string){
 
 (:~
  : associate a SW with a pronounciation. Retrieve the existing one and offer a change
+      url : "api/responder.xql?func=dialogs:assign-guangyun&char="+para.zi+"&concept_id=" + para.concept_id + "&pinyin="+para.py+"&concept="+para.concept+"&wid="+para.wid, 
+
 :)
 
-declare function dialogs:assign-guangyun($para as map(), $type as xs:string){
-
+declare function dialogs:assign-guangyun($para as map(*)){
+let $type := if ($para?type) then $para?type else "concept"
+return
 <div id="assign-guangyun" class="modal" tabindex="-1" role="dialog" style="display: none;">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                {if ($type = "concept" or string-length($para?pinyin) = 0) then
-                <h5 class="modal-title">{$para?title} <strong class="ml-2"><span id="{$type}-query-span">{$para?char}</span></strong>
-                    <button class="btn badge badge-primary ml-2" type="button" onclick="get_guangyun()">
-                        廣韻
-                    </button>
+                <h5 class="modal-title">Assign pinyin for: <strong class="ml-2"><span id="{$type}-query-span">{$para?char}</span></strong> in <strong>{$para?concept}</strong>
                 </h5>
-                else if ($type = "swl") then
-                <h5 class="modal-title">{$para?title} <strong class="ml-2"><span id="{$type}-query-span">{$para?char}</span></strong>
-                </h5>
-                else
-                <h5 class="modal-title">Adding SW for {$para?char} to concept <strong class="ml-2"><span id="newsw-concept-span">{$para?concept}</span></strong></h5>
-                }
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close" title="Close">
                     ×
                 </button>
             </div>
             <div class="modal-body">
-                {if ($type = ("concept", "swl", "word")) then
-                (<h6 class="text-muted">At:  <span id="concept-line-id-span" class="ml-2">{$para?line-id}</span></h6>,
-                <h6 class="text-muted">Line: <span id="concept-line-text-span" class="ml-2">{$para?line}</span></h6>
-                ) else () }
-                <div>
-                    <span id="concept-id-span" style="display:none;">{$para?concept-id}</span>
-                   {if ($type = ("word")) then (
-                    <span id="word-id-span" style="display:none;">{$para?wid}</span>,
-                    <span id="py-span" style="display:none;">{$para?pinyin}</span>)
-                    else ()
-                    }
-                    <span id="synfunc-id-span" style="display:none;">{$para?synfunc-id}</span>
-                    <span id="semfeat-id-span" style="display:none;">{$para?semfeat-id}</span>
-                    
+                 <div id="input-char-group">
+                    <label for="input-char"><strong>Characters</strong> <br/><small class="text-muted">If you alter the characters, please press <button class="btn badge badge-primary ml-2" type="button" onclick="get_guangyun()">
+                        廣韻
+                    </button> to update the readings. </small></label>
+                    <input id="input-char" class="form-control" value="{$para?char}"/>                   
                 </div>
-                   {if ($type = "concept"  or string-length($para?pinyin) = 0) then 
-                <div class="form-group" id="guangyun-group">                
-                    <span class="text-muted" id="guangyun-group-pl"> Press the 廣韻 button above and select the pronounciation</span>
-                </div> else if ($type = "swl") then
-                <div class="form-group" id="guangyun-group">     
-                   tlsapi:get-guangyun($para?char, $para?pinyin)
+
+            <p class="text-muted"><small>{if (string-length($para?pinyin) > 0 and string-length($para?wid) > 0) then <span>Currently {$para?pinyin} is assigned. </span> else (), <span>Please select a pronounciation or enter a new one:</span>}</small></p>
+                <div class="form-group" id="guangyun-group">               
+                {tlslib:get-guangyun($para?char, 'xx', false())}
                 </div>
-                else (),
-                if ($type = ("concept", "swl")) then
-                <div id="select-concept-group" class="form-group ui-widget">
-                    <label for="select-concept">Concept: </label>
-                    <input id="select-concept" class="form-control" required="true" value="{$para?concept}"/>
-                </div>
-                    else ()}                
+                <small class="text-muted">Sources and notes are only used for readings not from 廣韻</small>
                 <div class="form-row">
-                <div id="select-synfunc-group" class="form-group ui-widget col-md-6">
-                    <label for="select-synfunc">Syntactic function: </label>
-                    <input id="select-synfunc" class="form-control" required="true" value="{$para?synfunc}"/>
+                <div id="sources-group" class="form-group ui-widget col-md-12">
+                    <label for="sources"><strong>Sources:</strong> </label>
+                    <input id="sources" class="form-control" required="true" value="{$para?sources}"/>
                 </div>
+                <!--
                 <div id="select-semfeat-group" class="form-group ui-widget col-md-6">
                     <label for="select-semfeat">Semantic feature: </label>
                     <input id="select-semfeat" class="form-control" value="{$para?semfeat}"/>
+                </div> -->
                 </div>
-                </div>
-                <div id="input-def-group">
-                    <label for="input-def">Definition </label>
-                    <textarea id="input-def" class="form-control">{$para?def}</textarea>                   
+                <div id="input-note-group">
+                    <label for="input-note"><strong>Notes:</strong> </label>
+                    <textarea id="input-note" class="form-control">{$para?note}</textarea>
                 </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                   {if ($type = "concept" or string-length($para?pinyin) = 0) then 
-                <button type="button" class="btn btn-primary" onclick="save_to_concept()">Save changes</button>
-                else if ($type = "swl") then
-                <button type="button" class="btn btn-primary" onclick="save_swl()">Save SWL</button>
-                else                
-                <button type="button" class="btn btn-primary" onclick="save_newsw()">Save SW</button>
-                }
+                <button type="button" class="btn btn-primary" onclick="save_updated_pinyin('{$para?concept_id}', '{$para?wid}','{$para?char}', '{$para?pos}')">Save changes</button>
             </div>
         </div>
     </div>    
@@ -314,10 +285,12 @@ declare function dialogs:dialog-stub(){
 };
 
 declare function dialogs:move-word($map as map(*)){
+let $cid := collection($config:tls-data-root||"/concepts")//tei:*[@xml:id=$map?wid]/ancestor::tei:div[@type="concept"]
+return
 <div id="move-word-dialog" class="modal" tabindex="-1" role="dialog" style="display: none;">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
-            <div class="modal-header"><h5>Move {$map?word} to another concept</h5>
+            <div class="modal-header"><h5>Move {$map?word} from {$cid/tei:head/text()} to another concept</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close" title="Close">x</button>
             </div>
             <div class="modal-body">

@@ -16,7 +16,9 @@ import module namespace krx="http://hxwd.org/krx-utils" at "krx-utils.xql";
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
+
 declare namespace mf="http://kanripo.org/ns/KRX/Manifest/1.0";
+declare namespace tx="http://exist-db.org/tls";
 
 declare function local:string-to-ncr($s as xs:string) as xs:string{
  string-join(for $a in string-to-codepoints($s)
@@ -27,6 +29,24 @@ declare function local:string-to-ncr($s as xs:string) as xs:string{
 (:~ 
 : Helper functions
 :)
+
+declare function tlslib:num2hex($num as xs:int) as xs:string {
+let $h := "0123456789ABCDEF"
+, $s := if ($num > 65535) then
+  (tlslib:num2hex($num idiv 65536),
+  tlslib:num2hex($num mod 65536))
+  else if ($num < 65536 and $num > 255) then
+  (tlslib:num2hex($num idiv 256),
+  tlslib:num2hex($num mod 256))
+  else if ($num < 256 and $num > 15) then
+  (tlslib:num2hex($num idiv 16),
+  tlslib:num2hex($num mod 16))
+  else if ($num < 16) then
+   substring($h, $num + 1, 1)
+  else ()
+  return
+  string-join($s, "")
+};
 
 declare function tlslib:expath-descriptor() as element() {
     <rl/>
@@ -94,26 +114,38 @@ declare function tlslib:getdate($node as node()) as xs:int{
 };
   
 (: Helper for ontology  I guess I need to return a map? :)  
+(: this covers now also the rhet-dev ontology :)
+
 declare function tlslib:ontology-up($uid as xs:string, $cnt as xs:int){
-  let $concept := collection($config:tls-data-root || "/concepts")//tei:div[@xml:id=$uid],
+  let $concept := collection($config:tls-data-root)//tei:div[@xml:id=$uid],
+  $dtype := $concept/@type,
   $type := "hypernymy",
   $hyp := $concept//tei:list[@type=$type]//tei:ref
   return
   for $r in $hyp
+  let $def := collection($config:tls-data-root)//tei:div[@xml:id=substring($r/@target, 2)]/tei:div[@type='definition']/tei:p/text()
   return
-  ($r, tlslib:ontology-up(substring($r/@target, 2), $cnt))
+  <li>{<a class="badge badge-light" href="{$dtype}.html?uuid={substring($r/@target, 2)}&amp;ontshow=true">{$r/text()}</a>, 
+  <small style="display:block;">{$def}</small>, 
+  if ($cnt < 3) then 
+  <ul>{tlslib:ontology-up(substring($r/@target, 2), $cnt+1)}</ul>
+  else "..."}
+  </li>
 };
 
+(: this covers now also the rhet-dev ontology :)
+
 declare function tlslib:ontology-links($uid as xs:string, $type as xs:string, $cnt as xs:int){
-  let $concept := collection($config:tls-data-root || "/concepts")//tei:div[@xml:id=$uid],
+  let $concept := collection($config:tls-data-root)//tei:div[@xml:id=$uid],
+  $dtype := $concept/@type,
   $hyp := $concept//tei:list[@type=$type]//tei:ref
   return
     for $r in $hyp
+    let $def := collection($config:tls-data-root)//tei:div[@xml:id=substring($r/@target, 2)]/tei:div[@type='definition']/tei:p/text()
      return
      <li>
-      <span class="badge">
-      <a href="concept.html?uuid={substring($r/@target, 2)}&amp;ontshow=true">{$r/text()}</a>
-      </span>
+      <a  class="badge badge-light" href="{$dtype}.html?uuid={substring($r/@target, 2)}&amp;ontshow=true">{$r/text()}</a>
+      <small style="display:inline;">　{$def}</small>
       {
       if ($cnt < 3) then 
       <ul>
@@ -406,13 +438,13 @@ return
      :)
 
 declare function tlslib:navbar-review(){
-   <li class="nav-item">
-     <a class="nav-item" href="review.html?type=swl">
-      <button class="btn btn-secondary my-2 my-sm-0" title="Review">
-       <img class="icon" src="resources/icons/octicons/svg/diff.svg"/>
-     </button>
-     </a>
-   </li>
+ <li class="nav-item dropdown">
+  <a class="nav-link dropdown-toggle" href="#"  id="navbarDropdownEditors" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">內部</a>
+   <div class="dropdown-menu" aria-labelledby="navbarDropdownEditors">
+     <a class="dropdown-item" href="review.html?type=swl">Review SWLs</a>
+     <a class="dropdown-item" href="review.html?type=special">Special pages</a>
+   </div>
+ </li>
 };
 
 (:~ 
@@ -706,8 +738,10 @@ let $cnode := collection("/db/apps/tls-data")//tei:sense[@xml:id=$uuid]
 ,$def := $cnode/tei:def[1]/text()
 return $def
 };
+
 (: 2020-02-23 : because of defered update in tlsapi:save-def, we use the master definition instead of the local definition of the swl 
  : 2020-02-26 : this now works indeed.
+ : 2020-11-09 : zi also uses master definition
 :) 
 (:~
 : formats a single syntactic word location for display either in a row (as in the textview, made visible by the blue eye) or as a list item, this is used in the left hand display for the annotations
@@ -715,10 +749,9 @@ return $def
 : @param $type  type of the display, currently 'row' for selecting the row style, anything else will be list style
 : called from api/show_swl_for_line.xql
 :)
-
 declare function tlslib:format-swl($node as node(), $options as map(*)){
 let $user := sm:id()//sm:real/sm:username/text(),
-$usergroups := sm:id()//sm:group/text(),
+$usergroups := sm:get-user-groups($user),
 $type := $options?type,
 $context := $options?context
 let $concept := data($node/@concept),
@@ -729,7 +762,10 @@ $sf := $node//tls:syn-func,
 $sm := $node//tls:sem-feat
 ,$link := substring(tokenize($node/tei:link/@target)[2], 2)
 (: damnit, why does this not work?  3 days later... seems to work now :)
-,$cdef := collection("/db/apps/tls-data")//tei:sense[@xml:id=$link]/ancestor::tei:div/tei:div[@type="definition"]/tei:p/text()
+, $w := collection($config:tls-data-root)//tei:sense[@xml:id=$link]/ancestor::tei:entry
+, $czi := string-join($w/tei:form/tei:orth/text(), " / ")
+, $cpy := string-join($w/tei:form/tei:pron[@xml:lang='zh-Latn-x-pinyin']/text(), " / ")
+,$cdef := $w/ancestor::tei:div/tei:div[@type="definition"]/tei:p/text()
 ,$def := tlslib:get-sense-def($link)
 (:$pos := concat($sf, if ($sm) then (" ", $sm) else "")
 :)
@@ -739,40 +775,48 @@ if ($type = "row") then
 {if (not($context = 'review')) then 
 <div class="col-sm-1">&#160;</div>
 else ()}
-<div class="col-sm-2"><span class="zh">{$zi}</span> ({$py})
+<div class="col-sm-2"><span class="zh">{$czi}</span> ({$cpy})
 {if  ("tls-admin.x" = sm:get-user-groups($user)) then (data(($node//tls:srcline/@pos)[1]),
  <a href="{
       concat($config:exide-url, "?open=", document-uri(root($node)))}">eXide</a>)
       else ()
   }    
 </div>
-<div class="col-sm-3"><a href="concept.html?concept={$concept}" title="{$cdef}">{$concept}</a></div>
+<div class="col-sm-3"><a href="concept.html?concept={$concept}#{$w/@xml:id}" title="{$cdef}">{$concept}</a></div>
 <div class="col-sm-6">
 <span><a href="browse.html?type=syn-func&amp;id={data($sf/@corresp)}">{$sf/text()}</a>&#160;</span>
 {if ($sm) then 
 <span><a href="browse.html?type=sem-feat&amp;id={$sm/@corresp}">{$sm/text()}</a>&#160;</span> else ()}
 {$def}
-{if (sm:has-access(document-uri(fn:root($node)), "w") and $node/@xml:id) then 
-(: for the time being removing the button, don't really now what I want to edit here:-)
+{
+if ("tls-editor"=sm:get-user-groups($user) and $node/@xml:id) then 
+(: for the time being removing the button, don't really know what I would want to edit here:-)
  <button type="button" class="btn" onclick="edit_swl('{$node/@xml:id}')" style="width:10px;height:20px;" 
  title="Edit Attribution">
  <img class="icon" onclick="edit_swl('{$node/@xml:id}')" style="width:10px;height:13px;top:0;align:top" src="resources/icons/open-iconic-master/svg/pencil.svg"/>
  </button> 
  :)
- (
-(:   tlslib:format-button("delete_swl('" || data($node/@xml:id) || "')", "Request deletion of SWL for "||$zi, "open-iconic-master/svg/x.svg", "small", "close", "tls-editor"),:)
-if (not($context='review')) then
-   (<span class="rp-5">{tlslib:format-button("review_swl_dialog('" || data($node/@xml:id) || "')", "Review the SWL for " || $zi[1], "octicons/svg/unverified.svg", "", "close", "tls-editor")}&#160;&#160;</span>,
+(
+ (:   tlslib:format-button("delete_swl('" || data($node/@xml:id) || "')", "Request deletion of SWL for "||$zi, "open-iconic-master/svg/x.svg", "small", "close", "tls-editor"),:)
+ (: for reviews, we display the buttons in tlslib:show-att-display, so we do not need them here :)
+  if (not($context='review')) then
+   (
    (: for my own swls: delete, otherwise approve :)
    if (($user = $creator-id) or contains($usergroups, "tls-editor" )) then 
     tlslib:format-button("delete_swl('" || data($node/@xml:id) || "')", "Immediately delete this SWL for "||$zi[1], "open-iconic-master/svg/x.svg", "", "close", "tls-editor")
-   else
-    tlslib:format-button("save_swl_review('" || data($node/@xml:id) || "')", "Approve the SWL for " || $zi, "octicons/svg/thumbsup.svg", "", "close", "tls-editor")) else ()
+   else (),
+   if (not ($user = $creator-id)) then
+   (
+<span class="rp-5">{tlslib:format-button("review_swl_dialog('" || data($node/@xml:id) || "')", "Review the SWL for " || $zi[1], "octicons/svg/unverified.svg", "", "close", "tls-editor")}&#160;&#160;</span>,   
+    tlslib:format-button("save_swl_review('" || data($node/@xml:id) || "')", "Approve the SWL for " || $zi, "octicons/svg/thumbsup.svg", "", "close", "tls-editor") 
+   ) else ()
+  ) else ()
 )
 else ()
 }
 </div>
 </div>
+(: not in the row :)
 else 
 <li class="list-group-item" id="{$concept}">{$py} {$concept} {$sf} {$sm} {
 if (string-length($def) > 10) then concat(substring($def, 10), "...") else $def}</li>
@@ -829,7 +873,14 @@ for $swl in collection($config:tls-data-root|| "/notes")//tls:srcline[@target=$l
 let $pos := if (string-length($swl/@pos) > 0) then xs:int(tokenize($swl/@pos)[1]) else 0
 order by $pos
 return
-tlslib:format-swl($swl/ancestor::tls:ann, map{'type' : 'row'})}
+if ($swl/ancestor::tls:ann) then
+tlslib:format-swl($swl/ancestor::tls:ann, map{'type' : 'row'})
+else 
+<div class="row bg-light ">
+<div class="col-sm-1">Rhet:</div>
+<div class="col-sm-4"><a href="rhet-dev.html?uuid={$swl/ancestor::tls:span/@rhet-dev-id}">{data($swl/ancestor::tls:span/@rhet-dev)}</a></div>
+</div>
+}
 </div>
 <div class="col-sm-2"></div>
 </div>
@@ -923,7 +974,9 @@ return
 {if ((sm:has-access(document-uri(fn:root($a)), "w") and $a/@xml:id) and not(contains(sm:id()//sm:group, 'tls-test'))) then 
 (
 (:tlslib:format-button("review_swl_dialog('" || data($a/@xml:id) || "')", "Review this attribution", "octicons/svg/unverified.svg", "small", "close", "tls-editor"),:)
-tlslib:format-button("delete_swl('" || data($a/@xml:id) || "')", "Delete this attribution", "open-iconic-master/svg/x.svg", "small", "close", "tls-editor")
+tlslib:format-button("delete_swl('" || data($a/@xml:id) || "')", "Delete this attribution", "open-iconic-master/svg/x.svg", "", "close", "tls-editor"),
+ if (not ($user = substring($a/tls:metadata/@resp, 2))) then
+    tlslib:format-button("save_swl_review('" || data($a/@xml:id) || "')", "Approve the SWL", "octicons/svg/thumbsup.svg", "", "close", "tls-editor") else ()
 )
 else ()}
 </div>
@@ -1129,6 +1182,7 @@ declare function tlslib:move-sw-to-concept($map as map(*)){
  ,$tw := $tc//tei:div[@type="words"]
  ,$sw := $sc//tei:orth[. = $map?word]/ancestor::tei:entry
  ,$wid :=  "uuid-" || util:uuid()
+ (: for swl the map?wid actuallt holds the sense id :)
  ,$scsw := $sc//tei:sense[@xml:id=$map?wid]
  ,$swl := for $a in collection($config:tls-data-root||"/notes")//tls:ann[@concept-id=$map?src-concept] 
          let $wx :=  $map?wid = substring($a/tei:sense/@corresp, 2)
@@ -1153,8 +1207,10 @@ declare function tlslib:move-sw-to-concept($map as map(*)){
       (update insert $tce into $tw,
        update delete $scsw)
      else 
-   (: word exists already in tc, we just move the sense over :)
-    let $te := $tw//tei:orth[. = $map?word]/ancestor::tei:entry
+   (: word exists already in tc, we just move the sense over 
+    need to make sure to use only one tei:entry.  How do we know this is the right one?
+   :)
+    let $te := ($tw//tei:orth[. = $map?word]/ancestor::tei:entry[not(.//tei:sense[@xml:id=$map?wid])])[1]
     return 
     (update insert $scsw into $te
      ,update delete $scsw )
@@ -1220,12 +1276,17 @@ return
     }
 </div>
 };
-
+(: This displays the list of words by concept in the right hand popup pane  :)
 declare function tlslib:get-sw($word as xs:string, $context as xs:string) as item()* {
-let $words := if (($context = "dic") or contains($context, "concept")) then 
-  collection(concat($config:tls-data-root, '/concepts/'))//tei:orth[contains(.,$word)] else
-  collection(concat($config:tls-data-root, '/concepts/'))//tei:orth[. = $word]
-  
+let $words-tmp := if (($context = "dic") or contains($context, "concept")) then 
+  collection(concat($config:tls-data-root, '/concepts/'))//tei:orth[contains(. , $word)]
+  else
+  collection(concat($config:tls-data-root, '/concepts/'))//tei:entry/tei:form/tei:orth[. = $word]
+  (: this is to filter out characters that occur multiple times in a entry definition (usually with different pronounciations, however we actually might want to get rid of them :)
+, $words := for $w in $words-tmp
+   let $e := $w/ancestor::tei:entry
+   group by $e
+   return $w[1]
 let $user := sm:id()//sm:real/sm:username/text()
 , $doann := contains($context, 'textview')  (: the page we were called from can annotate :)
 , $taxdoc := doc($config:tls-data-root ||"/core/taxchar.xml")
@@ -1266,18 +1327,19 @@ return
 for $zi at $pos in $z 
 let $wx := collection(concat($config:tls-data-root, '/concepts/'))//tei:div[@xml:id = $id]//tei:orth[. = $zi],
 $scnt := count($wx/ancestor::tei:entry/tei:sense),
-$wid := $wx/ancestor::tei:entry/@xml:id
-
+$wid := $wx/ancestor::tei:entry/@xml:id,
+$syn := $wx/ancestor::tei:div[@xml:id = $id]//tei:div[@type="old-chinese-criteria"]//tei:p,
+$esc := replace($concept[1], "'", "\\'")
 return
 <li class="mb-3">
 {if ($zi) then
-<span onclick="alert('{$wid}')"><strong>{$zi}</strong>&#160;({$py[$pos]})&#160;</span> else ""}
-<strong><a href="concept.html?uuid={$id}" title="{$cdef}" class="{if ($scnt = 0) then 'text-muted' else ()}">{$concept[1]}</a></strong> 
+(: todo : check for permissions :)
+(<strong><span id="{$wid}-{$pos}-zi">{$zi}</span></strong>,<span id="{$wid}-{$pos}-py" title="Click here to change pinyin" onclick="assign_guangyun_dialog({{'zi':'{$zi}', 'wid':'{$wid}','py': '{$py}','concept' : '{$esc}', 'concept_id' : '{$id}', 'pos' : '{$pos}'}})">&#160;({$py[$pos]})&#160;</span>)
+else ""}
+<strong><a href="concept.html?uuid={$id}#{$wid}" title="{$cdef}" class="{if ($scnt = 0) then 'text-muted' else ()}">{$concept[1]}</a></strong> 
 
 {if ($doann and sm:is-authenticated() and not(contains(sm:id()//sm:group, 'tls-test'))) then 
  if ($wid) then     
- let $esc := replace($concept, "'", "\\'")
- return
  <button class="btn badge badge-secondary ml-2" type="button" 
  onclick="show_newsw({{'wid':'{$wid}','py': '{$py}','concept' : '{$esc}', 'concept_id' : '{$id}'}})">
            New SW
@@ -1291,7 +1353,15 @@ onclick="show_newsw({{'wid':'xx', 'py': '{$py}','concept' : '{$concept}', 'conce
 
 {if ($scnt > 0) then      
 <span>      
+{if (count($syn) > 0) then
+<button title="Click to view {count($syn)} synonyms" class="btn badge badge-info" data-toggle="collapse" data-target="#{$wid}-syn">SYN</button> else ()}
 <button title="click to reveal {count($wx/ancestor::tei:entry/tei:sense)} syntactic words" class="btn badge badge-light" type="button" data-toggle="collapse" data-target="#{$wid}-concept">{$scnt}</button>
+<ul class="list-unstyled collapse" id="{$wid}-syn" style="swl-bullet">{
+for $l in $syn
+return
+<li>{$l}</li>
+}
+</ul>
 <ul class="list-unstyled collapse" id="{$wid}-concept" style="swl-bullet">{for $s in $wx/ancestor::tei:entry/tei:sense
 let $sf := $s//tls:syn-func,
 $sfid := substring($sf/@corresp, 2),
@@ -1345,7 +1415,7 @@ declare function tlslib:dic-query($queryStr as xs:string?, $mode as xs:string?)
 tlslib:get-sw($queryStr, "dic")
 };
 
-(: query in dictionary :)
+(: query in translation :)
 declare function tlslib:tr-query($queryStr as xs:string?, $mode as xs:string?)
 {
   let $user := sm:id()//sm:real/sm:username/text()
@@ -1358,15 +1428,15 @@ declare function tlslib:tr-query($queryStr as xs:string?, $mode as xs:string?)
 
 (: query in texts :)
 
-declare function tlslib:ngram-query($queryStr as xs:string?, $mode as xs:string?)
+declare function tlslib:ngram-query($queryStr as xs:string?, $mode as xs:string?, $search-type as xs:string?, $stextid as xs:string?)
 {
     let $dataroot := ($config:tls-data-root, $config:tls-texts-root, $config:tls-user-root)
     let $qs := tokenize($queryStr, "\s"),
     $user := sm:id()//sm:real/sm:username/text(),
     $ratings := doc($config:tls-user-root || $user || "/ratings.xml")//text,
     $dates := if (exists(doc("/db/users/" || $user || "/textdates.xml")//date)) then 
-      doc("/db/users/" || $user || "/textdates.xml")//date else 
-      doc($config:tls-texts-root || "/tls/textdates.xml")//date,
+      doc("/db/users/" || $user || "/textdates.xml")//data else 
+      doc($config:tls-texts-root || "/tls/textdates.xml")//data,
     (: HACK: if no login, use date mode for sorting :)
     $mode := if ($user = "guest") then "date" else $mode,
     $matches := if  (count($qs) > 1) then 
@@ -1377,6 +1447,11 @@ declare function tlslib:ngram-query($queryStr as xs:string?, $mode as xs:string?
       let $textid := substring-before(tokenize(document-uri(root($hit)), "/")[last()], ".xml"),
       (: for the CHANT text no text date data exist, so we use this flag to cheat a bit :)
       $flag := substring($textid, 1, 3),
+      $filter := if ($search-type = "5") then $stextid = $textid else 
+       if ($search-type = "6") then 
+        let $x := "#" || $hit/@xml:id
+        return collection($config:tls-translation-root)//tei:seg[@corresp=$x]
+      else true(),
       $r := 
       if ($mode = "rating") then 
         (: the order by is ascending because of the dates, so here we inverse the rating :)
@@ -1391,8 +1466,10 @@ declare function tlslib:ngram-query($queryStr as xs:string?, $mode as xs:string?
          if (string-length($dates[@corresp="#" || $textid]/@notafter) > 0) then tlslib:getdate($dates[@corresp="#" || $textid]) else 0
 (:    let $id := $hit/ancestor::tei:TEI/@xml:id :)     
     order by $r ascending
+    where $filter
     return $hit 
 };
+
 
 (: get related texts: look at Manifest.xml? not yet :)
 
@@ -1414,4 +1491,291 @@ return
 </ul>
 }
 </li>
+};
+
+declare function tlslib:translation-firstseg($transid as xs:string){
+let $dataroot := ($config:tls-translation-root, $config:tls-user-root)
+, $doc := collection($dataroot)//tei:TEI[@xml:id=$transid]
+, $firstseg := substring((for $s in $doc//tei:seg
+                let $id := $s/@corresp
+                order by $id
+                return $id)[1], 2)
+  return $firstseg
+};
+
+declare function tlslib:title-query($query, $mode){
+let $dataroot := ($config:tls-texts-root, $config:tls-user-root)
+for $t in collection($dataroot)//tei:titleStmt/tei:title[contains(., $query)]
+return $t
+};
+
+(: $gyonly controls wether we offer to override GY.  Most probably false.. :)
+
+declare function tlslib:get-guangyun($chars as xs:string, $pron as xs:string, $gyonly as xs:boolean){
+(: loop through the characters of the string $chars :)
+for $char at $cc in  analyze-string($chars, ".")//fn:match/text()
+return
+<div id="guangyun-input-dyn-{$cc}">
+<h5><strong class="ml-2">{$char}</strong>　{tlslib:guoxuedashi($char)}</h5>
+{let $r:= collection(concat($config:tls-data-root, "/guangyun"))//tx:graphs//tx:graph[contains(.,$char)]
+return 
+(
+if ($r) then
+for $g at $count in $r
+let $e := $g/ancestor::tx:guangyun-entry,
+$p := for $s in $e//tx:mandarin/tx:jin 
+       return 
+       if (string-length(normalize-space($s)) > 0) then $s else (),
+$py := normalize-space(string-join($p, ';'))
+return
+
+<div class="form-check">
+   { if (contains($py, $pron) and $gyonly) then (: todo: handle pron for binomes and more :)
+   <input class="form-check-input guangyun-input" type="radio" name="guangyun-input-{$cc}" id="guangyun-input-{$cc}-{$count}" 
+   value="{$e/@xml:id}" checked="checked"/>
+   else
+   <input class="form-check-input guangyun-input" type="radio" name="guangyun-input-{$cc}" id="guangyun-input-{$cc}-{$count}" 
+   value="{$e/@xml:id}"/>
+   }
+   <label class="form-check-label" for="guangyun-input-{$cc}-{$count}">
+     {$e/tx:gloss} -  {$py}
+   </label>
+  </div>
+  else (),
+  if (not ($gyonly) or not ($r)) then
+  <div class="form-check">
+   { if (not ($r)) then
+   <label class="form-check-label" for="guangyun-input-{$cc}-9">
+     Character not in 廣韻, please enter pinyin directly after ‘{$char}:’ 
+   </label> 
+   else
+   <label class="form-check-label" for="guangyun-input-{$cc}-9">
+     For a different reading, please enter pinyin directly after ‘{$char}:’ 
+   </label>
+   }
+  <input class="guangyun-input-checked" name="guangyun-input-{$cc}" id="guangyun-input-{$cc}-9" type="text" value="{$char}:"/>
+  </div> else ()
+)}
+</div>
+};
+
+
+declare function tlslib:save-new-syllable($map as map(*)){
+let $uid := "uuid-"||util:uuid()
+,$timestamp := current-dateTime()
+,$user := sm:id()//sm:real/sm:username/text()
+,$path := $config:tls-data-root || "/guangyun/" || substring($uid, 6, 1)
+let $res:=xmldb:store($path, $uid || ".xml",
+<guangyun-entry xmlns="http://exist-db.org/tls" xml:id="{$uid}">
+    <graphs>
+        <attested-graph>
+            <unemended-graph>
+                <graph/>
+            </unemended-graph>
+            <emended-graph>
+                <graph/>
+            </emended-graph>
+            <graph/>
+        </attested-graph>
+        <standardised-graph>
+            <graph>{$map?zi}</graph>
+        </standardised-graph>
+    </graphs>
+    <gloss>Added by {$user} at {substring($timestamp, 1, 10)}</gloss>
+    <xiaoyun>
+        <headword/>
+        <graph-count/>
+    </xiaoyun>
+    <fanqie>
+        <fanqie-shangzi>
+            <fanqie-shangzi-attested>
+                <graph/>
+            </fanqie-shangzi-attested>
+            <fanqie-shangzi-standard>
+                <graph/>
+            </fanqie-shangzi-standard>
+        </fanqie-shangzi>
+        <fanqie-xiazi>
+            <fanqie-xiazi-attested>
+                <graph/>
+            </fanqie-xiazi-attested>
+            <fanqie-xiazi-standard>
+                <graph/>
+            </fanqie-xiazi-standard>
+        </fanqie-xiazi>
+    </fanqie>
+    <ids>
+        <guangyun-jiaoshi-id/>
+        <pan-wuyun-id/>
+    </ids>
+    <locations>
+        <guangyun-location/>
+        <baxter-location/>
+        <pan-wuyun-location/>
+    </locations>
+    <pan-wuyun-note-on-guangyun/>
+    <pan-wuyun-note/>
+    <pronunciation>
+        <mandarin>
+            <jin>{$map?jin}</jin>
+            <wen/>
+            <yi/>
+            <bai/>
+            <jiu/>
+        </mandarin>
+        <middle-chinese>
+            <categories>
+                <聲/>
+                <等/>
+                <呼/>
+                <韻部/>
+                <調/>
+                <重紐/>
+                <攝/>
+            </categories>
+            <yundianwang-reconstructions>
+                <li-rong/>
+                <pan-wuyun/>
+                <wang-li/>
+                <pulleyblank/>
+                <shao-rongfen/>
+                <zhengzhang-shangfang/>
+                <karlgren/>
+            </yundianwang-reconstructions>
+            <authorial-reconstructions>
+                <baxter/>
+            </authorial-reconstructions>
+        </middle-chinese>
+        <old-chinese>
+            <pan-wuyun>
+                <yunbu/>
+                <phonetic/>
+                <oc/>
+            </pan-wuyun>
+            <zhengzhang-shangfang>
+                <oc/>
+                <yunbu/>
+                <phonetic/>
+                <notes/>
+            </zhengzhang-shangfang>
+        </old-chinese>
+    </pronunciation>
+    <note>{$map?note}</note>
+    <sources>{$map?sources}</sources>
+    <tls:metadata xmlns:tls="http://hxwd.org/ns/1.0" resp="#{$user}" created="{$timestamp}">
+        <respStmt>
+            <resp>added and approved</resp>
+            <name>{$user}</name>
+        </respStmt>
+    </tls:metadata>
+</guangyun-entry>)
+return 
+(sm:chmod(xs:anyURI($res), "rw-rw-rw-"),
+ sm:chgrp(xs:anyURI($res), "tls-user"),
+ sm:chown(xs:anyURI($res), "tls"),
+ $uid)
+};
+
+declare function tlslib:review-special($issue as xs:string){
+let $user := "#" || sm:id()//sm:username
+, $issues := map{
+"missing-pinyin" : "Concepts with missing pinyin reading",
+"duplicate" : "Concepts with duplicate word entries"
+}
+return
+<div>
+<h3>Special pages : {map:get($issues, $issue)}</h3>
+ <div class="container">
+ <ul>
+ {switch ($issue)
+ case "missing-pinyin" return 
+  let $missing := for $p in collection($config:tls-data-root||"/concepts")//tei:pron[@xml:lang="zh-Latn-x-pinyin" and (string-length(.) = 0)] 
+  let $z := $p/ancestor::tei:form/tei:orth/text()
+  where string-length($z) > 0
+  return $p
+
+  for $p in $missing
+  let $w := $p/ancestor::tei:entry
+  , $c := $p/ancestor::tei:div[@type="concept"]
+  let $z := $p/ancestor::tei:form/tei:orth/text()
+
+  return
+  <li>{$z}　<a href="concept.html?uuid={$c/@xml:id}#{$w/@xml:id}">{$c/tei:head/text()}</a></li>
+(:  tlslib:get-sw($z, "concept"):)
+ case "duplicate" return 
+ let $dup := 
+  for $c in collection($config:tls-data-root||"/concepts")//tei:div[@type="concept"]
+    for $e in $c//tei:entry
+      let $cx := for $o in $e//tei:orth
+        let $x := count($c//tei:entry[.//tei:orth[. = $o]])
+        let $w := $o/ancestor::tei:entry/@xml:id
+              return ($x, $o, $o/ancestor::tei:entry/@xml:id, $w)
+    where $cx[1] > 1
+   return 
+   <li>{$cx[2]/text()}　<a href="concept.html?uuid={$c/@xml:id}&amp;bychar=1#{$cx[4]}">{$c/tei:head/text()}</a> {$cx[1]}</li>
+  return (count($dup), $dup)
+ default return 
+  for $i in map:keys($issues)
+  order by $i
+  return
+  <li><a href="review.html?type=special&amp;issue={$i}">{map:get($issues, $i)}</a></li>
+ }
+ </ul>
+ </div>
+</div> 
+};
+
+declare function tlslib:review-swl(){
+let $user := "#" || sm:id()//sm:username
+  ,$review-items := for $r in collection($config:tls-data-root || "/notes")//tls:metadata[not(@resp= $user)]
+       let $score := if ($r/@score) then data($r/@score) else 0
+       , $date := xs:dateTime($r/@created)
+       where $score < 1 and $date > xs:dateTime("2019-08-29T19:51:15.425+09:00")
+       order by $date descending
+       return $r/parent::tls:ann
+return
+<div>
+<h3>Reviews due: {count($review-items)}</h3>
+ <div class="container">
+ {for $att in subsequence($review-items, 1, 20)
+  let  $px := substring($att/tls:metadata/@resp, 2)
+  let $un := doc($config:tls-data-root || "/vault/members.xml")//tei:person[@xml:id=$px]//tei:persName/text()
+  , $created := $att/tls:metadata/@created
+  return 
+  (
+  <div class="row border-top pt-4">
+  <div class="col-sm-4"><img class="icon" src="resources/icons/octicons/svg/pencil.svg"/>
+By <span class="font-weight-bold">{$un}</span>(@{$px})</div>
+  <div class="col-sm-5" title="{$created}">created {tlslib:display-duration(current-dateTime()- xs:dateTime($created))} ago</div>
+  </div>,
+tlslib:show-att-display($att),
+tlslib:format-swl($att, map{"type" : "row", "context" : "review"})
+  )
+ }
+ </div>
+ <p>Refresh page to see more items.</p>
+</div>
+};
+
+declare function tlslib:format-phonetic($gy as node()){
+    let $mand-jin := $gy//tx:pronunciation/tx:mandarin/tx:jin
+    , $key := $gy/@xml:id
+    , $gloss := $gy//tx:gloss/text()
+    , $zi := $gy//tx:graphs
+    , $fq := ($gy//tx:fanqie/tx:fanqie-shangzi//tx:graph/text(),
+     $gy//tx:fanqie/tx:fanqie-xiazi//tx:graph/text())
+  return 
+  <div class="row">
+  <div class="col-sm-1"><a href="syllables.html?uuid={$key}" class="btn badge badge-light">{$zi}</a></div>
+  <div class="col-sm-1">{$fq}</div>
+  {for $c in $gy//tx:categories/tx:* return 
+  <div class="col-sm-1">{$c//text()}</div>
+  }
+  <div class="col-sm-1">{$gy//tx:old-chinese/tx:pan-wuyun/tx:oc/text()}</div>
+  </div>
+};
+
+
+declare function tlslib:guoxuedashi($c as xs:string){
+<a class="btn badge badge-light" target="GXDS" title="External link to 國學大師" style="background-color:paleturquoise" href="http://www.guoxuedashi.com/so.php?sokeytm={$c}&amp;ka=100">{$c}</a>
 };

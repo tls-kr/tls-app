@@ -11,7 +11,9 @@ module namespace app="http://hxwd.org/app";
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
+declare namespace tx="http://exist-db.org/tls";
 declare namespace json = "http://www.json.org";
+declare namespace ucd = "http://www.unicode.org/ns/2003/ucd/1.0";
 
 import module namespace templates="http://exist-db.org/xquery/templates" ;
 import module namespace config="http://hxwd.org/config" at "config.xqm";
@@ -25,7 +27,10 @@ declare variable $app:tmap := map{
 "1" : "texts",
 "2" : "dictionary",
 "3" : "translations",
-"4" : "fields"
+"4" : "fields",
+"5" : "one text only",
+"6" : "lines with translation",
+"7" : "titles"
 };
 declare variable $app:lmap := map{
 "zh" : "Modern Chinese",
@@ -40,9 +45,9 @@ declare variable $app:lmap := map{
 "notes" : "Criteria and general notes",
 "old-chinese-criteria" : "Old Chinese Criteria",
 "modern-chinese-criteria" : "Modern Chinese Criteria",
-"taxonymy" : "Hypernym",
+"taxonymy" : "Hyponym",
 "antonymy" : "Antonym",
-"hypernymy" : "Hyponym",
+"hypernymy" : "Hypernym",
 "see" : "See also",
 "source-references" : "Bibliography",
 "warring-states-currency" : "Warring States Currency",
@@ -174,7 +179,8 @@ function app:browse($node as node()*, $model as map(*), $type as xs:string?, $fi
     <td>{
     switch ($type) 
         case  "concept" return <a href="concept.html?uuid={$id}">{$n}</a>
-        case  "rhet-dev" return <a href="rhetdev.html?uuid={$id}">{$n}</a>
+        case  "syllables" return <a href="syllables.html?uuid={$id}">{$n}</a>
+        case  "rhet-dev" return <a href="rhet-dev.html?uuid={$id}">{$n}</a>
         default return (tlslib:format-button("delete_sf('"||$id||"', '"||$type||"')", "Delete this syntactic definition.", "open-iconic-master/svg/x.svg", "", "", "tls-editor"),
         <a id="{$id}-abbr" onclick="show_use_of('{$type}', '{$id}')">{$n}</a>)
     }</td>
@@ -249,18 +255,21 @@ declare function app:do-browse($type as xs:string?, $filter as xs:string?)
 :)
 declare 
     %templates:wrap
-function app:query($node as node()*, $model as map(*), $query as xs:string?, $mode as xs:string?, $search-type as xs:string?)
+function app:query($node as node()*, $model as map(*), $query as xs:string?, $mode as xs:string?, $search-type as xs:string?, $textid as xs:string?)
 {
     session:create(),
     let $hits := 
-     if ($search-type = "1") then
-      tlslib:ngram-query($query, $mode) 
+     if ($search-type = ("1", "5", "6")) then
+      tlslib:ngram-query($query, $mode, $search-type, $textid) 
       else if ($search-type = "2") then 
       (: searching for kanji in dictionary, eg. the words in concepts :)
       tlslib:dic-query($query, $mode)
       else if ($search-type = "3") then 
       (: searching for word in translations :)
       tlslib:tr-query($query, $mode)
+      else if ($search-type = "7") then 
+      (: searching for word in titles :)
+      tlslib:title-query($query, $mode)
       else if ($search-type = "4") then 
       app:do-query($query, $mode)
       else "Unknown search type"
@@ -319,6 +328,9 @@ declare function app:create-query($queryStr as xs:string?, $mode as xs:string?)
 (:~
  : This is also called from search.html, nested within app:query. 
  : Paged result display is achieved here.
+ : Search type 5 is "limit search to text id"
+ : Search type 6 is "Search only in text lines with translation"
+ : 7 is title search
 :)
 
 declare 
@@ -326,9 +338,12 @@ declare
 %templates:default("type", "")  (: type is only relevant for advanced search starting from the search landing page for non-Kanji generell search :)
 %templates:default("mode", "")   (: for text display sort by date or rating :)
 %templates:default("search-type", "1")
-function app:show-hits($node as node()*, $model as map(*), $start as xs:int, $type as xs:string, $mode as xs:string, $search-type as xs:string)
-{   let $query := map:get($model, "query")
+%templates:default("textid", "")
+
+function app:show-hits($node as node()*, $model as map(*), $start as xs:int, $type as xs:string, $mode as xs:string, $search-type as xs:string, $textid as xs:string?){   
+let $query := map:get($model, "query")
     ,$iskanji := tlslib:iskanji($query) 
+    ,$title := if (string-length($textid) > 0) then collection($config:tls-texts-root)//tei:TEI[@xml:id=$textid]//tei:titleStmt/tei:title/text() else ()
     (: no of results to display :)
     ,$resno := 50
     ,$map := session:get-attribute($app:SESSION || ".types")
@@ -343,12 +358,49 @@ function app:show-hits($node as node()*, $model as map(*), $start as xs:int, $ty
     {if (string-length($type) > 0) then 
     <span>in {map:get($app:lmap, $type)}</span>
     else ()}</h1>
-    {if (not($search-type="4")) then
+    {
+    if ($search-type = "7") then 
+    <ul>{
+    for $h in map:get($model, "hits")
+    let $loc := $h/ancestor::tei:TEI/@xml:id
+    return
+    <li><a href="textview.html?location={$loc}">{data($loc) || " " || $h/text()}</a></li>
+    }
+    </ul>
+    else
+    (: not search in fields :)
+    if (not($search-type="4")) then
+    let $txtmatchcount := count(for $h in map:get($model, "hits") let $x := $h/@xml:id where starts-with($x, $textid) return $h)
+    , $trmatch := count(for $h in map:get($model, "hits") let $x := "#" || $h/@xml:id
+    return collection($config:tls-translation-root)//tei:seg[@corresp=$x])
+    return
+    (: insert option to limit to textid here? tell the user how many matches etc. :)
     (
     <h4>Found {count($model("hits"))} matches {if (not($search-type="2")) then <span>, showing {$start} to {$start + $resno -1}</span> else ()}</h4>,
-    if ($search-type = "1") then 
+    if ($search-type = ("1", "5", "6")) then 
     <p>
-    {if ($start = 1) then ("Taxonomy of meanings: ", for $c in $qc return  <a class="btn badge badge-light" title="Show taxonomy of meanings for {$c}" href="char.html?char={$c}">{$c}</a>) else ()}
+    {if ($start = 1) then (
+     if (string-length($title) > 0 and $txtmatchcount > 0) then
+      if ($search-type = "5") then 
+       (<a class="btn badge badge-light" href="search.html?query={$query}&amp;start=1&amp;search-type=1&amp;textid={$textid}&amp;mode={$mode}">Click here to display all  matches</a>,<br/>)
+       else  (<a class="btn badge badge-light" href="search.html?query={$query}&amp;start=1&amp;search-type=5&amp;textid={$textid}&amp;mode={$mode}">Click here to display only {$txtmatchcount} matches in {$title}</a>,<br/>) else (),
+     if ($trmatch > 0 and not ($search-type="6")) then
+     (<a class="btn badge badge-light" href="search.html?query={$query}&amp;start=1&amp;search-type=6&amp;mode={$mode}">Click here to display only {$trmatch} matching lines that have a translation</a>,<br/>)
+     else 
+    (<a class="btn badge badge-light" href="search.html?query={$query}&amp;start=1&amp;search-type=1&amp;mode={$mode}">Click here to display all  matches</a>,<br/>)
+,
+    "Taxonomy of meanings: ", 
+     for $c in $qc return  
+     <a class="btn badge badge-light" title="Show taxonomy of meanings for {$c}" href="char.html?char={$c}">{$c}</a>,
+     <span>{" / Phonetic profile: ",
+     for $c in $qc return  
+     <a class="btn badge badge-light" style="background-color:palegreen" title="Show phonetic profile for {$c}" href="syllables.html?char={$c}">{$c}</a>}
+     </span>,
+     <span>{" / 國學大師: ", 
+     for $c in $qc return
+     tlslib:guoxuedashi($c)
+     }</span>,
+     <br/>) else ()}
     { if ($user = "guest") then () else
     if ($mode = "rating") then 
     (
@@ -358,29 +410,46 @@ function app:show-hits($node as node()*, $model as map(*), $start as xs:int, $ty
     (
     "&#160;Sorting by text date. ", <a class="btn badge badge-light" href="search.html?query={$query}&amp;start=1&amp;search-type={$search-type}&amp;mode=rating" title="{$rat}">Click here to sort your favorite texts first. </a> 
     )
+    (: end of if $search-type = "1" :)
     }
     </p> else ()
     )
     else
-    <h4>Found {if (string-length($type) > 0) then (count(map:get($map, $type)),<span>; displaying matches {$start} to {min((count(map:get($map, $type)), xs:int($start) + $resno))}</span>)
-    else (count($model("hits")), <span> matches</span>)}</h4>}    
-    {if ($search-type = "2") then 
+    (: this is search-type = "4", in fields :)
+    <h4>Found {if (string-length($type) > 0) then (count(map:get($map, $type)),<span>; 
+    displaying matches {$start} to {min((count(map:get($map, $type)), xs:int($start) + $resno))}</span>)
+    else (count($model("hits")), <span> matches</span>)} </h4>}    
+    
+    { (: search in dictionary :)
+    if ($search-type = "2") then 
     <div>
-    <p>{if ($start = 1) then ("Taxonomy of meanings: ", for $c in $qc return  <a class="btn badge badge-light" title="Show taxonomy of meanings for {$c}" href="char.html?char={$c}">{$c}</a>) else ()}</p>
-    <table class="table">
+    <p>{if ($start = 1) then ("Taxonomy of meanings: ", for $c in $qc return  <a class="btn badge badge-light" title="Show taxonomy of meanings for {$c}" href="char.html?char={$c}">{$c}</a>,
+         " Phonetic profile: ",
+     for $c in $qc return  
+     <a class="btn badge badge-light" style="background-color:palegreen" title="Show phonetic profile for {$c}" href="syllables.html?char={$c}">{$c}</a>,
+     <span>{" 國學大師: ", 
+     for $c in $qc return
+     <a class="btn badge badge-light" title="Search {$c} in 國學大師字典 (External link)" style="background-color:paleturquoise" href="http://www.guoxuedashi.com/so.php?sokeytm={$c}&amp;ka=100">{$c}</a>
+     }</span>
+) else ()}</p>
+    <ul>
     {for $h at $c in map:get($model, "hits")
     return $h
     }
-    </table>
+    </ul>
     </div>    
-    else if ($search-type = "3" or $search-type="1") then
+    else 
+    if ($search-type = "7") then () else
+    (: this is all for text / translation search :) 
+    if ($search-type=("1", "3", "5", "6")) then
     <div>
     <table class="table">
     {for $h at $c in subsequence(map:get($model, "hits"), $start, $resno)
       let $loc := if ($search-type="3") then substring($h/@corresp,2) else $h/@xml:id,
       $cseg := if ($search-type="3") then collection($config:tls-texts-root)//tei:seg[@xml:id=$loc] else (),
       $head := if ($search-type="3") then $cseg/ancestor::tei:div[1]/tei:head[1] else $h/ancestor::tei:div[1]/tei:head[1],
-      $title := if ($search-type="3") then $cseg/ancestor::tei:TEI//tei:titleStmt/tei:title/text() else $h/ancestor::tei:TEI//tei:titleStmt/tei:title/text()
+      $title := if ($search-type="3") then $cseg/ancestor::tei:TEI//tei:titleStmt/tei:title/text() else $h/ancestor::tei:TEI//tei:titleStmt/tei:title/text(),
+      $tr := collection($config:tls-translation-root)//tei:seg[@corresp="#"||$h/@xml:id]
     return
       <tr>
         <td>{$c + $start -1}</td>
@@ -393,15 +462,15 @@ function app:show-hits($node as node()*, $model as map(*), $start as xs:int, $ty
         (substring-before($h, $query), 
         <mark>{$query}</mark> 
         ,substring-after($h, $query)), 
-        $h/following-sibling::tei:seg[1,3]}</td>
+        $h/following-sibling::tei:seg[1,3]}{if ($tr) then (<br/>,"..." || $tr[1] || "...") else ()}</td>
         }
         </tr>
     }
     </table>
     <nav aria-label="Page navigation">
   <ul class="pagination">
-    <li class="page-item"><a class="page-link {if ($start = 1) then "disabled" else ()}" href="search.html?query={$query}&amp;start={$start - $resno}&amp;search-type={$search-type}{if ($mode) then concat("&amp;mode=", $mode) else ()}">&#171;</a></li>
-    <li class="page-item"><a class="page-link" href="search.html?query={$query}&amp;start={$start + $resno}&amp;search-type={$search-type}{if ($mode) then concat("&amp;mode=", $mode) else ()}">&#187;</a></li>
+    <li class="page-item"><a class="page-link {if ($start = 1) then "disabled" else ()}" href="search.html?query={$query}&amp;start={$start - $resno}&amp;textid={$textid}&amp;search-type={$search-type}{if ($mode) then concat("&amp;mode=", $mode) else ()}">&#171;</a></li>
+    <li class="page-item"><a class="page-link" href="search.html?query={$query}&amp;start={$start + $resno}&amp;textid={$textid}&amp;search-type={$search-type}{if ($mode) then concat("&amp;mode=", $mode) else ()}">&#187;</a></li>
   </ul>
 </nav>
     </div>
@@ -813,20 +882,20 @@ function app:rhetdev($node as node()*, $model as map(*), $uuid as xs:string?, $o
      {map:get($app:lmap, data($p/@type))}
      {tlslib:capitalize-first(data($p/@type/text()))}</h5>,
      (: we assume that clicking here implies an interest in the ontology, so we load in open state:)
-     <p>
+     <ul>
      {for $r in $p//tei:ref 
      let $lk := replace($r/@target, "#", "")
      return
-     (<span class="badge badge-light">
-     <a href="rhetdev.html?uuid={$lk}&amp;ontshow=true">{$r/text()}</a>
-     </span>,
+     (<li >
+     <a class="badge badge-light" href="rhet-dev.html?uuid={$lk}&amp;ontshow=true">{$r/text()}</a>
+     </li>,
+     <ul>{
      if ($p[@type = "hypernymy"]) then
-     for $u in tlslib:ontology-up($lk, -5) return
-     <span> -> <span class="badge">
-     <a href="rhetdev.html?uuid={substring($u/@target, 2)}&amp;ontshow=true">{$u/text()}</a>
-     </span>
-     </span>
-     else ())} </p>)}
+     for $u in reverse(tlslib:ontology-up($lk, -5)) 
+     return $u
+     else ()
+     }</ul>
+     )} </ul>)}
      
      {for $p in $rd//tei:div[@type="pointers"]//tei:list[@type = "taxonymy"]
      return
@@ -838,9 +907,9 @@ function app:rhetdev($node as node()*, $model as map(*), $uuid as xs:string?, $o
      let $lk := replace($r/@target, "#", "")
      return
   
-     <li><span class="badge">
-     <a href="rhetdev.html?uuid={$lk}&amp;ontshow=true">{$r/text()}</a>
-     </span><ul>{
+     <li>
+     <a class="badge badge-light" href="rhet-dev.html?uuid={$lk}&amp;ontshow=true">{$r/text()}</a>
+     <ul>{
      for $u in tlslib:ontology-links($lk, "taxonymy", 2 ) return
      $u
      }</ul></li>
@@ -889,6 +958,16 @@ function app:rhetdev($node as node()*, $model as map(*), $uuid as xs:string?, $o
     
       </div>
     <div><h5>Rhetorical device locations: {$rd/tei:div[@type='rhet-dev-loc']//tei:p/text()}</h5>
+    <ul>
+    {for $rdl in collection($config:tls-data-root || "/notes/rdl")//tls:span[@rhet-dev-id=$key]
+    let $tl := substring(($rdl//tls:srcline[1]/@target)[1], 2)
+    , $ti := data(($rdl//tls:srcline[1]/@title)[1])
+    return
+    <li><a href="textview.html?location={$tl}">{$ti}</a><span>{($rdl//tls:srcline[1])[1]}</span>
+    {if ($rdl/tls:note) then <p>{$rdl/tls:note}</p> else ()}
+    </li>
+    }
+    </ul>
     </div>  
       </div>
       </div>
@@ -898,8 +977,9 @@ function app:rhetdev($node as node()*, $model as map(*), $uuid as xs:string?, $o
    
 (: concept display :)
 declare 
-    %templates:wrap
-function app:concept($node as node()*, $model as map(*), $concept as xs:string?, $uuid as xs:string?, $ontshow as xs:string?)
+%templates:wrap 
+%templates:default("bychar", 0) 
+function app:concept($node as node()*, $model as map(*), $concept as xs:string?, $uuid as xs:string?, $ontshow as xs:string?, $bychar as xs:boolean)
 {
     (session:create(),
     let $user := sm:id()//sm:real/sm:username/text()
@@ -957,20 +1037,21 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
      {map:get($app:lmap, data($p/@type))}
      {tlslib:capitalize-first(data($p/@type/text()))}</h5>,
      (: we assume that clicking here implies an interest in the ontology, so we load in open state:)
-     <p>
+     <ul>
      {for $r in $p//tei:ref 
      let $lk := replace($r/@target, "#", "")
+     ,$def := collection($config:tls-data-root || "/concepts")//tei:div[@xml:id=$lk]/tei:div[@type='definition']/tei:p/text()
      return
-     (<span class="badge badge-light">
-     <a href="concept.html?uuid={$lk}&amp;ontshow=true">{$r/text()}</a>
-     </span>,
+     (<li>
+     <a class="badge badge-light" href="concept.html?uuid={$lk}&amp;ontshow=true">{$r/text()}</a>
+     <small style="display:block;">{$def}</small>
+     <ul>{
      if ($p[@type = "hypernymy"]) then
-     for $u in tlslib:ontology-up($lk, -5) return
-     <span> -> <span class="badge">
-     <a href="concept.html?uuid={substring($u/@target, 2)}&amp;ontshow=true">{$u/text()}</a>
-     </span>
-     </span>
-     else ())} </p>)}
+     for $u in reverse(tlslib:ontology-up($lk, 1)) 
+     return $u
+     else ()
+     }</ul></li>)} 
+     </ul>)}
      
      {for $p in $c//tei:div[@type="pointers"]//tei:list[@type = "taxonymy"]
      return
@@ -980,13 +1061,15 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
      <ul>{
      for $r in $p//tei:ref 
      let $lk := replace($r/@target, "#", "")
+      ,$def := collection($config:tls-data-root || "/concepts")//tei:div[@xml:id=$lk]/tei:div[@type='definition']/tei:p/text()
      return
   
-     <li><span class="badge">
-     <a href="concept.html?uuid={$lk}&amp;ontshow=true">{$r/text()}</a>
-     </span><ul>{
-     for $u in tlslib:ontology-links($lk, "taxonymy", 2 ) return
-     $u
+     <li>
+     <a  class="badge badge-light" href="concept.html?uuid={$lk}&amp;ontshow=true">{$r/text()}</a>
+     <small style="display:inline;">　{$def}</small>
+     <ul>{
+     (: a higher cnt means less levels displayed. use 2 or 3 :)
+     for $u in tlslib:ontology-links($lk, "taxonymy", 3 ) return $u
      }</ul></li>
      }</ul>
      )
@@ -1078,21 +1161,51 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
     ,$def := $e/tei:def/text()
     ,$wc := sum(for $sw in $e//tei:sense 
              return count($ann//tei:sense[@corresp="#" || $sw/@xml:id]))
-    order by $wc descending    
+    order by if (xs:boolean($bychar)) then $zi else $wc descending    
 (:    count $count :)
     return 
-    <div id="{$entry-id}"><h5><span class="zh">{$zi}</span>&#160;&#160; {for $p in $pr return <span>{
-    if (ends-with($p/@xml:lang, "oc")) then "OC: " else 
-    if (ends-with($p/@xml:lang, "mc")) then "MC: " else (),
-    $p/text()}&#160;</span>}  <small>{$wc} {if ($wc = 1) then " Attribution" else " Attributions"}</small>
+    (: tls-div will, together with the defs in style.css allow jumps to here land accurately :)
+    <div class="tls-div" id="{$entry-id}"><h5>
+    {let $seq := for $f at $pos in $e/tei:form 
+    let $zi := $f/tei:orth/text()
+    , $p := $f/tei:pron
+    return
+    (<span id="{$entry-id}-{$pos}">
+    <span id="{$entry-id}-{$pos}-zi" class="zh">{$zi}</span>
+    {for $l in $p return
+    switch ($l/@xml:lang) 
+    case "zh-x-oc" return <span>&#160;OC: {$l/text()}</span>
+    case "zh-x-mc" return <span>&#160;MC: {$l/text()}</span>
+    (: assign_guangyun_dialog( 
+    '{$zi}','{$entry-id}', '{$l/text()}':)
+    default 
+    return  let $px := normalize-space($l/text()) return
+    (: todo: check for permissions! :)
+    <span id="{$entry-id}-{$pos}-py" title="Click here to change pinyin" onclick="assign_guangyun_dialog({{'zi':'{$zi}', 'wid':'{$entry-id}','py': '{normalize-space($l/text())}','concept' : '{$c/tei:head/text()}', 'concept_id' : '{$key}', 'pos':'{$pos}'}})">&#160;&#160;{
+    if (string-length($px) = 0) then "Click here to add pinyin" else $px}</span>,
+    if (count($e/tei:form) > 1) then 
+    tlslib:format-button("delete_zi_from_word('"|| $entry-id || "','" || $pos ||"','"|| $zi ||"')", "Delete " || $zi || " and pronounciation from this word.", "open-iconic-master/svg/x.svg", "", "", "tls-editor")
+    else ()
+    }
+    </span>
+    )
+    , $len := count($seq)
+    return 
+    for $s at $pos in $seq
+    return
+    if ($pos < $len) then ($s, <br/>) else ($s)
+    
+    }    
+    
+    <small>{"  " || $wc} {if ($wc = 1) then " Attribution" else " Attributions"}</small>
     {if ($wc = 0) then
     tlslib:format-button("delete_word_from_concept('"|| $entry-id || "', 'word')", "Delete the word "|| $zi || ", including all syntactic words.", "open-iconic-master/svg/x.svg", "", "", "tls-editor") else 
     (: move :)
     tlslib:format-button("move_word('"|| $zi || "', '"|| $entry-id ||"', '"||$wc||"', 'word')", "Move the word "|| $zi || ", including all syntactic words to another concept.", "open-iconic-master/svg/move.svg", "", "", "tls-editor")
     }
     </h5>
-    {if ($def) then <p class="ml-4">{$def}</p> else ()}
-    <ul>{for $sw in $e//tei:sense
+    {if ($def) then <p class="ml-4">{$def[1]}</p> else ()}
+    <ul>{for $sw in $e/tei:sense
     return
     tlslib:display-sense($sw, count($ann//tei:sense[@corresp="#" || $sw/@xml:id]), false())
     }</ul>
@@ -1181,7 +1294,7 @@ return
                                 <!--
                                 <a class="dropdown-item" href="browse.html?type=word">Words</a>
                                 -->
-                                <a class="dropdown-item" href="browse.html?type=syn-func">Syntactical functions</a>
+                                <a class="dropdown-item" href="browse.html?type=syn-func">Syntactic functions</a>
                                 <a class="dropdown-item" href="browse.html?type=sem-feat">Semantic features</a>
                                 <a class="dropdown-item" href="browse.html?type=rhet-dev">Rhetorical devices</a>
                                 <div class="dropdown-divider"/>
@@ -1201,9 +1314,11 @@ return
                     <li class="nav-item">
                     
                     <form action="search.html" class="form-inline my-2 my-lg-0" method="get">
+                    <input type="hidden" name="textid" value="{map:get($model, 'textid')}"/>
                         <input id="query-inp" name="query" class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search" value="{if (string-length($query) > 0) then $query else ()}"/> in 
         <select class="form-control" name="search-type">
           <option selected="true" value="1">{$app:tmap?1}</option>
+          <option value="7">{$app:tmap?7}</option>
           <option value="2">{$app:tmap?2}</option>
           <option value="3">{$app:tmap?3}</option>
           <option value="4">{$app:tmap?4}</option>
@@ -1224,42 +1339,31 @@ return
                 </div>
             </nav>
 };
-
+(:~
+ This is called from translations.html
+:)
+declare 
+    %templates:wrap
+function app:translations($node as node()*, $model as map(*)){
+let $d := (for $d1 in collection($config:tls-data-root||"/statistics/")//div[@type="statistics"]
+   let $m := xs:dateTime($d1/@modified)
+   order by $m descending
+   return $d1)[1]
+, $tab := $d/table[@id="stat-translations"]   
+return
+$tab
+};
 (:~
  This is called from review.html
 :)
 declare 
     %templates:wrap
-function app:review($node as node()*, $model as map(*), $type as xs:string){
-let $user := "#" || sm:id()//sm:username
-  ,$review-items := for $r in collection($config:tls-data-root || "/notes")//tls:metadata[not(@resp= $user)]
-       let $score := if ($r/@score) then data($r/@score) else 0
-       , $date := xs:dateTime($r/@created)
-       where $score < 1 and $date > xs:dateTime("2019-08-29T19:51:15.425+09:00")
-       order by $date descending
-       return $r/parent::tls:ann
-return
-<div>
-<h3>Reviews due: {count($review-items)}</h3>
- <div class="container">
- {for $att in subsequence($review-items, 1, 20)
-  let  $px := substring($att/tls:metadata/@resp, 2)
-  let $un := doc($config:tls-data-root || "/vault/members.xml")//tei:person[@xml:id=$px]//tei:persName/text()
-  , $created := $att/tls:metadata/@created
-  return 
-  (
-  <div class="row border-top pt-4">
-  <div class="col-sm-4"><img class="icon" src="resources/icons/octicons/svg/pencil.svg"/>
-By <span class="font-weight-bold">{$un}</span>(@{$px})</div>
-  <div class="col-sm-5" title="{$created}">created {tlslib:display-duration(current-dateTime()- xs:dateTime($created))} ago</div>
-  </div>,
-tlslib:show-att-display($att),
-tlslib:format-swl($att, map{"type" : "row", "context" : "review"})
-  )
- }
- </div>
- <p>Refresh page to see more items.</p>
-</div>
+    %templates:default("issue", "")    
+function app:review($node as node()*, $model as map(*), $type as xs:string, $issue as xs:string){
+ switch($type) 
+  case "swl" return tlslib:review-swl()
+  case "special" return tlslib:review-special($issue)
+  default return ""
 };
 
 
@@ -1424,7 +1528,7 @@ Dark theme
   order by $date descending
 
 return
-<li>{tlslib:format-button("delete_bm('"||$id||"')", "Delete this bookmark.", "open-iconic-master/svg/x.svg", "", "", "tls-user")}
+<li id="{$id}">{tlslib:format-button("delete_bm('"||$id||"')", "Delete this bookmark.", "open-iconic-master/svg/x.svg", "", "", "tls-user")}
 <a href="textview.html?location={substring($segid, 2)}">{$b/tei:ref/tei:title/text()}: {$b/tei:seg}</a></li>
 }
 </ul>
@@ -1481,4 +1585,217 @@ function app:dialogs($node as node()*, $model as map(*))
         <div id="remDialog2"/>
    </div>
 };
+
+
+declare
+    %templates:wrap
+function app:syllables($node as node()*, $model as map(*), $uuid as xs:string?, $char as xs:string?){
+    (session:create(),
+    let $user := sm:id()//sm:real/sm:username/text()
+    , $grc := collection($config:tls-data-root||"/guangyun")
+    , $gys := if (string-length($uuid) > 0) then 
+      $grc//tx:guangyun-entry[@xml:id=$uuid]
+      else 
+      $grc//tx:graphs//tx:graph[. = $char]/ancestor::tx:guangyun-entry
+    for $gy in $gys
+    let $mand-jin := $gy//tx:pronunciation/tx:mandarin/tx:jin
+    , $key := $gy/@xml:id
+    , $gloss := $gy//tx:gloss
+    , $zis := $gy//tx:graphs/tx:attested-graph/tx:graph
+    , $zi := if (string-length(translate(normalize-space($gy//tx:graphs/tx:standardised-graph/tx:graph), ' ', ''))> 0) then
+                $gy//tx:graphs/tx:standardised-graph/tx:graph else
+                $gy//tx:graphs//tx:graph
+    , $fq := ($gy//tx:fanqie/tx:fanqie-shangzi//tx:graph/text(),
+     $gy//tx:fanqie/tx:fanqie-xiazi//tx:graph/text())
+    return 
+  <div class="row" id="syllables-id" data-id="{$key}" >
+   <div class="card col-sm-12" style="max-width: 1000px;background-color:palegreen  ;">
+    <div class="card-body" >
+    <h3>Phonetic profile</h3>
+     <h4 class="card-title">{$zis}&#160;&#160; {$mand-jin/text()}&#160;&#160; <small>
+     <span class="text-muted">廣韻韻目：</span>{$gy//tx:headword}&#160;&#160; 
+     <span class="text-muted">反切：</span><strong>{$fq}</strong>　　
+     <span class="text-muted">聲調：</span><strong>{$gy//tx:調/text()}</strong>　
+     <span class="text-muted">等：</span> <strong>{$gy//tx:等/text()}</strong>&#160;&#160; 
+     <span class="text-muted">聲母：</span><strong>{$gy//tx:聲/text()}</strong></small></h4>
+    <h5 class="card-subtitle" id="mand-jin" >Gloss: {$gloss}</h5>
+    <!--
+    <div class="row">
+     <div class="col-sm-4">
+     <div class="row"></div>
+     </div>
+     <div class="col-sm-4">B</div>
+    </div>
+    <div class="row">
+     <div class="col-sm-4">Source: {$gy//tx:sources}</div>
+     <div class="col-sm-4">{$gy//tx:note}</div>
+    </div>
+    -->
+    <div id="syllables-content" class="accordion">
+    
+    <!-- Reconstructions -->
+    <div class="card">
+     <div class="card-header" id="pointers-head">
+      <h5 class="mb-0 mt-2">
+        <button class="btn" data-toggle="collapse" data-target="#pointers" >
+         Reconstructions
+        </button>
+      </h5>
+      </div>
+     <div id="pointers" class="collapse" data-parent="#syllables-content">
+    <div class="row">
+     <div class="col-sm-4"><strong>Middle Chinese</strong>
+     {for $s in ($gy//tx:middle-chinese/tx:yundianwang-reconstructions/tx:*|$gy//tx:middle-chinese/tx:authorial-reconstructions/tx:*) return
+     <div class="row">
+      <div class="col-sm-6"><span class="text-muted">{local-name($s)}</span></div>
+      <div class="col-sm-6">{$s}</div>
+     </div>
+     }
+    </div>
+    <div class="col-sm-4"><strong>Old Chinese</strong>
+    <div><span>潘悟云</span>
+      {for $s in $gy//tx:old-chinese/tx:pan-wuyun/tx:* 
+      return
+     <div class="row">
+     <div class="col-sm-6"><span class="text-muted">{local-name($s)}</span></div>
+     <div class="col-sm-6">{$s}    </div>
+    </div>
+    }</div>
+    <div><span>鄭張尚芳</span>
+    {for $s in $gy//tx:old-chinese/tx:zhengzhang-shangfang/tx:* 
+     return
+     <div class="row">
+     <div class="col-sm-6"><span class="text-muted">{local-name($s)}</span></div>
+     <div class="col-sm-6">{$s}    </div>
+    </div>
+    }</div>
+    </div>    
+    </div>
+    <div class="row">
+     <div class="col-sm-4">Source: {$gy//tx:sources}</div>
+     <div class="col-sm-4">{$gy//tx:note}</div>
+    </div>
+    </div>
+     </div>
+    <!-- Refs -->
+    <div class="card">
+     <div class="card-header" id="ref-head">
+      <h5 class="mb-0 mt-2">
+        <button class="btn" data-toggle="collapse" data-target="#ref" >
+         References
+        </button>
+      </h5>
+      </div>
+      {let $ucd := doc($config:tls-data-root||"/guangyun/ucd.unihan.flat.xml")
+      , $cp := tlslib:num2hex(string-to-codepoints($zis)[1])
+      , $cpr := $ucd//ucd:char[@cp=$cp]
+      , $cinfo := ("kDefinition", "kRSUnicode", "kFrequency", "kGradeLevel", "kHanyuPinlu", "kFourCornerCode", "kTotalStrokes", "kIICore", "kUnihanCore2020")
+      , $read := ("kVietnamese", "kMandarin", "kHanyuPinyin", "kTang", "kJapaneseKun", "kJapaneseOn", "kCantonese", "")
+      , $dics := ("kHanYu", "kCihaiT", "kSBGY", "kNelson", "kCowles", "kMatthews", "kPhonetic", "kGSR", "kFenn", "kFennIndex", "kKarlgren", "kMeyerWempe", "kLau", "kKangXi", "kDaeJaweon", "kMorohashi", "kTGHZ2013", "kXHC1983", "kPhonetic")
+      , $vars := ("kTraditionalVariant", "kSimplifiedVariant", "kSemanticVariant", "kSpecializedSemanticVariant")
+      , $csets := ("cp", "kBigFive", "kCCCII", "kEACC", "kIRG_JSource")
+      return
+     <div id="ref" class="collapse" data-parent="#syllables-content">
+    <div class="row">
+     <div class="col-sm-12"><h5>Based on {$ucd//ucd:description/text()}</h5></div>
+    </div> 
+    <div class="row">
+     <div class="col-sm-4">
+     <strong>Dictionary references</strong>
+     {for $v in $cpr/@* 
+      let $n := local-name($v)      
+      where $n = $dics
+     return
+     <div class="row">
+      <div class="col-sm-6"><span class="text-muted">{$n}</span></div>
+      <div class="col-sm-6">{data($v)}</div>
+     </div>
+     }
+    </div>
+    <div class="col-sm-4"><strong>Readings</strong>
+    {for $v in $cpr/@* 
+      let $n := local-name($v)      
+      where $n = $read
+     return
+     <div class="row">
+      <div class="col-sm-6"><span class="text-muted">{$n}</span></div>
+      <div class="col-sm-6">{data($v)}</div>
+     </div>
+     }
+   </div>    
+    </div>
+    <div class="row">
+     <div class="col-sm-4"><strong>Character Info</strong>
+    {for $v in $cpr/@* 
+      let $n := local-name($v)      
+      where $n = $cinfo
+     return
+     <div class="row">
+      <div class="col-sm-6"><span class="text-muted">{$n}</span></div>
+      <div class="col-sm-6">{data($v)}</div>
+     </div>
+     }
+     </div>
+     <div class="col-sm-4"><strong>Codepoints</strong>
+    {for $v in $cpr/@* 
+      let $n := local-name($v)      
+      where $n = $csets
+     return
+     <div class="row">
+      <div class="col-sm-6"><span class="text-muted">{$n}</span></div>
+      <div class="col-sm-6">{data($v)}</div>
+     </div>
+     }
+     </div>
+    </div>
+    </div>
+    (: end of ref card :)
+    }
+    </div>
+    </div>
+     <div><h4>Phonetically related characters</h4>
+     <div><h5>Same 反切</h5>
+     <div class="row"> 
+       <div class="col-sm-1">字</div>
+       <div class="col-sm-1">反切</div>
+       <div class="col-sm-1">聲母</div>
+       <div class="col-sm-1">等</div>
+       <div class="col-sm-1">呼</div>
+       <div class="col-sm-1">韻部</div>
+       <div class="col-sm-1">聲調</div>
+       <div class="col-sm-1">重紐</div>
+       <div class="col-sm-1">攝</div>
+       <div class="col-sm-1">OC</div>
+     </div>
+     {for $c in $grc//tx:guangyun-entry[.//tx:fanqie/tx:fanqie-shangzi//tx:graph=$fq[1] and .//tx:fanqie/tx:fanqie-xiazi//tx:graph=$fq[2]]
+     return tlslib:format-phonetic($c)}
+     </div>
+     <div><h5>Same 潘悟云 OC reconstruction</h5>
+     {for $c in $grc//tx:guangyun-entry[.//tx:old-chinese/tx:pan-wuyun/tx:oc=$gy//tx:old-chinese/tx:pan-wuyun/tx:oc/text()]
+     return tlslib:format-phonetic($c)}
+     </div>
+     <div><h5>Same 聲母 and 韻部 </h5></div>
+     {for $c in $grc//tx:guangyun-entry[.//tx:聲=$gy//tx:聲/text() and .//tx:韻部=$gy//tx:韻部/text()]
+     return tlslib:format-phonetic($c)}
+     <!--
+     <div><h5>Same phonetic</h5></div>
+     -->
+     </div>
+     <div><h4>TLS Usage: Words using {$zi}</h4>
+     <ul>
+     {for $z in collection($config:tls-data-root || "/concepts")//tei:entry[.//tei:orth[. = $zi//text()]]
+     let $c:= $z/ancestor::tei:div[@type="concept"]
+     , $w:= $z/ancestor::tei:entry
+     return
+     <li>{$zi}　<a href="concept.html?uuid={$c/@xml:id}#{$z/@xml:id}">{$c/tei:head/text()}</a></li>}
+     </ul>
+     </div>
+     <!-- end of card content -->
+     </div>
+  <!-- end of card body -->   
+  </div>
+ </div>
+    )
+};
+
 (:: xx :)
