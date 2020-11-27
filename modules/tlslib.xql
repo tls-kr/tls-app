@@ -12,12 +12,15 @@ module namespace tlslib="http://hxwd.org/lib";
 
 import module namespace config="http://hxwd.org/config" at "config.xqm";
 
+import module namespace krx="http://hxwd.org/krx-utils" at "krx-utils.xql";
+
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
+
+declare namespace mf="http://kanripo.org/ns/KRX/Manifest/1.0";
 declare namespace tx="http://exist-db.org/tls";
 
-
-declare function local:string-to-ncr($s as xs:string){
+declare function local:string-to-ncr($s as xs:string) as xs:string{
  string-join(for $a in string-to-codepoints($s)
  return "&#x26;#x" || number($a) || ";" 
  , "")
@@ -185,7 +188,7 @@ let $user := sm:id()//sm:real/sm:username/text()
   :)
   , $t1 := collection($config:tls-user-root || $user || "/translations")//tei:bibl[@corresp="#"||$textid]/ancestor::tei:fileDesc//tei:editor[@role='translator' or @role='creator'] 
   , $t2 := collection($config:tls-translation-root)//tei:bibl[@corresp="#"||$textid]/ancestor::tei:fileDesc//tei:editor[@role='translator' or @role='creator']
- let $tr := map:merge(
+ let $tr := map:merge((
   for $ed in  ($t1, $t2)
    let $t := $ed/ancestor::tei:TEI
    , $tid := data($t/@xml:id)
@@ -202,8 +205,18 @@ let $user := sm:id()//sm:real/sm:username/text()
    , $lic := $t//tei:availability/@status
    , $resp := if ($ed/text()) then $ed/text() else "anon"
    return
-   map:entry($tid, ($t, $resp, if ($lg) then $lg else "en", if ($lic) then xs:int($lic) else 3, $type))
-   )
+   map:entry($tid, ($t, $resp, if ($lg) then $lg else "en", if ($lic) then xs:int($lic) else 3, $type)),
+   (: now we look for variants :)
+   for $v in collection($config:tls-texts-root || "/manifests/")//mf:edition[starts-with(@id, $textid)]
+   for $ed in $v/ancestor::mf:editions/mf:edition
+    let $lang := data($ed/@language)
+    , $edid := data($ed/@id)
+    , $desc := $ed/mf:description/text()
+    , $etp := data($ed/@type)
+    where $lang = "lzh"
+   return
+   map:entry($edid, ($edid ||"::" || $desc, "x", $lang, 3, $etp))
+   ))
    return $tr
 };
   
@@ -526,7 +539,8 @@ declare function tlslib:get-content-id($textid as xs:string, $slot as xs:string,
         (: TODO in the future, maybe also consider the language :)
         order by $lic ascending
         return $t,
-   $content-id := if (("tls-test", "guest") = $usergroups) then tlslib:session-att($textid || "-" || $slot, $select[1 + $slot-no]) else
+   $content-id := if (("tls-test", "guest") = $usergroups) then 
+     tlslib:session-att($textid || "-" || $slot, $select[1 + $slot-no]) else
         let $t1 := tlslib:get-settings()//tls:section[@type='slot-config']/tls:item[@textid=$textid and @slot=$slot]/@content
         return
         if ($t1) then data($t1)
@@ -538,19 +552,31 @@ declare function tlslib:get-content-id($textid as xs:string, $slot as xs:string,
  Display a selection menu for translations and commentaries, given the current slot and type
 :)
 declare function tlslib:trsubmenu($textid as xs:string, $slot as xs:string, $trid as xs:string, $tr as map(*)){
+ let $edtps := ("documentary", "interpretative")
  let $keys := for $k in map:keys($tr)
+           let $tm := $tr($k)[5]
+           order by $tm
            where not($k = ($trid, "content-id")) return $k
     ,$type := if ($trid and map:contains($tr, $trid)) then $tr($trid)[5] else "Translation"       
  return
   <div class="dropdown" id="{$slot}" data-trid="{$trid}">
             <button class="btn btn-secondary dropdown-toggle" type="button" id="ddm-{$slot}" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-            {if ($trid and map:contains($tr, $trid)) then ($tr($trid)[5], if ($tr($trid)[5] = "Comments") then () else  " by " ||  $tr($trid)[2]) else "Translation"}
+            {if ($trid and map:contains($tr, $trid)) 
+            then ( if ($tr($trid)[5] = $edtps) then 
+             ("Edition " ||  substring-after($tr($trid)[1], "::") || " (" || $trid, substring($tr($trid)[5], 1, 3) || ")")
+            else
+            ($tr($trid)[5], 
+            if ($tr($trid)[5] = "Comments") then () else  " by " ||  $tr($trid)[2])) 
+            else "Translation"} 
             </button>
     <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
         {  for $k at $i in $keys
             return 
          if ($tr($k)[5] = "Comments") then 
         <a class="dropdown-item" id="sel{$slot}-{$i}" onclick="get_tr_for_page('{$slot}', '{$k}')" href="#">{$tr($k)[5] } for {$tr($k)[3]}</a>
+        else
+        if ($tr($k)[5] = $edtps) then 
+        <a class="dropdown-item" id="sel{$slot}-{$i}" onclick="get_tr_for_page('{$slot}', '{$k}')" href="#">Edition {substring-after($tr($k)[1], "::")} ({$k}, {substring($tr($k)[5], 1, 3)} )</a>
         else
         <a class="dropdown-item" id="sel{$slot}-{$i}" onclick="get_tr_for_page('{$slot}', '{$k}')" href="#">{$tr($k)[5]} by {$tr($k)[2]}({$tr($k)[3]})</a>
         }
@@ -599,6 +625,7 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
 (:      $title := $model('title')/text(),:)
       $dseg := ($pseg, $targetseg, $fseg),
       $show-transl := not(contains(sm:id()//sm:group/text(), "guest")),
+      $show-variants := xs:boolean(1),
       $visit := tlslib:record-visit($targetseg),
       $tr := tlslib:get-translations($model?textid),
       $slot1-id := tlslib:get-content-id($model?textid, 'slot1', $tr),
@@ -620,7 +647,8 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
         </div>
         </div>
       </div>
-      <div id="chunkcol-left" class="col-sm-12">{for $d at $pos in $dseg return tlslib:display-seg($d, map:merge(($model, $tr, 
+      <div id="chunkcol-left" class="col-sm-12">{for $d at $pos in $dseg 
+      return tlslib:display-seg($d, map:merge(($model, $tr, 
       map{'slot1': $slot1-id, 'slot2': $slot2-id, 
           'loc' : data($targetseg/@xml:id), 
           'pos' : $pos, "ann" : "xfalse.x"})))}</div>
@@ -666,7 +694,7 @@ declare function tlslib:swl-form-dialog($context as xs:string){
 <div id="swl-form" class="card ann-dialog overflow-auto">
 {if ($context = 'textview') then
  <div class="card-body">
-    <h5 class="card-title">{if (sm:is-authenticated()) then "New Attribution:" else "Existing SW for " }<strong class="ml-2"><span id="swl-query-span">Word or char to annotate</span>:</strong>
+    <h5 class="card-title"><span id="new-att-title">{if (sm:is-authenticated()) then "New Attribution:" else "Existing SW for " }<strong class="ml-2"><span id="swl-query-span">Word or char to annotate</span>:</strong></span>
      <button type="button" class="close" onclick="hide_new_att()" aria-label="Close" title="Close">
      <img class="icon" src="resources/icons/open-iconic-master/svg/circle-x.svg"/>  
      </button></h5>
@@ -682,7 +710,7 @@ declare function tlslib:swl-form-dialog($context as xs:string){
          ,add an <span class="font-weight-bold">existing</span> <span class="btn badge badge-primary ml-2" onclick="show_new_concept('existing', '')">Concept</span> to the word
          or create a <span class="btn badge badge-primary ml-2" onclick="show_new_concept('new', '')">New Concept</span>.
          </span>
-         else <span>You do not have permission to make attributions.</span>
+         else <span id="new-att-no-perm">You do not have permission to make attributions.</span>
          }
         <ul id="swl-select" class="list-unstyled"></ul>
         </p>
@@ -690,7 +718,7 @@ declare function tlslib:swl-form-dialog($context as xs:string){
     </div>    
 else 
  <div class="card-body">
-    <h5 class="card-title">Existing SW for <strong class="ml-2"><span id="swl-query-span"></span></strong>
+    <h5 class="card-title"><span id="new-att-title">Existing SW for <strong class="ml-2"><span id="swl-query-span"></span></strong></span>
      <button type="button" class="close" onclick="hide_new_att()" aria-label="Close" title="Close">
      <img class="icon" src="resources/icons/open-iconic-master/svg/circle-x.svg"/>  
      </button></h5>
@@ -826,11 +854,16 @@ return
 (
 <div class="row {$mark}">
 <div class="{if ($seg/parent::tei:head) then 'tls-head ' else () }{if ($ann='false') then 'col-sm-4' else 'col-sm-2'} zh {$alpheios-class}" lang="{$lang}" id="{$seg/@xml:id}">{$seg/text()}</div>　
-<div class="col-sm-5 tr" lang="en-GB" tabindex="{$options('pos')+500}" id="{$seg/@xml:id}-tr" contenteditable="{if (not($testuser)) then 'true' else 'false'}">{$slot1//tei:seg[@corresp="#"||$seg/@xml:id]/text()}</div>
+<div class="col-sm-5 tr" lang="en-GB" tabindex="{$options('pos')+500}" id="{$seg/@xml:id}-tr" contenteditable="{if (not($testuser)) then 'true' else 'false'}">{typeswitch ($slot1) 
+case element(tei:TEI) return  $slot1//tei:seg[@corresp="#"||$seg/@xml:id]/text()
+default return (krx:get-varseg-ed($seg/@xml:id, substring-before($slot1, "::")))
+}</div>
  {if ($ann = 'false') then () else 
  (: using en-GB for now, need to get that from translation in the future...  :)
-  <div class="col-sm-4 tr" lang="en-GB" tabindex="{$options('pos')+1000}" id="{$seg/@xml:id}-ex" contenteditable="{if (not($testuser)) then 'true' else 'false'}">
-  {$slot2//tei:seg[@corresp="#"||$seg/@xml:id]/text()}
+  <div class="col-sm-4 tr" lang="en-GB" tabindex="{$options('pos')+1000}" id="{$seg/@xml:id}-ex" contenteditable="{if (not($testuser)) then 'true' else 'false'}">{typeswitch ($slot2) 
+case element(tei:TEI) return $slot2//tei:seg[@corresp="#"||$seg/@xml:id]/text()  
+default return (krx:get-varseg-ed($seg/@xml:id, substring-before($slot2, "::")))
+}
   </div>}
 </div>,
 <div class="row swl collapse" data-toggle="collapse">
@@ -1437,6 +1470,29 @@ declare function tlslib:ngram-query($queryStr as xs:string?, $mode as xs:string?
     return $hit 
 };
 
+
+(: get related texts: look at Manifest.xml? not yet :)
+
+declare function tlslib:get-related($map as map(*)){
+let $line := $map?line
+,$sid := $map?seg
+, $res := krx:collate-request($sid)
+, $edid := string-join(tokenize($sid, "_")[1,2], "_")
+, $mf := collection($config:tls-texts-root || "/manifests/")/mf:edition[@id=$edid]/parent::mf:editions
+return
+<li class="mb-3">
+{for $w in $res//witnesses 
+return
+<ul><li>{collection($config:tls-texts-root || "/manifests/")//mf:edition[@id=$w/id]/mf:description} ({$w/id})<p>
+{string-join(for $t in $w/tokens return
+(data($t/@t), data($t/@f)), '') 
+}</p>
+</li>
+</ul>
+}
+</li>
+};
+
 declare function tlslib:translation-firstseg($transid as xs:string){
 let $dataroot := ($config:tls-translation-root, $config:tls-user-root)
 , $doc := collection($dataroot)//tei:TEI[@xml:id=$transid]
@@ -1618,8 +1674,8 @@ return
  sm:chgrp(xs:anyURI($res), "tls-user"),
  sm:chown(xs:anyURI($res), "tls"),
  $uid)
-
 };
+
 declare function tlslib:review-special($issue as xs:string){
 let $user := "#" || sm:id()//sm:username
 , $issues := map{

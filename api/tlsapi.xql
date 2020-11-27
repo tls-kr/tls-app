@@ -17,6 +17,7 @@ import module namespace config="http://hxwd.org/config" at "../modules/config.xq
 import module namespace functx="http://www.functx.com" at "../modules/functx.xql";
 import module namespace tlslib="http://hxwd.org/lib" at "../modules/tlslib.xql";
 import module namespace dialogs="http://hxwd.org/dialogs" at "../modules/dialogs.xql"; 
+import module namespace krx="http://hxwd.org/krx-utils" at "../modules/krx-utils.xql";
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
@@ -402,19 +403,35 @@ declare function local:get-targetsegs($loc as xs:string, $prec as xs:int, $foll 
 return $dseg
 };
 
+(: retrieve the corresponding segs for other editions :)
+declare function local:get-krxsegs($loc as xs:string, $content-id as xs:string, $dseg as node()*){
+for $seg in $dseg
+   return
+   map:merge(for $seg in $dseg 
+     let $tr := krx:get-varseg-ed($loc, $content-id)
+      return 
+      map:entry("#"||data($seg/@xml:id)||$cl, $tr))
+};
+
 declare function tlsapi:get-tr-for-page($loc as xs:string, $prec as xs:int, $foll as xs:int, $slot as xs:string, $content-id as xs:string){
 let $textid := tokenize($loc, "_")[1]
-let $transl := tlslib:get-translations($textid),
-  $troot := $transl($content-id)[1],
-  $cl := if ($slot = "slot1") then "-tr" else "-ex",
-  $dseg := local:get-targetsegs($loc, $prec, $foll)
-(:  $sa := session:set-attribute($slot, $no):)
-return
- map:merge(for $seg in $dseg 
-   let $tr := $troot//tei:seg[@corresp="#"||$seg/@xml:id]/text()
-    return 
-    map:entry("#"||data($seg/@xml:id)||$cl, $tr))
-
+, $cl := if ($slot = "slot1") then "-tr" else "-ex"
+, $edtp := if (contains($content-id, "_")) then xs:boolean(1) else xs:boolean(0)
+, $dseg := local:get-targetsegs($loc, $prec, $foll)
+, $ret := if ($edtp) then  
+      map:merge(for $seg in $dseg 
+       let $tr := krx:get-varseg-ed($seg/@xml:id, $content-id)
+       return 
+      map:entry("#"||data($seg/@xml:id)||$cl, $tr))
+  else
+   let $transl := tlslib:get-translations($textid),
+   $troot := $transl($content-id)[1] 
+   return
+   map:merge(for $seg in $dseg 
+     let $tr := $troot//tei:seg[@corresp="#"||$seg/@xml:id]/text()
+      return 
+      map:entry("#"||data($seg/@xml:id)||$cl, $tr))
+ return $ret
 };
 
 declare function tlsapi:get-swl-for-page($loc as xs:string, $prec as xs:int, $foll as xs:int){
