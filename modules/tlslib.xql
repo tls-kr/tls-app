@@ -279,7 +279,7 @@ declare function tlslib:format-button($onclick as xs:string, $title as xs:string
  if (string-length($style) > 0) then
  <button type="button" class="btn {$class}" onclick="{$onclick}"
  title="{$title}">
- <img class="icon" style="width:10px;height:13px;top:0;align:top" src="resources/icons/{$icon}"/>
+ <img class="icon" style="width:12px;height:15px;top:0;align:top" src="resources/icons/{$icon}"/>
  </button>
  else 
  <button type="button" class="btn {$class}" onclick="{$onclick}"
@@ -803,12 +803,12 @@ if ("tls-editor"=sm:get-user-groups($user) and $node/@xml:id) then
    (
    (: for my own swls: delete, otherwise approve :)
    if (($user = $creator-id) or contains($usergroups, "tls-editor" )) then 
-    tlslib:format-button("delete_swl('" || data($node/@xml:id) || "')", "Immediately delete this SWL for "||$zi[1], "open-iconic-master/svg/x.svg", "", "close", "tls-editor")
+    tlslib:format-button("delete_swl('" || data($node/@xml:id) || "')", "Immediately delete this SWL for "||$zi[1], "open-iconic-master/svg/x.svg", "small", "close", "tls-editor")
    else (),
    if (not ($user = $creator-id)) then
    (
-<span class="rp-5">{tlslib:format-button("review_swl_dialog('" || data($node/@xml:id) || "')", "Review the SWL for " || $zi[1], "octicons/svg/unverified.svg", "", "close", "tls-editor")}&#160;&#160;</span>,   
-    tlslib:format-button("save_swl_review('" || data($node/@xml:id) || "')", "Approve the SWL for " || $zi, "octicons/svg/thumbsup.svg", "", "close", "tls-editor") 
+<span class="rp-5">{tlslib:format-button("review_swl_dialog('" || data($node/@xml:id) || "')", "Review the SWL for " || $zi[1], "octicons/svg/unverified.svg", "small", "close", "tls-editor")}&#160;&#160;</span>,   
+    tlslib:format-button("save_swl_review('" || data($node/@xml:id) || "')", "Approve the SWL for " || $zi, "octicons/svg/thumbsup.svg", "small", "close", "tls-editor") 
    ) else ()
   ) else ()
 )
@@ -974,9 +974,9 @@ return
 {if ((sm:has-access(document-uri(fn:root($a)), "w") and $a/@xml:id) and not(contains(sm:id()//sm:group, 'tls-test'))) then 
 (
 (:tlslib:format-button("review_swl_dialog('" || data($a/@xml:id) || "')", "Review this attribution", "octicons/svg/unverified.svg", "small", "close", "tls-editor"),:)
-tlslib:format-button("delete_swl('" || data($a/@xml:id) || "')", "Delete this attribution", "open-iconic-master/svg/x.svg", "", "close", "tls-editor"),
+tlslib:format-button("delete_swl('" || data($a/@xml:id) || "')", "Delete this attribution", "open-iconic-master/svg/x.svg", "small", "close", "tls-editor"),
  if (not ($user = substring($a/tls:metadata/@resp, 2))) then
-    tlslib:format-button("save_swl_review('" || data($a/@xml:id) || "')", "Approve the SWL", "octicons/svg/thumbsup.svg", "", "close", "tls-editor") else ()
+    tlslib:format-button("save_swl_review('" || data($a/@xml:id) || "')", "Approve the SWL", "octicons/svg/thumbsup.svg", "small", "close", "tls-editor") else ()
 )
 else ()}
 </div>
