@@ -1809,12 +1809,12 @@ declare function tlslib:search-top-menu($search-type, $query, $txtmatchcount, $t
      (<a class="btn badge badge-light" href="search.html?query={$query}&amp;start=1&amp;search-type=6&amp;mode={$mode}">Click here to display only {$trmatch} matching lines that have a translation</a>,<br/>)
      else 
     (<a class="btn badge badge-light" href="search.html?query={$query}&amp;start=1&amp;search-type=1&amp;mode={$mode}">Click here to display all  matches</a>,<br/>)
-    ),
+    ,
     
   if (string-length($title) > 0 and $txtmatchcount > 0) then 
     (<a class="btn badge badge-light" href="search.html?query={$query}&amp;start=1&amp;search-type=5&amp;textid={$textid}&amp;mode={$mode}">Click here to display only {$txtmatchcount} matches in {$title}</a>,<br/>)
-  
-  else (), 
+  else ()
+  ), 
   tlslib:linkheader($qc),
    <br/>
      
