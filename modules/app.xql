@@ -388,18 +388,7 @@ let $query := map:get($model, "query")
      (<a class="btn badge badge-light" href="search.html?query={$query}&amp;start=1&amp;search-type=6&amp;mode={$mode}">Click here to display only {$trmatch} matching lines that have a translation</a>,<br/>)
      else 
     (<a class="btn badge badge-light" href="search.html?query={$query}&amp;start=1&amp;search-type=1&amp;mode={$mode}">Click here to display all  matches</a>,<br/>)
-,
-    "Taxonomy of meanings: ", 
-     for $c in $qc return  
-     <a class="btn badge badge-light" title="Show taxonomy of meanings for {$c}" href="char.html?char={$c}">{$c}</a>,
-     <span>{" / Phonetic profile: ",
-     for $c in $qc return  
-     <a class="btn badge badge-light" style="background-color:palegreen" title="Show phonetic profile for {$c}" href="syllables.html?char={$c}">{$c}</a>}
-     </span>,
-     <span>{" / 國學大師: ", 
-     for $c in $qc return
-     tlslib:guoxuedashi($c)
-     }</span>,
+,  tlslib:linkheader($qc),
      <br/>) else ()}
     { if ($user = "guest") then () else
     if ($mode = "rating") then 
@@ -423,15 +412,7 @@ let $query := map:get($model, "query")
     { (: search in dictionary :)
     if ($search-type = "2") then 
     <div>
-    <p>{if ($start = 1) then ("Taxonomy of meanings: ", for $c in $qc return  <a class="btn badge badge-light" title="Show taxonomy of meanings for {$c}" href="char.html?char={$c}">{$c}</a>,
-         " Phonetic profile: ",
-     for $c in $qc return  
-     <a class="btn badge badge-light" style="background-color:palegreen" title="Show phonetic profile for {$c}" href="syllables.html?char={$c}">{$c}</a>,
-     <span>{" 國學大師: ", 
-     for $c in $qc return
-     <a class="btn badge badge-light" title="Search {$c} in 國學大師字典 (External link)" style="background-color:paleturquoise" href="http://www.guoxuedashi.com/so.php?sokeytm={$c}&amp;ka=100">{$c}</a>
-     }</span>
-) else ()}</p>
+    <p>{if ($start = 1) then tlslib:linkheader($qc) else ()}</p>
     <ul>
     {for $h at $c in map:get($model, "hits")
     return $h

@@ -1775,7 +1775,18 @@ declare function tlslib:format-phonetic($gy as node()){
   </div>
 };
 
+declare function tlslib:linkheader($qc) {
+("Taxonomy of meanings: ", for $c in $qc return  <a class="btn badge badge-light" title="Show taxonomy of meanings for {$c}" href="char.html?char={$c}">{$c}</a>,
+         " Phonetic profile: ",
+     for $c in $qc return  
+     <a class="btn badge badge-light" style="background-color:palegreen" title="Show phonetic profile for {$c}" href="syllables.html?char={$c}">{$c}</a>,
+     <span>{" 國學大師: ", 
+     for $c in $qc return
+     tlslib:guoxuedashi($c)
+     }</span>
+)
+};
 
 declare function tlslib:guoxuedashi($c as xs:string){
-<a class="btn badge badge-light" target="GXDS" title="External link to 國學大師" style="background-color:paleturquoise" href="http://www.guoxuedashi.com/so.php?sokeytm={$c}&amp;ka=100">{$c}</a>
+<a class="btn badge badge-light" target="GXDS" title="Search {$c} in 國學大師字典 (External link)" style="background-color:paleturquoise" href="http://www.guoxuedashi.com/so.php?sokeytm={$c}&amp;ka=100">{$c}</a>
 };
