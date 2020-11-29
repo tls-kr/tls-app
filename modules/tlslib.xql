@@ -1783,10 +1783,39 @@ declare function tlslib:linkheader($qc) {
      <span>{" 國學大師: ", 
      for $c in $qc return
      tlslib:guoxuedashi($c)
+     }</span>,
+     <span>{" 漢リポ: ",
+     <a class="btn badge badge-light" target="kanripo" title="Search {$qc} in Kanseki Repository (External link)" style="background-color:paleturquoise" href="http://www.kanripo.org/search?query={string-join($qc, '')}">{$qc}</a>
      }</span>
 )
 };
 
 declare function tlslib:guoxuedashi($c as xs:string){
 <a class="btn badge badge-light" target="GXDS" title="Search {$c} in 國學大師字典 (External link)" style="background-color:paleturquoise" href="http://www.guoxuedashi.com/so.php?sokeytm={$c}&amp;ka=100">{$c}</a>
+};
+
+
+declare function tlslib:search-top-menu($search-type, $query, $txtmatchcount, $title, $trmatch, $textid, $qc, $count, $mode) {
+  switch($search-type)
+  case "5" return
+       (<a class="btn badge badge-light" href="search.html?query={$query}&amp;start=1&amp;search-type=1&amp;textid={$textid}&amp;mode={$mode}">Click here to display all  matches</a>,<br/>)
+  case "8" return
+       (<a class="btn badge badge-light" href="search.html?query={$query}&amp;start=1&amp;search-type=1&amp;textid={$textid}&amp;mode={$mode}">Click here to display all  matches</a>,<br/>)
+  default return
+   (if ($count < 6000) then 
+    ( <a class="btn badge badge-light" href="search.html?query={$query}&amp;start=1&amp;search-type=8&amp;textid={$textid}&amp;mode={$mode}">Click here to display matches tabulated by text</a>,<br/>) else (),
+      
+     if ($trmatch > 0 and not ($search-type="6")) then
+     (<a class="btn badge badge-light" href="search.html?query={$query}&amp;start=1&amp;search-type=6&amp;mode={$mode}">Click here to display only {$trmatch} matching lines that have a translation</a>,<br/>)
+     else 
+    (<a class="btn badge badge-light" href="search.html?query={$query}&amp;start=1&amp;search-type=1&amp;mode={$mode}">Click here to display all  matches</a>,<br/>)
+    ),
+    
+  if (string-length($title) > 0 and $txtmatchcount > 0) then 
+    (<a class="btn badge badge-light" href="search.html?query={$query}&amp;start=1&amp;search-type=5&amp;textid={$textid}&amp;mode={$mode}">Click here to display only {$txtmatchcount} matches in {$title}</a>,<br/>)
+  
+  else (), 
+  tlslib:linkheader($qc),
+   <br/>
+     
 };

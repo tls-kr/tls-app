@@ -259,7 +259,7 @@ function app:query($node as node()*, $model as map(*), $query as xs:string?, $mo
 {
     session:create(),
     let $hits := 
-     if ($search-type = ("1", "5", "6")) then
+     if ($search-type = ("1", "5", "6", "8")) then
       tlslib:ngram-query($query, $mode, $search-type, $textid) 
       else if ($search-type = "2") then 
       (: searching for kanji in dictionary, eg. the words in concepts :)
@@ -331,6 +331,7 @@ declare function app:create-query($queryStr as xs:string?, $mode as xs:string?)
  : Search type 5 is "limit search to text id"
  : Search type 6 is "Search only in text lines with translation"
  : 7 is title search
+ : 8 is search results tabulated by text id
 :)
 
 declare 
@@ -368,10 +369,26 @@ let $query := map:get($model, "query")
     }
     </ul>
     else
+    if ($search-type = "8") then 
+    <div><p>Found {count($model("hits"))} matches, shown by text.<br/>
+    {tlslib:search-top-menu($search-type, $query, 0, "", 0, $textid, $qc, count($model("hits")), $mode)}
+    </p><ul>{
+    for $h in map:get($model, "hits")
+    let $loc := $h/ancestor::tei:TEI/@xml:id
+    , $tit := $h/ancestor::tei:TEI//tei:titleStmt/tei:title/text()
+    , $hcnt := count($h)
+    group by $loc
+    order by sum($hcnt) descending
+    return
+    <li><a href="search.html?query={$query}&amp;start=1&amp;search-type=5&amp;textid={$loc}&amp;mode={$mode}">{data($loc[1])}　{$tit[1]} </a>　{sum($hcnt)} match(es)</li>
+    }
+    </ul></div>
+    else
     (: not search in fields :)
     if (not($search-type="4")) then
     let $txtmatchcount := count(for $h in map:get($model, "hits") let $x := $h/@xml:id where starts-with($x, $textid) return $h)
-    , $trmatch := count(for $h in map:get($model, "hits") let $x := "#" || $h/@xml:id
+    , $trmatch := count(for $h in map:get($model, "hits") 
+    let $x := "#" || $h/@xml:id
     return collection($config:tls-translation-root)//tei:seg[@corresp=$x])
     return
     (: insert option to limit to textid here? tell the user how many matches etc. :)
@@ -379,17 +396,9 @@ let $query := map:get($model, "query")
     <h4>Found {count($model("hits"))} matches {if (not($search-type="2")) then <span>, showing {$start} to {$start + $resno -1}</span> else ()}</h4>,
     if ($search-type = ("1", "5", "6")) then 
     <p>
-    {if ($start = 1) then (
-     if (string-length($title) > 0 and $txtmatchcount > 0) then
-      if ($search-type = "5") then 
-       (<a class="btn badge badge-light" href="search.html?query={$query}&amp;start=1&amp;search-type=1&amp;textid={$textid}&amp;mode={$mode}">Click here to display all  matches</a>,<br/>)
-       else  (<a class="btn badge badge-light" href="search.html?query={$query}&amp;start=1&amp;search-type=5&amp;textid={$textid}&amp;mode={$mode}">Click here to display only {$txtmatchcount} matches in {$title}</a>,<br/>) else (),
-     if ($trmatch > 0 and not ($search-type="6")) then
-     (<a class="btn badge badge-light" href="search.html?query={$query}&amp;start=1&amp;search-type=6&amp;mode={$mode}">Click here to display only {$trmatch} matching lines that have a translation</a>,<br/>)
-     else 
-    (<a class="btn badge badge-light" href="search.html?query={$query}&amp;start=1&amp;search-type=1&amp;mode={$mode}">Click here to display all  matches</a>,<br/>)
-,  tlslib:linkheader($qc),
-     <br/>) else ()}
+    {if ($start = 1) then      
+    tlslib:search-top-menu($search-type, $query, $txtmatchcount, $title, $trmatch, $textid, $qc, count($model("hits")), $mode) else ()
+}
     { if ($user = "guest") then () else
     if ($mode = "rating") then 
     (
@@ -420,7 +429,7 @@ let $query := map:get($model, "query")
     </ul>
     </div>    
     else 
-    if ($search-type = "7") then () else
+    if ($search-type = ("7", "8")) then () else
     (: this is all for text / translation search :) 
     if ($search-type=("1", "3", "5", "6")) then
     <div>
