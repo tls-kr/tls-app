@@ -1579,6 +1579,8 @@ function app:dialogs($node as node()*, $model as map(*))
 
 declare
     %templates:wrap
+    %templates:default("char", "")  
+    %templates:default("uuid", "")    
 function app:syllables($node as node()*, $model as map(*), $uuid as xs:string?, $char as xs:string?){
     (session:create(),
     let $user := sm:id()//sm:real/sm:username/text()
@@ -1677,7 +1679,7 @@ function app:syllables($node as node()*, $model as map(*), $uuid as xs:string?, 
       </h5>
       </div>
       {let $ucd := doc($config:tls-data-root||"/guangyun/ucd.unihan.flat.xml")
-      , $cp := tlslib:num2hex(string-to-codepoints((:$zis:)$char)[1])
+      , $cp := tlslib:num2hex(string-to-codepoints($zis)[1])
       , $cpr := $ucd//ucd:char[@cp=$cp]
       , $cinfo := ("kDefinition", "kRSUnicode", "kFrequency", "kGradeLevel", "kHanyuPinlu", "kFourCornerCode", "kTotalStrokes", "kIICore", "kUnihanCore2020")
       , $read := ("kVietnamese", "kMandarin", "kHanyuPinyin", "kTang", "kJapaneseKun", "kJapaneseOn", "kCantonese", "")
