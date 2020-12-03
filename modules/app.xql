@@ -1588,7 +1588,7 @@ function app:syllables($node as node()*, $model as map(*), $uuid as xs:string?, 
       else 
       $grc//tx:graphs//tx:graph[. = $char]/ancestor::tx:guangyun-entry
     for $gy in $gys
-    let $mand-jin := $gy//tx:pronunciation/tx:mandarin/tx:jin
+    let $mand-jin := ($gy//tx:pronunciation/tx:mandarin/tx:jin|$gy//tx:pronunciation/tx:mandarin/tx:jiu)
     , $key := $gy/@xml:id
     , $gloss := $gy//tx:gloss
     , $zis := $gy//tx:graphs/tx:attested-graph/tx:graph
@@ -1602,7 +1602,7 @@ function app:syllables($node as node()*, $model as map(*), $uuid as xs:string?, 
    <div class="card col-sm-12" style="max-width: 1000px;background-color:palegreen  ;">
     <div class="card-body" >
     <h3>Phonetic profile</h3>
-     <h4 class="card-title">{$zis}&#160;&#160; {$mand-jin/text()}&#160;&#160; <small>
+     <h4 class="card-title">{$zis}&#160;&#160; {string-join($mand-jin, ',')}&#160;&#160; <small>
      <span class="text-muted">廣韻韻目：</span>{$gy//tx:headword}&#160;&#160; 
      <span class="text-muted">反切：</span><strong>{$fq}</strong>　　
      <span class="text-muted">聲調：</span><strong>{$gy//tx:調/text()}</strong>　

@@ -510,11 +510,13 @@ let $wid := $rpara?wid
      let $nid := if (contains($gid, ":")) then let $t := tokenize($gid, ":")[2] 
                  return if (string-length($t) > 0) then 
                   (: todo: create a new entry and return the uuid :)
-                  (: need to get py !!  :)
+                  (: need to get py !! 
+                  here we are creating files for all characters, this is wrong :)
                   let $nmap:= map:put($rpara, "jin", $t) return
                   tlslib:save-new-syllable($nmap)
                  else ()
-                 else $gid return $nid
+                 else $gid 
+    return $nid
 return
 if (starts-with($wid, "uuid")) then
   if (count($gc) = string-length($zi)) then

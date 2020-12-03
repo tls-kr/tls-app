@@ -1523,24 +1523,34 @@ return
 if ($r) then
 for $g at $count in $r
 let $e := $g/ancestor::tx:guangyun-entry,
-$p := for $s in $e//tx:mandarin/tx:jin 
+$p := for $s in ($e//tx:mandarin/tx:jin|$e//tx:mandarin/tx:jiu) 
        return 
        if (string-length(normalize-space($s)) > 0) then $s else (),
 $py := normalize-space(string-join($p, ';'))
 return
-
+(
 <div class="form-check">
    { if (contains($py, $pron) and $gyonly) then (: todo: handle pron for binomes and more :)
    <input class="form-check-input guangyun-input" type="radio" name="guangyun-input-{$cc}" id="guangyun-input-{$cc}-{$count}" 
    value="{$e/@xml:id}" checked="checked"/>
    else
    <input class="form-check-input guangyun-input" type="radio" name="guangyun-input-{$cc}" id="guangyun-input-{$cc}-{$count}" 
-   value="{$e/@xml:id}"/>
+   value="{$e/@xml:id}$jiu"/>
    }
    <label class="form-check-label" for="guangyun-input-{$cc}-{$count}">
-     {$e/tx:gloss} -  {$py}
+     {$e/tx:gloss} -  {$p[1]}
    </label>
+  </div>,
+  if ($p[2]) then 
+  <div class="form-check">
+   <input class="form-check-input guangyun-input" type="radio" name="guangyun-input-{$cc}" id="guangyun-input-{$cc}-{$count}-2" 
+   value="{$e/@xml:id}"/>
+   <label class="form-check-label" for="guangyun-input-{$cc}-{$count}-2">
+     dito, 舊音 -  {$p[2]}
+   </label>  
   </div>
+  else ()
+  )
   else (),
   if (not ($gyonly) or not ($r)) then
   <div class="form-check">
