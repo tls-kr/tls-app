@@ -1535,7 +1535,7 @@ return
    value="{$e/@xml:id}" checked="checked"/>
    else
    <input class="form-check-input guangyun-input" type="radio" name="guangyun-input-{$cc}" id="guangyun-input-{$cc}-{$count}" 
-   value="{$e/@xml:id}$jiu"/>
+   value="{$e/@xml:id}"/>
    }
    <label class="form-check-label" for="guangyun-input-{$cc}-{$count}">
      {$e/tx:gloss} -  {$p[1]}
@@ -1544,9 +1544,9 @@ return
   if ($p[2]) then 
   <div class="form-check">
    <input class="form-check-input guangyun-input" type="radio" name="guangyun-input-{$cc}" id="guangyun-input-{$cc}-{$count}-2" 
-   value="{$e/@xml:id}"/>
+   value="{$e/@xml:id}$jiu"/>
    <label class="form-check-label" for="guangyun-input-{$cc}-{$count}-2">
-     dito, 舊音 -  {$p[2]}
+     <span class="text-muted">同上</span>, 舊音 -  {$p[2]}
    </label>  
   </div>
   else ()
@@ -1588,7 +1588,7 @@ let $res:=xmldb:store($path, $uid || ".xml",
             <graph/>
         </attested-graph>
         <standardised-graph>
-            <graph>{$map?zi}</graph>
+            <graph>{$map?char}</graph>
         </standardised-graph>
     </graphs>
     <gloss>Added by {$user} at {substring($timestamp, 1, 10)}</gloss>
@@ -1685,6 +1685,85 @@ return
  sm:chown(xs:anyURI($res), "tls"),
  $uid)
 };
+
+declare function tlslib:make-form($guangyun-id as xs:string, $chars as xs:string){
+(:  if no gy record is found, we return a string like this for guangyun-id "黃:huangxxx蘗:bo" :)
+let $jmap := map:merge(
+       for $gid in tokenize(normalize-space($guangyun-id), "xxx") 
+       let $id := tokenize($gid, "\$")
+       return map:entry($id[1], if ($id[2]) then "jiu" else "jin")
+           )
+let $gys :=    
+   for $gid in tokenize(normalize-space($guangyun-id), "xxx") 
+   let $r :=  if (contains($gid, "$jiu")) then 
+      let $id := substring-before($gid, "$jiu")
+      return
+      collection(concat($config:tls-data-root, "/guangyun"))//tx:guangyun-entry[@xml:id=$id]
+      else 
+      collection(concat($config:tls-data-root, "/guangyun"))//tx:guangyun-entry[@xml:id=$gid]
+
+   return
+   if ($r) then $r else $gid
+
+ 
+ let $form :=
+(:   let $e := collection(concat($config:tls-data-root, "/guangyun"))//tx:guangyun-entry[@xml:id=$gid],:)
+    let $oc := for $gy in $gys
+        let $rec := if ($gy instance of element()) then 
+        normalize-space($gy//tx:old-chinese/tx:pan-wuyun/tx:oc/text()) else ()
+        return if ($rec) then $rec else "--"
+    ,$mc := for $gy in $gys 
+        let $rec := if ($gy instance of element()) then
+        normalize-space($gy//tx:middle-chinese//tx:baxter/text()) else ()
+        return if ($rec) then $rec else "--"
+    ,$p := for $gy in $gys 
+         let $rec := 
+         if ($gy instance of element()) then
+            let $id := $gy/@xml:id 
+              return
+            if (map:get($jmap, $id) = "jiu") then
+             for $s in $gy//tx:mandarin/tx:jiu
+              return
+              if (string-length(normalize-space($s)) > 0) then normalize-space($s/text()) else ()
+            else
+              for $s in $gy//tx:mandarin/tx:jin
+              return
+              if (string-length(normalize-space($s)) > 0) then normalize-space($s/text()) else ()
+           else () 
+          return 
+           (: we are now creating new syllable records for this case, so this should not happen anymore :)
+           if (count($rec) > 0) then $rec 
+           else  tokenize($gy, ":")[2] ,
+    $gr := for $gy in $gys
+      let $r := if ($gy instance of element()) then 
+         (: we prefer the standard forms here :)
+         if ($gy[1]//tx:standardised-graph/tx:graph) then 
+           normalize-space($gy[1]//tx:standardised-graph/tx:graph/text())
+         else
+           normalize-space($gy[1]//tx:attested-graph/tx:graph/text()) 
+       else ()
+      return
+       (: if we got characters, we use them! :)
+      if ($r) then 
+      (: let's see what we can do about astral characters (5min later) seems to work -- yeah!! :)
+      let $cp := string-to-codepoints($r)
+      for $cl in $cp
+        return
+        if ($cl > 65536) then "&amp;#"||$cl||";" else codepoints-to-string($cl) 
+      else tokenize($gy, ":")[1] 
+return
+    <form xmlns="http://www.tei-c.org/ns/1.0" corresp="#{replace(replace($guangyun-id, 'xxx', ' #'), 
+    '\$jiu', '')}">
+    <orth>{if (string-length($chars) > 0) then $chars else string-join($gr, "")}</orth>
+    <pron xml:lang="zh-Latn-x-pinyin">{string-join($p, " ")}</pron>
+    <pron xml:lang="zh-x-mc" resp="rec:baxter">{string-join($mc, " ")}</pron>
+    <pron xml:lang="zh-x-oc" resp="rec:pan-wuyun">{string-join($oc, " ")}</pron>
+    </form>
+return
+$form
+};
+
+
 
 declare function tlslib:review-special($issue as xs:string){
 let $user := "#" || sm:id()//sm:username

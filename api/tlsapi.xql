@@ -507,14 +507,12 @@ let $wid := $rpara?wid
 , $zi := $rpara?zi
  (: check if we got the count right :)
 , $gc := for $gid in tokenize(normalize-space($rpara?guangyun-id), "xxx")
-     let $nid := if (contains($gid, ":")) then let $t := tokenize($gid, ":")[2] 
-                 return if (string-length($t) > 0) then 
-                  (: todo: create a new entry and return the uuid :)
-                  (: need to get py !! 
-                  here we are creating files for all characters, this is wrong :)
-                  let $nmap:= map:put($rpara, "jin", $t) return
-                  tlslib:save-new-syllable($nmap)
-                 else ()
+     let $nid := if (contains($gid, ":")) then 
+                  let $t := tokenize($gid, ":")[2] 
+                   return 
+                    if (string-length($t) > 0) then 
+                     tlslib:save-new-syllable(map{"char" : tokenize($gid, ":")[1], "jin" : $t})
+                    else ()
                  else $gid 
     return $nid
 return
@@ -522,7 +520,7 @@ if (starts-with($wid, "uuid")) then
   if (count($gc) = string-length($zi)) then
     let $word := collection($config:tls-data-root||"/concepts")//tei:entry[@xml:id=$wid]
     , $oldform := $word/tei:form[tei:orth[. = $rpara?char]]
-    , $newform := local:make-form(string-join($gc, "xxx"), $zi)
+    , $newform := tlslib:make-form(string-join($gc, "xxx"), $zi)
     , $save := if ($oldform) then (update replace $oldform with $newform) else ()
     return
    "OK" || $newform//tei:pron[@xml:lang="zh-Latn-x-pinyin"]/text()
@@ -532,63 +530,10 @@ else
 "Concept not found"
 };
 
-declare function local:make-form($guangyun-id as xs:string, $chars as xs:string){
-(:  if no gy record is found, we return a string like this for guangyun-id "黃:huangxxx蘗:bo" :)
-let $gys :=    
-   for $gid in tokenize(normalize-space($guangyun-id), "xxx") 
-   let $r :=  collection(concat($config:tls-data-root, "/guangyun"))//tx:guangyun-entry[@xml:id=$gid]
-   return
-   if ($r) then $r else $gid
-
- 
- let $form :=
-(:   let $e := collection(concat($config:tls-data-root, "/guangyun"))//tx:guangyun-entry[@xml:id=$gid],:)
-    let $oc := for $gy in $gys
-        let $rec := if ($gy instance of element()) then normalize-space($gy//tx:old-chinese/tx:pan-wuyun/tx:oc/text()) else ()
-        return if ($rec) then $rec else "--"
-    ,$mc := for $gy in $gys 
-        let $rec := if ($gy instance of element()) then normalize-space($gy//tx:middle-chinese//tx:baxter/text()) else ()
-        return if ($rec) then $rec else "--"
-    ,$p := for $gy in $gys 
-         let $rec := if ($gy instance of element()) then
-            for $s in $gy//tx:mandarin/tx:jin
-             return
-             if (string-length(normalize-space($s)) > 0) then normalize-space($s/text()) else () else ()
-         return 
-         if (count($rec) > 0) then $rec else
-         tokenize($gy, ":")[2] ,
-    $gr := for $gy in $gys
-      let $r := if ($gy instance of element()) then 
-         (: we prefer the standard forms here :)
-         if ($gy//tx:standardised-graph/tx:graph) then 
-           normalize-space($gy//tx:standardised-graph/tx:graph/text())
-         else
-           normalize-space($gy//tx:attested-graph/tx:graph/text()) 
-       else ()
-      return
-       (: if we got characters, we use them! :)
-      if ($r) then 
-      (: let's see what we can do about astral characters (5min later) seems to work -- yeah!! :)
-      let $cp := string-to-codepoints($r)
-      for $cl in $cp
-        return
-        if ($cl > 65536) then "&amp;#"||$cl||";" else codepoints-to-string($cl) 
-      else tokenize($gy, ":")[1] 
-return
-    <form xmlns="http://www.tei-c.org/ns/1.0" corresp="#{replace($guangyun-id, "xxx", " #")}">
-    <orth>{if (string-length($chars) > 0) then $chars else string-join($gr, "")}</orth>
-    <pron xml:lang="zh-Latn-x-pinyin">{string-join($p, " ")}</pron>
-    <pron xml:lang="zh-x-mc" resp="rec:baxter">{string-join($mc, " ")}</pron>
-    <pron xml:lang="zh-x-oc" resp="rec:pan-wuyun">{string-join($oc, " ")}</pron>
-    </form>
-return
-$form
-};
-
 declare function tlsapi:save-to-concept($rpara as map(*)) {
 
 let $user := sm:id()//sm:real/sm:username/text()
-let $form := local:make-form($rpara?guangyun-id, $rpara?word),
+let $form := tlslib:make-form($rpara?guangyun-id, $rpara?word),
  
  $concept-doc := collection($config:tls-data-root)//tei:div[@xml:id=$rpara?concept-id]//tei:div[@type="words"],
  $wuid := concat("uuid-", util:uuid()),
