@@ -1589,14 +1589,16 @@ function app:syllables($node as node()*, $model as map(*), $uuid as xs:string?, 
       $grc//tx:guangyun-entry[@xml:id=$uuid]
       else 
       $grc//tx:graphs//tx:graph[. = $char]/ancestor::tx:guangyun-entry
-    for $gy in $gys
+    for $gy at $pos in $gys
     let $mand-jin := ($gy//tx:pronunciation/tx:mandarin/tx:jin|$gy//tx:pronunciation/tx:mandarin/tx:jiu)
     , $key := $gy/@xml:id
     , $gloss := $gy//tx:gloss
-    , $zis := $gy//tx:graphs/tx:attested-graph/tx:graph
-    , $zi := if (string-length(translate(normalize-space($gy//tx:graphs/tx:standardised-graph/tx:graph), ' ', ''))> 0) then
-                $gy//tx:graphs/tx:standardised-graph/tx:graph else
-                $gy//tx:graphs//tx:graph
+    , $zis := for $a in $gys/tx:graphs//tx:graph
+                return
+                if (string-length($a/text()) > 0) then $a else ()
+    , $zi := if (string-length(translate(normalize-space($gy/tx:graphs/tx:standardised-graph/tx:graph), ' ', ''))> 0) then
+                $gy/tx:graphs/tx:standardised-graph/tx:graph else
+                $gy/tx:graphs/tx:attested-graph/tx:graph
     , $fq := ($gy//tx:fanqie/tx:fanqie-shangzi//tx:graph/text(),
      $gy//tx:fanqie/tx:fanqie-xiazi//tx:graph/text())
     return 
@@ -1679,7 +1681,7 @@ function app:syllables($node as node()*, $model as map(*), $uuid as xs:string?, 
       </h5>
       </div>
       {let $ucd := doc($config:tls-data-root||"/guangyun/ucd.unihan.flat.xml")
-      , $cp := tlslib:num2hex(string-to-codepoints($zis)[1])
+      , $cp := tlslib:num2hex(string-to-codepoints(if(string-length($char)=0) then $zi else $char))
       , $cpr := $ucd//ucd:char[@cp=$cp]
       , $cinfo := ("kDefinition", "kRSUnicode", "kFrequency", "kGradeLevel", "kHanyuPinlu", "kFourCornerCode", "kTotalStrokes", "kIICore", "kUnihanCore2020")
       , $read := ("kVietnamese", "kMandarin", "kHanyuPinyin", "kTang", "kJapaneseKun", "kJapaneseOn", "kCantonese", "")
