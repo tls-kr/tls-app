@@ -1326,7 +1326,8 @@ return
 (: since I used "order by" for populating the map, some values are sequences now, need to disentangle that here  :)
 for $zi at $pos in $z 
 let $wx := collection(concat($config:tls-data-root, '/concepts/'))//tei:div[@xml:id = $id]//tei:orth[. = $zi],
-$scnt := count($wx/ancestor::tei:entry/tei:sense),
+$scnt := for $w1 in $wx return
+           count($w1/ancestor::tei:entry/tei:sense),
 $wid := $wx/ancestor::tei:entry/@xml:id,
 $syn := $wx/ancestor::tei:div[@xml:id = $id]//tei:div[@type="old-chinese-criteria"]//tei:p,
 $esc := replace($concept[1], "'", "\\'")
@@ -1334,35 +1335,35 @@ return
 <li class="mb-3">
 {if ($zi) then
 (: todo : check for permissions :)
-(<strong><span id="{$wid}-{$pos}-zi">{$zi}</span></strong>,<span id="{$wid}-{$pos}-py" title="Click here to change pinyin" onclick="assign_guangyun_dialog({{'zi':'{$zi}', 'wid':'{$wid}','py': '{$py}','concept' : '{$esc}', 'concept_id' : '{$id}', 'pos' : '{$pos}'}})">&#160;({$py[$pos]})&#160;</span>)
+(<strong><span id="{$wid[$pos]}-{$pos}-zi">{$zi}</span></strong>,<span id="{$wid[$pos]}-{$pos}-py" title="Click here to change pinyin" onclick="assign_guangyun_dialog({{'zi':'{$zi}', 'wid':'{$wid[$pos]}','py': '{$py[$pos]}','concept' : '{$esc}', 'concept_id' : '{$id}', 'pos' : '{$pos}'}})">&#160;({$py[$pos]})&#160;</span>)
 else ""}
-<strong><a href="concept.html?uuid={$id}#{$wid}" title="{$cdef}" class="{if ($scnt = 0) then 'text-muted' else ()}">{$concept[1]}</a></strong> 
+<strong><a href="concept.html?uuid={$id}#{$wid[$pos]}" title="{$cdef}" class="{if ($scnt[$pos] = 0) then 'text-muted' else ()}">{$concept[1]}</a></strong> 
 
 {if ($doann and sm:is-authenticated() and not(contains(sm:id()//sm:group, 'tls-test'))) then 
- if ($wid) then     
+ if ($wid[$pos]) then     
  <button class="btn badge badge-secondary ml-2" type="button" 
- onclick="show_newsw({{'wid':'{$wid}','py': '{$py}','concept' : '{$esc}', 'concept_id' : '{$id}'}})">
+ onclick="show_newsw({{'wid':'{$wid[$pos]}','py': '{$py[$pos]}','concept' : '{$esc}', 'concept_id' : '{$id}'}})">
            New SW
       </button>
 else 
 <button class="btn badge badge-secondary ml-2" type="button" 
-onclick="show_newsw({{'wid':'xx', 'py': '{$py}','concept' : '{$concept}', 'concept_id' : '{$id}'}})">
+onclick="show_newsw({{'wid':'xx', 'py': '{$py[$pos]}','concept' : '{$concept}', 'concept_id' : '{$id}'}})">
            New Word
       </button>
    else ()}
 
-{if ($scnt > 0) then      
+{if ($scnt[$pos] > 0) then      
 <span>      
 {if (count($syn) > 0) then
-<button title="Click to view {count($syn)} synonyms" class="btn badge badge-info" data-toggle="collapse" data-target="#{$wid}-syn">SYN</button> else ()}
-<button title="click to reveal {count($wx/ancestor::tei:entry/tei:sense)} syntactic words" class="btn badge badge-light" type="button" data-toggle="collapse" data-target="#{$wid}-concept">{$scnt}</button>
-<ul class="list-unstyled collapse" id="{$wid}-syn" style="swl-bullet">{
+<button title="Click to view {count($syn)} synonyms" class="btn badge badge-info" data-toggle="collapse" data-target="#{$wid[$pos]}-syn">SYN</button> else ()}
+<button title="click to reveal {count($wx/ancestor::tei:entry/tei:sense)} syntactic words" class="btn badge badge-light" type="button" data-toggle="collapse" data-target="#{$wid[$pos]}-{$pos}-concept">{$scnt[$pos]}</button>
+<ul class="list-unstyled collapse" id="{$wid[$pos]}-syn" style="swl-bullet">{
 for $l in $syn
 return
 <li>{$l}</li>
 }
 </ul>
-<ul class="list-unstyled collapse" id="{$wid}-concept" style="swl-bullet">{for $s in $wx/ancestor::tei:entry/tei:sense
+<ul class="list-unstyled collapse" id="{$wid[$pos]}-{$pos}-concept" style="swl-bullet">{for $s in $wx[$pos]/ancestor::tei:entry/tei:sense
 let $sf := $s//tls:syn-func,
 $sfid := substring($sf/@corresp, 2),
 $sm := $s//tls:sem-feat/text(),
