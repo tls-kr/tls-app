@@ -6,6 +6,9 @@ module namespace krx="http://hxwd.org/krx-utils";
 import module namespace tlslib="http://hxwd.org/lib" at "/db/apps/tls-app/modules/tlslib.xql";
 import module namespace json="http://www.json.org";
 import module namespace http="http://expath.org/ns/http-client";
+
+declare namespace krxn= "http://kanripo.org/ns/KRX/Nexus/1.0";
+declare namespace krxt= "http://kanripo.org/ns/KRX/Token/1.0";
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace output = "http://www.w3.org/2010/xslt-xquery-serialization";
 declare option output:method "json";
@@ -31,13 +34,13 @@ TODO: - express lnk table as JSON for collate
 :)
 declare function krx:get-variants($sid as xs:string){
 let $edid := string-join(tokenize($sid, "_")[1,2], "_")
-,$ltab := collection("/db/apps/tls-texts/aux/lnk")/div[@ed=$edid]
+,$ltab := collection("/db/apps/tls-texts/aux/lnk")/krxn:nexusList[@ed=$edid]
 ,$tok := collection("/db/apps/tls-texts/aux/tok")
-,$s := $ltab/seg[@id=$sid]
+,$s := $ltab/krxn:nexus[@id=$sid]
 let $ted := $s/@ed
 , $tc := xs:int($s/@tcount)
-, $tx := $tok/div[@ed=$edid]/t[@tp=$s/@tp] 
-, $seg := $tx/following::t[fn:position() < $tc + 1]
+, $tx := $tok/krxt:tlist[@ed=$edid]/krxn:t[@tp=$s/@tp] 
+, $seg := $tx/following::krxn:t[fn:position() < $tc + 1]
 (:     (data($s/@tp), $tc, $seg) :)
 return
 count($ltab)
@@ -45,7 +48,7 @@ count($ltab)
 
 declare function krx:get-varseg-ed($sid as xs:string, $ed as xs:string){
 let $edid := string-join(tokenize($sid, "_")[1,2], "_")
-let $ltab := collection("/db/apps/tls-texts/aux/lnk")/div[@ed=$edid]
+let $ltab := collection("/db/apps/tls-texts/aux/lnk")/krxn:nexusList[@ed=$edid]
 ,$tok := collection("/db/apps/tls-texts/aux/tok")
 ,$r := $ltab/seg[@id=$sid]/ref[@ed=$ed]
 , $tc := xs:int($r/@tcount)
@@ -57,21 +60,21 @@ return string-join(for $t in $tks return ($t || data($t/@f)), '')
 
 declare function krx:collate-request($sid as xs:string){
 let $edid := string-join(tokenize($sid, "_")[1,2], "_")
-,$ltab := collection("/db/apps/tls-texts/aux/lnk")/div[@ed=$edid]
+,$ltab := collection("/db/apps/tls-texts/aux/lnk")/krxn:nexusList[@ed=$edid]
 ,$tok := collection("/db/apps/tls-texts/aux/tok")
-,$s := $ltab/seg[@id=$sid]
+,$s := $ltab/krxn:nexus[@xml:id=$sid]
 let $ted := $s/@ed
 , $tc := xs:int($s/@tcount)
-, $tx := $tok/div[@ed=$edid]/t[@tp=$s/@tp] 
-, $seg := $tx/following::t[fn:position() < $tc + 1]
+, $tx := $tok/krxt:tlist[@ed=$edid]//krxt:t[@tp=$s/@tp] 
+, $seg := $tx/following::krxt:t[fn:position() < $tc + 1]
 (:     (data($s/@tp), $tc, $seg) :)
 return
 <root>
-{for $r in $s/Q{}ref
+{for $r in $s/krxn:locationRef
   let $id := $r/@ed
   ,$rc := xs:int($r/@tcount)
-  ,$rx := $tok/Q{}div[@ed=$id]/Q{}t[@tp=$r/@tp]
-  ,$rseg := $rx/following::Q{}t[fn:position() < $rc + 1]
+  ,$rx := $tok/krxt:tlist[@ed=$id]//krxt:t[@tp=$r/@tp]
+  ,$rseg := $rx/following::krxt:t[fn:position() < $rc + 1]
 return
 <witnesses>
 <id>{data($id)}</id>
