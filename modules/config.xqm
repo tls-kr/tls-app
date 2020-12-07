@@ -42,9 +42,15 @@ declare variable $config:expath-descriptor := doc(concat($config:app-root, "/exp
 
 declare variable $config:tls-data-root := substring-before($config:app-root, data($config:expath-descriptor/@abbrev)) || "tls-data";
 declare variable $config:tls-texts-root := substring-before($config:app-root, data($config:expath-descriptor/@abbrev)) || "tls-texts";
+declare variable $config:tls-krx-root := substring-before($config:app-root, data($config:expath-descriptor/@abbrev)) || "tls-krx";
 declare variable $config:tls-translation-root := concat($config:tls-data-root, "/translations");
 declare variable $config:tls-user-root := "/db/users/";
 declare variable $config:exide-url :="https://hxwd.org:8443/exist/apps/eXide/index.html";
+declare variable $config:tls-manifests := 
+  let (:$user := sm:id()//sm:real/sm:username/text()
+  , $approot := substring-before($config:app-root, data($config:expath-descriptor/@abbrev))
+  , :)$mf := "/manifests"
+  return ((:"/db/users/"||$user||$mf,:) $config:tls-texts-root||$mf, $config:tls-krx-root||$mf) ;
 
 declare variable $config:status-map := map{
 0 : "pending",

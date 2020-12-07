@@ -6,9 +6,12 @@ module namespace krx="http://hxwd.org/krx-utils";
 import module namespace tlslib="http://hxwd.org/lib" at "/db/apps/tls-app/modules/tlslib.xql";
 import module namespace json="http://www.json.org";
 import module namespace http="http://expath.org/ns/http-client";
+import module namespace config="http://hxwd.org/config" at "config.xqm";
 
-declare namespace krxn= "http://kanripo.org/ns/KRX/Nexus/1.0";
-declare namespace krxt= "http://kanripo.org/ns/KRX/Token/1.0";
+declare namespace nx= "http://kanripo.org/ns/KRX/Nexus/1.0";
+declare namespace tk= "http://kanripo.org/ns/KRX/Token/1.0";
+declare namespace mf = "http://kanripo.org/ns/KRX/Manifest/1.0";
+
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace output = "http://www.w3.org/2010/xslt-xquery-serialization";
 declare option output:method "json";
@@ -32,15 +35,70 @@ TODO: - express lnk table as JSON for collate
 
  
 :)
+
+declare function krx:show-manifest($mf as node()){
+let $et := map{
+"root" : "Editions of the root text",
+"annotation" : "Commentaries to the root text",
+"translation" : "Translations",
+"other" : "Related texts"
+}
+, $textid := $mf/@xml:id
+
+return
+<div class="row" id="textid" data-id="{$textid}">
+<div class="card col-sm-12" style="max-width: 1000px;">
+<div class="card-body">
+<h4 class="card-title">
+<span id="{$textid}-la" class="sf" contenteditable="true">Manifest for {data($textid)}</span>  
+</h4>
+<h5 class="card-subtitle">{$mf/mf:description}</h5>
+<div class="card">
+<h4>Editions</h4>
+{for $eg in $mf//mf:editions/mf:editionGroup
+return
+<div>
+<h5>{map:get($et, $eg/@type)}</h5>
+<ul>
+{for $e in $eg/mf:edition return
+<li title="{$e/@role}">{if (data($e/@role)="base") then 
+let $id := tokenize($e/@id, "_")[1]
+, $firstdiv := (collection($config:tls-texts-root)//tei:TEI[@xml:id=$id]//tei:body/tei:div)[1]
+, $targetseg := if ($firstdiv//tei:seg) then ($firstdiv//tei:seg)[1] else  ($firstdiv/following::tei:seg)[1] 
+return
+<a href="textview.html?location={$targetseg/@xml:id}">{$e/mf:description}</a>
+else
+($e/mf:description)
+}
+　<span class="text-muted">ID:</span>{data($e/@id)},　　<span class="text-muted">Type:</span>{data($e/@type)}</li>
+}
+</ul>
+</div>
+}
+</div>
+</div>
+<div class="card-body">
+<h4>Contents</h4>
+<ul>
+{for $d in $mf/mf:divisions/mf:div return
+<li><a href="#">{data($d/@label)}   </a></li>
+}
+</ul>
+</div>
+</div>
+</div>
+};
+
+
 declare function krx:get-variants($sid as xs:string){
 let $edid := string-join(tokenize($sid, "_")[1,2], "_")
-,$ltab := collection("/db/apps/tls-texts/aux/lnk")/krxn:nexusList[@ed=$edid]
+,$ltab := collection("/db/apps/tls-texts/aux/lnk")/nx:nexusList[@ed=$edid]
 ,$tok := collection("/db/apps/tls-texts/aux/tok")
-,$s := $ltab/krxn:nexus[@id=$sid]
+,$s := $ltab/nx:nexus[@id=$sid]
 let $ted := $s/@ed
 , $tc := xs:int($s/@tcount)
-, $tx := $tok/krxt:tlist[@ed=$edid]/krxn:t[@tp=$s/@tp] 
-, $seg := $tx/following::krxn:t[fn:position() < $tc + 1]
+, $tx := $tok/tk:tlist[@ed=$edid]/nx:t[@tp=$s/@tp] 
+, $seg := $tx/following::nx:t[fn:position() < $tc + 1]
 (:     (data($s/@tp), $tc, $seg) :)
 return
 count($ltab)
@@ -48,7 +106,7 @@ count($ltab)
 
 declare function krx:get-varseg-ed($sid as xs:string, $ed as xs:string){
 let $edid := string-join(tokenize($sid, "_")[1,2], "_")
-let $ltab := collection("/db/apps/tls-texts/aux/lnk")/krxn:nexusList[@ed=$edid]
+let $ltab := collection("/db/apps/tls-texts/aux/lnk")/nx:nexusList[@ed=$edid]
 ,$tok := collection("/db/apps/tls-texts/aux/tok")
 ,$r := $ltab/seg[@id=$sid]/ref[@ed=$ed]
 , $tc := xs:int($r/@tcount)
@@ -60,21 +118,21 @@ return string-join(for $t in $tks return ($t || data($t/@f)), '')
 
 declare function krx:collate-request($sid as xs:string){
 let $edid := string-join(tokenize($sid, "_")[1,2], "_")
-,$ltab := collection("/db/apps/tls-texts/aux/lnk")/krxn:nexusList[@ed=$edid]
+,$ltab := collection("/db/apps/tls-texts/aux/lnk")/nx:nexusList[@ed=$edid]
 ,$tok := collection("/db/apps/tls-texts/aux/tok")
-,$s := $ltab/krxn:nexus[@xml:id=$sid]
+,$s := $ltab/nx:nexus[@xml:id=$sid]
 let $ted := $s/@ed
 , $tc := xs:int($s/@tcount)
-, $tx := $tok/krxt:tlist[@ed=$edid]//krxt:t[@tp=$s/@tp] 
-, $seg := $tx/following::krxt:t[fn:position() < $tc + 1]
+, $tx := $tok/tk:tlist[@ed=$edid]//tk:t[@tp=$s/@tp] 
+, $seg := $tx/following::tk:t[fn:position() < $tc + 1]
 (:     (data($s/@tp), $tc, $seg) :)
 return
 <root>
-{for $r in $s/krxn:locationRef
+{for $r in $s/nx:locationRef
   let $id := $r/@ed
   ,$rc := xs:int($r/@tcount)
-  ,$rx := $tok/krxt:tlist[@ed=$id]//krxt:t[@tp=$r/@tp]
-  ,$rseg := $rx/following::krxt:t[fn:position() < $rc + 1]
+  ,$rx := $tok/tk:tlist[@ed=$id]//tk:t[@tp=$r/@tp]
+  ,$rseg := $rx/following::tk:t[fn:position() < $rc + 1]
 return
 <witnesses>
 <id>{data($id)}</id>

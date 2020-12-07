@@ -14,13 +14,14 @@ declare namespace tls="http://hxwd.org/ns/1.0";
 declare namespace tx="http://exist-db.org/tls";
 declare namespace json = "http://www.json.org";
 declare namespace ucd = "http://www.unicode.org/ns/2003/ucd/1.0";
+declare namespace mf = "http://kanripo.org/ns/KRX/Manifest/1.0";
 
 import module namespace templates="http://exist-db.org/xquery/templates" ;
 import module namespace config="http://hxwd.org/config" at "config.xqm";
 import module namespace kwic="http://exist-db.org/xquery/kwic"
     at "resource:org/exist/xquery/lib/kwic.xql";
 import module namespace tlslib="http://hxwd.org/lib" at "tlslib.xql";
-
+import module namespace krx="http://hxwd.org/krx-utils" at "krx-utils.xql";
 
 declare variable $app:SESSION := "tls:results";
 declare variable $app:tmap := map{
@@ -642,6 +643,9 @@ function app:textview($node as node()*, $model as map(*), $location as xs:string
       return
         tlslib:display-chunk($firstseg, $model, $prec, $foll)
      else
+      if (collection($config:tls-manifests)//mf:manifest[@xml:id=$location]) then 
+      krx:show-manifest(collection($config:tls-manifests)//mf:manifest[@xml:id=$location]) 
+      else
       let $firstdiv := if ($first = 'true') then 
       (collection($config:tls-texts-root)//tei:TEI[@xml:id=$location]//tei:body/tei:div)[1]
             else
@@ -1681,7 +1685,8 @@ function app:syllables($node as node()*, $model as map(*), $uuid as xs:string?, 
       </h5>
       </div>
       {let $ucd := doc($config:tls-data-root||"/guangyun/ucd.unihan.flat.xml")
-      , $cp := tlslib:num2hex(string-to-codepoints(if(string-length($char)=0) then $zi else $char))
+      (: there is a bug that affects astral characers - length is reported as 2  :)
+      , $cp := tlslib:num2hex(string-to-codepoints(if(string-length($zi)=2) then () else if ($char) then $char else $zi))
       , $cpr := $ucd//ucd:char[@cp=$cp]
       , $cinfo := ("kDefinition", "kRSUnicode", "kFrequency", "kGradeLevel", "kHanyuPinlu", "kFourCornerCode", "kTotalStrokes", "kIICore", "kUnihanCore2020")
       , $read := ("kVietnamese", "kMandarin", "kHanyuPinyin", "kTang", "kJapaneseKun", "kJapaneseOn", "kCantonese", "")
@@ -1691,7 +1696,7 @@ function app:syllables($node as node()*, $model as map(*), $uuid as xs:string?, 
       return
      <div id="ref" class="collapse" data-parent="#syllables-content">
     <div class="row">
-     <div class="col-sm-12"><h5>Based on {$ucd//ucd:description/text()}</h5></div>
+     <div class="col-sm-12"><h5>References for {$zi} based on {$ucd//ucd:description/text()}</h5></div>
     </div> 
     <div class="row">
      <div class="col-sm-4">
