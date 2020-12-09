@@ -992,6 +992,9 @@ concat("No usage examples found for key: ", $key, " type: ", $type )
 
 declare function tlsapi:save-sf($sense-id as xs:string, $synfunc-id as xs:string, $synfunc-val as xs:string, $def as xs:string){
 let $newsf-id := if ($synfunc-id = 'xxx') then (
+  if (collection($config:tls-data-root)//tei:div[@type="syn-func"]/tei:head[.=normalize-space($synfunc-val)]) then
+  collection($config:tls-data-root)//tei:div[@type="syn-func"]/tei:head[.=normalize-space($synfunc-val)]/@xml:id
+  else
   tlslib:new-syn-func ($synfunc-val, $def)
 ) else ($synfunc-id)
 ,$pos := <pos xmlns="http://www.tei-c.org/ns/1.0">{upper-case(substring($synfunc-val, 1, 1))}</pos>
