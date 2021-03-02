@@ -36,6 +36,11 @@ TODO: - express lnk table as JSON for collate
  
 :)
 
+declare function krx:search($query){
+()
+};
+
+
 declare function krx:show-manifest($mf as node()){
 let $et := map{
 "root" : "Editions of the root text",

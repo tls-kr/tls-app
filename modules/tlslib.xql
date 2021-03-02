@@ -1517,7 +1517,7 @@ declare function tlslib:get-guangyun($chars as xs:string, $pron as xs:string, $g
 for $char at $cc in  analyze-string($chars, ".")//fn:match/text()
 return
 <div id="guangyun-input-dyn-{$cc}">
-<h5><strong class="ml-2">{$char}</strong>　{tlslib:guoxuedashi($char)}</h5>
+<h5><strong class="ml-2">{$char}</strong>　{tlslib:guguolin($char)}</h5>
 {let $r:= collection(concat($config:tls-data-root, "/guangyun"))//tx:graphs//tx:graph[contains(.,$char)]
 return 
 (
@@ -1870,10 +1870,12 @@ declare function tlslib:linkheader($qc) {
          " Phonetic profile: ",
      for $c in $qc return  
      <a class="btn badge badge-light" style="background-color:palegreen" title="Show phonetic profile for {$c}" href="syllables.html?char={$c}">{$c}</a>,
-     <span>{" 國學大師: ", 
+(:     <span>{" 國學大師: ", 
      for $c in $qc return
      tlslib:guoxuedashi($c)
-     }</span>,
+     }</span>,:)
+     tlslib:guguolin($qc)
+     ,
      <span>{" 漢リポ: ",
      <a class="btn badge badge-light" target="kanripo" title="Search {$qc} in Kanseki Repository (External link)" style="background-color:paleturquoise" href="http://www.kanripo.org/search?query={string-join($qc, '')}">{$qc}</a>
      }</span>
@@ -1884,6 +1886,17 @@ declare function tlslib:guoxuedashi($c as xs:string){
 <a class="btn badge badge-light" target="GXDS" title="Search {$c} in 國學大師字典 (External link)" style="background-color:paleturquoise" href="http://www.guoxuedashi.com/so.php?sokeytm={$c}&amp;ka=100">{$c}</a>
 };
 
+declare function tlslib:guguolin($qc){
+    for $c at $pos in $qc return
+<form class="btn badge badge-light"  name="guguolin" target="guguolin" action="http://www.guguolin.com/book_xungu8.php" method="post" title="訓詁工具書查詢 {$c} (External link)" >
+  {if ($pos = 1) then "顧國林：" else ()}
+  <input type="hidden" name="word" id="word" value="{$c}="/>
+  <input type="hidden" name="mode" id="mode" value="word" />
+  <input type="hidden" name="bianti" id="bianti" value="no"/>
+  <input type="hidden" name="page" id="page" value="no"/>
+  <button class="btn badge badge-light" type="submit" style="background-color:paleturquoise">{$c}</button>
+</form>
+};
 
 declare function tlslib:search-top-menu($search-type, $query, $txtmatchcount, $title, $trmatch, $textid, $qc, $count, $mode) {
   switch($search-type)
