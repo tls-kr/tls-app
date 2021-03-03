@@ -1888,8 +1888,8 @@ declare function tlslib:guoxuedashi($c as xs:string){
 
 declare function tlslib:guguolin($qc){
     for $c at $pos in $qc return
-<form class="btn badge badge-light"  name="guguolin" target="guguolin" action="http://www.guguolin.com/book_xungu8.php" method="post" title="訓詁工具書查詢 {$c} (External link)" >
-  {if ($pos = 1) then "顧國林：" else ()}
+<form class="btn badge badge-light"  name="guguolin" target="guguolin" action="http://www.kaom.net/z_hmy_zidian8.php" method="post" title="訓詁工具書查詢 {$c} (External link)" >
+  {if ($pos = 1) then "字書：" else ()}
   <input type="hidden" name="word" id="word" value="{$c}="/>
   <input type="hidden" name="mode" id="mode" value="word" />
   <input type="hidden" name="bianti" id="bianti" value="no"/>

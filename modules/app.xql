@@ -448,12 +448,12 @@ let $query := map:get($model, "query")
         </td>
         {if ($search-type = "3") then  
         (<td>{$cseg}</td>,<td>{$h}</td>) else
-        <td>{ $h/preceding-sibling::tei:seg[1,3],
+        <td>{ $h/preceding-sibling::tei:seg[1,2,3],
         if (count($qs) > 1 or not($iskanji)) then $h else
         (substring-before($h, $query), 
         <mark>{$query}</mark> 
         ,substring-after($h, $query)), 
-        $h/following-sibling::tei:seg[1,3]}{if ($tr) then (<br/>,"..." || $tr[1] || "...") else ()}</td>
+        $h/following-sibling::tei:seg[1,2,3]}{if ($tr) then (<br/>,"..." || $tr[1] || "...") else ()}</td>
         }
         </tr>
     }
