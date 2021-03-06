@@ -369,7 +369,6 @@ function save_newsw(){
 
 };
 
-
 // saving the concept, from editSWLDialog, with the new SW 
 function save_to_concept(){
     var guangyun_id = $(".guangyun-input:checked,.guangyun-input-checked").map(function(){
@@ -430,11 +429,22 @@ function save_to_concept(){
 
 };
 
+// link to the website by Gu Guolin
+function link_guguolin(word){
+var data = "word="+encodeURI(word)+"&mode=word&bianti=no&page=no"
+$.get("http://www.kaom.net/z_hmy_zidian88.php?"+data, function (data) {
+    var w = window.open('about:blank', 'cishu');
+    w.document.write(data);
+    w.document.close();
+});
+};
+
 // display the dialog in the right side of the screen
 function get_sw(sel, xid, line){
    var dw = document.documentElement.clientWidth;
    var dh = document.documentElement.clientHeight;
    var new_width = $("#toprow").outerWidth() - $("#toprow-1").outerWidth() - $("#toprow-2").outerWidth();
+   var url = "http://www.kaom.net/z_hmy_zidian88.php?"+"word="+encodeURI(sel)+"&mode=word&bianti=no&page=no"
    console.log(new_width);
     // this sets the selection to the search input field, to make it easy to search for this term
     // idea: write a search that displays the results on this page, so that I do
@@ -449,7 +459,8 @@ function get_sw(sel, xid, line){
        $ ("#new-att-title").html("In other editions: ");
        $ ("#new-att-no-perm").html("");
    } else {
-       $ ("#new-att-title").html('Existing SW for <strong class="ml-2"><span id="swl-query-span">'+sel+'</span></strong>');       
+//       $ ("#new-att-title").html('Existing SW for <strong class="ml-2"><span id="swl-query-span" onclick="link_guguolin(\''+sel+'\')">'+sel+'</span></strong>');
+       $ ("#new-att-title").html('Existing SW for <strong class="ml-2"><span id="swl-query-span"><a target="GXDS" href="'+url+'">'+sel+'</a></span></strong>');       
    }
 //   $( "#swl-form" ).removeAttr("style");
    $( "#swl-form" ).css("max-height", dh - 51);
