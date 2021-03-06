@@ -440,6 +440,10 @@ let $query := map:get($model, "query")
       $cseg := if ($search-type="3") then collection($config:tls-texts-root)//tei:seg[@xml:id=$loc] else (),
       $head := if ($search-type="3") then $cseg/ancestor::tei:div[1]/tei:head[1] else $h/ancestor::tei:div[1]/tei:head[1],
       $title := if ($search-type="3") then $cseg/ancestor::tei:TEI//tei:titleStmt/tei:title/text() else $h/ancestor::tei:TEI//tei:titleStmt/tei:title/text(),
+(:     at some point use this to select the translation the user prefers
+      $tr := tlslib:get-translations($model?textid),
+      $slot1-id := tlslib:get-content-id($model?textid, 'slot1', $tr),:)
+      
       $tr := collection($config:tls-translation-root)//tei:seg[@corresp="#"||$h/@xml:id]
     return
       <tr>
@@ -453,7 +457,8 @@ let $query := map:get($model, "query")
         (substring-before($h, $query), 
         <mark>{$query}</mark> 
         ,substring-after($h, $query)), 
-        $h/following-sibling::tei:seg[1,2,3]}{if ($tr) then (<br/>,"..." || $tr[1] || "...") else ()}</td>
+        (: this is a hack, it will probably show the most recent translation if there are more, but we want to make this predictable... :)
+        $h/following-sibling::tei:seg[1,2,3]}{if ($tr) then (<br/>,"..." || $tr[last()] || "...") else ()}</td>
         }
         </tr>
     }
