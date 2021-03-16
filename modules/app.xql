@@ -187,7 +187,7 @@ function app:browse($node as node()*, $model as map(*), $type as xs:string?, $fi
         default return (tlslib:format-button("delete_sf('"||$id||"', '"||$type||"')", "Delete this " || lower-case($app:lmap($type||"1")) || ".", "open-iconic-master/svg/x.svg", "", "", "tls-editor"),
         <a id="{$id}-abbr" onclick="show_use_of('{$type}', '{$id}')">{$n}</a>)
     }</td>
-    <td><p id="{$id}-sf" class="sf" contenteditable="{if ($edit) then 'true' else 'false'}">
+    <td><p id="{$id}-{if ($type = 'syn-func') then 'sf' else 'sm'}" class="sf" contenteditable="{if ($edit) then 'true' else 'false'}">
         {string-join(for $p in $def return
          $p/text(), " ")}&#160;</p></td>
     <td><ul id="{$id}-resp"/></td>

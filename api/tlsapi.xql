@@ -1268,9 +1268,11 @@ return (
 2020-10-14: updated for editing also the concept definitions in browse mode
 :)
 declare function tlsapi:save-sf-def($map as map(*)){
-let $sfdoc := doc($config:tls-data-root || "/core/syntactic-functions.xml")
-,$type := $map?type
-,$sfnode := $sfdoc//tei:div[@xml:id=$map?id]
+
+let $type := $map?type
+, $sfdoc := if ($type ='-sf') then doc($config:tls-data-root || "/core/syntactic-functions.xml")
+  else doc($config:tls-data-root || "/core/semantic-features.xml")
+, $sfnode := $sfdoc//tei:div[@xml:id=$map?id]
 let $sf := 
 if (empty($sfnode)) then (
  if ($type = "-la") then
