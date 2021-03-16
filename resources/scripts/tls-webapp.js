@@ -1228,7 +1228,7 @@ function delete_sf(uid, type){
         do_delete_sf(uid, type, false);
         } else {
          $('#'+uid+'-resp').html(resp)
-         var ok=("'"+ abbr +"' has been used in attributions, do you want to proceed? All attributions will be deleted as well.")
+         var ok=confirm("'"+ abbr +"' has been used in attributions, do you want to proceed? All attributions will be deleted as well.")
          if (ok) {
          console.log("OK", ok)
          do_delete_sf(uid, type, ok)

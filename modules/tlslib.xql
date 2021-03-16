@@ -89,6 +89,7 @@ declare function tlslib:capitalize-first ( $arg as xs:string? )  as xs:string? {
 declare function tlslib:get-juan($link as xs:string){
 xs:int((tokenize($link, "_")[3] => tokenize("-"))[1])
 };
+
 (:~
 : get the definition for semantic features or syntactic functions
 : @param $type either "sem-feat" or "syn-func"
@@ -933,20 +934,21 @@ declare function tlslib:display-sense($sw as node(), $count as xs:int, $display-
 (:~
 : called from tlsapi:save-sf($sense-id as xs:string, $synfunc-id as xs:string, $synfunc-val as xs:string, $def as xs:string)
  : 2020-02-26 it seems this belongs to tlsapi
-
+ : 2021-03-16 extended to cover sem-feat as well
 :)
  
-declare function tlslib:new-syn-func ($sf as xs:string, $def as xs:string){
+declare function tlslib:new-syn-func ($sf as xs:string, $def as xs:string, $type as xs:string){
  let $uuid := concat("uuid-", util:uuid()),
- $sfdoc := doc($config:tls-data-root || "/core/syntactic-functions.xml"),
+ $sfdoc := if ($type = "syn-func") then  doc($config:tls-data-root || "/core/syntactic-functions.xml")
+  else doc($config:tls-data-root || "/core/semantic-features.xml") ,
  $sf := normalize-space($sf),
  $sfexist := $sfdoc//tei:head[. = $sf],
  $user := sm:id()//sm:real/sm:username/text(),
-$el := <div xmlns:tls="http://hxwd.org/ns/1.0" xmlns="http://www.tei-c.org/ns/1.0" type="syn-func" xml:id="{$uuid}" resp="#{$user}" tls:created="{current-dateTime()}">
+$el := <div xmlns="http://www.tei-c.org/ns/1.0" type="{$type}" xml:id="{$uuid}" resp="#{$user}" tls:created="{current-dateTime()}">
 <head>{$sf}</head>
 <p>{$def}</p>
 </div>,
-$last := $sfdoc//tei:div[@type="syn-func"][last()]
+$last := $sfdoc//tei:div[@type=$type][last()]
 ,$ret := if (not($sfexist)) then update insert $el following $last else ()
 return if ($sfexist) then $sfexist/parent::tei:div/@xml:id else $uuid
  };

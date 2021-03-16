@@ -455,14 +455,24 @@ declare function tlsapi:save-newsw($rpara as map(*)) {
  let $concept-word := collection($config:tls-data-root)//tei:div[@xml:id=$rpara?concept-id]//tei:entry[@xml:id=$rpara?wuid],
  $concept-doc := if ($concept-word) then $concept-word else collection($config:tls-data-root)//tei:div[@xml:id=$rpara?concept-id]//tei:div[@type="words"],
  $wuid := if ($concept-word) then $rpara?wuid else "uuid-" || util:uuid(),
+ $semfeat-id := if ($rpara?semfeat = "xx" or $rpara?semfeat = "") then 
+ (
+  if (collection($config:tls-data-root)//tei:div[@type="sem-feat"]/tei:head[.=normalize-space($rpara?semfeat-val)]) then
+  data(collection($config:tls-data-root)//tei:div[@type="sem-feat"]/tei:head[.=normalize-space($rpara?semfeat-val)]/@xml:id)
+  else
+  tlslib:new-syn-func($rpara?semfeat-val, "", "sem-feat")
+) 
+ else $rpara?semfeat,
+
+
  $suid := concat("uuid-", util:uuid()),
  $newsense := 
 <sense xml:id="{$suid}" resp="#{$user}" tls:created="{current-dateTime()}" xmlns="http://www.tei-c.org/ns/1.0" 
 xmlns:tls="http://hxwd.org/ns/1.0">
 <gramGrp><pos>{upper-case(substring($rpara?synfunc-val, 1,1))}</pos>
   <tls:syn-func corresp="#{$rpara?synfunc}">{translate($rpara?synfunc-val, ' ', '+')}</tls:syn-func>
-  {if ($rpara?semfeat) then 
-  <tls:sem-feat corresp="#{$rpara?semfeat}">{translate($rpara?semfeat-val, ' ', '')}</tls:sem-feat>
+  {if (string-length($rpara?semfeat-val) > 0 ) then 
+  <tls:sem-feat corresp="#{$semfeat-id}">{translate($rpara?semfeat-val, ' ', '')}</tls:sem-feat>
   else ()}
   </gramGrp>
   <def>{$rpara?def}</def></sense>,
@@ -995,7 +1005,7 @@ let $newsf-id := if ($synfunc-id = 'xxx') then (
   if (collection($config:tls-data-root)//tei:div[@type="syn-func"]/tei:head[.=normalize-space($synfunc-val)]) then
   collection($config:tls-data-root)//tei:div[@type="syn-func"]/tei:head[.=normalize-space($synfunc-val)]/@xml:id
   else
-  tlslib:new-syn-func ($synfunc-val, $def)
+  tlslib:new-syn-func ($synfunc-val, $def, "syn-func")
 ) else ($synfunc-id)
 ,$pos := <pos xmlns="http://www.tei-c.org/ns/1.0">{upper-case(substring($synfunc-val, 1, 1))}</pos>
 ,$sf :=  <tls:syn-func corresp="#{$newsf-id}">{$synfunc-val}</tls:syn-func>

@@ -37,7 +37,9 @@ declare variable $app:lmap := map{
 "zh" : "Modern Chinese",
 "och" : "Old Chinese",
 "syn-func" : "Syntactic Functions",
+"syn-func1" : "Syntactic Function",
 "sem-feat" : "Semantic Features",
+"sem-feat1" : "Semantic Feature",
 "word" : "Words",
 "char" : "Chars",
 "taxchar" : "Taxonomy of meanings for character",
@@ -182,7 +184,7 @@ function app:browse($node as node()*, $model as map(*), $type as xs:string?, $fi
         case  "concept" return <a href="concept.html?uuid={$id}">{$n}</a>
         case  "syllables" return <a href="syllables.html?uuid={$id}">{$n}</a>
         case  "rhet-dev" return <a href="rhet-dev.html?uuid={$id}">{$n}</a>
-        default return (tlslib:format-button("delete_sf('"||$id||"', '"||$type||"')", "Delete this syntactic definition.", "open-iconic-master/svg/x.svg", "", "", "tls-editor"),
+        default return (tlslib:format-button("delete_sf('"||$id||"', '"||$type||"')", "Delete this " || lower-case($app:lmap($type||"1")) || ".", "open-iconic-master/svg/x.svg", "", "", "tls-editor"),
         <a id="{$id}-abbr" onclick="show_use_of('{$type}', '{$id}')">{$n}</a>)
     }</td>
     <td><p id="{$id}-sf" class="sf" contenteditable="{if ($edit) then 'true' else 'false'}">
