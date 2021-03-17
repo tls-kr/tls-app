@@ -117,15 +117,15 @@ function reload_selector(slot, newid){
     
 };
 
-function get_sf(senseid){
+function get_sf(senseid, type){
   $.ajax({
   type : "GET",
   dataType : "html",
-  url : "api/get_sf.xql?senseid=" + senseid, 
+  url : "api/get_sf.xql?senseid=" + senseid + "&type=" + type, 
   success : function(resp){
-  $('#remoteDialog').html(resp);
-  initialize_sf_autocomplete();  
-  $('#edit-sf-dialog').modal('show');
+    $('#remoteDialog').html(resp);
+    initialize_sf_autocomplete(type);  
+    $('#edit-sf-dialog').modal('show');
   }
   });
 };
@@ -531,13 +531,13 @@ function countrows(){
 
 // for concepts, synfunc, semfeat we provide autocomplete
 
-function initialize_sf_autocomplete(){
+function initialize_sf_autocomplete(type){
     $( "#select-synfunc" ).autocomplete({
       appendTo: "#select-synfunc-group",
       response : function(event, ui){
       // need to reset this, in case of a new SF
         $("#synfunc-id-span" ).html("xxx");     
-        $("#def-old-sf-span").html("<span class='warn'>If the new SF is not from the list, please add a definition below!</span>")
+        $("#def-old-sf-span").html("<span class='warn'>If the new item is not from the list, please add a definition below!</span>")
       },
       source: function( request, response ) {
         $.ajax( {
@@ -545,7 +545,7 @@ function initialize_sf_autocomplete(){
           dataType: "jsonp",
           data: {
             term: request.term,
-	        type: "syn-func"
+	        type: type
           },
           success: function( data ) {
             response( data );
@@ -1111,7 +1111,7 @@ function save_def (defid){
 
 //stub for new sf
 
-function save_sf (){
+function save_sf (type){
     var sense_id= $( "#sense-id-span" ).text();
     var synfunc_val = $("#select-synfunc" ).val();
     var synfunc_id = $("#synfunc-id-span" ).text();     
@@ -1121,10 +1121,14 @@ function save_sf (){
   $.ajax({
   type : "PUT",
   dataType : "html",
-  url : "api/save_sf.xql?sense-id="+sense_id+"&sf_id="+synfunc_id+"&sf_val="+synfunc_val+"&def="+def_val,
+  url : "api/save_sf.xql?sense-id="+sense_id+"&sf_id="+synfunc_id+"&sf_val="+synfunc_val+"&def="+def_val+"&type="+type,
   success : function(resp){
     hide_swl_form( "#edit-sf-dialog" );      
-    toastr.info("Syntactic function updated.", "HXWD says:");
+    if (type == "syn-func") {
+       toastr.info("Syntactic function updated.", "HXWD says:");
+    } else {
+       toastr.info("Semantic feature updated.", "HXWD says:");        
+    }
   },
   error : function(resp){
   console.log(resp);

@@ -322,13 +322,15 @@ declare function tlsapi:swl-dialog($para as map(), $type as xs:string){
 :)
 
 (: prepare the parameters for edit-sf-dialog :)
-declare function tlsapi:get-sf($senseid as xs:string){
+declare function tlsapi:get-sf($senseid as xs:string, $type as xs:string){
 let $sense := collection($config:tls-data-root)//tei:sense[@xml:id=$senseid]
-,$synfunc-id := data($sense/tei:gramGrp/tls:syn-func/@corresp)=>substring(2)
-,$sfdef := tlslib:get-sf-def($synfunc-id)
+,$synfunc-id := if ($type = 'syn-func') then data($sense/tei:gramGrp/tls:syn-func/@corresp)=>substring(2) 
+   else data($sense/tei:gramGrp/tls:sem-feat/@corresp)=>substring(2)
+,$sfdef := tlslib:get-sf-def($synfunc-id, $type)
 ,$para := map{
 "def" : $sense/tei:def/text(),
-"synfunc" : data($sense/tei:gramGrp/tls:syn-func/text()),  
+"type" : $type,
+"synfunc" : if ($type = 'syn-func') then data($sense/tei:gramGrp/tls:syn-func/text()) else data($sense/tei:gramGrp/tls:sem-feat/text()),  
 "synfunc-id" : $synfunc-id,
 "zi" : $sense/parent::tei:entry/tei:form/tei:orth[1]/text(),
 "pinyin" : $sense/parent::tei:entry/tei:form/tei:pron[@xml:lang="zh-Latn-x-pinyin"]/text(),
@@ -341,25 +343,27 @@ return tlsapi:edit-sf-dialog($para)
 
 (: 2019-12-01: the following is a stub for changing the sf of a swl. If not existing, it has to be created, including def :)
 declare function tlsapi:edit-sf-dialog($para as map()){
+let $label := if ($para?type='syn-func') then 'syntactic function' else 'semantic feature'
+return
 <div id="edit-sf-dialog" class="modal" tabindex="-1" role="dialog" style="display: none;">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Change <span class="">syntactic function</span> for <span>{$para?zi}&#160;({$para?pinyin})</span></h5>
+                <h5 class="modal-title">Change <span class="">{$label}</span> for <span>{$para?zi}&#160;({$para?pinyin})</span></h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     ×
                 </button>
             </div>
             <div class="modal-body"> 
                 <h6 class="text-muted">Sense:  <span id="def-span" class="ml-2">{$para?def}</span></h6>
-                <h6 class="text-muted">Current SF:  <span id="old-sf-span" class="ml-2">{$para?synfunc}</span></h6>
-                <h6 class="text-muted">SF Definition:  <span id="def-old-sf-span" class="ml-2">{$para?sfdef}</span></h6>
+                <h6 class="text-muted">Current value:  <span id="old-sf-span" class="ml-2">{$para?synfunc}</span></h6>
+                <h6 class="text-muted">Current definition:  <span id="def-old-sf-span" class="ml-2">{$para?sfdef}</span></h6>
             <div>
             <span id="sense-id-span" style="display:none;">{$para?sense-id}</span>
             <span id="synfunc-id-span" style="display:none;">{$para?synfunc-id}</span>
                 <div class="form-row">
                 <div id="select-synfunc-group" class="form-group ui-widget col-md-6">
-                    <label for="select-synfunc">New syntactic function: </label>
+                    <label for="select-synfunc">New {$label}: </label>
                     <input id="select-synfunc" class="form-control" required="true" value="{$para?synfunc}"></input>
                 </div>
                 <!--
@@ -369,14 +373,14 @@ declare function tlsapi:edit-sf-dialog($para as map()){
                 </div> -->
                 </div>
                 <div id="input-def-group">
-                    <label for="input-def">Definition (if creating new SF)</label>
+                    <label for="input-def">Definition (if creating new item)</label>
                     <textarea id="input-def" class="form-control"></textarea>                   
                 </div>
             </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" onclick="save_sf()">Save</button>
+                <button type="button" class="btn btn-primary" onclick="save_sf('{$para?type}')">Save</button>
           </div>
        
        </div>
@@ -472,7 +476,7 @@ xmlns:tls="http://hxwd.org/ns/1.0">
 <gramGrp><pos>{upper-case(substring($rpara?synfunc-val, 1,1))}</pos>
   <tls:syn-func corresp="#{$rpara?synfunc}">{translate($rpara?synfunc-val, ' ', '+')}</tls:syn-func>
   {if (string-length($rpara?semfeat-val) > 0 ) then 
-  <tls:sem-feat corresp="#{$semfeat-id}">{translate($rpara?semfeat-val, ' ', '')}</tls:sem-feat>
+  <tls:sem-feat corresp="#{$semfeat-id}">{$rpara?semfeat-val}</tls:sem-feat>
   else ()}
   </gramGrp>
   <def>{$rpara?def}</def></sense>,
@@ -998,21 +1002,28 @@ concat("No usage examples found for key: ", $key, " type: ", $type )
 
 };
 
-(: safe_sf.xql tlsapi:save-sf($sense-id, $synfunc-id, $def) :)
-
-declare function tlsapi:save-sf($sense-id as xs:string, $synfunc-id as xs:string, $synfunc-val as xs:string, $def as xs:string){
+(: safe_sf.xql tlsapi:save-sf($sense-id, $synfunc-id, $def, $type) :)
+(: 2021-03-17 we now also handle sem-feat, the variable names do not reflect this :)
+declare function tlsapi:save-sf($sense-id as xs:string, $synfunc-id as xs:string, $synfunc-val as xs:string, $def as xs:string, $type as xs:string){
 let $newsf-id := if ($synfunc-id = 'xxx') then (
-  if (collection($config:tls-data-root)//tei:div[@type="syn-func"]/tei:head[.=normalize-space($synfunc-val)]) then
-  collection($config:tls-data-root)//tei:div[@type="syn-func"]/tei:head[.=normalize-space($synfunc-val)]/@xml:id
+  if (collection($config:tls-data-root)//tei:div[@type=$type]/tei:head[.=normalize-space($synfunc-val)]) then
+  collection($config:tls-data-root)//tei:div[@type=$type]/tei:head[.=normalize-space($synfunc-val)]/@xml:id
   else
-  tlslib:new-syn-func ($synfunc-val, $def, "syn-func")
+  tlslib:new-syn-func ($synfunc-val, $def, $type)
 ) else ($synfunc-id)
 ,$pos := <pos xmlns="http://www.tei-c.org/ns/1.0">{upper-case(substring($synfunc-val, 1, 1))}</pos>
-,$sf :=  <tls:syn-func corresp="#{$newsf-id}">{$synfunc-val}</tls:syn-func>
+,$sf :=  if ($type = 'syn-func') then 
+          <tls:syn-func corresp="#{$newsf-id}">{$synfunc-val}</tls:syn-func>
+        else
+          <tls:sem-feat corresp="#{$newsf-id}">{$synfunc-val}</tls:sem-feat>
 (: here we update the concept :)
 ,$sense := collection($config:tls-data-root)//tei:sense[@xml:id = $sense-id]
-,$upd := update replace $sense/tei:gramGrp/tei:pos with $pos 
-,$upd := update replace $sense/tei:gramGrp/tls:syn-func with $sf
+,$upd := if ($type='syn-func') then update replace $sense/tei:gramGrp/tei:pos with $pos else ()
+,$upd := if ($type='syn-func') then 
+   update replace $sense/tei:gramGrp/tls:syn-func with $sf
+   else
+   update replace $sense/tei:gramGrp/tls:sem-feat with $sf
+   
 ,$gramgrp := $sense/tei:gramGrp
 ,$a := for $s in collection($config:tls-data-root)//tls:ann/tei:sense[@corresp = "#" || $sense-id]
   return

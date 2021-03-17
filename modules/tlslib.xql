@@ -310,8 +310,11 @@ map:merge(
  )
 };
 
-declare function tlslib:get-sf-def($sfid as xs:string){
-let $sfdef := doc($config:tls-data-root || "/core/syntactic-functions.xml")//tei:div[@xml:id=$sfid]/tei:p/text()
+declare function tlslib:get-sf-def($sfid as xs:string, $type as xs:string){
+let $sfdef := if ($type= 'syn-func') then 
+  doc($config:tls-data-root || "/core/syntactic-functions.xml")//tei:div[@xml:id=$sfid]/tei:p/text()
+  else 
+  doc($config:tls-data-root || "/core/semantic-features.xml")//tei:div[@xml:id=$sfid]/tei:p/text()
 return $sfdef
 };
 
@@ -899,7 +902,7 @@ else
  
 declare function tlslib:display-sense($sw as node(), $count as xs:int, $display-word as xs:boolean){
     let $id := if ($sw/@xml:id) then data($sw/@xml:id) else substring($sw/@corresp, 2),
-    $sf := $sw//tls:syn-func/text(),
+    $sf := ($sw//tls:syn-func/text())[1],
     $sm := $sw//tls:sem-feat/text(),
     $user := sm:id()//sm:real/sm:username/text(),
     $def := $sw//tei:def/text(),
@@ -1368,13 +1371,15 @@ return
 }
 </ul>
 <ul class="list-unstyled collapse" id="{$wid[$pos]}-{$pos}-concept" style="swl-bullet">{for $s in $wx[$pos]/ancestor::tei:entry/tei:sense
-let $sf := $s//tls:syn-func,
-$sfid := substring($sf/@corresp, 2),
+let $sf := ($s//tls:syn-func)[1],
+$sfid := substring(($sf/@corresp), 2),
 $sm := $s//tls:sem-feat/text(),
+$smid := substring($sm/@corresp, 2),
 $def := $s//tei:def/text(),
 $sid := $s/@xml:id,
 $edit := sm:id()//sm:groups/sm:group[. = "tls-editor"] and $doann,
-$click := if ($edit) then concat("get_sf('" , $sid , "')") else "",
+$clicksf := if ($edit) then concat("get_sf('" , $sid , "', 'syn-func')") else "",
+$clicksm := if ($edit) then concat("get_sf('" , $sid , "', 'sem-feat')") else "",
 $atts := count(collection(concat($config:tls-data-root, '/notes/'))//tls:ann[tei:sense/@corresp = "#" || $sid])
 order by $sf
 (:  :)
@@ -1382,7 +1387,11 @@ return
 <li>
 <span id="pop-{$s/@xml:id}" class="small btn">●</span>
 
-<a href="#" onclick="{$click}" title="{tlslib:get-sf-def($sfid)}">{$sf/text()}</a>&#160;{$sm}: 
+<a href="#" onclick="{$clicksf}" title="{tlslib:get-sf-def($sfid, 'syn-func')}">{$sf/text()}</a>&#160;{
+if (string-length($sm) > 0) then
+<a href="#" onclick="{$clicksm}" title="{tlslib:get-sf-def($smid, 'sem-feat')}">{$sm}</a>
+else ()
+}: 
 <span class="swedit" id="def-{$sid}" contenteditable="{if ($edit) then 'true' else 'false'}">{ $def}</span>
     {if ($edit) then 
      <button class="btn badge badge-warning ml-2" type="button" onclick="save_def('def-{$sid}')">

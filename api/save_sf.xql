@@ -12,7 +12,8 @@ let $sense-id := request:get-parameter("sense-id", "xxxx")
 , $synfunc-id := request:get-parameter("sf_id", "xx")
 , $synfunc-val := request:get-parameter("sf_val", "xx")
 , $def := request:get-parameter("def", "xx")
+, $type := request:get-parameter("type", "xx")
 
 return 
-tlsapi:save-sf($sense-id, $synfunc-id, $synfunc-val, $def)
+tlsapi:save-sf($sense-id, $synfunc-id, $synfunc-val, $def, $type)
  

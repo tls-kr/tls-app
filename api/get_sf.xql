@@ -18,7 +18,8 @@ declare namespace output = "http://www.w3.org/2010/xslt-xquery-serialization";
 declare option output:media-type "text/html";
 
 let $senseid := request:get-parameter("senseid", "xx")
+, $type := request:get-parameter("type", "xx")
 
 return 
 
-tlsapi:get-sf($senseid)
+tlsapi:get-sf($senseid, $type)

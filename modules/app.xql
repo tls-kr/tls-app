@@ -168,7 +168,7 @@ function app:browse($node as node()*, $model as map(*), $type as xs:string?, $fi
     for $h in $hits
     let $n := $h/tei:head/text()
     ,$id := $h/@xml:id
-    ,$edit := sm:id()//sm:groups/sm:group[. = "tls-editor"]
+    ,$edit := sm:id()//sm:groups/sm:group[. = "tls-editor"] and not ($type = "rhet-dev")
     ,$d := $h/tei:div[@type="definition"]
     ,$def := if ($type = 'concept') then
        ($d/tei:p, <small>{$d/tei:note}</small>) else 
