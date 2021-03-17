@@ -519,9 +519,15 @@ $( ".zh" )
     var value = $(this).val().toLowerCase();
 //    console.log(value);
    $(".abbr").filter(function() {
-      $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+      $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1);
     });
   });
+
+
+function countrows(){
+      var rowCount = $('#filtertable tr:visible').length - 1;
+      $("#rowCount" ).html(rowCount);
+}
 
 // for concepts, synfunc, semfeat we provide autocomplete
 

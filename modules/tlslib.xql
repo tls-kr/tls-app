@@ -757,16 +757,18 @@ $type := $options?type,
 $context := $options?context
 let $concept := data($node/@concept),
 $creator-id := substring($node/tls:metadata/@resp, 2),
-$zi := string-join($node/tei:form/tei:orth/text(), "/"),
-$py := $node/tei:form[1]/tei:pron[starts-with(@xml:lang, 'zh-Latn')][1]/text(),
-$sf := $node//tls:syn-func,
-$sm := $node//tls:sem-feat
+$zi := string-join($node/tei:form/tei:orth/text(), "/")
+(: 2021-03-17 we ignore the py from SWL, retrieve the one from concept below as $cpy :)
+(:$py := $node/tei:form[1]/tei:pron[starts-with(@xml:lang, 'zh-Latn')][1]/text(),:)
 ,$link := substring(tokenize($node/tei:link/@target)[2], 2)
-(: damnit, why does this not work?  3 days later... seems to work now :)
-, $w := collection($config:tls-data-root)//tei:sense[@xml:id=$link]/ancestor::tei:entry
+(: 2021-03-17 below we get the data from the CONCEPT entry, rather than the SWL, all we need in the SWL now is the link :)
+, $s := collection($config:tls-data-root)//tei:sense[@xml:id=$link]
+, $w := $s/ancestor::tei:entry
 , $czi := string-join($w/tei:form/tei:orth/text(), " / ")
 , $cpy := string-join($w/tei:form/tei:pron[@xml:lang='zh-Latn-x-pinyin']/text(), " / ")
 ,$cdef := $w/ancestor::tei:div/tei:div[@type="definition"]/tei:p/text()
+,$sf := $s//tls:syn-func
+,$sm := $s//tls:sem-feat
 ,$def := tlslib:get-sense-def($link)
 (:$pos := concat($sf, if ($sm) then (" ", $sm) else "")
 :)
@@ -819,7 +821,7 @@ else ()
 </div>
 (: not in the row :)
 else 
-<li class="list-group-item" id="{$concept}">{$py} {$concept} {$sf} {$sm} {
+<li class="list-group-item" id="{$concept}">{$cpy} {$concept} {$sf} {$sm} {
 if (string-length($def) > 10) then concat(substring($def, 10), "...") else $def}</li>
 };
 

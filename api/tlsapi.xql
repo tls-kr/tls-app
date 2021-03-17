@@ -1009,14 +1009,17 @@ let $newsf-id := if ($synfunc-id = 'xxx') then (
 ) else ($synfunc-id)
 ,$pos := <pos xmlns="http://www.tei-c.org/ns/1.0">{upper-case(substring($synfunc-val, 1, 1))}</pos>
 ,$sf :=  <tls:syn-func corresp="#{$newsf-id}">{$synfunc-val}</tls:syn-func>
+(: here we update the concept :)
 ,$sense := collection($config:tls-data-root)//tei:sense[@xml:id = $sense-id]
 ,$upd := update replace $sense/tei:gramGrp/tei:pos with $pos 
 ,$upd := update replace $sense/tei:gramGrp/tls:syn-func with $sf
 ,$gramgrp := $sense/tei:gramGrp
 ,$a := for $s in collection($config:tls-data-root)//tls:ann/tei:sense[@corresp = "#" || $sense-id]
   return
-  update replace $s/tei:gramGrp with $gramgrp
-
+  (: this behaves badly.  disabling for now :)
+(:  update replace $s/tei:gramGrp with $gramgrp:)
+   ()
+   
 return 
 count(collection($config:tls-data-root)//tls:ann/tei:sense[@corresp = "#" || $sense-id])
 
@@ -1257,7 +1260,7 @@ let $new-concept := (
 <div type="words">
 </div>
 </div>)
-let $uri := xmldb:store($config:tls-data-root || "/concepts", $map?concept||".xml", $new-concept)
+let $uri := xmldb:store($config:tls-data-root || "/concepts", translate($map?concept, ' ', '_') ||".xml", $new-concept)
 return (
     sm:chmod(xs:anyURI($uri), "rwxrwxr--"),
 (:    sm:chown(xs:anyURI($uri), "tls"),:)
@@ -1270,9 +1273,12 @@ return (
 declare function tlsapi:save-sf-def($map as map(*)){
 
 let $type := $map?type
-, $sfdoc := if ($type ='-sf') then doc($config:tls-data-root || "/core/syntactic-functions.xml")
-  else doc($config:tls-data-root || "/core/semantic-features.xml")
-, $sfnode := $sfdoc//tei:div[@xml:id=$map?id]
+, $sfdoc := if ($type ='-sf') 
+  then doc($config:tls-data-root || "/core/syntactic-functions.xml")
+  else if ($type='-sm') then doc($config:tls-data-root || "/core/semantic-features.xml")
+  else doc($config:tls-data-root || "/core/rhetorical-devices.xml")
+, $sfnode := if ($type='-rd') then $sfdoc//tei:div[@xml:id=$map?id]/tei:div[@type='definition'] 
+   else $sfdoc//tei:div[@xml:id=$map?id]
 let $sf := 
 if (empty($sfnode)) then (
  if ($type = "-la") then
@@ -1289,6 +1295,7 @@ $def := if ($type = '-la') then
 else
 <p xmlns="http://www.tei-c.org/ns/1.0" resp="#{$user}" modified="{current-dateTime()}">{normalize-space($map?def)}</p>
 return
+ (: das sieht ziemlich fatal aus, was soll das? :)
  (if ($firstp) then update delete $firstp else (),
  if (empty($sfnode)) then
  if ($type = '-la') then 

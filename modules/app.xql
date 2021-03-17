@@ -149,7 +149,8 @@ function app:browse($node as node()*, $model as map(*), $type as xs:string?, $fi
       <span class="col-3">
       <input class="form-control" id="myInput" type="text" placeholder="Type to filter..."/>
       </span>
-      <span class="col-2"></span>
+      <button type="button" class="btn btn-primary" onclick="countrows()">Count</button>
+      <span class="col-2" id="rowCount"></span>
       {(: if ($type = 'concept') then
       <span class="col-3">
        <button type="button" class="btn btn-primary" onclick="new_concept_dialog()">New concept</button>
@@ -158,7 +159,7 @@ function app:browse($node as node()*, $model as map(*), $type as xs:string?, $fi
       }
       </div>
     </div>
-    <div class="card-body"><table class="table">
+    <div class="card-body"><table id="filtertable" class="table">
     <thead><tr>
     <th scope="col">Formula</th>
     <th scope="col">Definition</th>
@@ -187,7 +188,7 @@ function app:browse($node as node()*, $model as map(*), $type as xs:string?, $fi
         default return (tlslib:format-button("delete_sf('"||$id||"', '"||$type||"')", "Delete this " || lower-case($app:lmap($type||"1")) || ".", "open-iconic-master/svg/x.svg", "", "", "tls-editor"),
         <a id="{$id}-abbr" onclick="show_use_of('{$type}', '{$id}')">{$n}</a>)
     }</td>
-    <td><p id="{$id}-{if ($type = 'syn-func') then 'sf' else 'sm'}" class="sf" contenteditable="{if ($edit) then 'true' else 'false'}">
+    <td><p id="{$id}-{if ($type = 'sem-feat') then 'sm' else if ($type = 'syn-func') then 'sf' else 'rd'}" class="sf" contenteditable="{if ($edit) then 'true' else 'false'}">
         {string-join(for $p in $def return
          $p/text(), " ")}&#160;</p></td>
     <td><ul id="{$id}-resp"/></td>
