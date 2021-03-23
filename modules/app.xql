@@ -893,9 +893,11 @@ function app:rhetdev($node as node()*, $model as map(*), $uuid as xs:string?, $o
      <ul>
      {for $r in $p//tei:ref 
      let $lk := replace($r/@target, "#", "")
+     let $def := collection($config:tls-data-root)//tei:div[@xml:id=substring($r/@target, 2)]/tei:div[@type='definition']/tei:p/text()
      return
      (<li >
      <a class="badge badge-light" href="rhet-dev.html?uuid={$lk}&amp;ontshow=true">{$r/text()}</a>
+     <small style="display:block;">{$def}</small>
      </li>,
      <ul>{
      if ($p[@type = "hypernymy"]) then
