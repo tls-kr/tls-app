@@ -173,12 +173,12 @@ function app:browse($node as node()*, $model as map(*), $type as xs:string?, $fi
     let $n := $h/tei:head/text()
     ,$id := $h/@xml:id
     (: editing for rhet dev postponed, because of the complicated structure. :)
-    ,$edit := sm:id()//sm:groups/sm:group[. = "tls-editor"] and not ($type = "rhet-dev")
+    ,$edit := if (sm:id()//sm:groups/sm:group[. = "tls-editor"] and not ($type = "rhet-dev") ) then 'true' else 'false'
     ,$d := $h/tei:div[@type="definition"]
     ,$def := if ($type = 'concept') then
        ($d/tei:p, <small>{$d/tei:note}</small>) else 
        if ($type = 'rhet-dev') then 
-        ($d/tei:p, <small>{$d/tei:note}</small>)    
+        (for $p in $d/tei:p return ($p, <br/>))    
        else
         ($h/tei:p, <small>{$h/tei:note}</small>)
     ,$al := $h/tei:list[@type='altnames']/tei:item/text()
@@ -194,9 +194,8 @@ function app:browse($node as node()*, $model as map(*), $type as xs:string?, $fi
         default return (tlslib:format-button("delete_sf('"||$id||"', '"||$type||"')", "Delete this " || lower-case($app:lmap($type||"1")) || ".", "open-iconic-master/svg/x.svg", "", "", "tls-editor"),
         <a id="{$id}-abbr" onclick="show_use_of('{$type}', '{$id}')">{$n}</a>)
     }</td>
-    <td><p id="{$id}-{if ($type = 'sem-feat') then 'sm' else if ($type = 'syn-func') then 'sf' else 'rd'}" class="sf" contenteditable="{if ($edit) then 'true' else 'false'}">
-        {string-join(for $p in $def return
-         $p/text(), " ")}&#160;</p></td>
+    <td><p id="{$id}-{if ($type = 'sem-feat') then 'sm' else if ($type = 'syn-func') then 'sf' else 'rd'}" class="sf" contenteditable="{$edit}">
+    {for $p in $def return ($p/text(), <br/>) }&#160;</p></td>
     <td><ul id="{$id}-resp"/><p class="altlabels" style="display:block">{string-join($al, ', ')}</p></td>
     </tr>)
     }</tbody></table></div>
@@ -1466,7 +1465,7 @@ declare
 function app:footer($node as node()*, $model as map(*)){
             <div class="container">
                 <span id="copyright"/>
-                    <p>Copyright TLS Project 2020</p>
+                    <p>Copyright TLS Project 2021</p>
                 <p>Developed at the <strong>Center for Informatics in East-Asian Studies, Institute for Research in Humanities, Kyoto University</strong>, with support from the 
                 <strong>Dean for Research, Department of East Asian Studies</strong>, and
                 <strong>Program in East Asian Studies, Princeton University</strong>.</p>    
