@@ -1081,11 +1081,7 @@ return
 , $upd := update insert $oldnode into (tlslib:get-crypt-file("notes")//tei:div/tei:p[last()])[1]
 , $save := update replace $oldnode with $node
 return
-<div>
-{string-length($oldnode)}
-<p>Concept {$id}</p>
-{$node}
-</div>
+"OK"
 };
 
 
@@ -1316,6 +1312,7 @@ return (
 };
 (: originally written for saving the sf-definitions in browse mode 
 2020-10-14: updated for editing also the concept definitions in browse mode
+2021-03-21: updating rhet-dev definitions, these contain multiple paragraphs.  What a mess!
 :)
 declare function tlsapi:save-sf-def($map as map(*)){
 
@@ -1340,10 +1337,20 @@ $user := sm:id()//sm:real/sm:username/text(),
 $def := if ($type = '-la') then 
 <head xmlns="http://www.tei-c.org/ns/1.0" resp="#{$user}" modified="{current-dateTime()}">{normalize-space($map?def)}</head>
 else
+if ($type = '-rd') then
+ <div type="definition" xmlns="http://www.tei-c.org/ns/1.0" resp="#{$user}" modified="{current-dateTime()}">
+ {for $p in tokenize(normalize-space($map?def), "<br>") 
+  where string-length($p) > 0
+ return
+ <p>{$p}</p>
+ }
+ </div>
+else 
 <p xmlns="http://www.tei-c.org/ns/1.0" resp="#{$user}" modified="{current-dateTime()}">{normalize-space($map?def)}</p>
-return
- (: das sieht ziemlich fatal aus, was soll das? :)
- (if ($firstp) then update delete $firstp else (),
+return 
+  (
+ (: das sieht ziemlich fatal aus, was soll das? 
+ if ($firstp) then update delete $firstp else (), :) 
  if (empty($sfnode)) then
  if ($type = '-la') then 
    (
@@ -1355,9 +1362,20 @@ return
    update replace $r with <ref xmlns="http://www.tei-c.org/ns/1.0" resp="#{$user}" modified="{current-dateTime()}" target="#{$map?id}">{normalize-space($map?def)}</ref> 
    )
  else
- (: notwithstanding the naming, this is updating the definition in the concept :)
+ (: notwithstanding the naming, this is updating the definition in the concept :)   
    update insert $def into $sf 
  else 
+ (: $sfnode is not empty :)
+ if ($type= '-rd') then (
+ (: keep the record :)
+  update insert attribute resp {"#"||$user} into $sfnode,
+  update insert attribute modified {current-dateTime()} into $sfnode,
+  update insert attribute rd-id {$map?id} into $sfnode,
+  update insert $sfnode into (tlslib:get-crypt-file("rhetdev-def")//tei:div/tei:p[last()])[1], 
+  (: ok, now update :)
+  update replace $sfnode with $def
+ ) 
+ else
  update insert $def following $head
  )
 };

@@ -921,8 +921,9 @@ $( ".sf").keyup(function ( event ) {
     console.log("tab", $(this).data('before') , "h", sf)
     if ($(this).data('before') !== sf){    
         // we keep the end of the id to distinguish different use cases
-        save_sf_def (sfid.slice(0, -3), sf, sfid.slice(-3))
-        $(this).data('before', sf)
+        var dat = $(this).html();
+        save_sf_def (sfid.slice(0, -3), dat, sfid.slice(-3));
+        $(this).data('before', sf);
     }}
     });
         
