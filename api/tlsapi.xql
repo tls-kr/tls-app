@@ -1052,8 +1052,44 @@ $defel
 (:if (update replace $node with $seg) then "Success. Updated translation." else "Could not update translation." 
 if (update replace $sense/tei:def with $defel) then "Success" else "Problem"
 :)
-
 };
+
+(:~ 
+ : 2021-03-23
+ : Save the notes in concepts
+
+:)
+
+declare function tlsapi:save-note($trid as xs:string, $tr-to-save as xs:string){
+let $user := sm:id()//sm:real/sm:username/text()
+,$in := tokenize($tr-to-save, "<br><br>")
+,$id := tokenize($trid, "_")[2]
+,$type := tokenize($trid, "_")[1]
+,$oldnode := collection($config:tls-data-root)//tei:div[@xml:id=$id]//tei:div[@type=$type]
+,$node := <div xmlns="http://www.tei-c.org/ns/1.0" type="{$type}" resp="#{$user}" modified="{current-dateTime()}">
+{for $p in $in
+where string-length($p) > 0
+return
+<p>{$p}</p>
+}
+</div>
+, $u1 := (update insert attribute concept {$id} into $oldnode,
+         update insert attribute resp {"#"||$user} into $oldnode,
+         update insert attribute modified {current-dateTime()} into $oldnode
+         )
+
+, $upd := update insert $oldnode into (tlslib:get-crypt-file("notes")//tei:div/tei:p[last()])[1]
+, $save := update replace $oldnode with $node
+return
+<div>
+{string-length($oldnode)}
+<p>Concept {$id}</p>
+{$node}
+</div>
+};
+
+
+
 (:~
  : Save the translation (or comment)
  : 3/11: Get the file from the correct slot!

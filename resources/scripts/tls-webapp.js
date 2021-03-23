@@ -942,6 +942,75 @@ function save_sf_def (sfid, def, tp){
   });    
 };
 
+// for the notes (class "nedit"), we save on keyup, so we check for our event
+$( ".nedit" ).keyup(function( event ) {
+}).keydown(function( event ) {
+  var nid = $(this).attr('id');
+  if ( event.which == 9 ) {
+    var trid = $(this).attr('id');
+    var tr = $(this).text()
+    console.log("tab", $(this).data('before') , "h", tr)
+    if ($(this).data('before') !== tr){    
+           var savedata = $(this).html()
+           save_note(nid, savedata);
+          // save this, in case there are more changes
+          $(this).data('before', tr)
+    }
+  }
+  //dont save on enter, onle on tab
+  if ( event.which == 1300000 ) {
+    var trid = $(this).attr('id');
+    var tr = $(this).text()
+    event.preventDefault();
+    if ($(this).data('before') !== tr){    
+           save_note(nid, tr);
+          // save this, in case there are more changes
+          $(this).data('before', tr)
+    }
+  }
+});
+
+$( ".nedit" ).blur(function (event) {
+    var nid = $(this).attr('id');
+    var tr = $(this).text()
+    console.log("blur", $(this).data('before') , "h", tr)
+    if ($(this).data('before') !== tr){    
+         cname = confirm("Unsaved data exist, do you want to save?");
+         if (cname){
+           var savedata = $(this).html()
+           save_note(nid, savedata);
+          }
+          // save this, in case there are more changes
+          $(this).data('before', tr)
+    }
+  dirty = false;
+});
+
+function save_note (trid, tr){
+  $.ajax({
+  type : "POST",
+  dataType : "html",
+  url : "api/save_note.xql",
+  data: {"trid" : trid.slice(0, -3), "tr" : tr},
+  success : function(resp){
+    if (resp.startsWith("Could not")) {
+    toastr.error(resp, "漢學文典 says:");
+/*    toastr.error("Could not save translation for "+line+".", "HXWD says:");        */
+    } else {
+    toastr.info("Modification saved.", "漢學文典 says:");
+    dirty = false;
+    }
+  },
+  error : function(resp){
+  console.log(resp);
+    alert("PROBLEM: "+resp.statusText + "\n " + resp.responseText);
+  }
+  });    
+};
+
+
+// tr
+
 $( ".tr" ).blur(function (event) {
     var trid = $(this).attr('id');
     var lineid = trid.slice(0, -3);
@@ -958,6 +1027,7 @@ $( ".tr" ).blur(function (event) {
     }
   dirty = false;
 });
+
 
 
 // for the translations (class "tr"), we save on keyup, so we check for our event
@@ -1359,7 +1429,9 @@ function delete_bm(uuid){
     
 }
 
-
+function toggle_alt_labels(){
+  $(".altlabels").toggle();   
+};
 
 // need to think about where to use this:
 /*window.onbeforeunload = function() {

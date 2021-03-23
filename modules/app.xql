@@ -149,7 +149,11 @@ function app:browse($node as node()*, $model as map(*), $type as xs:string?, $fi
       <span class="col-3">
       <input class="form-control" id="myInput" type="text" placeholder="Type to filter..."/>
       </span>
+      {if ($type = 'conceptxx') then 
+      <button type="button" class="btn btn-primary" onclick="toggle_alt_labels()">Show alternate labels</button>
+      else
       <button type="button" class="btn btn-primary" onclick="countrows()">Count</button>
+      }
       <span class="col-2" id="rowCount"></span>
       {(: if ($type = 'concept') then
       <span class="col-3">
@@ -163,11 +167,12 @@ function app:browse($node as node()*, $model as map(*), $type as xs:string?, $fi
     <thead><tr>
     <th scope="col">Formula</th>
     <th scope="col">Definition</th>
-    <th scope="col">Remarks</th>    
+    <th scope="col">{if ($type='concept') then 'Alternate Labels' else 'Remarks'}</th>    
     </tr></thead><tbody class="table-striped">{
     for $h in $hits
     let $n := $h/tei:head/text()
     ,$id := $h/@xml:id
+    (: editing for rhet dev postponed, because of the complicated structure. :)
     ,$edit := sm:id()//sm:groups/sm:group[. = "tls-editor"] and not ($type = "rhet-dev")
     ,$d := $h/tei:div[@type="definition"]
     ,$def := if ($type = 'concept') then
@@ -176,6 +181,7 @@ function app:browse($node as node()*, $model as map(*), $type as xs:string?, $fi
         ($d/tei:p, <small>{$d/tei:note}</small>)    
        else
         ($h/tei:p, <small>{$h/tei:note}</small>)
+    ,$al := $h/tei:list[@type='altnames']/tei:item/text()
     order by $n
     return
     (
@@ -191,7 +197,7 @@ function app:browse($node as node()*, $model as map(*), $type as xs:string?, $fi
     <td><p id="{$id}-{if ($type = 'sem-feat') then 'sm' else if ($type = 'syn-func') then 'sf' else 'rd'}" class="sf" contenteditable="{if ($edit) then 'true' else 'false'}">
         {string-join(for $p in $def return
          $p/text(), " ")}&#160;</p></td>
-    <td><ul id="{$id}-resp"/></td>
+    <td><ul id="{$id}-resp"/><p class="altlabels" style="display:block">{string-join($al, ', ')}</p></td>
     </tr>)
     }</tbody></table></div>
   </div>
@@ -991,7 +997,7 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
      else
        collection($config:tls-data-root || "/concepts")//tei:div[tei:head[. = $concept]],
     $key := $c/@xml:id,
-    $edit := sm:id()//sm:groups/sm:group[. = "tls-editor"],
+    $edit := if (sm:id()//sm:groups/sm:group[. = "tls-editor"]) then 'true' else 'false',
     $show := if (string-length($ontshow) > 0) then " show" else "",
     $tr := $c//tei:list[@type="translations"]//tei:item
     let $ann := for $c in collection($config:tls-data-root||"/notes")//tls:ann[@concept-id=$key]
@@ -1000,14 +1006,14 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
     <div class="row" id="concept-id" data-id="{$key}">
     <div class="card col-sm-12" style="max-width: 1000px;">
     <div class="card-body">
-    <h4 class="card-title"><span id="{$key}-la" class="sf" contenteditable="{if ($edit) then 'true' else 'false'}">{$c/tei:head/text()}</span>&#160;&#160;{for $t in $tr return 
+    <h4 class="card-title"><span id="{$key}-la" class="sf" contenteditable="{$edit}">{$c/tei:head/text()}</span>&#160;&#160;{for $t in $tr return 
       <span class="badge badge-light" title="{map:get($app:lmap, $t/@xml:lang)}">{$t/text()}</span>} 
       {if  ("tls-admin" = sm:get-user-groups($user)) then 
       <a target="_blank" class="float-right badge badge-pill badge-light" href="{
       concat($config:exide-url, "?open=", document-uri(root($c)))}">Edit concept</a>
       else ()}
       </h4>
-    <h5 class="card-subtitle" id="popover-test" data-toggle="popover">{$c/tei:div[@type="definition"]//tei:p/text()}</h5>
+    <h5 class="card-subtitle" id="concept-def">{$c/tei:div[@type="definition"]//tei:p/text()}</h5>
     <div id="concept-content" class="accordion">
     <div class="card">
     <div class="card-header" id="altnames-head">
@@ -1093,8 +1099,8 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
      {for $d in $c//tei:div[@type="notes"]//tei:div
      return
      (<h5 class="ml-2 mt-2">{map:get($app:lmap, data($d/@type))}</h5>,
-     <div>{for $p in $d//tei:p return
-     <p>{$p}</p>
+     <div lang="en-GB" contenteditable="{$edit}" style="white-space: pre-wrap;" class="nedit" id="{$d/@type}_{$key}-nt">{for $p in $d//tei:p return
+     ($p/text(), <br/>,<br/>)
      }     
      </div>)}
      </div>
