@@ -325,10 +325,12 @@ function save_newsw(){
             $.ajax({
               type: "PUT",
               datatype : "json",
-              url : "api/save_sf.xql?sf_val="+synfunc_val+"&sf_id=xxx&def="+ndef,
+              url : "api/save_sf.xql?sf_val="+synfunc_val+"&sf_id=xxx&def="+ndef+"&type=syn-func",
               success : function(resp){
                 toastr.info("New syntactic function has been saved.", "HXWD says:");
-                alert("Please re-enter and select the new syntactic function.");   
+                $("#synfunc-id-span" ).text(resp);
+                save_newsw();
+                // alert("Please re-enter and select the new syntactic function.");   
               }
           })
           } else {

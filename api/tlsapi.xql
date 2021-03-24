@@ -1032,8 +1032,8 @@ let $newsf-id := if ($synfunc-id = 'xxx') then (
    ()
    
 return 
+if ($synfunc-id = 'xxx') then $newsf-id else
 count(collection($config:tls-data-root)//tls:ann/tei:sense[@corresp = "#" || $sense-id])
-
 };
 
 declare function tlsapi:save-def($defid as xs:string, $def as xs:string){
