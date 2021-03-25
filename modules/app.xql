@@ -860,6 +860,7 @@ function app:rhetdev($node as node()*, $model as map(*), $uuid as xs:string?, $o
     let $rd :=  
        collection($config:tls-data-root || "/core")//tei:div[@xml:id=$key],        
     $show := if (string-length($ontshow) > 0) then " show" else "",
+    $edit := if (sm:id()//sm:groups/sm:group[. = "tls-editor"]) then 'true' else 'false',
     $tr := $rd//tei:list[@type="translations"]//tei:item
 
     return 
@@ -942,11 +943,9 @@ function app:rhetdev($node as node()*, $model as map(*), $uuid as xs:string?, $o
      <div id="notes" class="collapse" data-parent="#rhetdev-content">
      {for $d in $rd//tei:note
      return
-     (
-     <div>{for $p in $d//tei:p return
-     <p>{$p}</p>
-     }     
-     </div>)}
+     <div lang="en-GB" contenteditable="{$edit}" style="white-space: pre-wrap;" class="nedit" id="note_{$key}-nt">{for $p in $d//tei:p return
+     ($p/text(), <br/>,<br/>)}
+     </div>}
      </div>
     </div>
     <!-- bibl -->

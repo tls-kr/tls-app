@@ -1065,20 +1065,36 @@ let $user := sm:id()//sm:real/sm:username/text()
 ,$in := tokenize($tr-to-save, "<br><br>")
 ,$id := tokenize($trid, "_")[2]
 ,$type := tokenize($trid, "_")[1]
-,$oldnode := collection($config:tls-data-root)//tei:div[@xml:id=$id]//tei:div[@type=$type]
-,$node := <div xmlns="http://www.tei-c.org/ns/1.0" type="{$type}" resp="#{$user}" modified="{current-dateTime()}">
+,$oldnode := if ($type='note') then 
+collection($config:tls-data-root)//tei:div[@xml:id=$id]//tei:note
+else
+collection($config:tls-data-root)//tei:div[@xml:id=$id]//tei:div[@type=$type]
+,$node := if ($type='note') then 
+<note xmlns="http://www.tei-c.org/ns/1.0" type="{$type}" resp="#{$user}" modified="{current-dateTime()}">
+{for $p in $in
+where string-length($p) > 0
+return
+<p>{$p}</p>
+}
+</note>
+else
+<div xmlns="http://www.tei-c.org/ns/1.0" type="{$type}" resp="#{$user}" modified="{current-dateTime()}">
 {for $p in $in
 where string-length($p) > 0
 return
 <p>{$p}</p>
 }
 </div>
-, $u1 := (update insert attribute concept {$id} into $oldnode,
+, $u1 := (if ($type = 'note') then 
+           update insert attribute rhet-dev {$id} into $oldnode
+        else
+           update insert attribute concept {$id} into $oldnode,
          update insert attribute resp {"#"||$user} into $oldnode,
          update insert attribute modified {current-dateTime()} into $oldnode
          )
 
-, $upd := update insert $oldnode into (tlslib:get-crypt-file("notes")//tei:div/tei:p[last()])[1]
+, $upd := if ($type = 'note') then update insert $oldnode into (tlslib:get-crypt-file("rhetdev-notes")//tei:div/tei:p[last()])[1]
+  else update insert $oldnode into (tlslib:get-crypt-file("notes")//tei:div/tei:p[last()])[1]
 , $save := update replace $oldnode with $node
 return
 "OK"
