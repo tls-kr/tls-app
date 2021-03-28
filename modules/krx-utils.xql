@@ -96,7 +96,7 @@ else
 
 
 declare function krx:get-variants($sid as xs:string){
-let $edid := string-join(tokenize($sid, "_")[1,2], "_")
+let $edid := string-join(tokenize($sid, "_")[position()>=1 and position()<4], "_")
 ,$ltab := collection("/db/apps/tls-texts/aux/lnk")/nx:nexusList[@ed=$edid]
 ,$tok := collection("/db/apps/tls-texts/aux/tok")
 ,$s := $ltab/nx:nexus[@id=$sid]
@@ -110,7 +110,7 @@ count($ltab)
 };
 
 declare function krx:get-varseg-ed($sid as xs:string, $ed as xs:string){
-let $edid := string-join(tokenize($sid, "_")[1,2], "_")
+let $edid := string-join(tokenize($sid, "_")[position()>=1 and position()<3], "_")
 let $ltab := collection("/db/apps/tls-texts/aux/lnk")/nx:nexusList[@ed=$edid]
 ,$tok := collection("/db/apps/tls-texts/aux/tok")
 ,$r := $ltab/seg[@id=$sid]/ref[@ed=$ed]
@@ -122,7 +122,7 @@ return string-join(for $t in $tks return ($t || data($t/@f)), '')
 
 
 declare function krx:collate-request($sid as xs:string){
-let $edid := string-join(tokenize($sid, "_")[1,2], "_")
+let $edid := string-join(tokenize($sid, "_")[position()>=1 and position()<3], "_")
 ,$ltab := collection("/db/apps/tls-texts/aux/lnk")/nx:nexusList[@ed=$edid]
 ,$tok := collection("/db/apps/tls-texts/aux/tok")
 ,$s := $ltab/nx:nexus[@xml:id=$sid]

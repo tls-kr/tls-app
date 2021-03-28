@@ -866,9 +866,13 @@ default return (krx:get-varseg-ed($seg/@xml:id, substring-before($slot1, "::")))
 }</div>
  {if ($ann = 'false') then () else 
  (: using en-GB for now, need to get that from translation in the future...  :)
-  <div class="col-sm-4 tr" lang="en-GB" tabindex="{$options('pos')+1000}" id="{$seg/@xml:id}-ex" contenteditable="{if (not($testuser)) then 'true' else 'false'}">{typeswitch ($slot2) 
+  <div class="col-sm-4 tr" lang="en-GB" tabindex="{$options('pos')+1000}" id="{$seg/@xml:id}-ex" contenteditable="{if (not($testuser)) then 'true' else 'false'}">
+  {typeswitch ($slot2) 
 case element(tei:TEI) return $slot2//tei:seg[@corresp="#"||$seg/@xml:id]/text()  
-default return (krx:get-varseg-ed($seg/@xml:id, substring-before($slot2, "::")))
+default return ()
+(:
+(krx:get-varseg-ed($seg/@xml:id, substring-before($slot2, "::")))
+:)
 }
   </div>}
 </div>,

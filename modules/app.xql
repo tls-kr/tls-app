@@ -451,7 +451,6 @@ let $query := map:get($model, "query")
 (:     at some point use this to select the translation the user prefers
       $tr := tlslib:get-translations($model?textid),
       $slot1-id := tlslib:get-content-id($model?textid, 'slot1', $tr),:)
-      
       $tr := collection($config:tls-translation-root)//tei:seg[@corresp="#"||$h/@xml:id]
     return
       <tr>
@@ -460,21 +459,22 @@ let $query := map:get($model, "query")
         </td>
         {if ($search-type = "3") then  
         (<td>{$cseg}</td>,<td>{$h}</td>) else
-        <td>{ $h/preceding-sibling::tei:seg[1,2,3],
+        <td>{ ($h/preceding-sibling::tei:seg)[position()>=1 and position()<4],
         if (count($qs) > 1 or not($iskanji)) then $h else
         (substring-before($h, $query), 
         <mark>{$query}</mark> 
         ,substring-after($h, $query)), 
         (: this is a hack, it will probably show the most recent translation if there are more, but we want to make this predictable... :)
-        $h/following-sibling::tei:seg[1,2,3]}{if ($tr) then (<br/>,"..." || $tr[last()] || "...") else ()}</td>
+        ($h/following-sibling::tei:seg)[position()>=1 and position()<4]}{if (exists($tr)) then (<br/>,"..." || $tr[last()] || "...") else ()
+        }</td>
         }
         </tr>
     }
     </table>
     <nav aria-label="Page navigation">
   <ul class="pagination">
-    <li class="page-item"><a class="page-link {if ($start = 1) then "disabled" else ()}" href="search.html?query={$query}&amp;start={$start - $resno}&amp;textid={$textid}&amp;search-type={$search-type}{if ($mode) then concat("&amp;mode=", $mode) else ()}">&#171;</a></li>
-    <li class="page-item"><a class="page-link" href="search.html?query={$query}&amp;start={$start + $resno}&amp;textid={$textid}&amp;search-type={$search-type}{if ($mode) then concat("&amp;mode=", $mode) else ()}">&#187;</a></li>
+    <li class="page-item"><a class="page-link {if ($start = 1) then "disabled" else ()}" href="search.html?query={$query}&amp;start={$start - $resno}&amp;textid={$textid}&amp;search-type={$search-type}{if (string-length($mode) > 0) then concat("&amp;mode=", $mode) else ()}">&#171;</a></li>
+    <li class="page-item"><a class="page-link" href="search.html?query={$query}&amp;start={$start + $resno}&amp;textid={$textid}&amp;search-type={$search-type}{if (string-length($mode)>0) then concat("&amp;mode=", $mode) else ()}">&#187;</a></li>
   </ul>
 </nav>
     </div>

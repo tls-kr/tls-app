@@ -1433,12 +1433,12 @@ return
 <div class="row">
 <div class="col-md-1">{xs:int($map?start)+$n - 1}</div>
 <div class="col-md-3"><a href="textview.html?location={$loc}&amp;query={$map?query}">{$title, " / ", $head}</a></div>
-<div class="col-md-8">{ $h/preceding-sibling::tei:seg[1,3],
+<div class="col-md-8">{ ($h/preceding-sibling::tei:seg)[position()>=1 and position()<4],
         if (count($qs) > 1) then $h else
         (substring-before($h, $map?query), 
         <mark>{$map?query}</mark> 
         ,substring-after($h, $map?query)), 
-        $h/following-sibling::tei:seg[1,3],
+        ($h/following-sibling::tei:seg)[position()>=1 and position()<4],
         if ($tr) then (<br/>, $tr) else ()}</div>
 </div>
 }
