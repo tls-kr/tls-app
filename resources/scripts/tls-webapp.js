@@ -508,7 +508,9 @@ $('.zh').bind('touchend', function(){
 $( ".zh" )
   .mouseup(function() {
   const sel = x.Selector.getSelected();
-  const xid = sel.anchorNode.parentNode.id.toString();
+  // 2021-04-05
+  // this used to be id.toString() instead of getAttribute("xml:id"), but due to the astral bug, I have now the tei:seg element to deal with, thus retrieving xml:id
+  const xid = sel.anchorNode.parentNode.getAttribute("xml:id");
   const line = sel.anchorNode.parentNode.innerText;
   get_sw(sel.toString(), xid, line)
    // this is to activate the click on the text line to get the context
