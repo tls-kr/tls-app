@@ -465,7 +465,7 @@ let $query := map:get($model, "query")
         <mark>{$query}</mark> 
         ,substring-after($h, $query)), 
         (: this is a hack, it will probably show the most recent translation if there are more, but we want to make this predictable... :)
-        ($h/following-sibling::tei:seg)[position()>=1 and position()<4]}{if (exists($tr)) then (<br/>,"..." || $tr[last()] || "...") else ()
+        ($h/following-sibling::tei:seg)[position()>=1 and position()<4]}{if (exists($tr)) then (<br/>,"..." , $tr[last()] , "...") else ()
         }</td>
         }
         </tr>

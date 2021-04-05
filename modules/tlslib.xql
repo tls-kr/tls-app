@@ -859,7 +859,7 @@ declare function tlslib:display-seg($seg as node()*, $options as map(*) ) {
 return
 (
 <div class="row {$mark}">
-<div class="{if ($seg/parent::tei:head) then 'tls-head ' else () }{if ($ann='false') then 'col-sm-4' else 'col-sm-2'} zh {$alpheios-class}" lang="{$lang}" id="{$seg/@xml:id}">{$seg/text()}</div>　
+<div class="{if ($seg/parent::tei:head) then 'tls-head ' else () }{if ($ann='false') then 'col-sm-4' else 'col-sm-2'} zh {$alpheios-class}" lang="{$lang}" id="{$seg/@xml:id}">{$seg}</div>　
 <div class="col-sm-5 tr" lang="en-GB" tabindex="{$options('pos')+500}" id="{$seg/@xml:id}-tr" contenteditable="{if (not($testuser)) then 'true' else 'false'}">{typeswitch ($slot1) 
 case element(tei:TEI) return  $slot1//tei:seg[@corresp="#"||$seg/@xml:id]/text()
 default return (krx:get-varseg-ed($seg/@xml:id, substring-before($slot1, "::")))
@@ -869,10 +869,10 @@ default return (krx:get-varseg-ed($seg/@xml:id, substring-before($slot1, "::")))
   <div class="col-sm-4 tr" lang="en-GB" tabindex="{$options('pos')+1000}" id="{$seg/@xml:id}-ex" contenteditable="{if (not($testuser)) then 'true' else 'false'}">
   {typeswitch ($slot2) 
 case element(tei:TEI) return $slot2//tei:seg[@corresp="#"||$seg/@xml:id]/text()  
-default return ()
-(:
+default return
+
 (krx:get-varseg-ed($seg/@xml:id, substring-before($slot2, "::")))
-:)
+
 }
   </div>}
 </div>,
