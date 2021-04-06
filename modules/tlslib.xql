@@ -1367,7 +1367,7 @@ onclick="show_newsw({{'wid':'xx', 'py': '{$py[$pos]}','concept' : '{$concept}', 
 <span>      
 {if (count($syn) > 0) then
 <button title="Click to view {count($syn)} synonyms" class="btn badge badge-info" data-toggle="collapse" data-target="#{$wid}-syn">SYN</button> else ()}
-<button title="click to reveal {count($wx/ancestor::tei:entry/tei:sense)} syntactic words" class="btn badge badge-light" type="button" data-toggle="collapse" data-target="#{$wid}-{$pos}-concept">{$scnt}</button>
+<button title="click to reveal {count($wx/ancestor::tei:entry/tei:sense)} syntactic words" class="btn badge badge-light" type="button" data-toggle="collapse" data-target="#{$wid}-{$pos}-concept">{$scnt[1]}</button>
 <ul class="list-unstyled collapse" id="{$wid}-syn" style="swl-bullet">{
 for $l in $syn
 return
