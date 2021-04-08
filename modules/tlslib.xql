@@ -1394,7 +1394,12 @@ return
 <a href="#" onclick="{$clicksf}" title="{tlslib:get-sf-def($sfid, 'syn-func')}">{$sf/text()}</a>&#160;{
 if (string-length($sm) > 0) then
 <a href="#" onclick="{$clicksm}" title="{tlslib:get-sf-def($smid, 'sem-feat')}">{$sm}</a>
-else ()
+else 
+ if ($edit) then
+(: allow for newly defining sem-feat :) 
+ <a href="#" onclick="{$clicksm}" title="Click here to add a semantic feature to the SWL">＋</a>
+ else ()
+
 }: 
 <span class="swedit" id="def-{$sid}" contenteditable="{if ($edit) then 'true' else 'false'}">{ $def}</span>
     {if ($edit) then 

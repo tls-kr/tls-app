@@ -1022,7 +1022,10 @@ let $newsf-id := if ($synfunc-id = 'xxx') then (
 ,$upd := if ($type='syn-func') then 
    update replace $sense/tei:gramGrp/tls:syn-func with $sf
    else
+   if (exists($sense/tei:gramGrp/tls:sem-feat)) then
    update replace $sense/tei:gramGrp/tls:sem-feat with $sf
+   else 
+   update insert $sf into $sense/tei:gramGrp
    
 ,$gramgrp := $sense/tei:gramGrp
 ,$a := for $s in collection($config:tls-data-root)//tls:ann/tei:sense[@corresp = "#" || $sense-id]
