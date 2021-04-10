@@ -1335,9 +1335,12 @@ $py := for $p in map:get($wm($id), "py")
 order by $concept[1]
 return
 (: since I used "order by" for populating the map, some values are sequences now, need to disentangle that here  :)
-for $zi at $pos in $z 
-let $wx := collection(concat($config:tls-data-root, '/concepts/'))//tei:div[@xml:id = $id]//tei:orth[. = $zi],
-$scnt := for $w1 in $wx return
+for $zi at $pos in distinct-values($z) 
+(: there might be more than one entry that has the char $zi, so $wx is a sequence of one or more
+ we need to loop through these entries:)
+for $wx at $pw in collection(concat($config:tls-data-root, '/concepts/'))//tei:div[@xml:id = $id]//tei:orth[. = $zi]
+
+let $scnt := for $w1 in $wx return
            count($w1/ancestor::tei:entry/tei:sense),
 $wid := $wx/ancestor::tei:entry/@xml:id,
 $syn := $wx/ancestor::tei:div[@xml:id = $id]//tei:div[@type="old-chinese-criteria"]//tei:p,
@@ -1348,7 +1351,7 @@ return
 (: todo : check for permissions :)
 (<strong><span id="{$wid}-{$pos}-zi">{$zi}</span></strong>,<span id="{$wid}-{$pos}-py" title="Click here to change pinyin" onclick="assign_guangyun_dialog({{'zi':'{$zi}', 'wid':'{$wid}','py': '{$py[$pos]}','concept' : '{$esc}', 'concept_id' : '{$id}', 'pos' : '{$pos}'}})">&#160;({$py[$pos]})&#160;</span>)
 else ""}
-<strong><a href="concept.html?uuid={$id}#{$wid}" title="{$cdef}" class="{if ($scnt[$pos] = 0) then 'text-muted' else ()}">{$concept[1]}</a></strong> 
+<strong><a href="concept.html?uuid={$id}#{$wid}" title="{$cdef}" class="{if ($scnt[$pw] = 0) then 'text-muted' else ()}">{$concept[1]}</a></strong> 
 
 {if ($doann and sm:is-authenticated() and not(contains(sm:id()//sm:group, 'tls-test'))) then 
  if ($wid) then     
@@ -1367,14 +1370,14 @@ onclick="show_newsw({{'wid':'xx', 'py': '{$py[$pos]}','concept' : '{$concept}', 
 <span>      
 {if (count($syn) > 0) then
 <button title="Click to view {count($syn)} synonyms" class="btn badge badge-info" data-toggle="collapse" data-target="#{$wid}-syn">SYN</button> else ()}
-<button title="click to reveal {count($wx/ancestor::tei:entry/tei:sense)} syntactic words" class="btn badge badge-light" type="button" data-toggle="collapse" data-target="#{$wid}-{$pos}-concept">{$scnt[1]}</button>
+<button title="click to reveal {count($wx/ancestor::tei:entry/tei:sense)} syntactic words" class="btn badge badge-light" type="button" data-toggle="collapse" data-target="#{$wid}-concept">{$scnt}</button>
 <ul class="list-unstyled collapse" id="{$wid}-syn" style="swl-bullet">{
 for $l in $syn
 return
 <li>{$l}</li>
 }
 </ul>
-<ul class="list-unstyled collapse" id="{$wid}-{$pos}-concept" style="swl-bullet">{for $s in $wx/ancestor::tei:entry/tei:sense
+<ul class="list-unstyled collapse" id="{$wid}-concept" style="swl-bullet">{for $s in $wx/ancestor::tei:entry/tei:sense
 let $sf := ($s//tls:syn-func)[1],
 $sfid := substring(($sf/@corresp), 2),
 $sm := $s//tls:sem-feat/text(),
