@@ -1328,9 +1328,9 @@ let $concept := map:get($wm($id), "concept"),
 $w := collection(concat($config:tls-data-root, '/concepts/'))//tei:div[@xml:id = $id]//tei:orth[. = $word]
 ,$cdef := $w/ancestor::tei:div/tei:div[@type="definition"]/tei:p/text(),
 $form := $w/parent::tei:form/@corresp,
-$z := map:get($wm($id), "zi"),
-$py := for $p in map:get($wm($id), "py")
-        return normalize-space($p)
+$z := map:get($wm($id), "zi")
+(:$py := for $p in map:get($wm($id), "py")
+        return normalize-space($p):)
 (:group by $concept:)
 order by $concept[1]
 return
@@ -1338,30 +1338,33 @@ return
 for $zi at $pos in distinct-values($z) 
 (: there might be more than one entry that has the char $zi, so $wx is a sequence of one or more
  we need to loop through these entries:)
-for $wx at $pw in collection(concat($config:tls-data-root, '/concepts/'))//tei:div[@xml:id = $id]//tei:orth[. = $zi]
+for $wx at $pw in (collection(concat($config:tls-data-root, '/concepts/'))//tei:div[@xml:id = $id]//tei:orth[. = $zi])[1]
+(: we take only the first, because for multiple readings of the same char, we have two entries here :)
+
 
 let $scnt := for $w1 in $wx return
            count($w1/ancestor::tei:entry/tei:sense),
 $wid := $wx/ancestor::tei:entry/@xml:id,
 $syn := $wx/ancestor::tei:div[@xml:id = $id]//tei:div[@type="old-chinese-criteria"]//tei:p,
+$py := for $pp in $wx/ancestor::tei:entry//tei:pron[@xml:lang="zh-Latn-x-pinyin"] return normalize-space($pp),
 $esc := replace($concept[1], "'", "\\'")
 return
 <li class="mb-3">
 {if ($zi) then
 (: todo : check for permissions :)
-(<strong><span id="{$wid}-{$pos}-zi">{$zi}</span></strong>,<span id="{$wid}-{$pos}-py" title="Click here to change pinyin" onclick="assign_guangyun_dialog({{'zi':'{$zi}', 'wid':'{$wid}','py': '{$py[$pos]}','concept' : '{$esc}', 'concept_id' : '{$id}', 'pos' : '{$pos}'}})">&#160;({$py[$pos]})&#160;</span>)
+(<strong><span id="{$wid}-{$pos}-zi">{$zi}</span></strong>,<span id="{$wid}-{$pos}-py" title="Click here to change pinyin" onclick="assign_guangyun_dialog({{'zi':'{$zi}', 'wid':'{$wid}','py': '{$py[$pos]}','concept' : '{$esc}', 'concept_id' : '{$id}', 'pos' : '{$pos}'}})">&#160;({string-join($py, "/")})&#160;</span>)
 else ""}
 <strong><a href="concept.html?uuid={$id}#{$wid}" title="{$cdef}" class="{if ($scnt[$pw] = 0) then 'text-muted' else ()}">{$concept[1]}</a></strong> 
 
 {if ($doann and sm:is-authenticated() and not(contains(sm:id()//sm:group, 'tls-test'))) then 
  if ($wid) then     
  <button class="btn badge badge-secondary ml-2" type="button" 
- onclick="show_newsw({{'wid':'{$wid}','py': '{$py[$pos]}','concept' : '{$esc}', 'concept_id' : '{$id}'}})">
+ onclick="show_newsw({{'wid':'{$wid}','py': '{string-join($py, "/")}','concept' : '{$esc}', 'concept_id' : '{$id}'}})">
            New SW
       </button>
 else 
 <button class="btn badge badge-secondary ml-2" type="button" 
-onclick="show_newsw({{'wid':'xx', 'py': '{$py[$pos]}','concept' : '{$concept}', 'concept_id' : '{$id}'}})">
+onclick="show_newsw({{'wid':'xx', 'py': '{string-join($py, "/")}','concept' : '{$concept}', 'concept_id' : '{$id}'}})">
            New Word
       </button>
    else ()}
