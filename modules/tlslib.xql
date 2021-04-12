@@ -1556,6 +1556,8 @@ $p := for $s in ($e//tx:mandarin/tx:jin|$e//tx:mandarin/tx:jiu)
        return 
        if (string-length(normalize-space($s)) > 0) then $s else (),
 $py := normalize-space(string-join($p, ';'))
+, $oc := normalize-space($e//tx:old-chinese/tx:pan-wuyun/tx:oc/text())
+, $mc := normalize-space($e//tx:middle-chinese//tx:baxter/text())
 return
 (
 <div class="form-check">
@@ -1567,7 +1569,13 @@ return
    value="{$e/@xml:id}"/>
    }
    <label class="form-check-label" for="guangyun-input-{$cc}-{$count}">
-     {$e/tx:gloss} -  {$p[1]}
+     {$e/tx:gloss} - {$p[1]}
+     {if ($oc[1] or $mc[1]) then
+     <span class="text-muted"> ({
+     if ($oc[1]) then "OC:" || $oc else (),
+     if ($mc[1]) then "MC:" || $mc else ()
+     })</span>
+     else ()}
    </label>
   </div>,
   if ($p[2]) then 
