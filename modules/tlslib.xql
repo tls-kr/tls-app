@@ -1346,7 +1346,7 @@ let $scnt := for $w1 in $wx return
            count($w1/ancestor::tei:entry/tei:sense),
 $wid := $wx/ancestor::tei:entry/@xml:id,
 $syn := $wx/ancestor::tei:div[@xml:id = $id]//tei:div[@type="old-chinese-criteria"]//tei:p,
-$py := for $pp in $wx/ancestor::tei:entry//tei:pron[@xml:lang="zh-Latn-x-pinyin"] return normalize-space($pp),
+$py := for $pp in $wx/ancestor::tei:entry/tei:form[tei:orth[.=$zi]]/tei:pron[@xml:lang="zh-Latn-x-pinyin"] return normalize-space($pp),
 $esc := replace($concept[1], "'", "\\'")
 return
 <li class="mb-3">
