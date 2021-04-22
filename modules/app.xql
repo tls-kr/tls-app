@@ -94,8 +94,10 @@ function app:doc($node as node(), $model as map(*), $section as xs:string) {
 switch($section)
  case "overview" return doc(concat($config:app-root, "/documentation/overview.html"))
  case "team" return doc(concat($config:app-root, "/documentation/team.html"))
- default return (<h1>About the TLS project</h1>,
-        <p>Under construction</p>)
+ case "manual" return doc(concat($config:app-root, "/documentation/manual.html"))
+ default return (
+ doc(concat($config:app-root, "/documentation/manual.html"))
+ )
 };
 
 (:~
