@@ -461,13 +461,14 @@ let $query := map:get($model, "query")
         </td>
         {if ($search-type = "3") then  
         (<td>{$cseg}</td>,<td>{$h}</td>) else
-        <td>{ ($h/preceding-sibling::tei:seg)[position()>=1 and position()<4],
+        <td>{ 
+        $h/preceding-sibling::tei:seg[position()<4],
         if (count($qs) > 1 or not($iskanji)) then $h else
         (substring-before($h, $query), 
         <mark>{$query}</mark> 
         ,substring-after($h, $query)), 
         (: this is a hack, it will probably show the most recent translation if there are more, but we want to make this predictable... :)
-        ($h/following-sibling::tei:seg)[position()>=1 and position()<4]}{if (exists($tr)) then (<br/>,"..." , $tr[last()] , "...") else ()
+        $h/following-sibling::tei:seg[position()<4]}{if (exists($tr)) then (<br/>,"..." , $tr[last()] , "...") else ()
         }</td>
         }
         </tr>
