@@ -312,13 +312,13 @@ function save_newsw(){
     var word = $("#swl-query-span").text();
     var word_id = $("#word-id-span").text();
     var py = $("#py-span").text();
-    var synfunc_val = $("#select-synfunc" ).val();
-    var semfeat_val = $("#select-semfeat").val();
+    var synfunc_val = $("#select-synfunc" ).val().replace(/\+/g, "$x$");
+    var semfeat_val = $("#select-semfeat").val().replace(/\+/g, "$x$");
     var concept_val = $("#newsw-concept-span" ).text();
     var synfunc_id = $("#synfunc-id-span" ).text();     
     var semfeat_id = $("#semfeat-id-span" ).text();
     var concept_id = $("#concept-id-span" ).text();
-    var def_val = $("#input-def" ).val();
+    var def_val = $("#input-def" ).val().replace(/\+/g, "$x$");
   if (synfunc_id.length == 0){
           var ndef = prompt("No syntactic function '" + synfunc_val + "' defined.  If you want to define a new one, please enter the definition here:") 
           if (ndef) {
@@ -1190,9 +1190,9 @@ function save_def (defid){
 
 function save_sf (type){
     var sense_id= $( "#sense-id-span" ).text();
-    var synfunc_val = $("#select-synfunc" ).val();
+    var synfunc_val = $("#select-synfunc" ).val().replace(/\+/g, "$x$");
     var synfunc_id = $("#synfunc-id-span" ).text();     
-    var def_val = $("#input-def" ).val();
+    var def_val = $("#input-def" ).val().replace(/\+/g, "$x$");
 
   console.log(sense_id)
   $.ajax({

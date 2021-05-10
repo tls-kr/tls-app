@@ -10,8 +10,8 @@ declare option output:media-type "text/html";
 "&sf_val="+synfunc_val+"&def="+def_val,   :)
 let $sense-id := request:get-parameter("sense-id", "xxxx")
 , $synfunc-id := request:get-parameter("sf_id", "xx")
-, $synfunc-val := request:get-parameter("sf_val", "xx")
-, $def := request:get-parameter("def", "xx")
+, $synfunc-val := replace(normalize-space(request:get-parameter("sf_val", "xx")), "\$x\$", '+') 
+, $def := replace(normalize-space(request:get-parameter("def", "xx")), "\$x\$", '+')
 , $type := request:get-parameter("type", "xx")
 
 return 

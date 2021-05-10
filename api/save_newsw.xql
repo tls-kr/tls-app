@@ -16,10 +16,10 @@ let $rpara := map {"concept-id" : request:get-parameter("concept", "xx"),
  "guangyun-id" : request:get-parameter("guangyun", "xx"),
  "concept-val" : request:get-parameter("concept-val", "xx"),
  "synfunc" : request:get-parameter("synfunc", "xx"),
- "synfunc-val" : request:get-parameter("synfunc-val", "xx"),
+ "synfunc-val" : replace(normalize-space(request:get-parameter("synfunc-val", "xx")), "\$x\$", '+') ,
  "semfeat" : request:get-parameter("semfeat", "xx"),
- "semfeat-val" : request:get-parameter("semfeat-val", "xx"),
- "def" : request:get-parameter("def", "xx")
+ "semfeat-val" : replace(normalize-space(request:get-parameter("semfeat-val", "xx")), "\$x\$", '+') ,
+ "def" : replace(normalize-space(request:get-parameter("def", "xx")), "\$x\$", '+') 
 }
 return
 tlsapi:save-newsw($rpara)
