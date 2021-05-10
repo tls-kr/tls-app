@@ -1289,7 +1289,8 @@ return
 };
 (: This displays the list of words by concept in the right hand popup pane  :)
 declare function tlslib:get-sw($word as xs:string, $context as xs:string) as item()* {
-let $words-tmp := if (($context = "dic") or contains($context, "concept")) then 
+let $w-context := ($context = "dic") or contains($context, "concept")
+let $words-tmp := if ($w-context) then 
   collection(concat($config:tls-data-root, '/concepts/'))//tei:orth[contains(. , $word)]
   else
   collection(concat($config:tls-data-root, '/concepts/'))//tei:entry/tei:form/tei:orth[. = $word]
@@ -1352,7 +1353,9 @@ return
 <li class="mb-3">
 {if ($zi) then
 (: todo : check for permissions :)
-(<strong><span id="{$wid}-{$pos}-zi">{$zi}</span></strong>,<span id="{$wid}-{$pos}-py" title="Click here to change pinyin" onclick="assign_guangyun_dialog({{'zi':'{$zi}', 'wid':'{$wid}','py': '{$py[$pos]}','concept' : '{$esc}', 'concept_id' : '{$id}', 'pos' : '{$pos}'}})">&#160;({string-join($py, "/")})&#160;</span>)
+(<strong>
+{ if (not ($w-context)) then <a href="char.html?char={$zi}" title="Click here to go to the taxonomy for {$zi}"><span id="{$wid}-{$pos}-zi">{$zi}</span></a> else <span id="{$wid}-{$pos}-zi">{$zi}</span>}
+</strong>,<span id="{$wid}-{$pos}-py" title="Click here to change pinyin" onclick="assign_guangyun_dialog({{'zi':'{$zi}', 'wid':'{$wid}','py': '{$py[$pos]}','concept' : '{$esc}', 'concept_id' : '{$id}', 'pos' : '{$pos}'}})">&#160;({string-join($py, "/")})&#160;</span>)
 else ""}
 <strong><a href="concept.html?uuid={$id}#{$wid}" title="{$cdef}" class="{if ($scnt[$pw] = 0) then 'text-muted' else ()}">{$concept[1]}</a></strong> 
 
