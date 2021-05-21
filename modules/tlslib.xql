@@ -1287,6 +1287,7 @@ return
     }
 </div>
 };
+
 (: This displays the list of words by concept in the right hand popup pane  :)
 declare function tlslib:get-sw($word as xs:string, $context as xs:string) as item()* {
 let $w-context := ($context = "dic") or contains($context, "concept")
@@ -1915,6 +1916,13 @@ declare function tlslib:linkheader($qc) {
      }</span>,:)
      tlslib:guguolin($qc)
      ,
+     (:    var url = "http://www.kaom.net/z_hmy_zidian88.php?word={string-join($qc, '')}&mode=word&bianti=no&page=no"
+ :)
+     <span>{" 詞典: ",
+     <a class="btn badge badge-light" target="dict" title="Search {$qc} in HY dictionary (External link)" style="background-color:paleturquoise" href="http://www.kaom.net/z_hmy_zidian88.php?word={string-join($qc, '')}&amp;mode=word&amp;bianti=no&amp;page=no">{$qc}</a>
+     }　</span>
+     
+     ,
      <span>{" 漢リポ: ",
      <a class="btn badge badge-light" target="kanripo" title="Search {$qc} in Kanseki Repository (External link)" style="background-color:paleturquoise" href="http://www.kanripo.org/search?query={string-join($qc, '')}">{$qc}</a>
      }</span>
@@ -1927,7 +1935,7 @@ declare function tlslib:guoxuedashi($c as xs:string){
 
 declare function tlslib:guguolin($qc){
     for $c at $pos in $qc return
-<form class="btn badge badge-light"  name="guguolin" target="guguolin" action="http://www.kaom.net/z_hmy_zidian8.php" method="post" title="訓詁工具書查詢 {$c} (External link)" >
+<form class="btn badge badge-light"  name="guguolin" target="dict" action="http://www.kaom.net/z_hmy_zidian8.php" method="post" title="訓詁工具書查詢 {$c} (External link)" >
   {if ($pos = 1) then "字書：" else ()}
   <input type="hidden" name="word" id="word" value="{$c}="/>
   <input type="hidden" name="mode" id="mode" value="word" />
