@@ -1,5 +1,5 @@
 var dirty = false;
-
+var cancelmove = false;
 $(function() {
     console.log( "ready!" );
     //get_swl_for_page();
@@ -21,6 +21,18 @@ x.Selector.getSelected = function() {
     }
     return t;
 };
+
+function page_move(target){
+    var url = "?location="+target;
+    console.log("page_move");
+    console.log(cancelmove);
+    if (cancelmove === false){
+       window.location = url;
+    }
+    // need to reset this at some point :-)
+    cancelmove = false;
+
+}
 
 function get_swl_for_page(){
   var location = window.location.search;
@@ -446,7 +458,16 @@ function get_sw(sel, xid, line){
    var dw = document.documentElement.clientWidth;
    var dh = document.documentElement.clientHeight;
    var new_width = $("#toprow").outerWidth() - $("#toprow-1").outerWidth() - $("#toprow-2").outerWidth();
-   var url = "http://www.kaom.net/z_hmy_zidian88.php?"+"word="+encodeURI(sel)+"&mode=word&bianti=no&page=no"
+   var url = "http://www.kaom.net/z_hmy_zidian88.php?"+"word="+encodeURI(sel)+"&mode=word&bianti=no&page=no";
+   // this needs to produce the form link for the lookup
+/*   字書：
+<form class="btn badge badge-light" name="guguolin" target="dict" action="http://www.kaom.net/z_hmy_zidian8.php" method="post" title="訓詁工具書查詢 法 (External link)"><input type="hidden" name="word" id="word" value="法="><input type="hidden" name="mode" id="mode" value="word"><input type="hidden" name="bianti" id="bianti" value="no"><input type="hidden" name="page" id="page" value="no"><button class="btn badge badge-light" type="submit" style="background-color:paleturquoise">法</button></form>
+<form class="btn badge badge-light" name="guguolin" target="dict" action="http://www.kaom.net/z_hmy_zidian8.php" method="post" title="訓詁工具書查詢 度 (External link)"><input type="hidden" name="word" id="word" value="度="><input type="hidden" name="mode" id="mode" value="word"><input type="hidden" name="bianti" id="bianti" value="no"><input type="hidden" name="page" id="page" value="no"><button class="btn badge badge-light" type="submit" style="background-color:paleturquoise">度</button></form>
+*/
+    var h2 = "";
+/*   for (let i = 0; i < sel.length; i++) {
+     h2 = h2  sel[i];
+   }*/
    console.log(new_width);
     // this sets the selection to the search input field, to make it easy to search for this term
     // idea: write a search that displays the results on this page, so that I do
@@ -462,7 +483,11 @@ function get_sw(sel, xid, line){
        $ ("#new-att-no-perm").html("");
    } else {
 //       $ ("#new-att-title").html('Existing SW for <strong class="ml-2"><span id="swl-query-span" onclick="link_guguolin(\''+sel+'\')">'+sel+'</span></strong>');
-       $ ("#new-att-title").html('Existing SW for <strong class="ml-2"><span id="swl-query-span"><a target="GXDS" href="'+url+'">'+sel+'</a></span></strong>');       
+       $ ("#new-att-title").html('Existing SW for <strong class="ml-2"><span id="swl-query-span"><a target="GXDS" href="'+url+'">'+sel+'</a></span></strong>');   
+       // ><a ></a>
+       
+       // $ ("#swl-jisho").html('<a  title="Look up in Hy Dictionary" style="background-color:paleturquoise" target="GXDS" href="'+url+'">'+sel+'</a>');    
+       
    }
 //   $( "#swl-form" ).removeAttr("style");
    $( "#swl-form" ).css("max-height", dh - 51);
@@ -986,6 +1011,7 @@ $( ".nedit" ).blur(function (event) {
          if (cname){
            var savedata = $(this).html()
            save_note(nid, savedata);
+           cancelmove = true;
           }
           // save this, in case there are more changes
           $(this).data('before', tr)
@@ -1028,9 +1054,12 @@ $( ".tr" ).blur(function (event) {
          cname = confirm("Unsaved data exist, do you want to save?");
          if (cname){
            save_tr(trid, tr, line);
+           cancelmove = true;
           }
           // save this, in case there are more changes
           $(this).data('before', tr)
+    } else {
+           cancelmove = false;
     }
   dirty = false;
 });

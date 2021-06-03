@@ -664,25 +664,24 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
       <div class="col-sm-2">
       {if ($dseg) then  
       (: currently the 0 is hardcoded -- do we need to make this customizable? :)
-       <a href="?location={tokenize($dseg/@xml:id, "_")[1]}&amp;first=true">First</a>
+       <button type="button" class="btn" onclick="page_move('{tokenize($dseg/@xml:id, "_")[1]}&amp;first=true')" title="Go to the first page"><span style="color: blue">First</span></button>
        else ()}
        </div>
       <div class="col-sm-2">
       {if ($dseg[1]/preceding::tei:seg[1]/@xml:id) then  
-      (: currently the 0 is hardcoded -- do we need to make this customizable? :)
-       <a href="?location={$dseg[1]/preceding::tei:seg[1]/@xml:id}&amp;prec={$foll+$prec -2}&amp;foll=2">Previous</a>
+       <button type="button" class="btn" onclick="page_move('{$dseg[1]/preceding::tei:seg[1]/@xml:id}&amp;prec={$foll+$prec -2}&amp;foll=2')" title="Go to the previous page"><span style="color: blue">Previous</span></button>
        else ()}
        </div>
        <div class="col-sm-2">
        {
        if ($dseg[last()]/following::tei:seg[1]/@xml:id) then
-      <a href="?location={$dseg[last()]/following::tei:seg[1]/@xml:id}&amp;prec=2&amp;foll={$foll+$prec -2}">Next</a>
+       <button type="button" class="btn" onclick="page_move('{$dseg[last()]/following::tei:seg[1]/@xml:id}&amp;prec=2&amp;foll={$foll+$prec -2}')" title="Go to the next page"><span style="color: blue">Next</span></button>
        else ()}
        </div> 
        <div class="col-sm-2">
        {
        if ($dseg/following::tei:seg[last()]/@xml:id) then
-      <a href="?location={$dseg/following::tei:seg[last()]/@xml:id}&amp;prec={$foll+$prec - 2}&amp;foll=0">Last</a>
+       <button type="button" class="btn" onclick="page_move('{$dseg/following::tei:seg[last()]/@xml:id}&amp;prec={$foll+$prec -2}&amp;foll=0')" title="Go to the last page"><span style="color: blue">Last</span></button>
        else ()}
        </div> 
       </div>
@@ -716,6 +715,7 @@ declare function tlslib:swl-form-dialog($context as xs:string){
          </span>
          else <span id="new-att-no-perm">You do not have permission to make attributions.</span>
          }
+         <span id="swl-jisho"></span>
         <ul id="swl-select" class="list-unstyled"></ul>
         </p>
       </div>
