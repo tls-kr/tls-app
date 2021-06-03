@@ -28,6 +28,8 @@ function page_move(target){
     console.log(cancelmove);
     if (cancelmove === false){
        window.location = url;
+    } else {
+       toastr.info("Cancelling move to store data. Please press button again.", "HXWD says:")          
     }
     // need to reset this at some point :-)
     cancelmove = false;
