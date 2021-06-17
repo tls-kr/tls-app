@@ -1085,7 +1085,7 @@ declare function tlslib:get-crypt-file($type as xs:string){
     return
     (sm:chmod(xs:anyURI($res), "rw-rw-rw-"),
      sm:chgrp(xs:anyURI($res), "tls-user"),
-     sm:chown(xs:anyURI($res), "tls"),
+(:     sm:chown(xs:anyURI($res), "tls"),:)
     doc($res)
     )
     else
@@ -1723,7 +1723,7 @@ let $res:=xmldb:store($path, $uid || ".xml",
 return 
 (sm:chmod(xs:anyURI($res), "rw-rw-rw-"),
  sm:chgrp(xs:anyURI($res), "tls-user"),
- sm:chown(xs:anyURI($res), "tls"),
+(: sm:chown(xs:anyURI($res), "tls"),:)
  $uid)
 };
 

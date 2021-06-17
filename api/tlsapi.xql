@@ -163,14 +163,14 @@ let $newswl:=tlsapi:make-attribution($line-id, $sense-id, $user, $currentword)
 return (
 if (xmldb:collection-available($path)) then () else
 (xmldb:create-collection($notes-path, substring($uuid, 6, 2)),
-sm:chown(xs:anyURI($path), $user),
+(:sm:chown(xs:anyURI($path), $user),:)
 sm:chgrp(xs:anyURI($path), "tls-user"),
 sm:chmod(xs:anyURI($path), "rwxrwxr--")
 ),
 let $res := (xmldb:store($path, concat($uuid, ".xml"), $newswl)) 
 return
 if ($res) then (
-sm:chown(xs:anyURI($res), $user),
+(:sm:chown(xs:anyURI($res), $user),:)
 sm:chgrp(xs:anyURI($res), "tls-editor"),
 sm:chmod(xs:anyURI($res), "rwxrwxr--"),
 "OK")
@@ -525,7 +525,7 @@ let $wid := $rpara?wid
                   let $t := tokenize($gid, ":")[2] 
                    return 
                     if (string-length($t) > 0) then 
-                     tlslib:save-new-syllable(map{"char" : tokenize($gid, ":")[1], "jin" : $t})
+                     tlslib:save-new-syllable(map{"char" : tokenize($gid, ":")[1], "jin" : $t, "note": $rpara?notes, "sources" : $rpara?sources, "gloss" : $rpara?gloss})
                     else ()
                  else $gid 
     return $nid
