@@ -441,12 +441,15 @@ return
 (:     
      :)
 
-declare function tlslib:navbar-review(){
+declare function tlslib:navbar-review($context as xs:string){
  <li class="nav-item dropdown">
   <a class="nav-link dropdown-toggle" href="#"  id="navbarDropdownEditors" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">內部</a>
    <div class="dropdown-menu" aria-labelledby="navbarDropdownEditors">
      <a class="dropdown-item" href="review.html?type=swl">Review SWLs</a>
      <a class="dropdown-item" href="review.html?type=special">Special pages</a>
+     {if ($context = 'textview') then 
+     <a class="dropdown-item" href="#" onClick="zh_start_edit()">Edit Chinese text</a>
+     else ()}
    </div>
  </li>
 };
@@ -496,7 +499,7 @@ declare function tlslib:tv-header($node as node()*, $model as map(*)){
        </div>
       </li>,
      <li class="nav-item">
-      <button title="Please wait, SWL are still loading." class="btn btn-primary ml-2" type="button" data-toggle="collapse" data-target=".swl">
+      <button id="blue-eye" title="Please wait, SWL are still loading." class="btn btn-primary ml-2" type="button" data-toggle="collapse" data-target=".swl">
        <img class="icon" src="resources/icons/open-iconic-master/svg/eye.svg"/>
       </button>
    </li>

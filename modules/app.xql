@@ -1324,7 +1324,7 @@ return
                         (tlslib:navbar-doc(),
                         tlslib:navbar-link())}
                         {if (not($testuser)) then tlslib:navbar-bookmarks() else ()}
-                        {if (contains(sm:id()//sm:group, "tls-editor")) then tlslib:navbar-review() else ()}
+                        {if (contains(sm:id()//sm:group, "tls-editor")) then tlslib:navbar-review($context) else ()}
                         </ul>
                     <ul class="navbar-nav">
                     <li class="nav-item">

@@ -1103,7 +1103,26 @@ return
 "OK"
 };
 
-
+(:~
+ : 2021-06-18 save-zh
+ : 
+:)
+declare function tlsapi:save-zh($map as map(*)){
+let $user := sm:id()//sm:real/sm:username/text()
+,$id := $map?id
+,$zh-to-save := $map?line
+,$node := collection($config:tls-texts-root)//tei:seg[@xml:id=$id]
+,$seg := <seg xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$id}" resp="#{$user}" modified="{current-dateTime()}">{$zh-to-save}</seg>
+return
+if ($node) then (
+ update insert attribute modified {current-dateTime()} into $node,
+ update insert attribute resp-change {"#" || $user} into $node,
+ update insert $node into (tlslib:get-crypt-file("text")//tei:div/tei:p[last()])[1],
+ if (update replace $node[1] with $seg) then () else "Success. Updated text." 
+ )
+else 
+ "Could not save text."
+};
 
 (:~
  : Save the translation (or comment)

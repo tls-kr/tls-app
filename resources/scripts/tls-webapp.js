@@ -2,6 +2,7 @@ var dirty = false;
 var cancelmove = false;
 $(function() {
     console.log( "ready!" );
+    set_keyup ();
     //get_swl_for_page();
 });            
 
@@ -1048,14 +1049,20 @@ function save_note (trid, tr){
 
 $( ".tr" ).blur(function (event) {
     var trid = $(this).attr('id');
-    var lineid = trid.slice(0, -3);
+//    var lineid = trid.slice(0, -3);
+    var lineid = trid.replace('-tr', '').replace('-ex', '');
     var line = document.getElementById( lineid ).innerText;
     var tr = $(this).text()
+    var lang = $(this).attr('lang');
     console.log("blur", $(this).data('before') , "h", tr)
     if ($(this).data('before') !== tr){    
          cname = confirm("Unsaved data exist, do you want to save?");
          if (cname){
-           save_tr(trid, tr, line);
+           if (lang == 'zho') {
+               save_zh(trid, line)
+           } else {
+               save_tr(trid, tr, line);
+           }    
            cancelmove = true;
           }
           // save this, in case there are more changes
@@ -1069,11 +1076,14 @@ $( ".tr" ).blur(function (event) {
 
 
 // for the translations (class "tr"), we save on keyup, so we check for our event
+function set_keyup (){
 $( ".tr" ).keyup(function( event ) {
 }).keydown(function( event ) {
     var trid = $(this).attr('id');
-    var lineid = trid.slice(0, -3);
+//    var lineid = trid.slice(0, -3);
+    var lineid = trid.replace('-tr', '').replace('-ex', '');
     var line = document.getElementById( lineid ).innerText;
+    var lang = $(this).attr('lang');
     dirty = true;
   if (event.ctrlKey == true){
     //var hlineid = lineid.split(".").join("\\.")
@@ -1141,29 +1151,40 @@ $( ".tr" ).keyup(function( event ) {
   // we save the translation on either tab or enter
   if ( event.which == 9 ) {
     var trid = $(this).attr('id');
-    var lineid = trid.slice(0, -3);
+    var lineid = trid.replace('-tr', '').replace('-ex', '');
     var line = document.getElementById( lineid ).innerText;
     var tr = $(this).text()
+    var lang = $(this).attr('lang');
     console.log("tab", $(this).data('before') , "h", tr)
     if ($(this).data('before') !== tr){    
-          save_tr(trid, tr, line);
+           if (lang == 'zho') {
+               save_zh(trid, line)
+           } else {
+               save_tr(trid, tr, line);
+           }    
           // save this, in case there are more changes
           $(this).data('before', tr)
     }
   }
   if ( event.which == 13 ) {
     var trid = $(this).attr('id');
-    var lineid = trid.slice(0, -3);
+//    var lineid = trid.slice(0, -3);
+    var lineid = trid.replace('-tr', '').replace('-ex', '');
     var line = document.getElementById( lineid ).innerText;
     var tr = $(this).text()
     event.preventDefault();
     if ($(this).data('before') !== tr){    
-          save_tr(trid, tr, line);
+           if (lang == 'zho') {
+               save_zh(trid, line)
+           } else {
+               save_tr(trid, tr, line);
+           }    
           // save this, in case there are more changes
           $(this).data('before', tr)
     }
   }
 });
+};
 
 // this does the actual save
 function save_tr (trid, tr, line){
@@ -1186,6 +1207,48 @@ function save_tr (trid, tr, line){
   }
   });    
 };
+
+// 2021-06-18: Save text.  First shift editing from translation to text.
+// then modify blue eye's function
+function zh_start_edit(){
+    $(".zh").off("mouseup");
+    $(".tr").attr("contenteditable", "false");
+    $(".tr").removeClass("tr");
+    $(".zh").addClass("tr");
+    $(".zh").addClass("zhed");
+    $(".tr").removeClass("zh");
+    $(".tr").attr("contenteditable", "true");
+    $("#blue-eye").attr("onclick", "location.reload()");   
+    $("#blue-eye").removeClass("btn-primary");
+    $("#blue-eye").addClass("btn-warning");
+    $("#blue-eye").removeAttr("data-toggle");    
+    $("#blue-eye").removeAttr("data-target");    
+    $("#blue-eye").attr("title", "Click here to end editing");
+    toastr.info("Click the yellow eye to end the editing.", "漢學文典 says:");
+    set_keyup();
+}
+
+// this does the actual save
+function save_zh (id, line){
+  $.ajax({
+  type : "PUT",
+  dataType : "html",
+  url : "api/responder.xql?func=save-zh&id="+id+"&line="+line,
+  success : function(resp){
+    if (resp.startsWith("Could not")) {
+    toastr.error(resp, "漢學文典 says:");
+    } else {
+    toastr.info("Modification for line "+line+" saved.", "漢學文典 says:");
+    dirty = false;
+    }
+  },
+  error : function(resp){
+  console.log(resp);
+    alert("PROBLEM: "+resp.statusText + "\n " + resp.responseText);
+  }
+  });    
+};
+
 
 // save modified definition of swl
 // 2020-04-04: I think this is not used, we use the save button now
