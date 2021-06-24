@@ -1378,6 +1378,7 @@ declare
 function app:review($node as node()*, $model as map(*), $type as xs:string, $issue as xs:string){
  switch($type) 
   case "swl" return tlslib:review-swl()
+  case "gloss" return tlslib:review-gloss()
   case "special" return tlslib:review-special($issue)
   default return ""
 };

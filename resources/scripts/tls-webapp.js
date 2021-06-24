@@ -1470,12 +1470,12 @@ function save_updated_pinyin(concept_id, wid, ch, pos){
     }).get().join("xxx");
     var zi = $("#input-char" ).val();
     var sources = $("#sources" ).val();
-    var note = $("#input-note").val();
+    var gloss = $("#input-gloss").val();
   if (typeof guangyun_id !== 'undefined' && guangyun_id.length > 0){
   console.log(guangyun_id);
   $.ajax({
   type : "PUT",
-  url : "api/responder.xql?func=update-pinyin&wid="+wid+"&concept="+concept_id+"&sources="+sources+"&notes="+note+"&guangyun-id="+guangyun_id+"&zi="+zi+"&char="+ch,
+  url : "api/responder.xql?func=update-pinyin&wid="+wid+"&concept="+concept_id+"&sources="+sources+"&gloss="+gloss+"&guangyun-id="+guangyun_id+"&zi="+zi+"&char="+ch,
   success : function(resp){
     if(resp.startsWith("OK")){
       var zih = '#'+wid+'-'+pos+'-zi';
@@ -1514,6 +1514,57 @@ function assign_guangyun_dialog(para){
      $('#assign-guangyun').modal('show');
    }
   });   
+}
+
+// udpate gloss 2021-06-24
+function delete_pron(uuid){
+    $.get("api/responder.xql?func=delete-pron&uuid=" + uuid, "html", function(resp){
+     if (resp=="OK") {
+         toastr.info("Pronounciation has been deleted.", "HXWD says:");
+         $('#'+uuid).html("")
+         } else {
+         toastr.error("Pronounciation is in use, can not be deleted.", "HXWD says:");             
+         }
+    })
+}
+
+// {'zi':'{$g}', 'py': '{$py}', 'uuid': '{$r/@xml:id}',  'pos' : '{$pos}'}
+function update_gloss_dialog(para){
+     $.ajax({
+     type : "GET",
+     dataType : "html",  
+     url : "api/responder.xql?func=dialogs:update-gloss&char="+para.zi+"&uuid=" + para.uuid + "&pinyin="+para.py+"&pos="+para.pos, 
+     success : function(resp){
+     $('#remoteDialog').html(resp);
+     // initialize_autocomplete();
+     $('#update-gloss').modal('show');
+   }
+  });   
+}
+
+// save updated gloss
+function save_updated_gloss(uuid, ch, pos){
+  var gloss = $("#input-gloss").val();
+  var gid = '#gloss-'+pos;  
+  $.ajax({
+  type : "PUT",
+  url : "api/responder.xql?func=update-gloss&uuid="+uuid+"&gloss="+gloss,
+  success : function(resp){
+   if(resp.startsWith("OK")){
+      $('#update-gloss').modal('hide');
+      toastr.info("Gloss has been saved.", "HXWD says:")  
+      // todo: show changes on page!
+      $(gid).html("　"+resp.substring(2))
+    } else {
+       alert("PROBLEM: "+resp);
+    }
+  },
+  error : function(resp){
+   console.log(resp)
+  alert("PROBLEM"+resp);
+  }
+
+  }); 
 }
 
 function delete_bm(uuid){

@@ -446,6 +446,7 @@ declare function tlslib:navbar-review($context as xs:string){
   <a class="nav-link dropdown-toggle" href="#"  id="navbarDropdownEditors" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">內部</a>
    <div class="dropdown-menu" aria-labelledby="navbarDropdownEditors">
      <a class="dropdown-item" href="review.html?type=swl">Review SWLs</a>
+     <a class="dropdown-item" href="review.html?type=gloss">Add pronounciation glosses</a>
      <a class="dropdown-item" href="review.html?type=special">Special pages</a>
      {if ($context = 'textview') then 
      <a class="dropdown-item" href="#" onClick="zh_start_edit()">Edit Chinese text</a>
@@ -1635,7 +1636,7 @@ let $res:=xmldb:store($path, $uid || ".xml",
             <graph>{$map?char}</graph>
         </standardised-graph>
     </graphs>
-    <gloss>Added by {$user} at {substring($timestamp, 1, 10)}</gloss>
+    <gloss>{$map?gloss}</gloss>
     <xiaoyun>
         <headword/>
         <graph-count/>
@@ -1857,6 +1858,42 @@ return
  </div>
 </div> 
 };
+
+declare function tlslib:review-gloss(){
+let $user := "#" || sm:id()//sm:username
+  ,$review-items := for $r in 
+     (collection($config:tls-data-root || "/guangyun")//tx:guangyun-entry[tx:gloss[starts-with(., "Added by")]] 
+    (: | collection($config:tls-data-root || "/guangyun")//tx:guangyun-entry[string-length(tx:gloss) = 0] :)
+     )
+     let $g := $r/tx:graphs[1]/tx:standardised-graph[1]/tx:graph[1]
+       , $date := xs:dateTime($r/tls:metadata/@created)
+     order by $date descending
+     return $r
+return
+
+<div class="container">
+<div>
+<h3>New pronounciations without gloss: {count($review-items)} items</h3>
+<small class="text-muted">Glosses can be added by clicking on "No gloss"<br/>Current pinyin assignments can be confirmed by clicking the pinyin</small>
+{for $r at $pos in $review-items
+     let $g := $r/tx:graphs[1]/tx:standardised-graph[1]/tx:graph[1]
+     ,$py := $r/tx:pronunciation[1]/tx:mandarin[1]/tx:jin[1]
+     ,$un := $r/tls:metadata//tx:name
+     ,$created := $r/tls:metadata/@created
+return
+  <div class="row border-top pt-4" id="{data($r/@xml:id)}">
+  <div class="col-sm-2">{$g}</div>
+  <div class="col-sm-2"><span title="Click here to confirm the current pinyin assignments" onclick="assign_guangyun_dialog({{'zi':'{$g}', 'wid':'','py': '{$py}', 'type' : 'read-only', 'pos' : '{$pos}'}})">{$py}</span></div>  
+  <div class="col-sm-3"><span id="gloss-{$pos}" title="Click here to add/change gloss" onclick="update_gloss_dialog({{'zi':'{$g}', 'py': '{$py}', 'uuid': '{$r/@xml:id}',  'pos' : '{$pos}'}})">No gloss</span></div>
+  <div class="col-sm-3" title="{$created}">created by {$un}&#160;</div>
+  <div class="col-sm-2">{tlslib:format-button("delete_pron('" || data($r/@xml:id) || "')", "Immediately delete pronounciation "||$py||" for "||$g, "open-iconic-master/svg/x.svg", "", "close", "tls-editor")}</div>
+  </div>,
+()
+}
+</div>
+</div>
+};
+
 
 declare function tlslib:review-swl(){
 let $user := "#" || sm:id()//sm:username

@@ -217,8 +217,11 @@ return
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Assign pinyin for: <strong class="ml-2"><span id="{$type}-query-span">{$para?char}</span></strong> in <strong>{$para?concept}</strong>
-                </h5>
+                {if ($para?concept='undefined') then 
+                <h5 class="modal-title">Existing pinyin entries for: <strong class="ml-2"><span id="{$type}-query-span">{$para?char}</span></strong></h5>
+                else
+                <h5 class="modal-title">Assign pinyin for: <strong class="ml-2"><span id="{$type}-query-span">{$para?char}</span></strong> in <strong>{$para?concept}</strong></h5>
+                }
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close" title="Close">
                     ×
                 </button>
@@ -235,10 +238,10 @@ return
                 <div class="form-group" id="guangyun-group">               
                 {tlslib:get-guangyun($para?char, 'xx', false())}
                 </div>
-                <small class="text-muted">Sources and notes are only used for readings not from 廣韻</small>
+                <small class="text-muted">Sources/Notes and Glosses are only used for readings not from 廣韻</small>
                 <div class="form-row">
                 <div id="sources-group" class="form-group ui-widget col-md-12">
-                    <label for="sources"><strong>Sources:</strong> </label>
+                    <label for="sources"><strong>Sources/Notes:</strong> </label>
                     <input id="sources" class="form-control" required="true" value="{$para?sources}"/>
                 </div>
                 <!--
@@ -247,14 +250,47 @@ return
                     <input id="select-semfeat" class="form-control" value="{$para?semfeat}"/>
                 </div> -->
                 </div>
-                <div id="input-note-group">
-                    <label for="input-note"><strong>Notes:</strong> </label>
-                    <textarea id="input-note" class="form-control">{$para?note}</textarea>
+                <small class="text-muted">Please add a short English gloss that allows to distinguish this reading</small>
+                <div id="input-gloss-group">
+                    <label for="input-gloss"><strong>Gloss:</strong> </label>
+                    <textarea id="input-gloss" class="form-control">{$para?gloss}</textarea>
                 </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" onclick="save_updated_pinyin('{$para?concept_id}', '{$para?wid}','{$para?char}', '{$para?pos}')">Save changes</button>
+                {if ($para?concept='undefined') then () else
+                <button type="button" class="btn btn-primary" onclick="save_updated_pinyin('{$para?concept_id}', '{$para?wid}','{$para?char}', '{$para?pos}')">Save changes</button>}
+            </div>
+        </div>
+    </div>    
+    <!-- temp -->
+    
+</div>    
+};
+
+declare function dialogs:update-gloss($para as map(*)){
+let $type := if ($para?type) then $para?type else "concept"
+return
+<div id="update-gloss" class="modal" tabindex="-1" role="dialog" style="display: none;">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Update gloss for: <strong class="ml-2"><span id="{$type}-query-span">{$para?char}</span></strong> as <strong>{$para?pinyin}</strong>
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" title="Close">
+                    ×
+                </button>
+            </div>
+            <div class="modal-body">
+                <small class="text-muted">Please add a short English gloss that allows to distinguish this reading</small>
+                <div id="input-gloss-group">
+                    <label for="input-gloss"><strong>Gloss:</strong> </label>
+                    <textarea id="input-gloss" class="form-control">{$para?gloss}</textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="save_updated_gloss('{$para?uuid}','{$para?char}', '{$para?pos}')">Save changes</button>
             </div>
         </div>
     </div>    

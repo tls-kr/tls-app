@@ -524,13 +524,18 @@ let $wid := $rpara?wid
      let $nid := if (contains($gid, ":")) then 
                   let $t := tokenize($gid, ":")[2] 
                    return 
-                    if (string-length($t) > 0) then 
+                    if (string-length($t) > 0 and string-length($rpara?gloss)) then 
                      tlslib:save-new-syllable(map{"char" : tokenize($gid, ":")[1], "jin" : $t, "note": $rpara?notes, "sources" : $rpara?sources, "gloss" : $rpara?gloss})
                     else ()
                  else $gid 
     return $nid
 return
 if (starts-with($wid, "uuid")) then
+  (: we have no gloss, but we are adding a new pronounciation--error :)
+  if (string-length($rpara?gloss) = 0 and not(ends-with($rpara?guangyun-id, ":")))  then
+   "Please give a gloss for this reading."
+   else
+
   if (count($gc) = string-length($zi)) then
     let $word := collection($config:tls-data-root||"/concepts")//tei:entry[@xml:id=$wid]
     , $oldform := $word/tei:form[tei:orth[. = $rpara?char]]
@@ -542,6 +547,25 @@ if (starts-with($wid, "uuid")) then
    "Number of pinyin definitions not correct." || count($gc) || " - " || string-length($zi)
 else
 "Concept not found"
+};
+
+declare function tlsapi:update-gloss($rpara as map(*)) {
+let $uuid := $rpara?uuid
+, $gloss := $rpara?gloss
+return 
+if (string-length($gloss) = 0) then
+ "No gloss given"
+else
+ let $node := collection($config:tls-data-root||"/guangyun")//tx:guangyun-entry[@xml:id=$uuid]
+ ,$gn := <gloss xmlns="http://exist-db.org/tls">{$gloss}</gloss>
+ return
+ if (empty($node)) then
+   "Entry not found"
+ else 
+   (
+   update replace $node/tx:gloss with $gn,
+   "OK" || $gloss
+   )
 };
 
 declare function tlsapi:save-to-concept($rpara as map(*)) {
@@ -1416,6 +1440,20 @@ return
  else
  update insert $def following $head
  )
+};
+
+declare function tlsapi:delete-pron($map as map(*)){
+let $uuid := $map?uuid
+,$e := collection($config:tls-data-root||"/guangyun")//tx:guangyun-entry[@xml:id=$uuid]
+,$uri := document-uri( root( $e ) )
+,$doc := tokenize($uri, "/")[last()]
+,$coll := substring-before($uri, $doc)
+,$cnt := count(collection($config:tls-data-root||"/concepts")//tei:form[@corresp="#"||$uuid])
+return
+if ($cnt = 0) then
+  (xmldb:remove($coll, $doc), "OK")
+else   
+  "Entry is in use, can not delete."
 };
 
 declare function tlsapi:do-delete-sf($map as map(*)){
