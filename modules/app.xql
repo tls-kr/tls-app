@@ -720,6 +720,7 @@ declare function app:textlist(){
     <div class="tab-pane" id="coretexts" role="tabpanel">    
     <ul class="nav nav-tabs" id="buTab" role="tablist">
     {for $b in map:keys($bc)
+    order by $b
     return 
     <li class="nav-item">
     <a class="nav-link" id="{$b}-tab" role="tab" 
