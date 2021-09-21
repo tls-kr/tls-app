@@ -1513,6 +1513,35 @@ return
 if ($bm) then (update delete $bm, "OK") else "Could not delete bookmark."
 };
 
+declare function tlsapi:save-rdl($map as map(*)){
+let $uuid := concat("uuid-", util:uuid())
+, $user := sm:id()//sm:real/sm:username/text()
+, $lnode := doc($config:tls-data-root ||"/notes/rdl/rdl.xml")//tls:span[position()=last()]
+, $title := tlslib:get-title(tokenize($map?line_id, '_')[1])
+, $rdlnode := 
+	<tls:span xmlns:tls="http://hxwd.org/ns/1.0" type="rdl" xml:id="{$uuid}" rhet-dev="{$map?rhet_dev}" rhet-dev-id="{$map?rhet_dev_id}" resp="#{$user}" modified="{current-dateTime()}">
+		<tls:text role="span-start">
+			<tls:srcline title="{$title}" target="#{$map?line_id}">{$map?line}</tls:srcline>
+		</tls:text>
+		{if ($map?line_id ne $map?end_val) then
+		<tls:text role="span-end">
+			<tls:srcline title="{$title}" target="#{$map?end_val}">{normalize-space($map?end)}</tls:srcline>
+		</tls:text>
+		else ()}
+		{if (string-length($map?note) gt 0) then 
+		<tls:note>{$map?note}</tls:note>
+		else ()
+		}
+	</tls:span>
+
+return
+(
+update insert $rdlnode following $lnode ,
+$rdlnode
+)
+};
+
+
 declare function tlsapi:stub($map as map(*)){
 ()
 };

@@ -614,6 +614,19 @@ declare function tlslib:display-bibl($bibl as node()){
 };
 
 (:~
+: get the following n segs starting at the seg with the xml:id startseg 
+: @param $startseg xml:id of a tei:seg element
+: @param $n number of elements
+: this returns a sequence of nodes
+:)
+
+declare function tlslib:next-n-segs($startseg as xs:string, $n as xs:int){
+let $targetseg := collection($config:tls-texts-root)//tei:seg[@xml:id=$startseg]
+return
+$targetseg/following::tei:seg[fn:position() < $n]
+};
+
+(:~
 : display a chunk of text, surrounding the $targetsec
 : @param $targetseg  a tei:seg element
 : @param $prec an xs:int giving the number of tei:seg elements to display before the $targetsec
@@ -708,7 +721,7 @@ declare function tlslib:swl-form-dialog($context as xs:string){
     <h6 class="text-muted">At:  <span id="swl-line-id-span" class="ml-2">Id of line</span>&#160;
     {tlslib:format-button-common("bookmark_this_line()","Bookmark this location", "open-iconic-master/svg/bookmark.svg")}</h6>
     <h6 class="text-muted">Line: <span id="swl-line-text-span" class="ml-2">Text of line</span>
-    {tlslib:format-button-common("comment_this_line()","Comment on this line", "octicons/svg/comment.svg")}</h6>
+    {tlslib:format-button-common("add_rd_here()","Add rhetorical device starting on this line", "octicons/svg/comment.svg")}</h6>
     <div class="card-text">
        
         <p> { if (sm:is-authenticated() and not(contains(sm:id()//sm:group, 'tls-test'))) then <span>
@@ -2009,3 +2022,9 @@ declare function tlslib:search-top-menu($search-type, $query, $txtmatchcount, $t
    <br/>
      
 };
+
+declare function tlslib:advanced-search($query, $mode){
+<div><h3>Advanced Search</h3>
+</div>
+};
+ 

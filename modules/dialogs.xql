@@ -36,6 +36,57 @@ declare variable $dialogs:lmap := map{
 "old-chinese-contrasts" : "Old Chinese Contrasts",
 "pointers" : "Pointers"
 };
+declare function dialogs:add-rd-dialog($options as map(*)){
+
+ <div id="add-rd-dialog" class="modal" tabindex="-1" role="dialog" style="display: none;">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header"><h5>Add rhetoric device location, starting at: &#160;<span class="font-weight-bold">{$options?word}</span></h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" title="Close">x</button>
+            </div>
+            <div class="modal-body">
+                <h6 class="font-weight-bold">Begin:  
+                <!-- <span id="concept-line-id-span" class="ml-2">{$options?line-id}</span>&#160; -->
+                <span id="concept-line-text-span" class="ml-2">{$options?line}</span></h6>
+                
+                
+            <div class="form-row">
+              <div id="select-end-group" class="form-group col-md-4">
+                <label for="select-end" class="font-weight-bold">Select end of assignment:</label>
+                 <select class="form-control" id="select-end">
+                   <option value="{$options?line-id}">{$options?line}</option>
+                  {for $s in tlslib:next-n-segs($options?line-id, 20)
+                    return
+                    <option value="{$s/@xml:id}">{$s/text()}</option>
+                   } 
+                 </select>                 
+              </div>
+              <div id="input-note-group" class="col-md-8">
+                    <label for="input-note" class="font-weight-bold">Note:</label>
+                    <textarea id="input-note" class="form-control"></textarea>                   
+              </div>
+              
+            </div>    
+
+            <div class="form-row">
+              <div id="select-rhet-dev-group" class="form-group ui-widget col-md-4">
+                 <label for="select-rhet-dev" class="font-weight-bold">Name of rhetorical device: </label>
+                 <input id="select-rhet-dev" class="form-control" required="true" value=""/>
+                 <span id="rhet-dev-id-span" style="display:none;"></span>
+                </div>
+            </div>
+            
+            </div>
+        <!-- footer -->
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="save_rdl('{$options?word}', '{$options?line-id}', '{$options?line}')">Save</button>
+           </div>
+        <!-- footer end -->
+       </div>
+     </div>
+ </div>
+};
 
 declare function dialogs:new-concept-dialog($options as map(*)){
  let $ex := collection($config:tls-data-root || "/concepts")//tei:head[. = $options?concept]

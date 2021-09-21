@@ -687,6 +687,31 @@ function initialize_autocomplete(){
     } );
 };
 
+function initialize_autocomplete_rd(){
+    $( "#select-rhet-dev" ).autocomplete({
+      appendTo: "#select-rhet-dev-group",
+      source: function( request, response ) {
+        $.ajax( {
+          url: "api/autocomplete.xql",
+          dataType: "jsonp",
+          data: {
+            term: request.term.toUpperCase(),
+	        type: "rhet-dev"
+          },
+          success: function( data ) {
+            response( data );
+          }
+        } );
+      },
+      minLength: 2,
+      select: function( event, ui ) {
+        $("#rhet-dev-id-span" ).html(ui.item.id);     
+        console.log( "Selected: " + ui.item.value + " aka " + ui.item.id );
+      }
+    } );
+};
+
+
 // add this anonyomous function to the #new-concept dialog, so that on hiding 
 // its content gets cleared away.
 // 2020-04-04: is this still in use?
@@ -1325,8 +1350,42 @@ function bookmark_this_line(){
 };
 
 // stub for comment  2020-02-23, called from app:swl-form-dialog
+// use this for RD instead 2021-09-21, called from tlslib:swl-form-dialog
+function add_rd_here(){
+  var word = $("#swl-query-span").text();
+  var line_id= $( "#swl-line-id-span" ).text();  
+  var line = $( "#swl-line-text-span" ).text();
+     $.ajax({
+     type : "GET",
+     dataType : "html",  
+     url : "api/responder.xql?func=dialogs:add-rd-dialog&word="+word+"&line-id="+line_id+"&line="+line, 
+     success : function(resp){
+     $('#remoteDialog').html(resp);
+     initialize_autocomplete_rd();
+     $('#add-rd-dialog').modal('show');
+   }
+  });
+};
 
-function comment_this_line(){
+function save_rdl(word, lineid, line){
+  var end_val = $("#select-end" ).val();
+  var end = $("#select-end option:selected" ).text();
+  var rd = $("#select-rhet-dev").val();
+  var rdid = $("#rhet-dev-id-span").text();
+  var note = $("#input-note").val();
+  $.ajax({
+  type : "PUT",
+  dataType : "html",
+  url : "api/responder.xql?func=save-rdl&line_id="+lineid+"&line="+line+"&end="+end+"&end_val="+end_val+"&rhet_dev="+rd+"&rhet_dev_id="+rdid+"&word="+word+"&note="+note,
+  success : function(resp){
+    $( "#add-rd-dialog" ).modal('hide');      
+    toastr.info("Rhetorical device location for " + rd + " saved.", "HXWD says:");
+  },
+  error : function(resp){
+  console.log(resp);
+    alert("PROBLEM: "+resp.statusText + "\n " + resp.responseText);
+  }
+  });    
     
 };
 

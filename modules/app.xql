@@ -31,7 +31,9 @@ declare variable $app:tmap := map{
 "4" : "fields",
 "5" : "one text only",
 "6" : "lines with translation",
-"7" : "titles"
+"7" : "titles",
+"8" : "tabulated",
+"9" : "advanced search"
 };
 declare variable $app:lmap := map{
 "zh" : "Modern Chinese",
@@ -283,6 +285,8 @@ function app:query($node as node()*, $model as map(*), $query as xs:string?, $mo
       tlslib:title-query($query, $mode)
       else if ($search-type = "4") then 
       app:do-query($query, $mode)
+      else if ($search-type = "9") then 
+      tlslib:advanced-search($query, $mode)
       else "Unknown search type"
     let $store := session:set-attribute($app:SESSION, $hits)
     return
@@ -366,6 +370,9 @@ let $query := map:get($model, "query")
        where $c > 255
        return  codepoints-to-string($c)
     return
+    if ($search-type = "9") then 
+    tlslib:advanced-search($query, $mode)
+    else
     <div><h1>Searching in {map:get($app:tmap, $search-type)} for <mark>{$query}</mark>
     {if (string-length($type) > 0) then 
     <span>in {map:get($app:lmap, $type)}</span>
@@ -869,7 +876,7 @@ function app:rhetdev($node as node()*, $model as map(*), $uuid as xs:string?, $o
     $show := if (string-length($ontshow) > 0) then " show" else "",
     $edit := if (sm:id()//sm:groups/sm:group[. = "tls-editor"]) then 'true' else 'false',
     $tr := $rd//tei:list[@type="translations"]//tei:item
-
+    ,$rdlcnt := count(collection($config:tls-data-root || "/notes/rdl")//tls:span[@rhet-dev-id=$key])
     return 
     <div class="row" id="rhetdev-id" data-id="{$key}" >
     <div class="card col-sm-12" style="max-width: 1000px;background-color:honeydew;">
@@ -974,7 +981,7 @@ function app:rhetdev($node as node()*, $model as map(*), $uuid as xs:string?, $o
     </div>
     
       </div>
-    <div><h5>Rhetorical device locations: {$rd/tei:div[@type='rhet-dev-loc']//tei:p/text()}</h5>
+    <div><h5>Rhetorical device locations: {$rdlcnt}</h5>
     <ul>
     {for $rdl in collection($config:tls-data-root || "/notes/rdl")//tls:span[@rhet-dev-id=$key]
     let $tl := substring(($rdl//tls:srcline[1]/@target)[1], 2)
@@ -1339,6 +1346,9 @@ return
           <option value="2">{$app:tmap?2}</option>
           <option value="3">{$app:tmap?3}</option>
           <option value="4">{$app:tmap?4}</option>
+          <!--
+          <option value="9">{$app:tmap?9}</option>
+          -->
 <!--          <option value="4">Three</option> -->
         </select>
                         <button class="btn btn-outline-success my-2 my-sm-0" type="submit">
