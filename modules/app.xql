@@ -988,6 +988,15 @@ function app:rhetdev($node as node()*, $model as map(*), $uuid as xs:string?, $o
     , $ti := data(($rdl//tls:srcline[1]/@title)[1])
     return
     <li><a href="textview.html?location={$tl}">{$ti}</a><span>{($rdl//tls:srcline[1])[1]}</span>
+    {if (count($rdl//tls:srcline) gt 1) then
+    let $last := substring(($rdl//tls:srcline)[2]/@target, 2)
+    , $targetseg := collection($config:tls-texts-root)//tei:seg[@xml:id=$tl]
+    , $rds := $targetseg/following::tei:seg[@xml:id=$last]
+    (: $ns1[count(.|$ns2)=count($ns2)] :)
+    for $s in ($targetseg/following::tei:seg intersect $rds/preceding::tei:seg) | $rds
+    return
+    <span>{$s}</span>
+    else ()}
     {if ($rdl/tls:note) then <p>{$rdl/tls:note}</p> else ()}
     </li>
     }
