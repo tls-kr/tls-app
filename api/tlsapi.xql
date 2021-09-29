@@ -567,6 +567,22 @@ else
    "OK" || $gloss
    )
 };
+(: save the new syn, called from save_syn // if the crit exists, we will replace it :)
+declare function tlsapi:save-syn($rpara as map(*)) {
+let $user := sm:id()//sm:real/sm:username/text()
+, $concept-doc := collection($config:tls-data-root)//tei:div[@xml:id=$rpara?concept-id]
+, $crit := $concept-doc//tei:div[@type='old-chinese-criteria']
+, $notes := $concept-doc//tei:div[@type='notes']
+, $new := <div xmlns="http://www.tei-c.org/ns/1.0" type="old-chinese-criteria" resp="#{$user}" tls:created="{current-dateTime()}">{for $p in  tokenize($rpara?crit, '\n') return <p>{$p}</p>}</div>
+return 
+if (string-length($crit)>0) then 
+ update replace $crit with $new
+else 
+ (
+ update insert $new into $notes,
+ "OK" || $new
+ )
+};
 
 declare function tlsapi:save-to-concept($rpara as map(*)) {
 

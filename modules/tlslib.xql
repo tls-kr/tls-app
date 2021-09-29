@@ -1319,6 +1319,7 @@ let $words-tmp := if ($w-context) then
    return $w[1]
 let $user := sm:id()//sm:real/sm:username/text()
 , $doann := contains($context, 'textview')  (: the page we were called from can annotate :)
+, $edit := sm:id()//sm:groups/sm:group[. = "tls-editor"] and $doann
 , $taxdoc := doc($config:tls-data-root ||"/core/taxchar.xml")
 (: creating a map as a combination of the concepts in taxchar and the existing concepts :)
 , $wm := map:merge((
@@ -1393,7 +1394,11 @@ onclick="show_newsw({{'wid':'xx', 'py': '{string-join($py, "/")}','concept' : '{
 {if ($scnt > 0) then      
 <span>      
 {if (count($syn) > 0) then
-<button title="Click to view {count($syn)} synonyms" class="btn badge badge-info" data-toggle="collapse" data-target="#{$wid}-syn">SYN</button> else ()}
+<button title="Click to view {count($syn)} synonyms" class="btn badge badge-info" data-toggle="collapse" data-target="#{$wid}-syn">SYN</button> else 
+if ($edit) then 
+<button title="Click to add synonyms" class="btn" onclick="new_syn_dialog({{'char' : '{$zi}','concept' : '{$concept}', 'concept_id' : '{$id}'}})">＋</button>
+else ()
+}
 <button title="click to reveal {count($wx/ancestor::tei:entry/tei:sense)} syntactic words" class="btn badge badge-light" type="button" data-toggle="collapse" data-target="#{$wid}-concept">{$scnt}</button>
 <ul class="list-unstyled collapse" id="{$wid}-syn" style="swl-bullet">{
 for $l in $syn
@@ -1408,7 +1413,6 @@ $sm := $s//tls:sem-feat/text(),
 $smid := substring($sm/@corresp, 2),
 $def := $s//tei:def/text(),
 $sid := $s/@xml:id,
-$edit := sm:id()//sm:groups/sm:group[. = "tls-editor"] and $doann,
 $clicksf := if ($edit) then concat("get_sf('" , $sid , "', 'syn-func')") else "",
 $clicksm := if ($edit) then concat("get_sf('" , $sid , "', 'sem-feat')") else "",
 $atts := count(collection(concat($config:tls-data-root, '/notes/'))//tls:ann[tei:sense/@corresp = "#" || $sid])

@@ -350,6 +350,29 @@ return
 </div>    
 };
 
+declare function dialogs:new-syn-dialog($para as map(*)){
+<div id="new-syn-dialog" class="modal" tabindex="-1" role="dialog" style="display: none;">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header"><h5>Define synonyms for concept {$para?concept} ({$para?char}) </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" title="Close">x</button>
+            </div>
+            <div class="modal-body">
+            <h6 class="font-weight-bold"></h6>
+                <small class="text-muted">Add the contrasts and antinyms for this concept:</small>
+                <div id="input-gloss-group">
+                    <label for="input-crit"><strong>Old Chinese criteria:</strong> </label>
+                    <textarea id="input-crit" class="form-control">{$para?crit}</textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="save_syn({{'concept_id': '{$para?concept-id}', 'concept' : '{$para?concept}'}})">Save</button>
+           </div>
+         </div>
+     </div>
+</div>
+};
 
 
 declare function dialogs:dialog-stub(){

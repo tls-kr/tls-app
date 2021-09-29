@@ -1403,6 +1403,37 @@ function new_concept_dialog(){
   });
 };
 
+// new synonym definition for concept 
+function new_syn_dialog(para){
+     $.ajax({
+     type : "GET",
+     dataType : "html",  
+     url : "api/responder.xql?func=dialogs:new-syn-dialog&concept-id="+para.concept_id+"&concept="+para.concept+"&char="+para.char, 
+     success : function(resp){
+     $('#remoteDialog').html(resp);
+     $('#new-syn-dialog').modal('show');
+   }
+  });
+};
+
+function save_syn (para){
+  var crit_val = $("#input-crit" ).val();
+  $.ajax({
+  type : "PUT",
+  dataType : "html",
+  url : "api/responder.xql?func=save-syn&concept-id="+para.concept_id+"&crit="+crit_val,
+  success : function(resp){
+    $( "#new-syn-dialog" ).modal('hide');      
+    toastr.info("New synonyms for " + para.concept + " saved.", "HXWD says:");
+  },
+  error : function(resp){
+  console.log(resp);
+    alert("PROBLEM: "+resp.statusText + "\n " + resp.responseText);
+  }
+  });    
+};
+
+
 function add_to_tax(){
   var ptr = $("#select-tax").val();
   var relcon = $("#select-concept-nc").val()
