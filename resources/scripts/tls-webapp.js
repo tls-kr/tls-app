@@ -145,6 +145,23 @@ function get_sf(senseid, type){
   });
 };
 
+//cw 2021-10-06
+function get_more_lines(){
+var csel = $("#select-end option:last").val();
+//console.log("len select-end: "+csel)
+  $.ajax({
+  type : "GET",
+  dataType : "html",
+  url : "api/responder.xql?func=get-more-lines&line="+csel,
+  success : function(resp){
+  console.log(resp)
+  $('#select-end').append(resp)
+  }
+  });
+};
+
+
+
 function get_guangyun(){
 // this is assuming one char, TODO make this work for multiple
 var word = $("#swl-query-span").text();

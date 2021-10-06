@@ -52,7 +52,8 @@ declare function dialogs:add-rd-dialog($options as map(*)){
                 
             <div class="form-row">
               <div id="select-end-group" class="form-group col-md-4">
-                <label for="select-end" class="font-weight-bold">Select end of assignment:</label>
+                <label for="select-end" class="font-weight-bold">Select end of assignment (
+                <button class="btn badge badge-primary" type="button" onclick="get_more_lines('{$options?line-id}')" title="Press here to add more lines">＞</button>):</label>
                  <select class="form-control" id="select-end">
                    <option value="{$options?line-id}">{$options?line}</option>
                   {for $s in tlslib:next-n-segs($options?line-id, 20)

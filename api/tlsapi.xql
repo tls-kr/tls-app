@@ -1567,6 +1567,14 @@ $rdlnode
 )
 };
 
+declare function tlsapi:get-more-lines($map as map(*)){
+let $ret := for $s in tlslib:next-n-segs($map?line, 20)
+return
+<option value="{$s/@xml:id}">{$s/text()}</option>
+return
+$ret
+};
+
 
 declare function tlsapi:stub($map as map(*)){
 ()
