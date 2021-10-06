@@ -631,11 +631,21 @@ else
 (:~
  Delete a syntactic word location.  We return the line-id, so that we can display the updated attributions.
 :)
-declare function tlsapi:delete-swl($uid as xs:string) {
+declare function tlsapi:delete-swl($type as xs:string, $uid as xs:string) {
+if ($type eq 'swl') then 
 let $swl := collection($config:tls-data-root|| "/notes")//tls:ann[@xml:id=$uid]
 ,$link := substring(tokenize($swl/tei:link/@target)[1], 2)
 ,$res := update delete $swl
 return $link
+else 
+(: here we are deleting a rhetoric device location :)
+if ($type eq 'rdl') then 
+let $swl := collection($config:tls-data-root|| "/notes")//tls:span[@xml:id=$uid]
+,$link := substring(tokenize($swl//tls:srcline/@target)[1], 2)
+,$res := update delete $swl
+return $link
+else
+()
 };
 
 

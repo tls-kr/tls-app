@@ -8,8 +8,9 @@ declare option output:media-type "application/json";
 
 import module namespace tlsapi="http://hxwd.org/tlsapi" at "tlsapi.xql";
 
-let $uid := request:get-parameter("uid", "xx")
+let $uid := request:get-parameter("uid", "xx"),
+$type := request:get-parameter("type", "xx")
 
 return
 
-tlsapi:delete-swl($uid)
+tlsapi:delete-swl($type, $uid)

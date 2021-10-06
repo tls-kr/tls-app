@@ -918,13 +918,13 @@ function delete_word_from_concept(wid, type){
 
 // delete the attribution; this is the x on the attributions
 
-function delete_swl(uid){
+function delete_swl(type, uid){
     var strconfirm = true // confirm("Do you really want to delete this attribution?");
     if (strconfirm == true) {
      $.ajax({
      type : "GET",
      dataType : "html",  
-     url : "api/delete_swl.xql?type=swl&uid=" + uid, 
+     url : "api/delete_swl.xql?type="+type+"&uid=" + uid, 
      success : function(resp){
    //  save_this_swl(resp.sense_id)
       var line_id = resp.replace(/"/g, '')

@@ -820,13 +820,13 @@ if ("tls-editor"=sm:get-user-groups($user) and $node/@xml:id) then
  </button> 
  :)
 (
- (:   tlslib:format-button("delete_swl('" || data($node/@xml:id) || "')", "Request deletion of SWL for "||$zi, "open-iconic-master/svg/x.svg", "small", "close", "tls-editor"),:)
+ (:   tlslib:format-button("delete_swl('swl', '" || data($node/@xml:id) || "')", "Request deletion of SWL for "||$zi, "open-iconic-master/svg/x.svg", "small", "close", "tls-editor"),:)
  (: for reviews, we display the buttons in tlslib:show-att-display, so we do not need them here :)
   if (not($context='review')) then
    (
    (: for my own swls: delete, otherwise approve :)
    if (($user = $creator-id) or contains($usergroups, "tls-editor" )) then 
-    tlslib:format-button("delete_swl('" || data($node/@xml:id) || "')", "Immediately delete this SWL for "||$zi[1], "open-iconic-master/svg/x.svg", "small", "close", "tls-editor")
+    tlslib:format-button("delete_swl('swl', '" || data($node/@xml:id) || "')", "Immediately delete this SWL for "||$zi[1], "open-iconic-master/svg/x.svg", "small", "close", "tls-editor")
    else (),
    if (not ($user = $creator-id)) then
    (
@@ -859,6 +859,7 @@ if (string-length($def) > 10) then concat(substring($def, 10), "...") else $def}
 
 declare function tlslib:display-seg($seg as node()*, $options as map(*) ) {
  let $user := sm:id()//sm:real/sm:username/text(),
+ $usergroups := sm:get-user-groups($user),
  $show-transl := not(contains(sm:id()//sm:group/text(), "guest")),
  $testuser := contains(sm:id()//sm:group, ('tls-test', 'guest'))
  let $link := concat('#', $seg/@xml:id),
@@ -905,7 +906,15 @@ tlslib:format-swl($swl/ancestor::tls:ann, map{'type' : 'row'})
 else 
 <div class="row bg-light ">
 <div class="col-sm-1">Rhet:</div>
-<div class="col-sm-4"><a href="rhet-dev.html?uuid={$swl/ancestor::tls:span/@rhet-dev-id}">{data($swl/ancestor::tls:span/@rhet-dev)}</a></div>
+<div class="col-sm-4"><a href="rhet-dev.html?uuid={$swl/ancestor::tls:span/@rhet-dev-id}">{data($swl/ancestor::tls:span/@rhet-dev)}</a>
+{
+let $creator-id := substring($swl/ancestor::tls:span/@resp, 2)
+return
+   if (($user = $creator-id) or contains($usergroups, "tls-editor" )) then 
+    tlslib:format-button("delete_swl('rdl', '" || data($swl/ancestor::tls:span/@xml:id) || "')", "Immediately delete the attribution of rhetorical device "||data($swl/ancestor::tls:span/@rhet-dev), "open-iconic-master/svg/x.svg", "small", "close", "tls-editor")
+   else ()
+}
+</div>
 </div>
 }
 </div>
@@ -1002,7 +1011,7 @@ return
 {if ((sm:has-access(document-uri(fn:root($a)), "w") and $a/@xml:id) and not(contains(sm:id()//sm:group, 'tls-test'))) then 
 (
 (:tlslib:format-button("review_swl_dialog('" || data($a/@xml:id) || "')", "Review this attribution", "octicons/svg/unverified.svg", "small", "close", "tls-editor"),:)
-tlslib:format-button("delete_swl('" || data($a/@xml:id) || "')", "Delete this attribution", "open-iconic-master/svg/x.svg", "small", "close", "tls-editor"),
+tlslib:format-button("delete_swl('swl', '" || data($a/@xml:id) || "')", "Delete this attribution", "open-iconic-master/svg/x.svg", "small", "close", "tls-editor"),
  if (not ($user = substring($a/tls:metadata/@resp, 2))) then
     tlslib:format-button("save_swl_review('" || data($a/@xml:id) || "')", "Approve the SWL", "octicons/svg/thumbsup.svg", "small", "close", "tls-editor") else ()
 )
