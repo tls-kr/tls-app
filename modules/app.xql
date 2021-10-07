@@ -884,7 +884,7 @@ function app:rhetdev($node as node()*, $model as map(*), $uuid as xs:string?, $o
     <h4 class="card-title">{$rd/tei:head/text()}&#160;&#160;{for $t in $tr return 
       <span class="badge badge-light" title="{map:get($app:lmap, $t/@xml:lang)}">{$t/text()}</span>} 
       </h4>
-    <h5 class="card-subtitle" id="rd-test" >{($rd/tei:div[@type="definition"]//tei:p)[1]/text()}</h5>
+    <div class="card-text" id="rd-test" >{for $p in $rd/tei:div[@type="definition"]//tei:p/text() return <p>{$p}</p>}</div>
     <div id="rhetdev-content" class="accordion">
     
     <!-- pointers -->
