@@ -443,13 +443,12 @@ declare function tlsapi:get-swl-for-page($loc as xs:string, $prec as xs:int, $fo
    for $d in $dseg
    let $link := "#" || data($d/@xml:id)
 return
-<div id="{data($d/@xml:id)}-swl">{
+
 for $swl in collection($config:tls-data-root|| "/notes")//tls:srcline[@target=$link]
 let $pos := if (string-length($swl/@pos) > 0) then xs:int(tokenize($swl/@pos)[1]) else 0
 order by $pos
 return
-tlslib:format-swl($swl/ancestor::tls:ann, map{'type' : 'row'})}
-</div>
+("{'id': '" || data($d/@xml:id)||"','html':'" , tlslib:format-swl($swl/ancestor::tls:ann, map{'type' : 'row'}) , "'}")
 };
 
 

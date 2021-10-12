@@ -1360,7 +1360,7 @@ return
           -->
 <!--          <option value="4">Three</option> -->
         </select>
-                        <button class="btn btn-outline-success my-2 my-sm-0" type="submit">
+                        <button id="search-submit" class="btn btn-outline-success my-2 my-sm-0" type="submit">
                             <img class="icon" src="resources/icons/open-iconic-master/svg/magnifying-glass.svg"/>
                         </button>
                     </form>
@@ -1838,6 +1838,11 @@ function app:syllables($node as node()*, $model as map(*), $uuid as xs:string?, 
   </div>
  </div>
     )
+};
+
+
+declare function app:obs($node as node(), $model as map(*)){
+()
 };
 
 (:: xx :)

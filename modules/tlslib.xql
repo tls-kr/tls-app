@@ -655,7 +655,15 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
     return
       (
       <div id="chunkrow" class="row">
+      <!-- here is where we select what to display -->
+      <div id="swlrow" class="col-sm-12 swl collapse" data-toggle="collapse">
+       <div class="row">
+         <div class="col-sm-2" id="swlrow-1"><span class="font-weight-bold">Select type of annotation:</span></div>
+         <div class="col-sm-5" id="swlrow-2"><button id="swl-select" title="Syntactic word locations" class="btn btn-primary ml-2" type="button">SWL</button></div>
+      </div>
+      </div>
       <div id="toprow" class="col-sm-12">
+      
       {(:  this is the same structure as the one display-seg will fill it 
       with selection for translation etc, we use this as a header line :)()}
        <div class="row">
@@ -895,14 +903,14 @@ default return
   </div>}
 </div>,
 <div class="row swl collapse" data-toggle="collapse">
-<div class="col-sm-10" id="{$seg/@xml:id}-swl">
+<div class="col-sm-10 swlid" id="{$seg/@xml:id}-swl">
 {if (starts-with($ann, "false")) then () else 
 for $swl in collection($config:tls-data-root|| "/notes")//tls:srcline[@target=$link]
 let $pos := if (string-length($swl/@pos) > 0) then xs:int(tokenize($swl/@pos)[1]) else 0
 order by $pos
 return
-if ($swl/ancestor::tls:ann) then
-tlslib:format-swl($swl/ancestor::tls:ann, map{'type' : 'row'})
+if ($swl/ancestor::tls:ann) then ()
+(:tlslib:format-swl($swl/ancestor::tls:ann, map{'type' : 'row'}):)
 else 
 <div class="row bg-light ">
 <div class="col-sm-1">Rhet:</div>

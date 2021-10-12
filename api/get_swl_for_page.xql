@@ -13,5 +13,4 @@ $prec := request:get-parameter("prec", "2"),
 $foll := request:get-parameter("foll", "28")
 
 return
-
 tlsapi:get-swl-for-page($loc, xs:int($prec), xs:int($foll))

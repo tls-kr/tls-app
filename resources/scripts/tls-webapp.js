@@ -3,7 +3,8 @@ var cancelmove = false;
 $(function() {
     console.log( "ready!" );
     set_keyup ();
-    //get_swl_for_page();
+    get_swls();
+
 });            
 
 if (!window.x) {
@@ -37,6 +38,33 @@ function page_move(target){
 
 }
 
+function get_swls(){
+    $(".swlid").each(function () {
+    var swid = $(this).attr('id');
+    var line_id = swid.substr(0, swid.length - 4)
+    show_swls_for_line(line_id);
+    });
+    $("#blue-eye").attr("title", "Press here to show annotations.");
+}
+
+function test_segs1(){
+    $(".swlid").each(function () {
+    var sw = $(this).attr('id');
+  $.ajax({
+  type : "GET",
+  dataType : "json",
+  url : "api/get_swl_for_page.xql"+location, 
+  success : function(resp){
+  for (index = 0; index < resp.length; ++index) {
+    console.log(resp[index]['id']);
+  };
+  $('#toprow').html(resp);
+  }
+  });
+    console.log(sw)
+    })
+}
+
 function get_swl_for_page(){
   var location = window.location.search;
 /*  var url = new URL(context);
@@ -44,11 +72,11 @@ function get_swl_for_page(){
   console.log(location)
   $.ajax({
   type : "GET",
-  dataType : "html",
+  dataType : "json",
   url : "api/get_swl_for_page.xql"+location, 
   success : function(resp){
   for (index = 0; index < resp.length; ++index) {
-    console.log(resp[index]);
+    console.log(resp[index]['id']);
   };
   $('#toprow').html(resp);
   }
@@ -186,6 +214,9 @@ var word = $("#swl-query-span").text();
 };
 
 function hide_new_att(){
+// restore the search button to its original function
+  $('#search-submit' ).attr("type", "submit");
+  $( '#search-submit' ).attr("onclick", ""); 
   $("#swl-form").hide()  
 };
 
@@ -234,7 +265,7 @@ function show_swls_for_line(line_id){
   url : "api/show_swl_for_line.xql?line=" + line_id, 
   success : function(resp){
   line_id = line_id.split(".").join("\\.")
-  console.log("Displaying response at: " + '#'+line_id+'-swl');
+//  console.log("Displaying response at: " + '#'+line_id+'-swl');
 //  $('#swl-select').html(resp)
   $('#'+line_id+'-swl').html(resp);
   $('#'+line_id+'-swl').show();
@@ -493,6 +524,8 @@ function get_sw(sel, xid, line){
     // idea: write a search that displays the results on this page, so that I do
     // not need to leave the current context.
    $( 'input[name="query"]' ).val(sel);
+   $( '#search-submit' ).attr("type", "button");
+   $( '#search-submit' ).attr("onclick", "quick_search()");
    $( "#swl-line-id-span" ).html(xid);
    $( "#swl-line-text-span" ).html(line);      
    $( "#swl-query" ).val( sel);
@@ -1549,7 +1582,8 @@ function copyToClipboard(element) {
 }
 
 function quick_search(){
-    var word = $("#swl-query-span").text();
+//    var word = $("#swl-query-span").text();
+    var word = $("input[name=query]").val();
     $.get("api/responder.xql?func=quick-search&query="+word+"&start=1&count=20&mode=rating&search-type=6&textid=", "html", 
     function(resp){
          $('#swl-select').html(resp)
