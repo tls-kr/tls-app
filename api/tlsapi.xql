@@ -438,6 +438,7 @@ let $textid := tokenize($loc, "_")[1]
  return $ret
 };
 
+(: this is abandoned as of 2021-10-12, we loop through the swl class on a page instead :)
 declare function tlsapi:get-swl-for-page($loc as xs:string, $prec as xs:int, $foll as xs:int){
   let $dseg := local:get-targetsegs($loc, $prec, $foll)
    for $d in $dseg

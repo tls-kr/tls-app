@@ -777,10 +777,13 @@ return $def
 : @param $node  the tls:ann element to display
 : @param $type  type of the display, currently 'row' for selecting the row style, anything else will be list style
 : called from api/show_swl_for_line.xql
+: 2021-10-15: also display other annotation types (e.g. rhetorical devices etc.)
 :)
 declare function tlslib:format-swl($node as node(), $options as map(*)){
 let $user := sm:id()//sm:real/sm:username/text(),
 $usergroups := sm:get-user-groups($user),
+(: already used swl as a class, so need a different one here; for others we want the type given in the source :)
+$anntype := if (local-name($node)='ann') then "nswl" else data($node/@type),
 $type := $options?type,
 $context := $options?context
 let $concept := data($node/@concept),
@@ -802,9 +805,10 @@ $zi := string-join($node/tei:form/tei:orth/text(), "/")
 :)
 return
 if ($type = "row") then
-<div class="row bg-light ">
+if ($anntype eq "nswl") then
+<div class="row bg-light {$anntype}">
 {if (not($context = 'review')) then 
-<div class="col-sm-1">&#160;</div>
+<div class="col-sm-1"><span class="{$anntype}-col">●</span></div>
 else ()}
 <div class="col-sm-2"><span class="zh">{$czi}</span> ({$cpy})
 {if  ("tls-admin.x" = sm:get-user-groups($user)) then (data(($node//tls:srcline/@pos)[1]),
@@ -846,6 +850,24 @@ if ("tls-editor"=sm:get-user-groups($user) and $node/@xml:id) then
 else ()
 }
 </div>
+</div>
+else 
+(: not swl, eg: rhet-dev etc :)
+<div class="row bg-light {$anntype}">
+{
+let $role := data($node/tls:text[tls:srcline[@target="#"||$options?line-id]]/@role)
+return
+(
+ <div class="col-sm-2"><span class="{$anntype}-col">●{$role}</span></div>,
+ <div class="col-sm-6"><a href="rhet-dev.html?uuid={$node/@rhet-dev-id}">{data($node/@rhet-dev)}</a>
+{
+   if (($user = $creator-id) or contains($usergroups, "tls-editor" )) then 
+    tlslib:format-button("delete_swl('rdl', '" || data($node/@xml:id) || "')", "Immediately delete the attribution of rhetorical device "||data($node/@rhet-dev), "open-iconic-master/svg/x.svg", "small", "close", "tls-editor")
+   else ()
+}
+ </div>
+) 
+}
 </div>
 (: not in the row :)
 else 

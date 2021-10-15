@@ -36,11 +36,11 @@
 }
 */
 #content {
-    padding-top: 70px;
+    padding-top: 50px;
   }
 
 #content{
-   padding-left: 70px;
+   padding-left: 50px;
 }
 
 #copyright p {
@@ -170,4 +170,18 @@
     content: "";
     display:block;     
     visibility: hidden;    
+}
+
+.nswl-col{
+ color: #5bc0de;
+/*  background: #999; 
+ background-color: rgba(128,128,128, 0.95);   
+  */
+}
+
+.rdl-col{
+ color: #f0ad4e;
+/*  background: #999; 
+ background-color: rgba(128,128,128, 0.95);   
+  */
 }
