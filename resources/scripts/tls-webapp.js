@@ -4,6 +4,7 @@ $(function() {
     console.log( "ready!" );
     set_keyup ();
     get_swls();
+    $("#blue-eye").attr("title", "Press here to show annotations.");
 
 });            
 
@@ -44,7 +45,6 @@ function get_swls(){
     var line_id = swid.substr(0, swid.length - 4)
     show_swls_for_line(line_id);
     });
-    $("#blue-eye").attr("title", "Press here to show annotations.");
 }
 
 function test_segs1(){
@@ -171,6 +171,12 @@ function get_sf(senseid, type){
     $('#edit-sf-dialog').modal('show');
   }
   });
+};
+
+//cw 2021-10-21
+//show or hide the elements with this class attribute
+function showhide(cl){
+    $("."+cl).toggle()
 };
 
 //cw 2021-10-06

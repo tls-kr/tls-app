@@ -29,6 +29,14 @@ declare function local:string-to-ncr($s as xs:string) as xs:string{
 (:~ 
 : Helper functions
 :)
+(: quick fix, this needs to be made user-extensible :)
+declare function tlslib:annotation-types($type as xs:string){
+  let $map := 
+ map{'nswl' : ('SWL', 'Syntactic Word Location'), 
+                'rdl' : ('RDL', 'Rhetoric Device Location')}
+ return
+ $map($type)
+};
 
 declare function tlslib:num2hex($num as xs:int) as xs:string {
 let $h := "0123456789ABCDEF"
@@ -650,8 +658,13 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
       $visit := tlslib:record-visit($targetseg),
       $tr := tlslib:get-translations($model?textid),
       $slot1-id := tlslib:get-content-id($model?textid, 'slot1', $tr),
-      $slot2-id := tlslib:get-content-id($model?textid, 'slot2', $tr)
-
+      $slot2-id := tlslib:get-content-id($model?textid, 'slot2', $tr),
+      $atypes := distinct-values(for $s in $dseg/@xml:id
+        let $link := "#" || $s
+        return
+        for $node in (collection($config:tls-data-root|| "/notes")//tls:ann[.//tls:srcline[@target=$link]] | collection($config:tls-data-root|| "/notes")//tls:span[.//tls:srcline[@target=$link]] ) return 
+        (: need to special case the legacy type ann=swl :)
+        if (local-name($node)='ann') then "nswl" else data($node/@type))
     return
       (
       <div id="chunkrow" class="row">
@@ -659,7 +672,7 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
       <div id="swlrow" class="col-sm-12 swl collapse" data-toggle="collapse">
        <div class="row">
          <div class="col-sm-2" id="swlrow-1"><span class="font-weight-bold">Select type of annotation:</span></div>
-         <div class="col-sm-5" id="swlrow-2"><button id="swl-select" title="Syntactic word locations" class="btn btn-primary ml-2" type="button">SWL</button></div>
+         <div class="col-sm-5" id="swlrow-2">{for $a in $atypes return <button id="{$a}-select" onclick="showhide('{$a}')" title="{tlslib:annotation-types($a)[2]}" class="btn btn-primary ml-2" type="button">{tlslib:annotation-types($a)[1]}</button>}</div>
       </div>
       </div>
       <div id="toprow" class="col-sm-12">
