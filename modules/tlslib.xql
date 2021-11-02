@@ -489,6 +489,11 @@ declare function tlslib:session-att($name, $default){
 declare function tlslib:tv-header($node as node()*, $model as map(*)){
    session:create(),
    let $textid := $model('textid'),
+   $tsrc := if ($textid and map:contains($config:txtsource-map, $textid)) then 
+          map:get($config:txtsource-map, $textid) 
+      else 
+         if (substring($model('textid'), 1, 3) = "KR6") then "CBETA" 
+         else "CHANT", 
    $toc := if (contains(session:get-attribute-names(), $textid || "-toc")) then 
     session:get-attribute($textid || "-toc")
     else 
@@ -514,12 +519,8 @@ declare function tlslib:tv-header($node as node()*, $model as map(*)){
    </li>
    ,
       <li class="nav-item">
-      <span class="navbar-text ml-2" title="Text provided by">Source: 
-      {if ($textid and map:contains($config:txtsource-map, $textid)) then 
-          map:get($config:txtsource-map, $textid) 
-      else 
-         if (substring($model('textid'), 1, 3) = "KR6") then "CBETA" 
-         else <a href="http://www.chant.org/">CHANT</a>}
+      <span class="navbar-text ml-2" title="Click here for more information" data-toggle="collapse" data-target="#srcref">Source: 
+      {$tsrc}
       </span>
       {if ($model("transl")) then 
       (<br/>,<small class="nav-brand ml-2">Translation by {$model("transl")}</small>) else () }
@@ -669,6 +670,12 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
       (
       <div id="chunkrow" class="row">
       <!-- here is where we select what to display -->
+      <div id="srcref" class="col-sm-12 collapse" data-toggle="collapse">
+      <div class="row">
+         <div class="col-sm-2" id="srcrow-1"></div>
+         <div class="col-sm-5" id="srcrow-2"><span class="font-weight-bold">Edition:</span><span class="sm">{collection($config:tls-texts-root)//ab[@refid=$model?textid]}</span></div>
+      </div>
+      </div>
       <div id="swlrow" class="col-sm-12 swl collapse" data-toggle="collapse">
        <div class="row">
          <div class="col-sm-2" id="swlrow-1"><span class="font-weight-bold">Select type of annotation:</span></div>
