@@ -676,12 +676,15 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
          <div class="col-sm-5" id="srcrow-2"><span class="font-weight-bold">Edition:</span><span class="sm">{collection($config:tls-texts-root)//ab[@refid=$model?textid]}</span></div>
       </div>
       </div>
+      {if (count($atypes) > 1) then 
       <div id="swlrow" class="col-sm-12 swl collapse" data-toggle="collapse">
        <div class="row">
          <div class="col-sm-2" id="swlrow-1"><span class="font-weight-bold">Select type of annotation:</span></div>
          <div class="col-sm-5" id="swlrow-2">{for $a in $atypes return <button id="{$a}-select" onclick="showhide('{$a}')" title="{tlslib:annotation-types($a)[2]}" class="btn btn-primary ml-2" type="button">{tlslib:annotation-types($a)[1]}</button>}</div>
       </div>
       </div>
+      else ()
+      }
       <div id="toprow" class="col-sm-12">
       
       {(:  this is the same structure as the one display-seg will fill it 
@@ -856,6 +859,9 @@ if ("tls-editor"=sm:get-user-groups($user) and $node/@xml:id) then
  (: for reviews, we display the buttons in tlslib:show-att-display, so we do not need them here :)
   if (not($context='review')) then
    (
+(:   <input id="input-{$node/@xml:id}" style="display:inline;" name="input-name" type="number" class="rating" 
+    min="0" max="3" step="1" data-theme="krajee-svg" data-size="xs" value="3"/>,    :)
+
    (: for my own swls: delete, otherwise approve :)
    if (($user = $creator-id) or contains($usergroups, "tls-editor" )) then 
     tlslib:format-button("delete_swl('swl', '" || data($node/@xml:id) || "')", "Immediately delete this SWL for "||$zi[1], "open-iconic-master/svg/x.svg", "small", "close", "tls-editor")
@@ -927,7 +933,7 @@ declare function tlslib:display-seg($seg as node()*, $options as map(*) ) {
 return
 (
 <div class="row {$mark}">
-<div class="{if ($seg/parent::tei:head) then 'tls-head ' else () }{if ($ann='false') then 'col-sm-4' else 'col-sm-2'} zh {$alpheios-class}" lang="{$lang}" id="{$seg/@xml:id}">{$seg/text()}</div>　
+<div class="{if ($seg/parent::tei:head) then 'tls-head ' else () }{if ($ann='false') then 'col-sm-4' else 'col-sm-2'} zh {$alpheios-class}" lang="{$lang}" id="{$seg/@xml:id}">{$seg/text()}{if ($seg/tei:anchor) then <span title="{normalize-space(string-join($seg/ancestor::tei:div//tei:note[tei:ptr/@target='#'||$seg/tei:anchor/@xml:id]/text()))}" >●</span> else ()}</div>　
 <div class="col-sm-5 tr" lang="en-GB" tabindex="{$options('pos')+500}" id="{$seg/@xml:id}-tr" contenteditable="{if (not($testuser)) then 'true' else 'false'}">{typeswitch ($slot1) 
 case element(tei:TEI) return  $slot1//tei:seg[@corresp="#"||$seg/@xml:id]/text()
 default return (krx:get-varseg-ed($seg/@xml:id, substring-before($slot1, "::")))
