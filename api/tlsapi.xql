@@ -1511,7 +1511,7 @@ let $hits := tlslib:ngram-query($map?query, $map?mode, $map?search-type, $map?te
 , $nextp := if ($total < $start + $count) then "" else 'do_quick_search('||$start||' + '||$count||', '||$count ||')'
 , $qs := tokenize($map?query, "\s")
 return
-<div><p>Total: {$total}, showing {$start} to {min($start + $count -1, $total)}.</p>
+<div><p>Total: {$total} matches, showing {$start} to {min(($start + $count -1, $total))}.</p>
 {
 for $h at $n in $disp
     let $head := $h/ancestor::tei:div[1]/tei:head[1],
