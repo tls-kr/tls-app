@@ -411,7 +411,7 @@ let $query := map:get($model, "query")
     return
     (: insert option to limit to textid here? tell the user how many matches etc. :)
     (
-    <h4>Found {count($model("hits"))} matches {if (not($search-type="2")) then <span>, showing {$start} to {$start + $resno -1}</span> else ()}</h4>,
+    <h4>Found {count($model("hits"))} matches {if (not($search-type="2")) then <span>, showing {$start} to {min((count($model("hits")), $start + $resno -1))}</span> else ()}</h4>,
     if ($search-type = ("1", "5", "6")) then 
     <p>
     {if ($start = 1) then      
