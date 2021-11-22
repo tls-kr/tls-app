@@ -865,6 +865,24 @@ $('.rating').on('rating:change', function(event, value, caption) {
   }
  });
 });
+// ratings for the SWL ratings
+$('.starRating').on('click', function(event, value, caption) {
+        console.log(value);
+        console.log(this.id);
+  $.ajax({
+  type : "PUT",
+  url : "api/save_ratings.xql?textid="+this.id+"&rating="+value,
+  success : function(resp){
+    toastr.info("Your rating has been saved.", "HXWD says:")
+  },
+  error : function(resp){
+    console.log(resp)
+    alert(resp);
+  }
+ });
+});
+
+
 
 // this is for the button "Attributions" search
 function search_and_att(sense_id){
@@ -1588,13 +1606,24 @@ function copyToClipboard(element) {
 }
 
 function quick_search(){
+   var start = 1;
+   var count = 25;
+   do_quick_search(start, count);
+};
+
+function do_quick_search(start, count){
 //    var word = $("#swl-query-span").text();
     var word = $("input[name=query]").val();
-    $.get("api/responder.xql?func=quick-search&query="+word+"&start=1&count=20&mode=rating&search-type=6&textid=", "html", 
+    $.get("api/responder.xql?func=quick-search&query="+word+"&start="+start+"&count="+count+"&mode=rating&search-type=1&textid=", "html", 
     function(resp){
-         $('#swl-select').html(resp)
+         $('#swl-select').html(resp);
+         // we might introduce buttons for the other search functions here at some point
+         $('#new-att-detail').html("");
         }
     )
+  $('#new-att-title').html("Searching for "+word);
+  $('#new-att-detail').html("　　　　　　　　　　　　　　　　　　　　　　　　　　　　");
+  $('#swl-select').html("Please wait ...");  
     
 }
 // delete_zi_from_word('uuid-f1f8819f-cfae-4128-a9ed-8e9586c9e146','1','咳欬')

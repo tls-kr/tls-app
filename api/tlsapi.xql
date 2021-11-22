@@ -1504,9 +1504,14 @@ else ()
 declare function tlsapi:quick-search($map as map(*)){
 let $hits := tlslib:ngram-query($map?query, $map?mode, $map?search-type, $map?textid)
 , $disp := subsequence($hits, $map?start, $map?count)
+, $start := xs:int($map?start)
+, $count := xs:int($map?count)
+, $total := count($hits)
+, $prevp := if ($start = 1) then "" else 'do_quick_search('||$start||' - '||$count||', '||$count ||')'
+, $nextp := if ($total < $start + $count) then "" else 'do_quick_search('||$start||' + '||$count||', '||$count ||')'
 , $qs := tokenize($map?query, "\s")
 return
-<div><p>Total: {count($hits)}</p>
+<div><p>Total: {$total}, showing {$start} to {min($start + $count -1, $total)}.</p>
 {
 for $h at $n in $disp
     let $head := $h/ancestor::tei:div[1]/tei:head[1],
@@ -1528,6 +1533,13 @@ return
         if ($tr) then (<br/>, $tr) else ()}</div>
 </div>
 }
+<nav aria-label="Page navigation">
+  <ul class="pagination">
+    <li class="page-item"><a class="page-link {if ($start = 1) then "disabled" else ()}" onclick="{$prevp}" href="#">&#171;</a></li>
+    <li class="page-item"><a class="page-link" onclick="{$nextp}" href="#">&#187;</a></li>
+  </ul>
+</nav>
+
 </div>
 };
 

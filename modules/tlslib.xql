@@ -755,13 +755,13 @@ declare function tlslib:swl-form-dialog($context as xs:string){
     {tlslib:format-button-common("add_rd_here()","Add rhetorical device starting on this line", "octicons/svg/comment.svg")}</h6>
     <div class="card-text">
        
-        <p> { if (sm:is-authenticated() and not(contains(sm:id()//sm:group, 'tls-test'))) then <span>
+        <p> { if (sm:is-authenticated() and not(contains(sm:id()//sm:group, 'tls-test'))) then <span id="new-att-detail">
         <span class="badge badge-primary">Use</span> one of the following syntactic words (SW), 
         create a <span class="mb-2 badge badge-secondary">New SW</span> 
          ,add an <span class="font-weight-bold">existing</span> <span class="btn badge badge-primary ml-2" onclick="show_new_concept('existing', '')">Concept</span> to the word
          or create a <span class="btn badge badge-primary ml-2" onclick="show_new_concept('new', '')">New Concept</span>.
          </span>
-         else <span id="new-att-no-perm">You do not have permission to make attributions.</span>
+         else <span id="new-att-detail">You do not have permission to make attributions.</span>
          }
          <span id="swl-jisho"></span>
         <ul id="swl-select" class="list-unstyled"></ul>
@@ -824,6 +824,7 @@ $zi := string-join($node/tei:form/tei:orth/text(), "/")
 ,$sf := $s//tls:syn-func
 ,$sm := $s//tls:sem-feat
 ,$def := tlslib:get-sense-def($link)
+,$rid := $options?line-id || "-" || $node/@xml:id 
 (:$pos := concat($sf, if ($sm) then (" ", $sm) else "")
 :)
 return
@@ -860,7 +861,17 @@ if ("tls-editor"=sm:get-user-groups($user) and $node/@xml:id) then
   if (not($context='review')) then
    (
 (:   <input id="input-{$node/@xml:id}" style="display:inline;" name="input-name" type="number" class="rating" 
-    min="0" max="3" step="1" data-theme="krajee-svg" data-size="xs" value="3"/>,    :)
+    min="0" max="3" step="1" data-theme="krajee-svg" data-size="xs" value="3"/>,  :)
+
+(:      <span id="input-{$rid}" class="starRating">
+        <input id="{$rid}-rating3" type="radio" name="rating" value="3" checked="true"/>
+        <label for="{$rid}-rating3">3</label>
+        <input id="{$rid}-rating2" type="radio" name="rating" value="2"/>
+        <label for="{$rid}-rating2">2</label>
+        <input id="{$rid}-rating1" type="radio" name="rating" value="1"/>
+        <label for="{$rid}-rating1">1</label>
+      </span>,:)
+
 
    (: for my own swls: delete, otherwise approve :)
    if (($user = $creator-id) or contains($usergroups, "tls-editor" )) then 
@@ -868,7 +879,8 @@ if ("tls-editor"=sm:get-user-groups($user) and $node/@xml:id) then
    else (),
    if (not ($user = $creator-id)) then
    (
-<span class="rp-5">{tlslib:format-button("review_swl_dialog('" || data($node/@xml:id) || "')", "Review the SWL for " || $zi[1], "octicons/svg/unverified.svg", "small", "close", "tls-editor")}&#160;&#160;</span>,   
+<span class="rp-5">
+{tlslib:format-button("review_swl_dialog('" || data($node/@xml:id) || "')", "Review the SWL for " || $zi[1], "octicons/svg/unverified.svg", "small", "close", "tls-editor")}&#160;&#160;</span>,   
     tlslib:format-button("save_swl_review('" || data($node/@xml:id) || "')", "Approve the SWL for " || $zi, "octicons/svg/thumbsup.svg", "small", "close", "tls-editor") 
    ) else ()
   ) else ()
