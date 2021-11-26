@@ -539,8 +539,10 @@ function get_sw(sel, xid, line){
    $( "#swl-select").html("");
    if (sel.length == 0) {
        $ ("#new-att-title").html("In other editions: ");
+       $ ('#new-att-detail').html("　　　　　　　　　　　　　　　　　　　　　　　　　　　　");       
        $ ("#new-att-no-perm").html("");
-   } else {
+       $ ('#swl-select').html("Collecting information, please wait ..."); 
+} else {
 //       $ ("#new-att-title").html('Existing SW for <strong class="ml-2"><span id="swl-query-span" onclick="link_guguolin(\''+sel+'\')">'+sel+'</span></strong>');
        $ ("#new-att-title").html('Existing SW for <strong class="ml-2"><span id="swl-query-span"><a target="GXDS" href="'+url+'">'+sel+'</a></span></strong>');   
        // ><a ></a>
@@ -572,7 +574,8 @@ function get_sw(sel, xid, line){
       url : "api/responder.xql?func=tlslib:get-related&line="+line+"&seg="+xid, 
       success : function(resp){
       $('#swl-select').html(resp)
-  }
+      $('#new-att-detail').html("");
+    }
   });
   }
 };
