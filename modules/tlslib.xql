@@ -832,7 +832,18 @@ if ($type = "row") then
 if ($anntype eq "nswl") then
 <div class="row bg-light {$anntype}">
 {if (not($context = 'review')) then 
-<div class="col-sm-1"><span class="{$anntype}-col">●</span></div>
+<div class="col-sm-1"><span class="{$anntype}-col">●</span>
+<!--
+      <span id="input-{$rid}" class="starRating">
+        <input id="{$rid}-rating3" type="radio" name="rating" value="3" checked="true"/>
+        <label for="{$rid}-rating3">3</label>
+        <input id="{$rid}-rating2" type="radio" name="rating" value="2"/>
+        <label for="{$rid}-rating2" >2</label>
+        <input class="starRatingOn" id="{$rid}-rating1" type="radio" name="rating" value="1"/>
+        <label for="{$rid}-rating1" class="starRatingOn">1</label>
+      </span>
+-->      
+</div>
 else ()}
 <div class="col-sm-2"><span class="zh">{$czi}</span> ({$cpy})
 {if  ("tls-admin.x" = sm:get-user-groups($user)) then (data(($node//tls:srcline/@pos)[1]),
@@ -870,7 +881,16 @@ if ("tls-editor"=sm:get-user-groups($user) and $node/@xml:id) then
         <label for="{$rid}-rating2">2</label>
         <input id="{$rid}-rating1" type="radio" name="rating" value="1"/>
         <label for="{$rid}-rating1">1</label>
-      </span>,:)
+      </span>,
+      
+      <span id="input-{$rid}" class="starRating pull-right">
+        <label for="{$rid}-rating3" class="icon" style="width:12px;height:15px;top:0;align:bottom"></label>
+        <label for="{$rid}-rating2" class="icon"  style="width:12px;height:15px;top:0;align:bottom"></label>
+        <label for="{$rid}-rating1" class="icon"  style="width:12px;height:15px;top:0;align:bottom"></label>
+      </span>    
+      
+      :)
+
 
 
    (: for my own swls: delete, otherwise approve :)
@@ -881,8 +901,8 @@ if ("tls-editor"=sm:get-user-groups($user) and $node/@xml:id) then
    (
 <span class="rp-5">
 {tlslib:format-button("review_swl_dialog('" || data($node/@xml:id) || "')", "Review the SWL for " || $zi[1], "octicons/svg/unverified.svg", "small", "close", "tls-editor")}&#160;&#160;</span>,   
-    tlslib:format-button("save_swl_review('" || data($node/@xml:id) || "')", "Approve the SWL for " || $zi, "octicons/svg/thumbsup.svg", "small", "close", "tls-editor") 
-   ) else ()
+    tlslib:format-button("save_swl_review('" || data($node/@xml:id) || "')", "Approve the SWL for " || $zi, "octicons/svg/thumbsup.svg", "small", "close", "tls-editor")
+    ) else ()
   ) else ()
 )
 else ()
@@ -1608,8 +1628,8 @@ declare function tlslib:get-related($map as map(*)){
 let $line := $map?line
 ,$sid := $map?seg
 , $res := krx:collate-request($sid)
-, $edid := string-join(tokenize($sid, "_")[1,2], "_")
-, $mf := collection($config:tls-texts-root || "/manifests/")/mf:edition[@id=$edid]/parent::mf:editions
+, $edid := string-join(subsequence(tokenize($sid, "_"), 1,2), "_")
+, $mf := collection($config:tls-texts-root || "/manifests/")//mf:edition[@id=$edid]/ancestor::mf:editions
 return
 <li class="mb-3">
 {for $w in $res//witnesses 

@@ -203,6 +203,8 @@
 
 .starRating:not(old) > label{
   display         : block;
+  width           : 1.0em;
+  height          : 1.0em;
   float           : right;
   position        : relative;
   background      : url('../icons/star-off.svg');
@@ -224,8 +226,15 @@
 .starRating:not(old) > label:hover ~ label:before,
 .starRating > :checked ~ label:before{
   opacity : 1;
-},
-.starRating:not(:hover) > :checked ~ label:before{
-  opacity : 1;
 }
 
+.starRatingOn:not(old){
+  content         : '';
+  display         : block;
+  width           : 1.0em;
+  height          : 1.0em;
+  background      : url('../icons/star-on.svg');
+  background-size : contain;
+  opacity : 1;    
+  transition      : opacity 0.2s linear;
+}
