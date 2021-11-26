@@ -558,6 +558,7 @@ function get_sw(sel, xid, line){
 // alert(uid);
   if ((sel.length > 0) && (sel.length < 10)){
   var context = window.location.pathname;
+  $("#new-att-detail").html('<span class="badge badge-primary">Use</span> one of the following syntactic words (SW), create a <span class="mb-2 badge badge-secondary">New SW</span>, add an <span class="font-weight-bold">existing</span> <span class="btn badge badge-primary ml-2" onclick="show_new_concept(\'existing\', \'\')">Concept</span> to the word or create a <span class="btn badge badge-primary ml-2" onclick="show_new_concept(\'new\', \'\')">New Concept</span>.')
   $.ajax({
   type : "GET",
   dataType : "html",
