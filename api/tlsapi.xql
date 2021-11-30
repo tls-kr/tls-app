@@ -1551,12 +1551,19 @@ return
 if ($bm) then (update delete $bm, "OK") else "Could not delete bookmark."
 };
 
+(: 2021-11-30 : generalizing to cover block-level observation, type is given in $map?type :)
+
 declare function tlsapi:save-rdl($map as map(*)){
 let $uuid := concat("uuid-", util:uuid())
+, $type := $map?type
 , $user := sm:id()//sm:real/sm:username/text()
-, $lnode := doc($config:tls-data-root ||"/notes/rdl/rdl.xml")//tls:span[position()=last()]
+, $lnode := if ($type= 'rhetdev') then doc($config:tls-data-root ||"/notes/rdl/rdl.xml")//tls:span[position()=last()] 
+   else 
+    if (doc($config:tls-data-root ||"/notes/facts/"||$type ||".xml")) 
+     then doc($config:tls-data-root ||"/notes/facts/"||$type ||".xml")//tls:span[position()=last()]
+   else tlslib:get-obs-node($type)
 , $title := tlslib:get-title(tokenize($map?line_id, '_')[1])
-, $rdlnode := 
+, $rdlnode := if ($type = 'rhetdev') then
 	<tls:span xmlns:tls="http://hxwd.org/ns/1.0" type="rdl" xml:id="{$uuid}" rhet-dev="{$map?rhet_dev}" rhet-dev-id="{$map?rhet_dev_id}" resp="#{$user}" modified="{current-dateTime()}">
 		<tls:text role="span-start">
 			<tls:srcline title="{$title}" target="#{$map?line_id}">{$map?line}</tls:srcline>
@@ -1571,7 +1578,21 @@ let $uuid := concat("uuid-", util:uuid())
 		else ()
 		}
 	</tls:span>
-
+    else 
+    <tls:span xmlns:tls="http://hxwd.org/ns/1.0" type="{$type}" xml:id="{$uuid}" resp="#{$user}" modified="{current-dateTime()}">
+		<tls:text role="span-start">
+			<tls:srcline title="{$title}" target="#{$map?line_id}">{$map?line}</tls:srcline>
+		</tls:text>
+		{if ($map?line_id ne $map?end_val) then
+		<tls:text role="span-end">
+			<tls:srcline title="{$title}" target="#{$map?end_val}">{normalize-space($map?end)}</tls:srcline>
+		</tls:text>
+		else ()}
+		{if (string-length($map?note) gt 0) then 
+		<tls:note>{$map?note}</tls:note>
+		else ()
+		}    
+    </tls:span>
 return
 (
 update insert $rdlnode following $lnode ,

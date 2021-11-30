@@ -36,12 +36,15 @@ declare variable $dialogs:lmap := map{
 "old-chinese-contrasts" : "Old Chinese Contrasts",
 "pointers" : "Pointers"
 };
+
+(: 2021-11-30: extending this functionality to cover observations of type block defined in facts.xml :)
+
 declare function dialogs:add-rd-dialog($options as map(*)){
 
  <div id="add-rd-dialog" class="modal" tabindex="-1" role="dialog" style="display: none;">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
-            <div class="modal-header"><h5>Add rhetoric device location, starting at: &#160;<span class="font-weight-bold">{$options?word}</span></h5>
+            <div class="modal-header"><h5>Add <select id="block-type">{for $l in collection($config:tls-data-root)//tei:TEI[@xml:id="facts-def"]//tei:body/tei:div[@type='block'] return <option value="{data($l/@xml:id)}">{$l/tei:head/text()}</option>}</select>, starting at: &#160;<span class="font-weight-bold">{$options?word}</span></h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close" title="Close">x</button>
             </div>
             <div class="modal-body">

@@ -582,6 +582,12 @@ function get_sw(sel, xid, line){
 };
 
 
+function update_swlist(){
+    var domain = $('#domain-select').val();
+    console.log("Selected domain:", domain);
+}
+
+
 // jquery selectors 
 // we bind a touchend event to mouseup.  This is an attempt to make this work
 // on mobile devices, but apparently not really working.
@@ -1451,13 +1457,14 @@ function save_rdl(word, lineid, line){
   var rd = $("#select-rhet-dev").val();
   var rdid = $("#rhet-dev-id-span").text();
   var note = $("#input-note").val();
+  var type = $('#block-type').val();
   $.ajax({
   type : "PUT",
   dataType : "html",
-  url : "api/responder.xql?func=save-rdl&line_id="+lineid+"&line="+line+"&end="+end+"&end_val="+end_val+"&rhet_dev="+rd+"&rhet_dev_id="+rdid+"&word="+word+"&note="+note,
+  url : "api/responder.xql?func=save-rdl&line_id="+lineid+"&line="+line+"&end="+end+"&end_val="+end_val+"&rhet_dev="+rd+"&rhet_dev_id="+rdid+"&word="+word+"&note="+note+"&type="+type,
   success : function(resp){
     $( "#add-rd-dialog" ).modal('hide');      
-    toastr.info("Rhetorical device location for " + rd + " saved.", "HXWD says:");
+    toastr.info("Observation location " + rd + " saved.", "HXWD says:");
   },
   error : function(resp){
   console.log(resp);

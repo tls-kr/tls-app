@@ -35,7 +35,7 @@ declare function tlslib:annotation-types($type as xs:string){
  map{'nswl' : ('SWL', 'Syntactic Word Location'), 
                 'rdl' : ('RDL', 'Rhetoric Device Location')}
  return
- $map($type)
+ if (count($map($type))> 0) then $map($type) else ( collection($config:tls-data-root)//tei:TEI[@xml:id="facts-def"]//tei:div[@xml:id=$type]/tei:head/text(), '')
 };
 
 declare function tlslib:num2hex($num as xs:int) as xs:string {
@@ -746,13 +746,14 @@ declare function tlslib:swl-form-dialog($context as xs:string){
 {if ($context = 'textview') then
  <div class="card-body">
     <h5 class="card-title"><span id="new-att-title">{if (sm:is-authenticated()) then "New Attribution:" else "Existing SW for " }<strong class="ml-2"><span id="swl-query-span">Word or char to annotate</span>:</strong></span>
+    <span>　　Search domain:<select id="domain-select" onChange="update_swlist()"><option value="core">Core</option>{for $d in xmldb:get-child-collections($config:tls-data-root||'/domain') return <option value="{$d}">{tlslib:capitalize-first($d)}</option>}</select></span>
      <button type="button" class="close" onclick="hide_new_att()" aria-label="Close" title="Close">
      <img class="icon" src="resources/icons/open-iconic-master/svg/circle-x.svg"/>  
      </button></h5>
     <h6 class="text-muted">At:  <span id="swl-line-id-span" class="ml-2">Id of line</span>&#160;
     {tlslib:format-button-common("bookmark_this_line()","Bookmark this location", "open-iconic-master/svg/bookmark.svg")}</h6>
     <h6 class="text-muted">Line: <span id="swl-line-text-span" class="ml-2">Text of line</span>
-    {tlslib:format-button-common("add_rd_here()","Add rhetorical device starting on this line", "octicons/svg/comment.svg")}</h6>
+    {tlslib:format-button-common("add_rd_here()","Add observation (regarding a text segment) starting on this line", "octicons/svg/comment.svg")}</h6>
     <div class="card-text">
        
         <p> { if (sm:is-authenticated() and not(contains(sm:id()//sm:group, 'tls-test'))) then <span id="new-att-detail">
@@ -812,7 +813,7 @@ $context := $options?context
 let $concept := data($node/@concept),
 $creator-id := substring($node/tls:metadata/@resp, 2),
 $zi := string-join($node/tei:form/tei:orth/text(), "/")
-(: 2021-03-17 we ignore the py from SWL, retrieve the one from concept below as $cpy :)
+(: 2021-03-17 we ignore the pinyin from SWL, retrieve the one from concept below as $cpy :)
 (:$py := $node/tei:form[1]/tei:pron[starts-with(@xml:lang, 'zh-Latn')][1]/text(),:)
 ,$link := substring(tokenize($node/tei:link/@target)[2], 2)
 (: 2021-03-17 below we get the data from the CONCEPT entry, rather than the SWL, all we need in the SWL now is the link :)
@@ -913,14 +914,15 @@ else
 (: not swl, eg: rhet-dev etc :)
 <div class="row bg-light {$anntype}">
 {
-let $role := data($node/tls:text[tls:srcline[@target="#"||$options?line-id]]/@role)
+let $role := if (ends-with(data($node/tls:text[tls:srcline[@target="#"||$options?line-id]]/@role), 'start')) then "(" else ")"
 return
 (
  <div class="col-sm-2"><span class="{$anntype}-col">●{$role}</span></div>,
- <div class="col-sm-6"><a href="rhet-dev.html?uuid={$node/@rhet-dev-id}">{data($node/@rhet-dev)}</a>
+ <div class="col-sm-6">{if ($anntype='rdl') then <a href="rhet-dev.html?uuid={$node/@rhet-dev-id}">{data($node/@rhet-dev)}</a> else
+ collection($config:tls-data-root)//tei:TEI[@xml:id="facts-def"]//tei:div[@xml:id=$anntype]/tei:head/text()}
 {
    if (($user = $creator-id) or contains($usergroups, "tls-editor" )) then 
-    tlslib:format-button("delete_swl('rdl', '" || data($node/@xml:id) || "')", "Immediately delete the attribution of rhetorical device "||data($node/@rhet-dev), "open-iconic-master/svg/x.svg", "small", "close", "tls-editor")
+    tlslib:format-button("delete_swl('rdl', '" || data($node/@xml:id) || "')", "Immediately delete the observation "||data($node/@rhet-dev), "open-iconic-master/svg/x.svg", "small", "close", "tls-editor")
    else ()
 }
  </div>
@@ -2122,6 +2124,50 @@ declare function tlslib:search-top-menu($search-type, $query, $txtmatchcount, $t
   tlslib:linkheader($qc),
    <br/>
      
+};
+
+declare function tlslib:get-obs-node($type as xs:string){
+  let $cm := substring(string(current-date()), 1, 7),
+  $doc-name :=  $type || ".xml",
+  $doc-path :=  $config:tls-data-root || "/notes/facts/" || $doc-name,
+  $doc := if (not(doc-available($doc-path))) then 
+    let $res := 
+    xmldb:store($config:tls-data-root || "/notes/facts/" , $doc-name, 
+<TEI xmlns="http://www.tei-c.org/ns/1.0" xml:id="obs-{$type}">
+  <teiHeader>
+      <fileDesc>
+         <titleStmt>
+            <title>Observations of {collection($config:tls-data-root)//tei:TEI[@xml:id="facts-def"]//tei:div[@xml:id=$type]/tei:head/text()}s</title>
+         </titleStmt>
+         <publicationStmt>
+            <p>published electronically as part of the TLS project at https://hxwd.org</p>
+         </publicationStmt>
+         <sourceDesc>
+            <p>Created by members of the TLS project</p>
+         </sourceDesc>
+      </fileDesc>
+     <profileDesc>
+        <creation>Initially created: <date>{current-dateTime()}</date>.</creation>
+     </profileDesc>
+  </teiHeader>
+  <text>
+      <body>
+      <div><head>Items</head>
+      <tls:span xmlns:tls="http://hxwd.org/ns/1.0" type="dummy" xml:id="uuid-test">
+	  </tls:span>
+      </div>
+      </body>
+  </text>
+</TEI>)
+    return
+    (sm:chmod(xs:anyURI($res), "rw-rw-rw-"),
+     sm:chgrp(xs:anyURI($res), "tls-user"),
+(:     sm:chown(xs:anyURI($res), "tls"),:)
+    doc($res)
+    )
+    else
+    doc($doc-path)
+  return $doc//tls:span[position()=last()]
 };
 
 declare function tlslib:advanced-search($query, $mode){

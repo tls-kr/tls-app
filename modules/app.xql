@@ -1330,6 +1330,7 @@ return
                                 <a class="dropdown-item" href="browse.html?type=syn-func">Syntactic functions</a>
                                 <a class="dropdown-item" href="browse.html?type=sem-feat">Semantic features</a>
                                 <a class="dropdown-item" href="browse.html?type=rhet-dev">Rhetorical devices</a>
+                                <a class="dropdown-item" href="facts.html?type=rhet-dev">Facts</a>
                                 <div class="dropdown-divider"/>
                                 <!-- will need to make another menu level here for the bookmarks -->
                                 <a class="dropdown-item" href="textlist.html">Texts</a>
@@ -1839,6 +1840,48 @@ function app:syllables($node as node()*, $model as map(*), $uuid as xs:string?, 
  </div>
     )
 };
+
+
+declare function app:facts($node as node(), $model as map(*)){
+     let $n := $model?n
+     , $facts-def := collection($config:tls-data-root)//tei:TEI[@xml:id="facts-def"]//tei:body/tei:div
+     return
+     (session:create(),
+    <div class="card">
+    <div class="card-header">
+    <h4 class="card-title">Observable facts　　&#160;<button type="button" class="btn btn-primary" onclick="add_obs()">Add new observable</button></h4>
+    </div>
+    <p></p>
+    <div class="card-text">{    
+     for $f in $facts-def
+     let $t := $f/@type
+     group by $t 
+     return 
+     <div><span class="text-muted">{data($t)}</span>{
+     for $ff in $f return
+     <p>{$ff/tei:head}　　
+     <button class="btn badge badge-secondary ml-2" type="button" onclick="show_obs('{$ff/@xml:id}')">Show observations</button></p>
+     }</div>
+    }</div>
+    <div class="card-footer">
+    <ul class="pagination">
+    {for $c in $n/preceding::tei:div[position()< 6]
+    return
+    <li class="page-item"><a class="page-link" href="char.html?id={$c/@xml:id}">{$c/tei:head/text()}</a></li>
+    }    
+    <li class="page-item disabled"><a class="page-link">&#171;</a></li>
+    <li class="page-item disabled"><a class="page-link">{$n/tei:head/text()}</a></li>
+    <li class="page-item disabled"><a class="page-link">&#187;</a></li>
+    {for $c in $n/following::tei:div[position()< 6]
+    return
+    <li class="page-item"><a class="page-link" href="char.html?id={$c/@xml:id}">{$c/tei:head/text()}</a></li>
+    }
+    </ul>
+    </div>
+    </div>
+)
+};
+
 
 
 declare function app:obs($node as node(), $model as map(*)){
