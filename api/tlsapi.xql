@@ -203,7 +203,7 @@ tlsapi:save-swl-to-docs($line-id, $sense-id, $user, $currentword)
 declare function tlsapi:get-swl($rpara as map(*)){
 
 let $swl:= if ($rpara?uuid = "xx") then <empty/> else collection($config:tls-data-root|| "/notes")//tls:ann[@xml:id=$rpara?uuid]
-,$concept-defined := collection($config:tls-data-root || "/concepts")//tei:div[@xml:id=$rpara?concept-id]
+,$concept-defined := (collection($config:tls-data-root || "/concepts") | collection($config:tls-data-root || "/domain"))//tei:div[@xml:id=$rpara?concept-id]
 ,
 $para := map{
 "char" : if ($rpara?word = "xx") then $swl//tei:form/tei:orth/text() else $rpara?word,
@@ -509,7 +509,7 @@ else
 declare function tlsapi:delete-zi-from-word($rpara as map(*)){
 (: &wid="+wid+"&pos="+pos+"&char="+ch, "html",  :)
 let $pos := xs:int($rpara?pos)
-let $orth := collection($config:tls-data-root || "/concepts")//tei:entry[@xml:id=$rpara?wid]/tei:form[$pos]/tei:orth[.=$rpara?char]
+let $orth := (collection($config:tls-data-root || "/concepts") | collection($config:tls-data-root || "/domain"))//tei:entry[@xml:id=$rpara?wid]/tei:form[$pos]/tei:orth[.=$rpara?char]
 , $form := $orth/ancestor::tei:form
 return
 (update delete $form, "OK")
@@ -537,7 +537,7 @@ if (starts-with($wid, "uuid")) then
    else
 
   if (count($gc) = string-length($zi)) then
-    let $word := collection($config:tls-data-root||"/concepts")//tei:entry[@xml:id=$wid]
+    let $word := (collection($config:tls-data-root || "/concepts") | collection($config:tls-data-root || "/domain"))//tei:entry[@xml:id=$wid]
     , $oldform := $word/tei:form[tei:orth[. = $rpara?char]]
     , $newform := tlslib:make-form(string-join($gc, "xxx"), $zi)
     , $save := if ($oldform) then (update replace $oldform with $newform) else ()
@@ -1010,9 +1010,9 @@ if (not($vis="option3")) then
 
 declare function tlsapi:delete-word-from-concept($id as xs:string, $type as xs:string) {
 let $item := if ($type = 'word') then 
-   collection($config:tls-data-root|| "/concepts")//tei:entry[@xml:id=$id]
+   (collection($config:tls-data-root || "/concepts") | collection($config:tls-data-root || "/domain"))//tei:entry[@xml:id=$id]
    else
-   collection($config:tls-data-root|| "/concepts")//tei:sense[@xml:id=$id]
+   (collection($config:tls-data-root || "/concepts") | collection($config:tls-data-root || "/domain"))//tei:sense[@xml:id=$id]
 ,$itemcount := sum(
     if ($type = 'word') then
       for $i in $item/tei:sense
@@ -1414,9 +1414,9 @@ let $type := $map?type
 let $sf := 
 if (empty($sfnode)) then (
  if ($type = "-la") then
- collection($config:tls-data-root || "/concepts")//tei:div[@xml:id=$map?id]
+ (collection($config:tls-data-root || "/concepts") | collection($config:tls-data-root || "/domain"))//tei:div[@xml:id=$map?id]
  else
- collection($config:tls-data-root || "/concepts")//tei:div[@xml:id=$map?id]/tei:div[@type='definition']
+ (collection($config:tls-data-root || "/concepts") | collection($config:tls-data-root || "/domain"))//tei:div[@xml:id=$map?id]/tei:div[@type='definition']
  )
  else $sfnode,
 $head := $sf/tei:head,
@@ -1445,7 +1445,7 @@ return
    (: updating the label :)
    update replace $head with $def,
    (: also update the ref elements in other concepts :)
-   for $r in collection($config:tls-data-root || "/concepts")//tei:ref[@target="#"||$map?id]
+   for $r in (collection($config:tls-data-root || "/concepts") | collection($config:tls-data-root || "/domain"))//tei:ref[@target="#"||$map?id]
    return 
    update replace $r with <ref xmlns="http://www.tei-c.org/ns/1.0" resp="#{$user}" modified="{current-dateTime()}" target="#{$map?id}">{normalize-space($map?def)}</ref> 
    )
@@ -1474,7 +1474,7 @@ let $uuid := $map?uuid
 ,$uri := document-uri( root( $e ) )
 ,$doc := tokenize($uri, "/")[last()]
 ,$coll := substring-before($uri, $doc)
-,$cnt := count(collection($config:tls-data-root||"/concepts")//tei:form[@corresp="#"||$uuid])
+,$cnt := count((collection($config:tls-data-root || "/concepts") | collection($config:tls-data-root || "/domain"))//tei:form[@corresp="#"||$uuid])
 return
 if ($cnt = 0) then
   (xmldb:remove($coll, $doc), "OK")

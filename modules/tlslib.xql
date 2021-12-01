@@ -746,10 +746,15 @@ declare function tlslib:swl-form-dialog($context as xs:string){
 {if ($context = 'textview') then
  <div class="card-body">
     <h5 class="card-title"><span id="new-att-title">{if (sm:is-authenticated()) then "New Attribution:" else "Existing SW for " }<strong class="ml-2"><span id="swl-query-span">Word or char to annotate</span>:</strong></span>
+
     <span>　　Search domain:<select id="domain-select" onChange="update_swlist()"><option value="core">Core</option>{for $d in xmldb:get-child-collections($config:tls-data-root||'/domain') return <option value="{$d}">{tlslib:capitalize-first($d)}</option>}</select></span>
-     <button type="button" class="close" onclick="hide_new_att()" aria-label="Close" title="Close">
-     <img class="icon" src="resources/icons/open-iconic-master/svg/circle-x.svg"/>  
-     </button></h5>
+    <span>　　<span class="btn badge badge-light" type="button" data-toggle="collapse" data-target="#mark-buttons" >Mark</span>
+
+    <span id="mark-buttons" class="collapse"><p>{for $d in collection($config:tls-data-root)//tei:TEI[@xml:id="facts-def"]//tei:div[@type='inline'] return 
+    <button onClick="save_mark('{data($d/@xml:id)}')" style="{data($d/@rend)}">{$d//tei:head/text()}</button>}</p></span></span>
+    
+    <button type="button" class="close" onclick="hide_new_att()" aria-label="Close" title="Close"><img class="icon" src="resources/icons/open-iconic-master/svg/circle-x.svg"/></button>
+    </h5>
     <h6 class="text-muted">At:  <span id="swl-line-id-span" class="ml-2">Id of line</span>&#160;
     {tlslib:format-button-common("bookmark_this_line()","Bookmark this location", "open-iconic-master/svg/bookmark.svg")}</h6>
     <h6 class="text-muted">Line: <span id="swl-line-text-span" class="ml-2">Text of line</span>
@@ -1261,8 +1266,8 @@ tlslib:move-sw-to-concept($map)
 };
 
 declare function tlslib:move-entry-to-concept($map as map(*)){
- let $sc := collection($config:tls-data-root || "/concepts")//tei:div[@xml:id=$map?src-concept]
- ,$tc := collection($config:tls-data-root || "/concepts")//tei:div[@xml:id=$map?trg-concept]
+ let $sc := (collection($config:tls-data-root || "/concepts") | collection($config:tls-data-root || "/domain"))//tei:div[@xml:id=$map?src-concept]
+ ,$tc := (collection($config:tls-data-root || "/concepts") | collection($config:tls-data-root || "/domain"))//tei:div[@xml:id=$map?trg-concept]
  ,$tc-name := $tc/tei:head/text()
  ,$sc-name := $sc/tei:head/text()
  ,$sw := $sc//tei:orth[. = $map?word]/ancestor::tei:entry
@@ -1302,8 +1307,8 @@ declare function tlslib:move-entry-to-concept($map as map(*)){
 
 (: actually, move  SW , depending on $map?type  :)
 declare function tlslib:move-sw-to-concept($map as map(*)){
- let $sc := collection($config:tls-data-root || "/concepts")//tei:div[@xml:id=$map?src-concept]
- ,$tc := collection($config:tls-data-root || "/concepts")//tei:div[@xml:id=$map?trg-concept]
+ let $sc := (collection($config:tls-data-root || "/concepts") | collection($config:tls-data-root || "/domain"))//tei:div[@xml:id=$map?src-concept]
+ ,$tc := (collection($config:tls-data-root || "/concepts") | collection($config:tls-data-root || "/domain"))//tei:div[@xml:id=$map?trg-concept]
  ,$tc-name := $tc/tei:head/text()
  ,$sc-name := $sc/tei:head/text()
  ,$tw := $tc//tei:div[@type="words"]
@@ -1940,7 +1945,7 @@ return
  <ul>
  {switch ($issue)
  case "missing-pinyin" return 
-  let $missing := for $p in collection($config:tls-data-root||"/concepts")//tei:pron[@xml:lang="zh-Latn-x-pinyin" and (string-length(.) = 0)] 
+  let $missing := for $p in (collection($config:tls-data-root || "/concepts") | collection($config:tls-data-root || "/domain"))//tei:pron[@xml:lang="zh-Latn-x-pinyin" and (string-length(.) = 0)] 
   let $z := $p/ancestor::tei:form/tei:orth/text()
   where string-length($z) > 0
   return $p
@@ -1955,7 +1960,7 @@ return
 (:  tlslib:get-sw($z, "concept"):)
  case "duplicate" return 
  let $dup := 
-  for $c in collection($config:tls-data-root||"/concepts")//tei:div[@type="concept"]
+  for $c in (collection($config:tls-data-root || "/concepts") | collection($config:tls-data-root || "/domain"))//tei:div[@type="concept"]
     for $e in $c//tei:entry
       let $cx := for $o in $e//tei:orth
         let $x := count($c//tei:entry[.//tei:orth[. = $o]])

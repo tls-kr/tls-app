@@ -594,7 +594,10 @@ function update_swlist(){
     console.log("Selected domain:", domain);
 }
 
-
+function save_mark(mark){
+    console.log("Selected mark:", mark);
+    
+}
 // jquery selectors 
 // we bind a touchend event to mouseup.  This is an attempt to make this work
 // on mobile devices, but apparently not really working.

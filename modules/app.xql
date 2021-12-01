@@ -1826,7 +1826,7 @@ function app:syllables($node as node()*, $model as map(*), $uuid as xs:string?, 
      </div>
      <div><h4>TLS Usage: Words using {$zi}</h4>
      <ul>
-     {for $z in collection($config:tls-data-root || "/concepts")//tei:entry[.//tei:orth[. = $zi//text()]]
+     {for $z in (collection($config:tls-data-root || "/concepts") | collection($config:tls-data-root || "/domain"))//tei:entry[.//tei:orth[. = $zi//text()]]
      let $c:= $z/ancestor::tei:div[@type="concept"]
      , $w:= $z/ancestor::tei:entry
      return
@@ -1857,7 +1857,7 @@ declare function app:obs($node as node(), $model as map(*)){
      let $t := $f/@type
      group by $t 
      return 
-     <div><span class="text-muted">{data($t)}</span>{
+     <div><h4><span class="text-muted">{data($t)}</span></h4>{
      for $ff in $f return
      <p>{$ff/tei:head}　　
      <button class="btn badge badge-primary ml-2" type="button" onclick="show_obs('{$ff/@xml:id}')">Edit template</button>     
