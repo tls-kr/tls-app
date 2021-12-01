@@ -515,6 +515,8 @@ function get_sw(sel, xid, line){
    var dw = document.documentElement.clientWidth;
    var dh = document.documentElement.clientHeight;
    var new_width = $("#toprow").outerWidth() - $("#toprow-1").outerWidth() - $("#toprow-2").outerWidth();
+   var domain = $('#domain-select').val();
+   console.log("selection: ", sel);
    var url = "http://www.kaom.net/z_hmy_zidian88.php?"+"word="+encodeURI(sel)+"&mode=word&bianti=no&page=no";
    // this needs to produce the form link for the lookup
 /*   字書：
@@ -562,7 +564,7 @@ function get_sw(sel, xid, line){
   $.ajax({
   type : "GET",
   dataType : "html",
-  url : "api/get_sw.xql?word=" + sel+"&context="+context, 
+  url : "api/get_sw.xql?word=" + sel+"&context="+context+"&domain="+domain, 
   success : function(resp){
   $('#swl-select').html(resp)
   }
@@ -584,6 +586,11 @@ function get_sw(sel, xid, line){
 
 function update_swlist(){
     var domain = $('#domain-select').val();
+    var xid = $("#swl-line-id-span" ).html();
+    var line = $( "#swl-line-text-span" ).html();      
+    //var sel = $( "#swl-query-span" ).html();
+    var sel =  x.Selector.getSelected();
+    get_sw(sel.toString(), xid, line);
     console.log("Selected domain:", domain);
 }
 

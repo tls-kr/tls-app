@@ -1405,12 +1405,13 @@ return
 };
 
 (: This displays the list of words by concept in the right hand popup pane  :)
-declare function tlslib:get-sw($word as xs:string, $context as xs:string) as item()* {
+declare function tlslib:get-sw($word as xs:string, $context as xs:string, $domain as xs:string) as item()* {
 let $w-context := ($context = "dic") or contains($context, "concept")
+, $coll := if ($domain = "core") then "/concepts/" else "/domain/"||$domain
 let $words-tmp := if ($w-context) then 
-  collection(concat($config:tls-data-root, '/concepts/'))//tei:orth[contains(. , $word)]
+  collection($config:tls-data-root||$coll)//tei:orth[contains(. , $word)]
   else
-  collection(concat($config:tls-data-root, '/concepts/'))//tei:entry/tei:form/tei:orth[. = $word]
+  collection($config:tls-data-root||$coll)//tei:entry/tei:form/tei:orth[. = $word]
   (: this is to filter out characters that occur multiple times in a entry definition (usually with different pronounciations, however we actually might want to get rid of them :)
 , $words := for $w in $words-tmp
    let $e := $w/ancestor::tei:entry
@@ -1444,7 +1445,7 @@ for $id in map:keys($wm)
 let $concept := map:get($wm($id), "concept"),
 (:$w := map:get($wm($id), "w"):)
 (:$w := collection(concat($config:tls-data-root, '/concepts/'))//tei:entry[@xml:id = $cid[2]]//tei:orth:)
-$w := collection(concat($config:tls-data-root, '/concepts/'))//tei:div[@xml:id = $id]//tei:orth[. = $word]
+$w := collection($config:tls-data-root||$coll)//tei:div[@xml:id = $id]//tei:orth[. = $word]
 ,$cdef := $w/ancestor::tei:div/tei:div[@type="definition"]/tei:p/text(),
 $form := $w/parent::tei:form/@corresp,
 $z := map:get($wm($id), "zi")
@@ -1457,7 +1458,7 @@ return
 for $zi at $pos in distinct-values($z) 
 (: there might be more than one entry that has the char $zi, so $wx is a sequence of one or more
  we need to loop through these entries:)
-for $wx at $pw in (collection(concat($config:tls-data-root, '/concepts/'))//tei:div[@xml:id = $id]//tei:orth[. = $zi])[1]
+for $wx at $pw in (collection($config:tls-data-root||$coll)//tei:div[@xml:id = $id]//tei:orth[. = $zi])[1]
 (: we take only the first, because for multiple readings of the same char, we have two entries here :)
 
 
@@ -1565,7 +1566,7 @@ else
 (: query in dictionary :)
 declare function tlslib:dic-query($queryStr as xs:string?, $mode as xs:string?)
 {
-tlslib:get-sw($queryStr, "dic")
+tlslib:get-sw($queryStr, "dic", "core")
 };
 
 (: query in translation :)

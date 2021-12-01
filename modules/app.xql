@@ -1018,9 +1018,9 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
     let $user := sm:id()//sm:real/sm:username/text()
     let $key := replace($uuid, '^#', '')
     let $c :=  if (string-length($key) > 0) then
-       collection($config:tls-data-root || "/concepts")//tei:div[ends-with(@xml:id,$key)]    
+       (collection($config:tls-data-root || "/concepts") | collection($config:tls-data-root || "/domain"))//tei:div[ends-with(@xml:id,$key)]    
      else
-       collection($config:tls-data-root || "/concepts")//tei:div[tei:head[. = $concept]],
+       (collection($config:tls-data-root || "/concepts") | collection($config:tls-data-root || "/domain"))//tei:div[tei:head[. = $concept]],
     $key := $c/@xml:id,
     $edit := if (sm:id()//sm:groups/sm:group[. = "tls-editor"]) then 'true' else 'false',
     $show := if (string-length($ontshow) > 0) then " show" else "",
@@ -1330,7 +1330,7 @@ return
                                 <a class="dropdown-item" href="browse.html?type=syn-func">Syntactic functions</a>
                                 <a class="dropdown-item" href="browse.html?type=sem-feat">Semantic features</a>
                                 <a class="dropdown-item" href="browse.html?type=rhet-dev">Rhetorical devices</a>
-                                <a class="dropdown-item" href="facts.html?type=rhet-dev">Facts</a>
+                                <a class="dropdown-item" href="observations.html">Observations</a>
                                 <div class="dropdown-divider"/>
                                 <!-- will need to make another menu level here for the bookmarks -->
                                 <a class="dropdown-item" href="textlist.html">Texts</a>
@@ -1842,14 +1842,14 @@ function app:syllables($node as node()*, $model as map(*), $uuid as xs:string?, 
 };
 
 
-declare function app:facts($node as node(), $model as map(*)){
+declare function app:obs($node as node(), $model as map(*)){
      let $n := $model?n
      , $facts-def := collection($config:tls-data-root)//tei:TEI[@xml:id="facts-def"]//tei:body/tei:div
      return
      (session:create(),
     <div class="card">
     <div class="card-header">
-    <h4 class="card-title">Observable facts　　&#160;<button type="button" class="btn btn-primary" onclick="add_obs()">Add new observable</button></h4>
+    <h4 class="card-title">Observations in the TLS　　&#160;<button type="button" class="btn btn-primary" onclick="add_obs()">Add new template</button></h4>
     </div>
     <p></p>
     <div class="card-text">{    
@@ -1860,6 +1860,7 @@ declare function app:facts($node as node(), $model as map(*)){
      <div><span class="text-muted">{data($t)}</span>{
      for $ff in $f return
      <p>{$ff/tei:head}　　
+     <button class="btn badge badge-primary ml-2" type="button" onclick="show_obs('{$ff/@xml:id}')">Edit template</button>     
      <button class="btn badge badge-secondary ml-2" type="button" onclick="show_obs('{$ff/@xml:id}')">Show observations</button></p>
      }</div>
     }</div>
@@ -1880,12 +1881,6 @@ declare function app:facts($node as node(), $model as map(*)){
     </div>
     </div>
 )
-};
-
-
-
-declare function app:obs($node as node(), $model as map(*)){
-()
 };
 
 (:: xx :)
