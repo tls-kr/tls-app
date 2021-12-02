@@ -583,7 +583,7 @@ function get_sw(sel, xid, line){
   }
 };
 
-
+// when the domain in the Floater is changed, this will trigger a new search
 function update_swlist(){
     var domain = $('#domain-select').val();
     var xid = $("#swl-line-id-span" ).html();
@@ -592,12 +592,26 @@ function update_swlist(){
     var sel =  x.Selector.getSelected();
     get_sw(sel.toString(), xid, line);
     console.log("Selected domain:", domain);
-}
+};
 
 function save_mark(mark){
-    console.log("Selected mark:", mark);
-    
-}
+    console.log("Selected mark:", mark);   
+};
+
+
+function modify_rd_dialog(){
+    var obstype = $('#block-type').val()
+    var obslabel = $('#block-type option:selected').text();
+    var line = $('#concept-line-text-span').text();
+    if (obstype == 'rhetdev'){
+        $('#select-rhetdev').val("");
+    } else {
+       $('#select-rhetdev').val(line);
+    }
+    $('#block-name').html(obslabel);
+    console.log("Selected obstype:" , obstype, " ", obslabel);
+};
+
 // jquery selectors 
 // we bind a touchend event to mouseup.  This is an attempt to make this work
 // on mobile devices, but apparently not really working.
@@ -764,8 +778,8 @@ function initialize_autocomplete(){
 };
 
 function initialize_autocomplete_rd(){
-    $( "#select-rhet-dev" ).autocomplete({
-      appendTo: "#select-rhet-dev-group",
+    $( "#select-rhetdev" ).autocomplete({
+      appendTo: "#rhetdev",
       source: function( request, response ) {
         $.ajax( {
           url: "api/autocomplete.xql",
@@ -781,7 +795,7 @@ function initialize_autocomplete_rd(){
       },
       minLength: 2,
       select: function( event, ui ) {
-        $("#rhet-dev-id-span" ).html(ui.item.id);     
+        $("#rhetdev-id-span" ).html(ui.item.id);     
         console.log( "Selected: " + ui.item.value + " aka " + ui.item.id );
       }
     } );
@@ -1464,8 +1478,8 @@ function add_rd_here(){
 function save_rdl(word, lineid, line){
   var end_val = $("#select-end" ).val();
   var end = $("#select-end option:selected" ).text();
-  var rd = $("#select-rhet-dev").val();
-  var rdid = $("#rhet-dev-id-span").text();
+  var rd = $("#select-rhetdev").val();
+  var rdid = $("#rhetdev-id-span").text();
   var note = $("#input-note").val();
   var type = $('#block-type').val();
   $.ajax({

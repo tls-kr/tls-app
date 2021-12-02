@@ -40,11 +40,13 @@ declare variable $dialogs:lmap := map{
 (: 2021-11-30: extending this functionality to cover observations of type block defined in facts.xml :)
 
 declare function dialogs:add-rd-dialog($options as map(*)){
-
+ let $blocktypes := collection($config:tls-data-root)//tei:TEI[@xml:id="facts-def"]//tei:body/tei:div[@type='block']
+ return
  <div id="add-rd-dialog" class="modal" tabindex="-1" role="dialog" style="display: none;">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
-            <div class="modal-header"><h5>Add <select id="block-type">{for $l in collection($config:tls-data-root)//tei:TEI[@xml:id="facts-def"]//tei:body/tei:div[@type='block'] return <option value="{data($l/@xml:id)}">{$l/tei:head/text()}</option>}</select>, starting at: &#160;<span class="font-weight-bold">{$options?word}</span></h5>
+            <div class="modal-header"><h5>Add <select id="block-type"  onChange="modify_rd_dialog()">{for $l in $blocktypes return 
+            <option value="{data($l/@xml:id)}">{$l/tei:head/text()}</option>}</select>, starting at: &#160;<span class="font-weight-bold">{$options?word}</span></h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close" title="Close">x</button>
             </div>
             <div class="modal-body">
@@ -73,14 +75,13 @@ declare function dialogs:add-rd-dialog($options as map(*)){
             </div>    
 
             <div class="form-row">
-              <div id="select-rhet-dev-group" class="form-group ui-widget col-md-4">
-                 <label for="select-rhet-dev" class="font-weight-bold">Name of rhetorical device: </label>
-                 <input id="select-rhet-dev" class="form-control" required="true" value=""/>
-                 <span id="rhet-dev-id-span" style="display:none;"></span>
-                </div>
+              <div id="rhetdev" class="form-group ui-widget col-md-4 obs-block">
+                 <label for="select-rhetdev" class="font-weight-bold">Name of <span id="block-name">Rhetorical Device</span>: </label>
+                 <input id="select-rhetdev" class="form-control" required="true" value=""/>
+                 <span id="rhetdev-id-span" style="display:none;"></span>
+              </div>
             </div>
-            
-            </div>
+           </div>
         <!-- footer -->
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>

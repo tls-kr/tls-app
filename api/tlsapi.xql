@@ -1579,7 +1579,7 @@ let $uuid := concat("uuid-", util:uuid())
 		}
 	</tls:span>
     else 
-    <tls:span xmlns:tls="http://hxwd.org/ns/1.0" type="{$type}" xml:id="{$uuid}" resp="#{$user}" modified="{current-dateTime()}">
+    <tls:span xmlns:tls="http://hxwd.org/ns/1.0" name="{$map?rhet_dev}" type="{$type}" xml:id="{$uuid}" resp="#{$user}" modified="{current-dateTime()}">
 		<tls:text role="span-start">
 			<tls:srcline title="{$title}" target="#{$map?line_id}">{$map?line}</tls:srcline>
 		</tls:text>
