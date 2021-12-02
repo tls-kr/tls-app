@@ -594,10 +594,22 @@ function update_swlist(){
     console.log("Selected domain:", domain);
 };
 
-function save_mark(mark){
-    console.log("Selected mark:", mark);   
+function save_mark(mark, label){
+    var sel =  x.Selector.getSelected().toString();
+    var xid = $("#swl-line-id-span" ).html();
+    var el = $('.med-recipe-name').html()
+    $("#new-att-detail").html('');
+    $ ("#new-att-no-perm").html("");
+    $("#swl-select").html("Current recipe: "+el+"<br/>Selected for mark as "+label+": <span id='sel-mark'>"+sel+"</span><br/><span onClick='do_save_mark(\""+mark+"\")' class='badge badge-primary'>Save</span>");
+    console.log("Selected mark:", el);   
 };
 
+function do_save_mark(mark){
+    var xid = $("#swl-line-id-span" ).html();
+    var line = $( "#swl-line-text-span" ).html();      
+    var sel =  x.Selector.getSelected().toString();
+    console.log("Selected mark:", mark);   
+};
 
 function modify_rd_dialog(){
     var obstype = $('#block-type').val()
@@ -1488,6 +1500,8 @@ function save_rdl(word, lineid, line){
   url : "api/responder.xql?func=save-rdl&line_id="+lineid+"&line="+line+"&end="+end+"&end_val="+end_val+"&rhet_dev="+rd+"&rhet_dev_id="+rdid+"&word="+word+"&note="+note+"&type="+type,
   success : function(resp){
     $( "#add-rd-dialog" ).modal('hide');      
+    hide_swl_form("#editSWLDialog");
+    show_swls_for_line(lineid);    
     toastr.info("Observation location " + rd + " saved.", "HXWD says:");
   },
   error : function(resp){
