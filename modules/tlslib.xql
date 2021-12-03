@@ -427,8 +427,11 @@ TODO: move to XHR
 declare function tlslib:navbar-bookmarks(){
 let $user := sm:id()//sm:real/sm:username/text()
 ,$bm := doc($config:tls-user-root || $user|| "/bookmarks.xml")
+,$ratings := doc("/db/users/" || $user || "/ratings.xml")//text
+
 
 return
+(
  <li class="nav-item dropdown">
   <a class="nav-link dropdown-toggle" href="#"  id="navbarDropdownBookmarks" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Bookmarks</a>
    <div class="dropdown-menu" aria-labelledby="navbarDropdownBookmarks">
@@ -440,10 +443,35 @@ return
      return
     <a class="dropdown-item" href="textview.html?location={substring($segid,2)}" title="Created: {$date}"><span class="bold">{$b/tei:ref/tei:title/text()}</span>: {$b/tei:seg}</a>
     else 
-    <span class="text-muted px-1">You can add bookmarks by clicking on <img class="icon"  src="resources/icons/open-iconic-master/svg/bookmark.svg"/> after selecting a character.</span>
+    <span class="text-muted px-1">You can add bookmarks by clicking on <img class="icon"  src="resources/icons/open-iconic-master/svg/bookmark.svg"/> after selecting a character.</span>,
+  if (count($ratings) > 0) then 
+    for $t in $bm//text
+      let $r := xs:int($t/@rating),
+      $id := data($t/@id)
+      order by $r descending
+     return
+    <a class="dropdown-item" href="textview.html?location={$id}"><span class="bold">{$t/text()}</span></a>
+    else 
+    <span class="text-muted px-1">You can star texts in the lists available under the menu item "Browse->Text" or in the text detail display available by clicking on "Source:" to the right of the Blue Eye, visible when a text is displayed.</span>    
+    }
+   </div>
+ </li>,
+ <li class="nav-item dropdown">
+  <a class="nav-link dropdown-toggle" href="#"  id="navbarDropdownStars" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="bold" style="color:red;">★</span></a>
+   <div class="dropdown-menu" aria-labelledby="navbarDropdownStars">
+   {if (count($ratings) > 0) then 
+    for $t in $ratings
+      let $r := xs:int($t/@rating),
+      $id := data($t/@id)
+      order by $r descending
+     return
+    <a class="dropdown-item" href="textview.html?location={$id}"><span class="bold">{$t/text()}</span><span class="text-muted px-1">({$r})</span></a>
+    else 
+    <span class="text-muted px-1">You can star texts in the lists available under the menu item "Browse->Text" or in the text detail display available by clicking on "Source:" to the right of the Blue Eye, visible when a text is displayed.</span>    
     }
    </div>
  </li>
+) 
 };
 
 (:     
@@ -660,6 +688,10 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
       $tr := tlslib:get-translations($model?textid),
       $slot1-id := tlslib:get-content-id($model?textid, 'slot1', $tr),
       $slot2-id := tlslib:get-content-id($model?textid, 'slot2', $tr),
+      $user := sm:id()//sm:real/sm:username/text(),
+      $dates := if (exists(doc("/db/users/" || $user || "/textdates.xml")//date)) then 
+      doc("/db/users/" || $user || "/textdates.xml")//data else 
+      doc($config:tls-texts-root || "/tls/textdates.xml")//data,
       $atypes := distinct-values(for $s in $dseg/@xml:id
         let $link := "#" || $s
         return
@@ -672,8 +704,22 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
       <!-- here is where we select what to display -->
       <div id="srcref" class="col-sm-12 collapse" data-toggle="collapse">
       <div class="row">
-         <div class="col-sm-2" id="srcrow-1"></div>
-         <div class="col-sm-5" id="srcrow-2"><span class="font-weight-bold">Edition:</span><span class="sm">{collection($config:tls-texts-root)//ab[@refid=$model?textid]}</span></div>
+         <div class="col-sm-2" id="srcrow-1"/>
+         <div class="col-sm-1" id="srcrow-1">
+           <div class="row"><span class="font-weight-bold pull-right">Edition:</span></div>
+           <div class="row"><span class="font-weight-bold pull-right">Dates:</span></div>
+           <div class="row">{ if (sm:is-authenticated()) then <span class="font-weight-bold pull-right" title="Click on one of the stars to rate the text and add to the ★ menu.">Rating:</span> else ()}</div>
+           <div class="row"><span class="font-weight-bold pull-right">Comment:</span></div>
+         </div>
+         <div class="col-sm-4" id="srcrow-2">
+           <div class="row"><span class="sm">{collection($config:tls-texts-root)//ab[@refid=$model?textid]}</span>　</div>
+           <div class="row">{$dates[@corresp="#" || $model?textid]}</div>
+           <div classe="row">{ if (sm:is-authenticated()) then
+           <input id="input-{$model?textid}" name="input-name" type="number" class="rating"
+    min="1" max="10" step="2" data-theme="krajee-svg" data-size="xs" value="{tlslib:get-rating($model?textid)}"/> else ()}</div>    
+           <div class="row"><span class="font-weight-bold pull-right">　</span></div>    
+         </div>
+         <div class="col-sm-2" id="srcrow-1"/>
       </div>
       </div>
       {if (count($atypes) > 1) then 

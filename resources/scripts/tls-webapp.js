@@ -597,6 +597,7 @@ function update_swlist(){
 function save_mark(mark, label){
     var sel =  x.Selector.getSelected().toString();
     var xid = $("#swl-line-id-span" ).html();
+    // will have loop through multiple elements to construct a select/option element
     var el = $('.med-recipe-name').html()
     $("#new-att-detail").html('');
     $ ("#new-att-no-perm").html("");
