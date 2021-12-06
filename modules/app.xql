@@ -22,6 +22,7 @@ import module namespace kwic="http://exist-db.org/xquery/kwic"
     at "resource:org/exist/xquery/lib/kwic.xql";
 import module namespace tlslib="http://hxwd.org/lib" at "tlslib.xql";
 import module namespace krx="http://hxwd.org/krx-utils" at "krx-utils.xql";
+import module namespace bib="http://hxwd.org/biblio" at "biblio.xql";
 
 declare variable $app:SESSION := "tls:results";
 declare variable $app:tmap := map{
@@ -135,13 +136,14 @@ return
 :)
 declare 
     %templates:wrap
-function app:browse($node as node()*, $model as map(*), $type as xs:string?, $filter as xs:string?)
+function app:browse($node as node()*, $model as map(*), $type as xs:string?, $filter as xs:string?, $mode as xs:string?)
 {
     session:create(),
     let $filterString := if (string-length($filter) > 0) then $filter else ""
     return
     if ($type = "word") then app:browse-word($type, $filterString)
     else if ($type = "taxchar") then app:browse-char($type, $filterString)
+    else if ($type = "biblio") then bib:browse-biblio($type, $filterString, $mode)
     else if (("concept", "syn-func", "sem-feat", "rhet-dev") = $type) then    
     let $hits :=  app:do-browse($type, $filterString)      
     let $store := session:set-attribute("tls-browse", $hits)
@@ -1300,7 +1302,7 @@ src="resources/icons/open-iconic-master/svg/account-login.svg"/>Login</a>
 declare
     %templates:wrap
     %templates:default("query", "")
-function app:main-navbar($node as node()*, $model as map(*), $query as xs:string?)
+function app:navbar-main($node as node()*, $model as map(*), $query as xs:string?)
 {
 let $context := substring-before(tokenize(request:get-uri(), "/")[last()], ".html")
  ,$testuser := contains(sm:id()//sm:group, ('tls-test', 'guest'))
@@ -1334,6 +1336,7 @@ return
                                 <div class="dropdown-divider"/>
                                 <!-- will need to make another menu level here for the bookmarks -->
                                 <a class="dropdown-item" href="textlist.html">Texts</a>
+                                <a class="dropdown-item" href="browse.html?type=biblio">Bibliography</a>
                             </div>                            
                         </li>
                         {if ($context = "textview") then
@@ -1839,6 +1842,21 @@ function app:syllables($node as node()*, $model as map(*), $uuid as xs:string?, 
   </div>
  </div>
     )
+};
+
+
+declare 
+    %templates:wrap
+    %templates:default("uuid", "")    
+function app:bibliography($node as node()*, $model as map(*), $uuid as xs:string){
+    <div class="card">
+    <div class="card-header">
+    <h4 class="card-title">Bibliography <button class="btn badge badge-primary ml-2" type="button" onclick="edit_bib('{$node/@xml:id}')">Edit bibliography</button></h4>
+    </div>
+    <div class="card-text">{
+    bib:display-mods($uuid)
+}</div>
+</div>
 };
 
 
