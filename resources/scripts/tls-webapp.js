@@ -1802,6 +1802,21 @@ function add_obs(){
     alert("Not yet implemented");
 };
 
+// show observations for template
+function show_obs(templ_id){
+  $.ajax({
+  type : "GET",
+  dataType : "html",
+  url : "api/responder.xql?func=show-obs&templ-id="+templ_id,
+  success : function(resp){
+//  console.log("Displaying response at: " + '#'+line_id+'-swl');
+//  $('#swl-select').html(resp)
+  $('#'+templ_id+'-obs').html(resp);
+  }
+  });
+    
+};
+
 //delete bookmark
 function delete_bm(uuid){
   $.ajax({

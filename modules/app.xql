@@ -1877,9 +1877,12 @@ declare function app:obs($node as node(), $model as map(*)){
      return 
      <div><h4><span class="text-muted">{data($t)}</span></h4>{
      for $ff in $f return
+     (
      <p>{$ff/tei:head}　　
      <button class="btn badge badge-primary ml-2" type="button" onclick="show_obs('{$ff/@xml:id}')">Edit template</button>     
-     <button class="btn badge badge-secondary ml-2" type="button" onclick="show_obs('{$ff/@xml:id}')">Show observations</button></p>
+     <button class="btn badge badge-secondary ml-2" type="button" onclick="show_obs('{$ff/@xml:id}')">Show observations</button></p>,
+     <div id="{$ff/@xml:id}-obs"></div>
+     )
      }</div>
     }</div>
     <div class="card-footer">

@@ -1597,9 +1597,13 @@ let $uuid := concat("uuid-", util:uuid())
 		else ()}
 		{if (string-length($map?note) gt 0) then 
 		<tls:note>{$map?note}</tls:note>
-		else ()
-		}    
+		else ()}
+		{if ($type eq "med-recipe") then 
+		tlslib:analyze-recipe($uuid, $map)
+		else ()}
+		
     </tls:span>
+(:, $analyze := if ($type eq "med-recipe") then tlslib:analyze-recipe($uuid, $map) else ()   :)  
 return
 (
 update insert $rdlnode following $lnode ,
@@ -1615,6 +1619,21 @@ return
 $ret
 };
 
+declare function tlsapi:show-obs($map as map(*)){
+<ul>{
+for $obs in collection($config:tls-data-root || "/notes/facts")//tls:span[@type=$map?templ-id]
+where string-length($obs) > 0
+return
+<li title="Created {$obs/@resp} at {$obs/@modified}"><span class="font-weight-bold"><a href="textview.html?location={substring(data($obs/tls:text[@role='span-start']/tls:srcline/@target),2)}">{data($obs/@name)}</a></span><span class="text-muted">({data($obs/tls:text[@role='span-start']/tls:srcline/@title)})</span>
+{if ($obs//tls:contents) then 
+<ul>{
+for $d in $obs//tls:contents/tls:drug return
+<li><a href="concept.html?uuid={$d/@concept-id}{$d/@ref}">{$d/text()}</a><span class="text-muted">({data($d/@quantity)})</span></li>
+}</ul>
+else ()}
+</li>
+}</ul>
+};
 
 declare function tlsapi:stub($map as map(*)){
 ()

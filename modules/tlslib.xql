@@ -716,13 +716,13 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
          </div>
          <div class="col-sm-4" id="srcrow-2">
            <div class="row"><span class="sm">{collection($config:tls-texts-root)//ab[@refid=$model?textid]}</span>　</div>
-           <div class="row">{$dates[@corresp="#" || $model?textid]}</div>
+           <div class="row">{$dates[@corresp="#" || $model?textid]}　</div>
            <div classe="row">{ if (sm:is-authenticated()) then
            <input id="input-{$model?textid}" name="input-name" type="number" class="rating"
     min="1" max="10" step="2" data-theme="krajee-svg" data-size="xs" value="{tlslib:get-rating($model?textid)}"/> else ()}</div> 
            <div class="row"><span>{$charcount} characters.</span></div>
-           <div class="row"><span class="tr" id="{$model?textid}-com" contenteditable="true">　</span></div>    
-           <div class="row"><span>　</span>{ if (sm:is-authenticated()) then <button type="button" class="btn btn-primary" onclick="add_ref('{$model?textid}')">Add new reference</button> else ()}</div>    
+           <div class="row"><span class="tr-x" id="{$model?textid}-com" contenteditable="true">　</span></div>    
+           <div class="row"><span>　</span>{ if (sm:is-authenticated()) then <button type="button" class="btn btn-primary" style="width:20px;height:15px;" onclick="add_ref('{$model?textid}')" title="Add new reference">+</button> else ()}</div>    
          </div>
          <div class="col-sm-2" id="srcrow-1"></div>
          <div class="col-sm-2" id="srcrow-1"><span></span></div>
@@ -2236,4 +2236,34 @@ declare function tlslib:advanced-search($query, $mode){
 <div><h3>Advanced Search</h3>
 </div>
 };
+
+declare function tlslib:segid2sequence($start as xs:string, $end as xs:string){
+   let  $targetseg := collection($config:tls-texts-root)//tei:seg[@xml:id=$start]
+    , $end := $targetseg/following::tei:seg[@xml:id=$end]
+    for $s in $targetseg | ($targetseg/following::tei:seg intersect $end/preceding::tei:seg) | $end
+    return $s
+};
+
+(:~
+: this is called from tlsapi:save-rdl to analyze the lines of a recipe and exract the drugs
+:)
  
+
+declare function tlslib:analyze-recipe($uuid as xs:string, $map as map(*)){
+let $splitstring := "[一二三四五六七八九半]"
+, $start := $map?line_id
+, $end := $map?end_val
+, $seq := tlslib:segid2sequence($start, $end)
+return 
+<tls:contents>{
+for $s in $seq
+ let $drug := tokenize(normalize-space(string-join($s/text(),'')), $splitstring)[1]
+ , $quant := translate(normalize-space(substring-after($s, $drug)), ' ，。', '')
+ ,$obs := collection($config:tls-data-root || "/domain/medical")//tei:orth[. = $drug]/ancestor::tei:entry
+ ,$c := $obs/ancestor::tei:div
+  return
+  if (exists($obs)) then
+  <tls:drug ref="#{$obs/@xml:id}" concept="{$c/tei:head/text()}" concept-id="{$c/@xml:id}" quantity="{$quant}">{$drug}</tls:drug>
+  else ()}
+  </tls:contents>  
+}; 
