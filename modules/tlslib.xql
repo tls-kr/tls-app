@@ -38,6 +38,11 @@ declare function tlslib:annotation-types($type as xs:string){
  if (count($map($type))> 0) then $map($type) else ( collection($config:tls-data-root)//tei:TEI[@xml:id="facts-def"]//tei:div[@xml:id=$type]/tei:head/text(), '')
 };
 
+declare function tlslib:remove-punc($s as xs:string) as xs:string{
+translate(normalize-space($s), ' ，。、&#xA;：；', '')
+};
+
+
 declare function tlslib:num2hex($num as xs:int) as xs:string {
 let $h := "0123456789ABCDEF"
 , $s := if ($num > 65535) then
@@ -2250,16 +2255,21 @@ declare function tlslib:segid2sequence($start as xs:string, $end as xs:string){
  
 
 declare function tlslib:analyze-recipe($uuid as xs:string, $map as map(*)){
-let $splitstring := "[一二三四五六七八九半]"
+let $splitstring := "[一二三四五六七八九十半]"
+, $ss2 := "[、各]"
 , $start := $map?line_id
 , $end := $map?end_val
 , $seq := tlslib:segid2sequence($start, $end)
 return 
 <tls:contents>{
 for $s in $seq
- let $drug := tokenize(normalize-space(string-join($s/text(),'')), $splitstring)[1]
- , $quant := translate(normalize-space(substring-after($s, $drug)), ' ，。', '')
- ,$obs := collection($config:tls-data-root || "/domain/medical")//tei:orth[. = $drug]/ancestor::tei:entry
+ let   $drugx := if (contains($s, "、") and contains($s, "各")) then tokenize($s, $ss2)
+    else tlslib:remove-punc(tokenize($s, $splitstring)[1])
+
+ , $quant := if (count($drugx) > 1) then tlslib:remove-punc($drugx[3]) else 
+    tlslib:remove-punc(substring-after($s, $drugx))
+  for $drug in $drugx  
+  let $obs := collection($config:tls-data-root || "/domain/medical")//tei:orth[. = $drug]/ancestor::tei:entry
  ,$c := $obs/ancestor::tei:div
   return
   if (exists($obs)) then

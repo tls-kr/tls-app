@@ -1586,7 +1586,7 @@ let $uuid := concat("uuid-", util:uuid())
 		}
 	</tls:span>
     else 
-    <tls:span xmlns:tls="http://hxwd.org/ns/1.0" name="{$map?rhet_dev}" type="{$type}" xml:id="{$uuid}" resp="#{$user}" modified="{current-dateTime()}">
+    <tls:span xmlns:tls="http://hxwd.org/ns/1.0" name="{tlslib:remove-punc($map?rhet_dev)}" type="{$type}" xml:id="{$uuid}" resp="#{$user}" modified="{current-dateTime()}">
 		<tls:text role="span-start">
 			<tls:srcline title="{$title}" target="#{$map?line_id}">{$map?line}</tls:srcline>
 		</tls:text>
@@ -1621,9 +1621,14 @@ $ret
 
 declare function tlsapi:show-obs($map as map(*)){
 <ul>{
+let $show := 
 for $obs in collection($config:tls-data-root || "/notes/facts")//tls:span[@type=$map?templ-id]
+let $date := xs:dateTime($obs/@modified),
+$target := substring($obs/tei:ref/@target, 2)
+order by $date descending
 where string-length($obs) > 0
-return
+return $obs
+for $obs in subsequence($show, 1, 5) return
 <li title="Created {$obs/@resp} at {$obs/@modified}"><span class="font-weight-bold"><a href="textview.html?location={substring(data($obs/tls:text[@role='span-start']/tls:srcline/@target),2)}">{data($obs/@name)}</a></span><span class="text-muted">({data($obs/tls:text[@role='span-start']/tls:srcline/@title)})</span>
 {if ($obs//tls:contents) then 
 <ul>{
