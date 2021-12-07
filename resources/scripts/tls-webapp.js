@@ -1792,7 +1792,17 @@ function save_updated_gloss(uuid, ch, pos){
 
   }); 
 }
+// add new reference to bibliography
+function add_ref(textid){
+    alert("Not yet implemented "+textid);
+};
 
+// add new observation template
+function add_obs(){
+    alert("Not yet implemented");
+};
+
+//delete bookmark
 function delete_bm(uuid){
   $.ajax({
   type : "GET",

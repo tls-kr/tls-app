@@ -22,6 +22,7 @@ import module namespace krx="http://hxwd.org/krx-utils" at "../modules/krx-utils
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
 declare namespace tx = "http://exist-db.org/tls";
+declare namespace mods="http://www.loc.gov/mods/v3";
 
 (:~
 Data for the callback function used for autocompletion
@@ -644,6 +645,12 @@ let $swl := collection($config:tls-data-root|| "/notes")//tls:span[@xml:id=$uid]
 ,$link := substring(tokenize($swl//tls:srcline/@target)[1], 2)
 ,$res := update delete $swl
 return $link
+else if ($type eq 'bib') then
+let $bib := collection($config:tls-data-root|| "/bibliography")//mods:mods[@ID=$uid]
+, $link := $uid
+, $res := xmldb:remove(util:collection-name($bib), $uid || ".xml")
+return
+$link
 else
 ()
 };

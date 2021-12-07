@@ -10,6 +10,7 @@ module namespace bib="http://hxwd.org/biblio";
 
 
 declare namespace  mods="http://www.loc.gov/mods/v3";
+declare namespace tei= "http://www.tei-c.org/ns/1.0";
 
 import module namespace config="http://hxwd.org/config" at "config.xqm";
 import module namespace tlslib="http://hxwd.org/lib" at "tlslib.xql";
@@ -110,9 +111,14 @@ else ()}
 
 declare function bib:biblio-short($b) {
 let $m:= $b/ancestor::mods:mods
+, $user := sm:id()//sm:real/sm:username/text()
+, $usergroups := sm:get-user-groups($user)
 return
 
-<li><a href="bibliography.html?uuid={$m/@ID}"><span class="bold">{for $n in $m//mods:name return <span>{$n/mods:namePart[@type='family']}, {$n//mods:namePart[@type='given']};</span>}</span></a>　{string-join($m//mods:title/text(), " ")}, {$m//mods:dateIssued/text()}</li>
+<li><span class="font-weight-bold">{for $n in $m//mods:name return <span>{$n/mods:namePart[@type='family']}, {$n//mods:namePart[@type='given']};</span>}</span>　<a href="bibliography.html?uuid={$m/@ID}">{string-join($m//mods:title/text(), " ")}, {$m//mods:dateIssued/text()}　</a>   
+  {if (contains($usergroups, "tls-editor" )) then 
+    tlslib:format-button("delete_swl('bib', '" || data($m/@ID) || "')", "Immediately delete this reference", "open-iconic-master/svg/x.svg", "small", "close", "tls-editor")
+   else ()}</li>
 };
 
 declare function bib:display-mods($uuid as xs:string){
@@ -122,23 +128,36 @@ return
 <div>
 <div class="row">
 <div class="col-sm-2"/>
-<div class="col-sm-2"><span class="bold">Responsibility</span></div>
+<div class="col-sm-2"><span class="font-weight-bold float-right">Responsibility</span></div>
 <div class="col-sm-5">{for $a in $m/mods:name return (bib:display-authors($a), if (not ($a/last())) then ";" else ())}</div>
 </div>
 <div class="row">
 <div class="col-sm-2"/>
-<div class="col-sm-2"><span class="bold">Title</span></div>
+<div class="col-sm-2"><span class="font-weight-bold float-right">Title</span></div>
 <div class="col-sm-5">{for $t in $m/mods:titleInfo return bib:display-title($t)}</div>
 </div>
 <div class="row">
 <div class="col-sm-2"/>
-<div class="col-sm-2"><span class="bold">Details</span></div>
+<div class="col-sm-2"><span class="font-weight-bold float-right">Details</span></div>
 <div class="col-sm-5">(place){$m//mods:place/mods:placeTerm/text()}: (publisher){$m//mods:publisher/text()}, {$m//mods:dateIssued/text()}</div>
 </div>
 <div class="row">
 <div class="col-sm-2"/>
-<div class="col-sm-2"><span class="bold">Topics</span></div>
-<div class="col-sm-5">{for $t in tokenize($m/mods:note[@type='topics'], ';') return <a href="browse.html?type=biblio&amp;filter={$t}&amp;mode=topic">{$t}</a>}</div>
+<div class="col-sm-2"><span class="font-weight-bold float-right">Identifier</span></div>
+<div class="col-sm-5">{$m/mods:note[@type="bibliographic-reference"]/text()}</div>
+</div>
+<div class="row">
+<div class="col-sm-2"/>
+<div class="col-sm-2"><span class="font-weight-bold float-right">Topics</span></div>
+<div class="col-sm-5">{for $t in tokenize($m/mods:note[@type='topics'], ';') return <a  class="badge badge-pill badge-light" href="browse.html?type=biblio&amp;filter={$t}&amp;mode=topic">{$t}</a>}</div>
+</div>
+<div class="row">
+<div class="col-sm-2"/>
+<div class="col-sm-2"><span class="font-weight-bold float-right">Referred from</span></div>
+<div class="col-sm-5">{for $t in collection($config:tls-data-root)//tei:ref[@target="#"||$uuid] 
+         let $cid := $t/ancestor::tei:div/@xml:id
+         , $name := $t/ancestor::tei:div/tei:head/text()
+return <a class="badge badge-pill badge-light" href="concept.html?uuid={$cid}">{$name}</a>}</div>
 </div>
   
 </div>
