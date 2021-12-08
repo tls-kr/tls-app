@@ -34,7 +34,8 @@ declare variable $app:tmap := map{
 "6" : "lines with translation",
 "7" : "titles",
 "8" : "tabulated",
-"9" : "advanced search"
+"9" : "advanced search",
+"10": "bibliography"
 };
 declare variable $app:lmap := map{
 "zh" : "Modern Chinese",
@@ -289,6 +290,8 @@ function app:query($node as node()*, $model as map(*), $query as xs:string?, $mo
       app:do-query($query, $mode)
       else if ($search-type = "9") then 
       tlslib:advanced-search($query, $mode)
+      else if ($search-type = "10") then 
+      bib:biblio-search($query, $mode, $textid)
       else "Unknown search type"
     let $store := session:set-attribute($app:SESSION, $hits)
     return
@@ -374,7 +377,10 @@ let $query := map:get($model, "query")
     return
     if ($search-type = "9") then 
     tlslib:advanced-search($query, $mode)
+    else if ($search-type = "10") then 
+    bib:biblio-search($query, $mode, $textid)
     else
+
     <div><h1>Searching in {map:get($app:tmap, $search-type)} for <mark>{$query}</mark>
     {if (string-length($type) > 0) then 
     <span>in {map:get($app:lmap, $type)}</span>
@@ -1359,6 +1365,7 @@ return
           <option value="2">{$app:tmap?2}</option>
           <option value="3">{$app:tmap?3}</option>
           <option value="4">{$app:tmap?4}</option>
+          <option value="10">{$app:tmap?10}</option>
           <!--
           <option value="9">{$app:tmap?9}</option>
           -->
@@ -1851,7 +1858,7 @@ declare
 function app:bibliography($node as node()*, $model as map(*), $uuid as xs:string){
     <div class="card">
     <div class="card-header">
-    <h4 class="card-title">Bibliography <button class="btn badge badge-primary ml-2" type="button" onclick="edit_bib('{$node/@xml:id}')">Edit bibliography</button></h4>
+    <h4 class="card-title">Bibliography <button class="btn badge badge-primary ml-2" type="button" onclick="edit_bib('{$node/@xml:id}')">Edit this reference</button></h4>
     </div>
     <div class="card-text">{
     bib:display-mods($uuid)

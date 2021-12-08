@@ -1792,6 +1792,44 @@ function save_updated_gloss(uuid, ch, pos){
 
   }); 
 }
+// add or edit text date
+function edit_textdate(textid){
+  var nb = $('#textdate').attr('data-not-before');
+  var na = $('#textdate').attr('data-not-after');  
+  var prose = $('#textdate').html();
+  $.ajax({
+  type : "GET",
+  dataType : "html",  
+  url : "api/responder.xql?func=dialogs:edit-textdate&textid=" + textid+"&nb="+nb+"&na="+na+"&prose="+prose, 
+  success : function(resp){
+  $('#remoteDialog').html(resp);
+  $('#edit-textdate-dialog').modal('show');
+  }
+  });
+    
+};
+function save_textdate(textid){
+  var nb = $('#input-nb').val();
+  var na = $('#input-na').val();
+  var prose = $('#input-prose').val();
+  var src = $('#input-src').val();
+  $.ajax({
+  type : "GET",
+  dataType : "html",  
+  url : "api/responder.xql?func=save-textdate&textid="+textid+"&nb="+nb+"&na="+na+"&prose="+prose+"&src="+src, 
+  success : function(resp){
+      $('#edit-textdate-dialog').modal('hide');
+      toastr.info("Textdate has been saved.", "HXWD says:");  
+      $('#textdate-outer').html(resp);
+  },
+  error : function(resp){
+   console.log(resp)
+  alert("PROBLEM"+resp);
+  }
+
+  }); 
+};
+
 // add new reference to bibliography
 function add_ref(textid){
     alert("Not yet implemented "+textid);

@@ -693,11 +693,6 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
       $tr := tlslib:get-translations($model?textid),
       $slot1-id := tlslib:get-content-id($model?textid, 'slot1', $tr),
       $slot2-id := tlslib:get-content-id($model?textid, 'slot2', $tr),
-      $user := sm:id()//sm:real/sm:username/text(),
-      $charcount := string-length(normalize-space($d/ancestor::tei:text)),
-      $dates := if (exists(doc("/db/users/" || $user || "/textdates.xml")//date)) then 
-      doc("/db/users/" || $user || "/textdates.xml")//data else 
-      doc($config:tls-texts-root || "/tls/textdates.xml")//data,
       $atypes := distinct-values(for $s in $dseg/@xml:id
         let $link := "#" || $s
         return
@@ -709,29 +704,7 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
       <div id="chunkrow" class="row">
       <!-- here is where we select what to display -->
       <div id="srcref" class="col-sm-12 collapse" data-toggle="collapse">
-      <div class="row">
-         <div class="col-sm-2" id="srcrow-1"/>
-         <div class="col-sm-1" id="srcrow-1">
-           <div class="row"><span class="font-weight-bold float-right">Edition:</span></div>
-           <div class="row"><span class="font-weight-bold float-right">Dates:</span></div>
-           <div class="row">{ if (sm:is-authenticated()) then <span class="font-weight-bold pull-right" title="Click on one of the stars to rate the text and add to the ★ menu.">Rating:</span> else ()}</div>
-           <div class="row"><span class="font-weight-bold float-right">Textlength:</span></div>
-           <div class="row"><span class="font-weight-bold float-right">Comment:</span></div>
-           <div class="row"><span class="font-weight-bold float-right">References:</span></div>
-         </div>
-         <div class="col-sm-4" id="srcrow-2">
-           <div class="row"><span class="sm">{collection($config:tls-texts-root)//ab[@refid=$model?textid]}</span>　</div>
-           <div class="row">{$dates[@corresp="#" || $model?textid]}　</div>
-           <div classe="row">{ if (sm:is-authenticated()) then
-           <input id="input-{$model?textid}" name="input-name" type="number" class="rating"
-    min="1" max="10" step="2" data-theme="krajee-svg" data-size="xs" value="{tlslib:get-rating($model?textid)}"/> else ()}</div> 
-           <div class="row"><span>{$charcount} characters.</span></div>
-           <div class="row"><span class="tr-x" id="{$model?textid}-com" contenteditable="true">　</span></div>    
-           <div class="row"><span>　</span>{ if (sm:is-authenticated()) then <button type="button" class="btn btn-primary" style="width:20px;height:15px;" onclick="add_ref('{$model?textid}')" title="Add new reference">+</button> else ()}</div>    
-         </div>
-         <div class="col-sm-2" id="srcrow-1"></div>
-         <div class="col-sm-2" id="srcrow-1"><span></span></div>
-      </div>
+      {tlslib:textinfo($model?textid)}
       </div>
       {if (count($atypes) > 1) then 
       <div id="swlrow" class="col-sm-12 swl collapse" data-toggle="collapse">
@@ -2237,6 +2210,43 @@ declare function tlslib:get-obs-node($type as xs:string){
   return $doc//tls:span[position()=last()]
 };
 
+declare function tlslib:textinfo($textid){
+let   $user := sm:id()//sm:real/sm:username/text(),
+      $d := collection($config:tls-texts-root)//tei:TEI[@xml:id=$textid],
+      $charcount := string-length(normalize-space($d//tei:text)),
+      $dates := if (exists(doc("/db/users/" || $user || "/textdates.xml")//date)) then 
+      doc("/db/users/" || $user || "/textdates.xml")//data else 
+      doc($config:tls-texts-root || "/tls/textdates.xml")//data,
+      $date := $dates[@corresp="#" || $textid],
+      $loewe := doc($config:tls-data-root||"/bibliography/loewe-ect.xml")//tei:bibl/tei:ref[@target = "#"||$textid]
+return
+      <div class="row">
+         <div class="col-sm-2" id="srcrow-1"/>
+         <div class="col-sm-1" id="srcrow-1">
+           <div class="row"><span class="font-weight-bold float-right">Edition:</span></div>
+           <div class="row"><span class="font-weight-bold float-right">Dates:</span></div>
+           <div class="row">{ if (sm:is-authenticated()) then <span class="font-weight-bold pull-right" title="Click on one of the stars to rate the text and add to the ★ menu.">Rating:</span> else ()}</div>
+           <div class="row"><span class="font-weight-bold float-right">Textlength:</span></div>
+           <div class="row"><span class="font-weight-bold float-right">Comment:</span></div>
+           <div class="row"><span class="font-weight-bold float-right">References:</span></div>
+         </div>
+         <div class="col-sm-4" id="srcrow-2">
+           <div class="row"><span class="sm">{collection($config:tls-texts-root)//ab[@refid=$textid]}</span>　</div>
+           <div class="row">{if ($date) then (<span id="textdate-outer"><span  id="textdate" data-not-before="{$date/@not-before}" data-not-after="{$date/@not-after}">{$date}</span></span>,if (sm:is-authenticated()) then <span class="badge badge-pill badge-light" onclick="edit_textdate('{$textid}')">Edit date</span> else ()) else if (sm:is-authenticated()) then <span class="badge badge-pill badge-light" onclick="edit_textdate('{$textid}')">Add date</span> else "　"}　</div>
+           <div classe="row">{ if (sm:is-authenticated()) then
+           <input id="input-{$textid}" name="input-name" type="number" class="rating"
+    min="1" max="10" step="2" data-theme="krajee-svg" data-size="xs" value="{tlslib:get-rating($textid)}"/> else ()}</div> 
+           <div class="row"><span>{$charcount} characters.</span></div>
+           <div class="row"><span class="tr-x" id="{$textid}-com" contenteditable="true">　</span></div>    
+           <div class="row"><span>{if ($loewe) then <span>Loewe(ed), <i>Early Chinese Texts</i>, p.{$loewe/preceding-sibling::tei:citedRange/text()}<br/></span> else '　'}</span>{ if (sm:is-authenticated()) then <span class="badge badge-pill badge-light"  onclick="add_ref('{$textid}')" title="Add new reference">Add reference</span> else ()}</div>    
+         </div>
+         <div class="col-sm-2" id="srcrow-1"></div>
+         <div class="col-sm-2" id="srcrow-1"><span></span></div>
+      </div>
+};
+
+
+
 declare function tlslib:advanced-search($query, $mode){
 <div><h3>Advanced Search</h3>
 </div>
@@ -2257,23 +2267,25 @@ declare function tlslib:segid2sequence($start as xs:string, $end as xs:string){
 declare function tlslib:analyze-recipe($uuid as xs:string, $map as map(*)){
 let $splitstring := "[一二三四五六七八九十半]"
 , $ss2 := "[、各]"
+(: here we restrict the search to materia medica :)
+, $mm := "uuid-42a8724f-316c-11eb-ba56-a9a90876f6fd"
 , $start := $map?line_id
 , $end := $map?end_val
 , $seq := tlslib:segid2sequence($start, $end)
 return 
 <tls:contents>{
-for $s in $seq
+for $s in subsequence($seq, 2)
  let   $drugx := if (contains($s, "、") and contains($s, "各")) then tokenize($s, $ss2)
     else tlslib:remove-punc(tokenize($s, $splitstring)[1])
 
  , $quant := if (count($drugx) > 1) then tlslib:remove-punc($drugx[3]) else 
     tlslib:remove-punc(substring-after($s, $drugx))
   for $drug in $drugx  
-  let $obs := collection($config:tls-data-root || "/domain/medical")//tei:orth[. = $drug]/ancestor::tei:entry
+  let $obs := collection($config:tls-data-root || "/domain/medical")//tei:div[@xml:id=$mm]//tei:orth[. = $drug]/ancestor::tei:entry
  ,$c := $obs/ancestor::tei:div
   return
   if (exists($obs)) then
-  <tls:drug ref="#{$obs/@xml:id}" concept="{$c/tei:head/text()}" concept-id="{$c/@xml:id}" quantity="{$quant}">{$drug}</tls:drug>
+  <tls:drug ref="#{$obs/@xml:id}" target="#{$s/@xml:id}" concept="{$c/tei:head/text()}" concept-id="{$c/@xml:id}" quantity="{$quant}">{$drug}</tls:drug>
   else ()}
   </tls:contents>  
 }; 

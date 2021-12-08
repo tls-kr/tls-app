@@ -91,7 +91,7 @@ for $b in $auth
  where starts-with($b, $filterString)
  order by lower-case($b || $gn)
  return
- bib:biblio-short($b)
+ bib:biblio-short($b/ancestor::mods:mods)
 }</div>
 else if ($mode eq "title") then 
 <div>{
@@ -99,7 +99,7 @@ for $b in $tit
  where starts-with($b, $filterString)
  order by $b
  return
- bib:biblio-short($b)
+ bib:biblio-short($b/ancestor::mods:mods)
 }</div>
 else 
 ()
@@ -109,16 +109,15 @@ else ()}
 </div>
 };
 
-declare function bib:biblio-short($b) {
-let $m:= $b/ancestor::mods:mods
-, $user := sm:id()//sm:real/sm:username/text()
+declare function bib:biblio-short($m) {
+let $user := sm:id()//sm:real/sm:username/text()
 , $usergroups := sm:get-user-groups($user)
 return
 
 <li><span class="font-weight-bold">{for $n in $m//mods:name return <span>{$n/mods:namePart[@type='family']}, {$n//mods:namePart[@type='given']};</span>}</span>　<a href="bibliography.html?uuid={$m/@ID}">{string-join($m//mods:title/text(), " ")}, {$m//mods:dateIssued/text()}　</a>   
   {if (contains($usergroups, "tls-editor" )) then 
     tlslib:format-button("delete_swl('bib', '" || data($m/@ID) || "')", "Immediately delete this reference", "open-iconic-master/svg/x.svg", "small", "close", "tls-editor")
-   else ()}</li>
+   else ()}{<span class="text-muted">{$m/mods:note[@type='general']/text()}</span>}</li>
 };
 
 declare function bib:display-mods($uuid as xs:string){
@@ -153,6 +152,11 @@ return
 </div>
 <div class="row">
 <div class="col-sm-2"/>
+<div class="col-sm-2"><span class="font-weight-bold float-right">Comments</span></div>
+<div class="col-sm-5">{$m/mods:note[@type='general']/text()}</div>
+</div>
+<div class="row">
+<div class="col-sm-2"/>
 <div class="col-sm-2"><span class="font-weight-bold float-right">Referred from</span></div>
 <div class="col-sm-5">{for $t in collection($config:tls-data-root)//tei:ref[@target="#"||$uuid] 
          let $cid := $t/ancestor::tei:div/@xml:id
@@ -170,4 +174,22 @@ declare function bib:display-authors($n as node()*){
 
 declare function bib:display-title($t as node()*){
  <span>{if (exists($t/@lang)) then "(" || data($t/@lang) ||"): " else ()} {$t/mods:title/text()} {$t/mods:subTitle/text()}</span>
+};
+
+declare function bib:biblio-search($query, $mode, $textid){
+let $biblio := collection($config:tls-data-root || "/bibliography")
+, $qr := for $q in tokenize($query) 
+  return
+  ($biblio//mods:name/mods:namePart[contains(.,$q)]/ancestor::mods:mods | $biblio//mods:title[contains(., $q)]/ancestor::mods:mods| $biblio//mods:subTitle[contains(., $q)]/ancestor::mods:mods |  $biblio//mods:note[contains(., $q)]/ancestor::mods:mods)
+return
+<div><h3>Bibliography search results</h3>
+<p class="font-weight-bold">Searched for <span class="mark">{$query}</span>, found {count($qr)} entries.</p>
+<p>Please bear in mind that the search is case sensitive. It looks for entries, where the search term appears in <span class="font-weight-bold">names</span> (unfortunately, family name and first name can not be searched together), <span class="font-weight-bold">titles</span>, or <span class="font-weight-bold">notes</span>. Multiple search terms (separated by the space character) are interpreted as "OR" connected. You can also <a href="browse.html?type=biblio">browse</a> the bibliography.</p>
+<ul>{
+for $q in $qr 
+let $t := lower-case(normalize-space($q//mods:title))
+order by $t
+return
+bib:biblio-short($q)
+}</ul></div>
 };

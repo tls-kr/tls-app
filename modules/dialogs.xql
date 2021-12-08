@@ -364,7 +364,7 @@ declare function dialogs:new-syn-dialog($para as map(*)){
             </div>
             <div class="modal-body">
             <h6 class="font-weight-bold"></h6>
-                <small class="text-muted">Add the contrasts and antinyms for this concept:</small>
+                <small class="text-muted">Add the contrasts and antonyms for this concept:</small>
                 <div id="input-gloss-group">
                     <label for="input-crit"><strong>Old Chinese criteria:</strong> </label>
                     <textarea id="input-crit" class="form-control">{$para?crit}</textarea>
@@ -379,6 +379,42 @@ declare function dialogs:new-syn-dialog($para as map(*)){
 </div>
 };
 
+declare function dialogs:edit-textdate($para as map(*)){
+<div id="edit-textdate-dialog" class="modal" tabindex="-1" role="dialog" style="display: none;">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header"><h5>Creation date for text</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" title="Close">x</button>
+            </div>
+            <div class="modal-body">
+            <h6 class="font-weight-bold">{$para?textid}: {tlslib:get-title($para?textid)}</h6>
+                <small class="text-muted">A text date consists of the lower (<span class="font-weight-bold">not-before</span>) and upper limits (<span class="font-weight-bold">not-after</span>) as well as a human readable form.</small>
+                <div id="input-nb-group">
+                    <label for="input-nb"><strong>lower limit (not-before)</strong> </label>
+                    <input id="input-nb" class="form-control">{if ($para?nb ne "undefined") then $para?nb else ()}</input>
+                </div>
+                <div id="input-na-group">
+                    <label for="input-na"><strong>upper limit (not-after)</strong> </label>
+                    <input id="input-na" class="form-control">{if ($para?na ne "undefined") then $para?na else ()}</input>
+                </div>
+                <div id="input-prose-group">
+                    <label for="input-prose"><strong>Prose</strong> </label>
+                    <textarea id="input-prose" class="form-control">{if ($para?prose ne "undefined") then $para?prose else ()}</textarea>
+                </div>
+                <div id="input-src-group">
+                    <label for="input-src"><strong>Source</strong> </label>
+                    <textarea id="input-src" class="form-control"></textarea>
+                </div>
+            
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="save_textdate('{$para?textid}')">Save</button>
+           </div>
+         </div>
+     </div>
+</div>
+};
 
 declare function dialogs:dialog-stub(){
 <div id="dialog-stub" class="modal" tabindex="-1" role="dialog" style="display: none;">

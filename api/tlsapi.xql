@@ -1640,6 +1640,11 @@ else ()}
 }</ul>
 };
 
+declare function tlsapi:save-textdate($map as map(*)){
+()
+};
+
+
 declare function tlsapi:stub($map as map(*)){
 ()
 };
