@@ -645,6 +645,13 @@ let $swl := collection($config:tls-data-root|| "/notes")//tls:span[@xml:id=$uid]
 ,$link := substring(tokenize($swl//tls:srcline/@target)[1], 2)
 ,$res := update delete $swl
 return $link
+(: here we are deleting a drug :)
+else if ($type eq 'drug') then 
+let $swl := collection($config:tls-data-root|| "/notes")//tls:drug[@xml:id=$uid]
+,$link := substring(tokenize($swl/@target)[1], 2)
+,$res := update delete $swl
+return $link
+
 else if ($type eq 'bib') then
 let $bib := collection($config:tls-data-root|| "/bibliography")//mods:mods[@ID=$uid]
 , $link := $uid

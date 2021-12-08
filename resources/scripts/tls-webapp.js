@@ -1502,7 +1502,9 @@ function save_rdl(word, lineid, line){
   success : function(resp){
     $( "#add-rd-dialog" ).modal('hide');      
     hide_swl_form("#editSWLDialog");
-    show_swls_for_line(lineid);    
+    //show_swls_for_line(lineid); 
+    // this might be overkill, but is needed for the recipe & drug stuff
+    get_swls();
     toastr.info("Observation location " + rd + " saved.", "HXWD says:");
   },
   error : function(resp){

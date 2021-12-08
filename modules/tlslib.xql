@@ -842,7 +842,7 @@ declare function tlslib:format-swl($node as node(), $options as map(*)){
 let $user := sm:id()//sm:real/sm:username/text(),
 $usergroups := sm:get-user-groups($user),
 (: already used swl as a class, so need a different one here; for others we want the type given in the source :)
-$anntype := if (local-name($node)='ann') then "nswl" else data($node/@type),
+$anntype := if (local-name($node)='ann') then "nswl" else if (local-name($node)='drug') then "drug" else data($node/@type),
 $type := $options?type,
 $context := $options?context
 let $concept := data($node/@concept),
@@ -945,7 +945,18 @@ else ()
 }
 </div>
 </div>
-else 
+else if ($anntype eq "drug") then
+<div class="row bg-light {$anntype}">
+ <div class="col-sm-2"><span class="{$anntype}-col">drug</span></div>
+ <div class="col-sm-6">{$node/text()}, Q:{data($node/@quantity)}
+ {
+   if (($user = $creator-id) or contains($usergroups, "tls-editor" )) then 
+    tlslib:format-button("delete_swl('drug', '" || data($node/@xml:id) || "')", "Immediately delete the observation "||data($node/text()), "open-iconic-master/svg/x.svg", "small", "close", "tls-editor")
+   else ()
+}
+</div>
+</div>
+else
 (: not swl, eg: rhet-dev etc :)
 <div class="row bg-light {$anntype}">
 {
@@ -2218,30 +2229,41 @@ let   $user := sm:id()//sm:real/sm:username/text(),
       doc("/db/users/" || $user || "/textdates.xml")//data else 
       doc($config:tls-texts-root || "/tls/textdates.xml")//data,
       $date := $dates[@corresp="#" || $textid],
-      $loewe := doc($config:tls-data-root||"/bibliography/loewe-ect.xml")//tei:bibl/tei:ref[@target = "#"||$textid]
+      $loewe := doc($config:tls-data-root||"/bibliography/loewe-ect.xml")//tei:bibl[tei:ref[@target = "#"||$textid]]
 return
-      <div class="row">
-         <div class="col-sm-2" id="srcrow-1"/>
-         <div class="col-sm-1" id="srcrow-1">
-           <div class="row"><span class="font-weight-bold float-right">Edition:</span></div>
-           <div class="row"><span class="font-weight-bold float-right">Dates:</span></div>
-           <div class="row">{ if (sm:is-authenticated()) then <span class="font-weight-bold pull-right" title="Click on one of the stars to rate the text and add to the ★ menu.">Rating:</span> else ()}</div>
-           <div class="row"><span class="font-weight-bold float-right">Textlength:</span></div>
-           <div class="row"><span class="font-weight-bold float-right">Comment:</span></div>
-           <div class="row"><span class="font-weight-bold float-right">References:</span></div>
+      <div class="col">
+         <div class="row">
+           <div class="col-sm-1"/>
+           <div class="col-sm-2"><span class="font-weight-bold float-right">Edition:</span></div>
+           <div class="col-sm-5"><span class="sm">{collection($config:tls-texts-root)//ab[@refid=$textid]}</span>　</div>
+         </div>  
+         <div class="row">
+           <div class="col-sm-1"/>
+           <div class="col-sm-2"><span class="font-weight-bold float-right">Dates:</span></div>
+           <div class="col-sm-5">{if ($date) then (<span id="textdate-outer"><span  id="textdate" data-not-before="{$date/@not-before}" data-not-after="{$date/@not-after}">{$date}</span></span>,if (sm:is-authenticated()) then <span class="badge badge-pill badge-light" onclick="edit_textdate('{$textid}')">Edit date</span> else ()) else if (sm:is-authenticated()) then <span class="badge badge-pill badge-light" onclick="edit_textdate('{$textid}')">Add date</span> else "　"}　</div>
          </div>
-         <div class="col-sm-4" id="srcrow-2">
-           <div class="row"><span class="sm">{collection($config:tls-texts-root)//ab[@refid=$textid]}</span>　</div>
-           <div class="row">{if ($date) then (<span id="textdate-outer"><span  id="textdate" data-not-before="{$date/@not-before}" data-not-after="{$date/@not-after}">{$date}</span></span>,if (sm:is-authenticated()) then <span class="badge badge-pill badge-light" onclick="edit_textdate('{$textid}')">Edit date</span> else ()) else if (sm:is-authenticated()) then <span class="badge badge-pill badge-light" onclick="edit_textdate('{$textid}')">Add date</span> else "　"}　</div>
-           <div classe="row">{ if (sm:is-authenticated()) then
+         <div class="row">
+           <div class="col-sm-1"/>
+           <div class="col-sm-2">{ if (sm:is-authenticated()) then <span class="font-weight-bold float-right" title="Click on one of the stars to rate the text and add to the ★ menu.">Rating:</span> else ()}</div>
+           <div classe="col-sm-5">{ if (sm:is-authenticated()) then
            <input id="input-{$textid}" name="input-name" type="number" class="rating"
     min="1" max="10" step="2" data-theme="krajee-svg" data-size="xs" value="{tlslib:get-rating($textid)}"/> else ()}</div> 
-           <div class="row"><span>{$charcount} characters.</span></div>
-           <div class="row"><span class="tr-x" id="{$textid}-com" contenteditable="true">　</span></div>    
-           <div class="row"><span>{if ($loewe) then <span>Loewe(ed), <i>Early Chinese Texts</i>, p.{$loewe/preceding-sibling::tei:citedRange/text()}<br/></span> else '　'}</span>{ if (sm:is-authenticated()) then <span class="badge badge-pill badge-light"  onclick="add_ref('{$textid}')" title="Add new reference">Add reference</span> else ()}</div>    
-         </div>
-         <div class="col-sm-2" id="srcrow-1"></div>
-         <div class="col-sm-2" id="srcrow-1"><span></span></div>
+        </div>
+         <div class="row">        
+           <div class="col-sm-1"/>
+           <div class="col-sm-2"><span class="font-weight-bold float-right">Textlength:</span></div>
+           <div class="col-sm-5"><span>{$charcount} characters.</span></div>
+         </div>   
+         <div class="row">
+           <div class="col-sm-1"/>
+           <div class="col-sm-2"><span class="font-weight-bold float-right">Comment:</span></div>
+           <div class="col-sm-5"><span class="tr-x" id="{$textid}-com" contenteditable="true">　</span></div>    
+         </div>  
+         <div class="row">
+           <div class="col-sm-1"/>
+           <div class="col-sm-2"><span class="font-weight-bold float-right">References:</span></div>
+           <div class="col-sm-5"><span>{if ($loewe) then <span>{$loewe/tei:author}, in Loewe(ed), <i>Early Chinese Texts</i> (1995), p.{$loewe/tei:citedRange/text()}<br/></span> else '　'}</span>{ if (sm:is-authenticated()) then <span class="badge badge-pill badge-light"  onclick="add_ref('{$textid}')" title="Add new reference">Add reference</span> else ()}</div>    
+         </div>  
       </div>
 };
 
@@ -2283,9 +2305,10 @@ for $s in subsequence($seq, 2)
   for $drug in $drugx  
   let $obs := collection($config:tls-data-root || "/domain/medical")//tei:div[@xml:id=$mm]//tei:orth[. = $drug]/ancestor::tei:entry
  ,$c := $obs/ancestor::tei:div
+ ,$uuid := concat("uuid-", util:uuid())
   return
   if (exists($obs)) then
-  <tls:drug ref="#{$obs/@xml:id}" target="#{$s/@xml:id}" concept="{$c/tei:head/text()}" concept-id="{$c/@xml:id}" quantity="{$quant}">{$drug}</tls:drug>
+  <tls:drug xml:id="{$uuid}" ref="#{$obs/@xml:id}" target="#{$s/@xml:id}" concept="{$c/tei:head/text()}" concept-id="{$c/@xml:id}" quantity="{$quant}">{$drug}</tls:drug>
   else ()}
   </tls:contents>  
 }; 
