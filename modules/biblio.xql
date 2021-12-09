@@ -60,7 +60,7 @@ else
 <a class="badge badge-pill badge-light" href="browse.html?type=biblio&amp;filter={$c}&amp;mode=topic"><span>{$c}</span></a>
 
 return 
-<div><h4>Browse the bibliography    </h4>
+<div><h4>Browse the bibliography <button class="btn badge badge-warning ml-2" type="button" onclick="add_ref('')">Add new reference</button></h4>
 
     <ul class="nav nav-tabs" id="Tab" role="tablist">
     <li class="nav-item"> <a class="nav-link" id="aut-tab" role="tab" 
@@ -161,7 +161,8 @@ return
 <div class="col-sm-5">{for $t in collection($config:tls-data-root)//tei:ref[@target="#"||$uuid] 
          let $cid := $t/ancestor::tei:div/@xml:id
          , $name := $t/ancestor::tei:div/tei:head/text()
-return <a class="badge badge-pill badge-light" href="concept.html?uuid={$cid}">{$name}</a>}</div>
+         , $entry := $t/ancestor::tei:entry
+return <a class="badge badge-pill badge-light" href="concept.html?uuid={$cid}#{$entry/@xml:id}">{$name}{if ($entry) then ": " || string-join($entry//tei:orth, '/') else ()}</a>}</div>
 </div>
   
 </div>
@@ -184,7 +185,7 @@ let $biblio := collection($config:tls-data-root || "/bibliography")
 return
 <div><h3>Bibliography search results</h3>
 <p class="font-weight-bold">Searched for <span class="mark">{$query}</span>, found {count($qr)} entries.</p>
-<p>Please bear in mind that the search is case sensitive. It looks for entries, where the search term appears in <span class="font-weight-bold">names</span> (unfortunately, family name and first name can not be searched together), <span class="font-weight-bold">titles</span>, or <span class="font-weight-bold">notes</span>. Multiple search terms (separated by the space character) are interpreted as "OR" connected. You can also <a href="browse.html?type=biblio">browse</a> the bibliography.</p>
+<p>Please bear in mind that the search is case sensitive. It looks for entries, where the search term appears in <span class="font-weight-bold">names</span> (unfortunately, family name and first name can not be searched together), <span class="font-weight-bold">titles</span>, or <span class="font-weight-bold">notes</span>. Multiple search terms (separated by the space character) are interpreted as "OR" connected. You can also <a href="browse.html?type=biblio">browse</a> the bibliography, or <button class="btn badge badge-warning" type="button" onclick="add_ref('')">add</button> a new reference.</p>
 <ul>{
 for $q in $qr 
 let $t := lower-case(normalize-space(($q//mods:title)[1]))

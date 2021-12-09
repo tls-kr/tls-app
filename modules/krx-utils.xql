@@ -70,10 +70,10 @@ return
 {for $e in $eg/mf:edition return
 <li title="{$e/@role}">{if (data($e/@role)="base") then 
 let $id := tokenize($e/@id, "_")[1]
-, $firstdiv := (collection($config:tls-texts-root)//tei:TEI[@xml:id=$id]//tei:body/tei:div)[1]
-, $targetseg := if ($firstdiv//tei:seg) then ($firstdiv//tei:seg)[1] else  ($firstdiv/following::tei:seg)[1] 
+(:, $firstdiv := (collection($config:tls-texts-root)//tei:TEI[@xml:id=$id]//tei:body/tei:div)[1]
+, $targetseg := if ($firstdiv//tei:seg) then ($firstdiv//tei:seg)[1] else  ($firstdiv/following::tei:seg)[1] :)
 return
-<a href="textview.html?location={$targetseg/@xml:id}">{$e/mf:description}</a>
+<a href="textview.html?location={$id}&amp;mode=visit">{$e/mf:description}</a>
 else
 ($e/mf:description)
 }

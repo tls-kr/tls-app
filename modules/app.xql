@@ -177,7 +177,8 @@ function app:browse($node as node()*, $model as map(*), $type as xs:string?, $fi
     <th scope="col">{if ($type='concept') then 'Alternate Labels' else 'Remarks'}</th>    
     </tr></thead><tbody class="table-striped">{
     for $h in $hits
-    let $n := $h/tei:head/text()
+     let $domain := tokenize(util:collection-name($h), '/')[last()]
+    ,$n := if ($domain = "concepts") then data($h/tei:head) else $domain || "::" || data($h/tei:head)
     ,$id := $h/@xml:id
     (: editing for rhet dev postponed, because of the complicated structure. :)
     ,$edit := if (sm:id()//sm:groups/sm:group[. = "tls-editor"]  ) then 'true' else 'false'
@@ -248,7 +249,8 @@ declare function app:do-browse($type as xs:string?, $filter as xs:string?)
 {
     if ($type = "concept") then 
      for $hit in collection($config:tls-data-root)//tei:div[@type=$type]
-     let $head := data($hit/tei:head),
+     let $domain := tokenize(util:collection-name($hit), '/')[last()],
+     $head := if ($domain = "concept") then data($hit/tei:head) else $domain || "::" || data($hit/tei:head),
      $w := $hit//tei:entry
      where starts-with($head, $filter) and count($w) > 0
      order by $head
@@ -650,7 +652,7 @@ function app:tv-data($node as node()*, $model as map(*))
 
 (: function textview 
 @param location  text location or text id for the text to display. If empty, display text list app:textlist
-@param mode      for textlist: 'tls' texts or 'chant' texts or 'all' texts
+@param mode      when given as 'visit': bypass the manifest display and go directly to the text
 
 : if we have a location, call tlslib:display-chunk(), which will display  n lines (tei:seg) elements
 : for search results, prec and follow are the same to place the result in the middle of the page.
@@ -674,7 +676,7 @@ function app:textview($node as node()*, $model as map(*), $location as xs:string
       return
         tlslib:display-chunk($firstseg, $model, $prec, $foll)
      else
-      if (collection($config:tls-manifests)//mf:manifest[@xml:id=$location]) then 
+      if (not($mode = 'visit') and collection($config:tls-manifests)//mf:manifest[@xml:id=$location]) then 
       krx:show-manifest(collection($config:tls-manifests)//mf:manifest[@xml:id=$location]) 
       else
       let $firstdiv := if ($first = 'true') then 
@@ -1246,6 +1248,13 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
     }
     </h5>
     {if ($def) then <p class="ml-4">{$def[1]}</p> else ()}
+    {if ($e//tei:listBibl) then 
+         <ul>
+        {for $d in $e//tei:bibl
+        return
+        tlslib:display-bibl($d)
+     }</ul>  
+    else ()} 
     <ul>{for $sw in $e/tei:sense
     return
     tlslib:display-sense($sw, count($ann//tei:sense[@corresp="#" || $sw/@xml:id]), false())

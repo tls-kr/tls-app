@@ -470,7 +470,7 @@ return
       $id := data($t/@id)
       order by $r descending
      return
-    <a class="dropdown-item" href="textview.html?location={$id}"><span class="bold">{$t/text()}</span><span class="text-muted px-1">({$r})</span></a>
+    <a class="dropdown-item" href="textview.html?location={$id}&amp;mode=visit"><span class="bold">{$t/text()}</span><span class="text-muted px-1">({$r})</span></a>
     else 
     <span class="text-muted px-1">You can star texts in the lists available under the menu item "Browse->Text" or in the text detail display available by clicking on "Source:" to the right of the Blue Eye, visible when a text is displayed.</span>    
     }
