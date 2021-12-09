@@ -187,7 +187,7 @@ return
 <p>Please bear in mind that the search is case sensitive. It looks for entries, where the search term appears in <span class="font-weight-bold">names</span> (unfortunately, family name and first name can not be searched together), <span class="font-weight-bold">titles</span>, or <span class="font-weight-bold">notes</span>. Multiple search terms (separated by the space character) are interpreted as "OR" connected. You can also <a href="browse.html?type=biblio">browse</a> the bibliography.</p>
 <ul>{
 for $q in $qr 
-let $t := lower-case(normalize-space($q//mods:title))
+let $t := lower-case(normalize-space(($q//mods:title)[1]))
 order by $t
 return
 bib:biblio-short($q)
