@@ -2247,8 +2247,11 @@ return
            <div class="col-sm-2"><span class="font-weight-bold float-right">Dates:</span></div>
            <div class="col-sm-5">{
            if ($date) then 
-            (<span id="textdate-outer"><span  id="textdate" data-not-before="{$date/@notbefore}" data-not-after="{$date/@notafter}">{$date/text()}<span id="textdate-note" class="text-muted">{$date/note/text()}</span></span></span>,
-            if (sm:is-authenticated()) then <span class="badge badge-pill badge-light" onclick="edit_textdate('{$textid}')">Edit date</span> else ()) else if (sm:is-authenticated()) then <span class="badge badge-pill badge-light" onclick="edit_textdate('{$textid}')">Add date</span> else "　"}　</div>
+            (<span id="textdate-outer"><span id="textdate" data-not-before="{$date/@notbefore}" data-not-after="{$date/@notafter}">{$date/text()}<span id="textdate-note" class="text-muted">{$date/note/text()}</span></span></span>,
+            if (sm:is-authenticated()) then <span class="badge badge-pill badge-light" onclick="edit_textdate('{$textid}')">Edit date</span> else 
+            ()) 
+           else if (sm:is-authenticated()) then (<span id="textdate-outer"><span id="textdate">　</span></span>,<span class="badge badge-pill badge-light" onclick="edit_textdate('{$textid}')">Add date</span>) else 
+            "　"}　</div>
          </div>
          <div class="row">
            <div class="col-sm-1"/>

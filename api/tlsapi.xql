@@ -1671,24 +1671,18 @@ let $user := sm:id()//sm:real/sm:username/text()
       doc($config:tls-texts-root || "/tls/textdates.xml")//data
     ,$node := $dates[@corresp="#" || $map?textid]
     ,$na := if (string-length($map?na) > 0) then $map?na else $map?nb
-    ,$pr := if (string-length($map?prose) > 0) then $map?prose else if($na eq $map?nb) then $na else $map?nb || " to " || $na
-    ,$nh := if (string-length($map?src) > 0) then <span id="textdate-note" class="text-muted">{$map?src}</span> else ()
+    ,$pr := if ($map?prose ne "　") then $map?prose else if($na eq $map?nb) then $na else $map?nb || " to " || $na
+    ,$nh := if (string-length($map?src) > 0) then <span id="textdate-note" class="text-muted"> {$map?src}</span> else ()
+    ,$tit := tlslib:get-title($map?textid)
+    ,$n := if (string-length($map?src) > 0) then <note>{$map?src}</note> else ()
+    ,$nnode := <data notbefore="{$map?nb}" notafter="{$na}" corresp="#{$map?textid}" title="{$tit}">{$pr}{$n}</data>
     ,$upd :=
-    if ($node) then 
-    (update replace $node/@notbefore  with attribute notbefore {$map?b},
-    update replace $node/@notafter  with attribute notafter {$na},
-    update replace $node/text()  with $pr,
-    if (string-length($map?src) > 0) then 
-    update insert <note>{$map?src}</note>  into $node else ()
-    )
-    else    
-    let $tit := tlslib:get-title($map?textid),
-    $n := if (string-length($map?src) > 0) then <note>{$map?src}</note> else (),
-    $nnode := <data notbefore="{$map?nb}" notafter="{$na}" corresp="#{$map?textid}">{$pr}{$n}</data>
-    return
-    update insert $nnode into $dates
+    if (exists($node)) then 
+    update replace $node with $nnode
+    else
+    update insert $nnode into $dates[1]/ancestor::root
     return 
-    <span  id="textdate" data-not-before="{$map?nb}" data-not-after="{$na}">{$pr}{$nh}</span>
+    <span  id="textdate" data-not-before="{$map?nb}" data-not-after="{$na}">{$pr} {$nh}</span>
 };
 
 
