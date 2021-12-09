@@ -391,11 +391,11 @@ declare function dialogs:edit-textdate($para as map(*)){
                 <small class="text-muted">A text date consists of the lower (<span class="font-weight-bold">not-before</span>) and upper limits (<span class="font-weight-bold">not-after</span>) as well as a human readable form.</small>
                 <div id="input-nb-group">
                     <label for="input-nb"><strong>lower limit (not-before)</strong> </label>
-                    <input id="input-nb" class="form-control">{if ($para?nb ne "undefined") then $para?nb else ()}</input>
+                    <input id="input-nb" class="form-control" value="{if ($para?nb ne "undefined") then $para?nb else ()}"/>
                 </div>
                 <div id="input-na-group">
                     <label for="input-na"><strong>upper limit (not-after)</strong> </label>
-                    <input id="input-na" class="form-control">{if ($para?na ne "undefined") then $para?na else ()}</input>
+                    <input id="input-na" class="form-control" value="{if ($para?na ne "undefined") then $para?na else ()}"/>
                 </div>
                 <div id="input-prose-group">
                     <label for="input-prose"><strong>Prose</strong> </label>
@@ -403,7 +403,7 @@ declare function dialogs:edit-textdate($para as map(*)){
                 </div>
                 <div id="input-src-group">
                     <label for="input-src"><strong>Source</strong> </label>
-                    <textarea id="input-src" class="form-control"></textarea>
+                    <textarea id="input-src" class="form-control">{if ($para?src ne "undefined") then $para?src else ()}</textarea>
                 </div>
             
             </div>

@@ -1014,20 +1014,22 @@ declare function tlslib:display-seg($seg as node()*, $options as map(*) ) {
      else map:get($options, $options?slot1)[1] else ()
   ,$slot2 := if ($show-transl and not($ann = 'false')) then map:get($options, $options?slot2)[1] else ()
   (: check if transl + comment are related, if yes than do not manipulate tab-index :)
-  , $px := replace($slot1//tei:seg[@corresp="#"||$seg/@xml:id]/@resp, '#', '')
-  ,$resp := if ($px) then "Resp: "||doc($config:tls-data-root || "/vault/members.xml")//tei:person[@xml:id=$px]//tei:persName/text() else ()
+  , $px1 := replace($slot1//tei:seg[@corresp="#"||$seg/@xml:id]/@resp, '#', '')
+  ,$resp1 := if ($px1) then "Resp: "||doc($config:tls-data-root || "/vault/members.xml")//tei:person[@xml:id=$px1]//tei:persName/text() else ()
+  , $px2 := replace($slot2//tei:seg[@corresp="#"||$seg/@xml:id]/@resp, '#', '')
+  ,$resp2 := if ($px2) then "Resp: "||doc($config:tls-data-root || "/vault/members.xml")//tei:person[@xml:id=$px2]//tei:persName/text() else ()
 
 return
 (
 <div class="row {$mark}">
 <div class="{if ($seg/parent::tei:head) then 'tls-head ' else () }{if ($ann='false') then 'col-sm-4' else 'col-sm-2'} zh {$alpheios-class}" lang="{$lang}" id="{$seg/@xml:id}">{normalize-space(string-join($seg/text(),''))}{if ($seg/tei:anchor) then <span title="{normalize-space(string-join($seg/ancestor::tei:div//tei:note[tei:ptr/@target='#'||$seg/tei:anchor/@xml:id]/text()))}" >●</span> else ()}</div>　
-<div class="col-sm-5 tr" title="{$resp}" lang="en-GB" tabindex="{$options('pos')+500}" id="{$seg/@xml:id}-tr" contenteditable="{if (not($testuser)) then 'true' else 'false'}">{typeswitch ($slot1) 
+<div class="col-sm-5 tr" title="{$resp1}" lang="en-GB" tabindex="{$options('pos')+500}" id="{$seg/@xml:id}-tr" contenteditable="{if (not($testuser)) then 'true' else 'false'}">{typeswitch ($slot1) 
 case element(tei:TEI) return  $slot1//tei:seg[@corresp="#"||$seg/@xml:id]/text()
 default return (krx:get-varseg-ed($seg/@xml:id, substring-before($slot1, "::")))
 }</div>
  {if ($ann = 'false') then () else 
  (: using en-GB for now, need to get that from translation in the future...  :)
-  <div class="col-sm-4 tr" lang="en-GB" tabindex="{$options('pos')+1000}" id="{$seg/@xml:id}-ex" contenteditable="{if (not($testuser)) then 'true' else 'false'}">
+  <div class="col-sm-4 tr" title="{$resp2}" lang="en-GB" tabindex="{$options('pos')+1000}" id="{$seg/@xml:id}-ex" contenteditable="{if (not($testuser)) then 'true' else 'false'}">
   {typeswitch ($slot2) 
 case element(tei:TEI) return $slot2//tei:seg[@corresp="#"||$seg/@xml:id]/text()  
 default return
@@ -2243,7 +2245,10 @@ return
          <div class="row">
            <div class="col-sm-1"/>
            <div class="col-sm-2"><span class="font-weight-bold float-right">Dates:</span></div>
-           <div class="col-sm-5">{if ($date) then (<span id="textdate-outer"><span  id="textdate" data-not-before="{$date/@not-before}" data-not-after="{$date/@not-after}">{$date}</span></span>,if (sm:is-authenticated()) then <span class="badge badge-pill badge-light" onclick="edit_textdate('{$textid}')">Edit date</span> else ()) else if (sm:is-authenticated()) then <span class="badge badge-pill badge-light" onclick="edit_textdate('{$textid}')">Add date</span> else "　"}　</div>
+           <div class="col-sm-5">{
+           if ($date) then 
+            (<span id="textdate-outer"><span  id="textdate" data-not-before="{$date/@notbefore}" data-not-after="{$date/@notafter}">{$date/text()}<span id="textdate-note" class="text-muted">{$date/note/text()}</span></span></span>,
+            if (sm:is-authenticated()) then <span class="badge badge-pill badge-light" onclick="edit_textdate('{$textid}')">Edit date</span> else ()) else if (sm:is-authenticated()) then <span class="badge badge-pill badge-light" onclick="edit_textdate('{$textid}')">Add date</span> else "　"}　</div>
          </div>
          <div class="row">
            <div class="col-sm-1"/>

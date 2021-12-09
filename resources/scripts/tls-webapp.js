@@ -1831,11 +1831,12 @@ function save_updated_gloss(uuid, ch, pos){
 function edit_textdate(textid){
   var nb = $('#textdate').attr('data-not-before');
   var na = $('#textdate').attr('data-not-after');  
-  var prose = $('#textdate').html();
+  var prose = document.getElementById( "textdate" ).childNodes[0].nodeValue;
+  var src = $('#textdate-note').text();
   $.ajax({
   type : "GET",
   dataType : "html",  
-  url : "api/responder.xql?func=dialogs:edit-textdate&textid=" + textid+"&nb="+nb+"&na="+na+"&prose="+prose, 
+  url : "api/responder.xql?func=dialogs:edit-textdate&textid=" + textid+"&nb="+nb+"&na="+na+"&prose="+prose+"&src="+src, 
   success : function(resp){
   $('#remoteDialog').html(resp);
   $('#edit-textdate-dialog').modal('show');
