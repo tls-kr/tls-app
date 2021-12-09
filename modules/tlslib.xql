@@ -1015,7 +1015,7 @@ declare function tlslib:display-seg($seg as node()*, $options as map(*) ) {
   ,$slot2 := if ($show-transl and not($ann = 'false')) then map:get($options, $options?slot2)[1] else ()
   (: check if transl + comment are related, if yes than do not manipulate tab-index :)
   , $px := replace($slot1//tei:seg[@corresp="#"||$seg/@xml:id]/@resp, '#', '')
-  ,$resp := if ($px) then "Translation: "||doc($config:tls-data-root || "/vault/members.xml")//tei:person[@xml:id=$px]//tei:persName/text() else ()
+  ,$resp := if ($px) then "Resp: "||doc($config:tls-data-root || "/vault/members.xml")//tei:person[@xml:id=$px]//tei:persName/text() else ()
 
 return
 (
