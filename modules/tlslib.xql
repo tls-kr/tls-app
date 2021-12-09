@@ -1014,11 +1014,14 @@ declare function tlslib:display-seg($seg as node()*, $options as map(*) ) {
      else map:get($options, $options?slot1)[1] else ()
   ,$slot2 := if ($show-transl and not($ann = 'false')) then map:get($options, $options?slot2)[1] else ()
   (: check if transl + comment are related, if yes than do not manipulate tab-index :)
+  , $px := replace($slot1//tei:seg[@corresp="#"||$seg/@xml:id]/@resp, '#', '')
+  ,$resp := if ($px) then "Translation: "||doc($config:tls-data-root || "/vault/members.xml")//tei:person[@xml:id=$px]//tei:persName/text() else ()
+
 return
 (
 <div class="row {$mark}">
-<div class="{if ($seg/parent::tei:head) then 'tls-head ' else () }{if ($ann='false') then 'col-sm-4' else 'col-sm-2'} zh {$alpheios-class}" lang="{$lang}" id="{$seg/@xml:id}">{$seg/text()}{if ($seg/tei:anchor) then <span title="{normalize-space(string-join($seg/ancestor::tei:div//tei:note[tei:ptr/@target='#'||$seg/tei:anchor/@xml:id]/text()))}" >●</span> else ()}</div>　
-<div class="col-sm-5 tr" lang="en-GB" tabindex="{$options('pos')+500}" id="{$seg/@xml:id}-tr" contenteditable="{if (not($testuser)) then 'true' else 'false'}">{typeswitch ($slot1) 
+<div class="{if ($seg/parent::tei:head) then 'tls-head ' else () }{if ($ann='false') then 'col-sm-4' else 'col-sm-2'} zh {$alpheios-class}" lang="{$lang}" id="{$seg/@xml:id}">{normalize-space(string-join($seg/text(),''))}{if ($seg/tei:anchor) then <span title="{normalize-space(string-join($seg/ancestor::tei:div//tei:note[tei:ptr/@target='#'||$seg/tei:anchor/@xml:id]/text()))}" >●</span> else ()}</div>　
+<div class="col-sm-5 tr" title="{$resp}" lang="en-GB" tabindex="{$options('pos')+500}" id="{$seg/@xml:id}-tr" contenteditable="{if (not($testuser)) then 'true' else 'false'}">{typeswitch ($slot1) 
 case element(tei:TEI) return  $slot1//tei:seg[@corresp="#"||$seg/@xml:id]/text()
 default return (krx:get-varseg-ed($seg/@xml:id, substring-before($slot1, "::")))
 }</div>

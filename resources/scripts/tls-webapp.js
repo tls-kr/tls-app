@@ -1371,6 +1371,12 @@ function zh_start_edit(){
     $("#blue-eye").removeAttr("data-target");    
     $("#blue-eye").attr("title", "Click here to end editing");
     toastr.info("Click the yellow eye to end the editing.", "漢學文典 says:");
+    $(".zhed").each(function (){
+      var zh_line_id = $(this).attr('id');
+      var but = '<button type="button" class="btn close" onclick="zh_delete_line(\''+zh_line_id+'\')" title="Immediately remove the line ('+zh_line_id+')"><img class="icon" style="width:12px;height:15px;top:0;align:top" src="resources/icons/open-iconic-master/svg/x.svg"></button>';
+      $(this).prepend(but);
+    });
+    
     set_keyup();
 }
 
@@ -1393,6 +1399,33 @@ function save_zh (id, line){
     alert("PROBLEM: "+resp.statusText + "\n " + resp.responseText);
   }
   });    
+};
+
+// this does the actual save
+function zh_delete_line (id){
+  var lid = id.split(".").join("\\.")
+  var line = $("#"+lid).text()
+  var ok=confirm("'"+ line +"' ("+ id +") will be deleted and removed, do you want to proceed?.")
+  if (ok){
+  $.ajax({
+  type : "GET",
+  dataType : "html",
+  url : "api/responder.xql?func=zh-delete-line&id="+id,
+  success : function(resp){
+    if (resp.startsWith("Could not delete")) {
+    toastr.error(resp, "漢學文典 says:");
+    } else {
+    toastr.info("Deletion for line "+id+" completed.", "漢學文典 says:");
+    $("#"+lid).remove();
+    dirty = false;
+    }
+  },
+  error : function(resp){
+  console.log(resp);
+    alert("PROBLEM: "+resp.statusText + "\n " + resp.responseText);
+  }
+  });    
+  }
 };
 
 

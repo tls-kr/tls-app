@@ -1188,6 +1188,23 @@ else
  "Could not save text."
 };
 
+declare function tlsapi:zh-delete-line($map as map(*)){
+let $id := $map?id
+,$user := sm:id()//sm:real/sm:username/text()
+,$node := collection($config:tls-texts-root)//tei:seg[@xml:id=$id]
+(: todo: check if this node has been referenced? :)
+return
+if ($node) then (
+ update insert attribute modified {current-dateTime()} into $node,
+ update insert attribute resp-change {"#" || $user} into $node,
+ update insert attribute change {"deletion"} into $node,
+ update insert $node into (tlslib:get-crypt-file("text")//tei:div/tei:p[last()])[1],
+ if (update delete $node[1]) then () else "Success. Deleted line." 
+ )
+else 
+ "Could not delete line."
+};
+
 (:~
  : Save the translation (or comment)
  : 3/11: Get the file from the correct slot!
