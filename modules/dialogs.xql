@@ -381,28 +381,28 @@ declare function dialogs:new-syn-dialog($para as map(*)){
 
 declare function dialogs:edit-textdate($para as map(*)){
 <div id="edit-textdate-dialog" class="modal" tabindex="-1" role="dialog" style="display: none;">
-    <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header"><h5>Creation date for text</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close" title="Close">x</button>
             </div>
             <div class="modal-body">
             <h6 class="font-weight-bold">{$para?textid}: {tlslib:get-title($para?textid)}</h6>
-                <small class="text-muted">A text date consists of the lower (<span class="font-weight-bold">not-before</span>) and upper limits (<span class="font-weight-bold">not-after</span>) as well as a human readable form.</small>
+                <small class="text-muted">A text date consists of the (1) lower (<span class="font-weight-bold">not-before</span>) and (2) upper limits (<span class="font-weight-bold">not-after</span>) as well as (3) a human readable form. (1) and (2) should be positive integers for AD years and negative integers for BC years.</small>
                 <div id="input-nb-group">
-                    <label for="input-nb"><strong>lower limit (not-before)</strong> </label>
+                    <label for="input-nb"><strong>(1) lower limit (not-before)</strong> </label>
                     <input id="input-nb" class="form-control" value="{if ($para?nb ne "undefined") then $para?nb else ()}"/>
                 </div>
                 <div id="input-na-group">
-                    <label for="input-na"><strong>upper limit (not-after)</strong> </label>
+                    <label for="input-na"><strong>(2) upper limit (not-after)</strong> </label>
                     <input id="input-na" class="form-control" value="{if ($para?na ne "undefined") then $para?na else ()}"/>
                 </div>
                 <div id="input-prose-group">
-                    <label for="input-prose"><strong>Prose</strong> </label>
+                    <label for="input-prose"><strong>(3) Prose (displayed form)</strong> </label>
                     <textarea id="input-prose" class="form-control">{if ($para?prose ne "undefined") then $para?prose else ()}</textarea>
                 </div>
                 <div id="input-src-group">
-                    <label for="input-src"><strong>Source</strong> </label>
+                    <label for="input-src"><strong>Note</strong> </label>
                     <textarea id="input-src" class="form-control">{if ($para?src ne "undefined") then $para?src else ()}</textarea>
                 </div>
             

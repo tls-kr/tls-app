@@ -1657,7 +1657,7 @@ for $obs in subsequence($show, 1, 5) return
 {if ($obs//tls:contents) then 
 <ul>{
 for $d in $obs//tls:contents/tls:drug return
-<li><a href="concept.html?uuid={$d/@concept-id}{$d/@ref}">{$d/text()}</a><span class="text-muted">({data($d/@quantity)})</span></li>
+<li><a href="concept.html?uuid={$d/@concept-id}{$d/@ref}">{$d/text()}</a><span class="text-muted">({data($d/@quantity)}, {data($d/@flavor)})</span></li>
 }</ul>
 else ()}
 </li>
@@ -1687,5 +1687,5 @@ let $user := sm:id()//sm:real/sm:username/text()
 
 
 declare function tlsapi:stub($map as map(*)){
-()
+() 
 };

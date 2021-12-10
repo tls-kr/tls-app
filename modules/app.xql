@@ -1919,5 +1919,4 @@ declare function app:obs($node as node(), $model as map(*)){
     </div>
 )
 };
-
 (:: xx :)

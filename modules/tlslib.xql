@@ -33,7 +33,8 @@ declare function local:string-to-ncr($s as xs:string) as xs:string{
 declare function tlslib:annotation-types($type as xs:string){
   let $map := 
  map{'nswl' : ('SWL', 'Syntactic Word Location'), 
-                'rdl' : ('RDL', 'Rhetoric Device Location')}
+     'rdl' : ('RDL', 'Rhetoric Device Location'),
+     'drug' : ('本草', 'Drug Location')}
  return
  if (count($map($type))> 0) then $map($type) else ( collection($config:tls-data-root)//tei:TEI[@xml:id="facts-def"]//tei:div[@xml:id=$type]/tei:head/text(), '')
 };
@@ -948,7 +949,7 @@ else ()
 else if ($anntype eq "drug") then
 <div class="row bg-light {$anntype}">
  <div class="col-sm-2"><span class="{$anntype}-col">drug</span></div>
- <div class="col-sm-6">{$node/text()}, Q:{data($node/@quantity)}
+ <div class="col-sm-6">{$node/text()}, Q:{data($node/@quantity)}, FL:{data($node/@flavor)}
  {
    if (($user = $creator-id) or contains($usergroups, "tls-editor" )) then 
     tlslib:format-button("delete_swl('drug', '" || data($node/@xml:id) || "')", "Immediately delete the observation "||data($node/text()), "open-iconic-master/svg/x.svg", "small", "close", "tls-editor")
@@ -2319,7 +2320,9 @@ for $s in subsequence($seq, 2)
  ,$uuid := concat("uuid-", util:uuid())
   return
   if (exists($obs)) then
-  <tls:drug xml:id="{$uuid}" ref="#{$obs/@xml:id}" target="#{$s/@xml:id}" concept="{$c/tei:head/text()}" concept-id="{$c/@xml:id}" quantity="{$quant}">{$drug}</tls:drug>
+  let $fln := (collection($config:tls-texts-root)//tei:seg[ngram:wildcard-contains(.,$drug||"　")])[1]/text()
+  , $fl := substring-after($fln, $drug||"　")
+  <tls:drug xml:id="{$uuid}" ref="#{$obs/@xml:id}" flavor="{$fl}" target="#{$s/@xml:id}" concept="{$c/tei:head/text()}" concept-id="{$c/@xml:id}" quantity="{$quant}">{$drug}</tls:drug>
   else ()}
   </tls:contents>  
 }; 
