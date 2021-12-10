@@ -782,7 +782,7 @@ declare function tlslib:swl-form-dialog($context as xs:string){
     <span>　　<span class="btn badge badge-light" type="button" data-toggle="collapse" data-target="#mark-buttons" >Mark</span>
 
     <span id="mark-buttons" class="collapse"><p>{for $d in collection($config:tls-data-root)//tei:TEI[@xml:id="facts-def"]//tei:div[@type='inline'] return 
-    <button onClick="save_mark('{data($d/@xml:id)}','$d//tei:head/text()')" style="{data($d/@rend)}">{$d//tei:head/text()}</button>}</p></span></span>
+    <button onClick="save_mark('{data($d/@xml:id)}','{$d//tei:head/text()}')" style="{data($d/@rend)}">{$d//tei:head/text()}</button>}</p></span></span>
     
     <button type="button" class="close" onclick="hide_new_att()" aria-label="Close" title="Close"><img class="icon" src="resources/icons/open-iconic-master/svg/circle-x.svg"/></button>
     </h5>
