@@ -178,7 +178,7 @@ function app:browse($node as node()*, $model as map(*), $type as xs:string?, $fi
     </tr></thead><tbody class="table-striped">{
     for $h in $hits
      let $domain := tokenize(util:collection-name($h), '/')[last()]
-    ,$n := if ($domain = "concepts") then data($h/tei:head) else $domain || "::" || data($h/tei:head)
+    ,$n := if ($domain = ("concepts", "core")) then data($h/tei:head) else $domain || "::" || data($h/tei:head)
     ,$id := $h/@xml:id
     (: editing for rhet dev postponed, because of the complicated structure. :)
     ,$edit := if (sm:id()//sm:groups/sm:group[. = "tls-editor"]  ) then 'true' else 'false'
@@ -190,6 +190,11 @@ function app:browse($node as node()*, $model as map(*), $type as xs:string?, $fi
        else
         ($h/tei:p, <small>{$h/tei:note}</small>)
     ,$al := $h/tei:list[@type='altnames']/tei:item/text()
+    ,$b := $h/tei:div[@type="source-references"]
+    ,$br := if ($type = ("syn-func", "sem-feat")) then 
+      for $ref in $b//tei:bibl
+      return <ul>{tlslib:display-bibl($ref)}</ul>
+      else ()
     order by $n
     return
     (
@@ -203,7 +208,7 @@ function app:browse($node as node()*, $model as map(*), $type as xs:string?, $fi
         <a id="{$id}-abbr" onclick="show_use_of('{$type}', '{$id}')">{$n}</a>)
     }</td>
     <td><p id="{$id}-{if ($type = 'sem-feat') then 'sm' else if ($type = 'syn-func') then 'sf' else 'rd'}" class="sf" contenteditable="{$edit}">
-    {for $p at $pos in $def return ($p/text(), if ($pos < count($def) ) then <br/> else () ) }&#160;</p></td>
+    {for $p at $pos in $def return ($p/text(), if ($pos < count($def) ) then <br/> else () ) }&#160;</p>{$br}</td>
     <td><ul id="{$id}-resp"/><p class="altlabels" style="display:block">{string-join($al, ', ')}</p></td>
     </tr>)
     }</tbody></table></div>

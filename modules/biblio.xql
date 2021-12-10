@@ -161,8 +161,18 @@ return
 <div class="col-sm-5">{for $t in collection($config:tls-data-root)//tei:ref[@target="#"||$uuid] 
          let $cid := $t/ancestor::tei:div/@xml:id
          , $name := $t/ancestor::tei:div/tei:head/text()
-         , $entry := $t/ancestor::tei:entry
-return <a class="badge badge-pill badge-light" href="concept.html?uuid={$cid}#{$entry/@xml:id}">{$name}{if ($entry) then ": " || string-join($entry//tei:orth, '/') else ()}</a>}</div>
+         , $entry := $t/ancestor::tei:entry,
+         $type := ($t/ancestor::tei:body/tei:div)[1]/@type
+         order by $name
+return 
+if ($type eq "rhet-dev") then 
+<a class="badge badge-pill badge-light" href="{$type}.html?uuid={$cid}">{$name}</a>
+else
+if ($type = ("syn-func", "sem-feat")) then
+<a class="badge badge-pill badge-light" href="browse.html?type={$type}#{$cid}">{$name}</a>
+else
+<a class="badge badge-pill badge-light" href="concept.html?uuid={$cid}#{$entry/@xml:id}">{$name}{if ($entry) then ": " || string-join($entry//tei:orth, '/') else ()}</a>
+}</div>
 </div>
   
 </div>

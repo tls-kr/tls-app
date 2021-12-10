@@ -1675,7 +1675,7 @@ let $user := sm:id()//sm:real/sm:username/text()
     ,$nh := if (string-length($map?src) > 0) then <span id="textdate-note" class="text-muted"> {$map?src}</span> else ()
     ,$tit := tlslib:get-title($map?textid)
     ,$n := if (string-length($map?src) > 0) then <note>{$map?src}</note> else ()
-    ,$nnode := <data notbefore="{$map?nb}" notafter="{$na}" corresp="#{$map?textid}" title="{$tit}">{$pr}{$n}</data>
+    ,$nnode := <data resp="#{$user}" modified="{current-dateTime()}" notbefore="{$map?nb}" notafter="{$na}" corresp="#{$map?textid}" title="{$tit}">{$pr}{$n}</data>
     ,$upd :=
     if (exists($node)) then 
     update replace $node with $nnode
