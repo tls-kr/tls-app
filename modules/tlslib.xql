@@ -2325,5 +2325,5 @@ for $s in subsequence($seq, 2)
   return
   <tls:drug xml:id="{$uuid}" ref="#{$obs/@xml:id}" flavor="{$fl}" target="#{$s/@xml:id}" concept="{$c/tei:head/text()}" concept-id="{$c/@xml:id}" quantity="{$quant}">{$drug}</tls:drug>
   else ()}
-  </tls:contents>  
+  </tls:contents>
 }; 
