@@ -158,7 +158,7 @@ return
 <div class="row">
 <div class="col-sm-2"/>
 <div class="col-sm-2"><span class="font-weight-bold float-right">Electronic Version:</span></div>
-<div class="col-sm-5"><a class="btn badge badge-light" target="GXDS" style="background-color:paleturquoise" href="https://archive.org/search.php?query={string-join(for $n in $m/mods:name return ($n/mods:namePart[@type='given'] || " " || $n/mods:namePart[@type='family']), ', ')}%20AND%20mediatype%3A%28texts%29 ">Find on Internet Archive</a> <button class="btn badge badge-warning" type="button" onclick="add_ref('')">Add direct link to this work</button></div>
+<div class="col-sm-5"><a class="btn badge badge-light" target="GXDS" style="background-color:paleturquoise" href="https://archive.org/search.php?query={string-join(for $n in $m/mods:name return ($n/mods:namePart[@type='given'])[1] || " " || ($n/mods:namePart[@type='family'])[1], ', ')}%20AND%20mediatype%3A%28texts%29 ">Find on Internet Archive</a> <button class="btn badge badge-warning" type="button" onclick="add_ref('')">Add direct link to this work</button></div>
 </div>
 <div class="row">
 <div class="col-sm-2"/>
