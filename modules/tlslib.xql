@@ -778,13 +778,13 @@ declare function tlslib:swl-form-dialog($context as xs:string){
 {if ($context = 'textview') then
  <div class="card-body">
     <h5 class="card-title"><span id="new-att-title">{if (sm:is-authenticated()) then "New Attribution:" else "Existing SW for " }<strong class="ml-2"><span id="swl-query-span">Word or char to annotate</span>:</strong></span>
-
-    <span>　　Search domain:<select id="domain-select" onChange="update_swlist()"><option value="core">Core</option>{for $d in xmldb:get-child-collections($config:tls-data-root||'/domain') return <option value="{$d}">{tlslib:capitalize-first($d)}</option>}</select></span>
+<span id="domain-lookup-mark">
+    <span>　　Lookup domain:<select id="domain-select" onChange="update_swlist()"><option value="core">Core</option>{for $d in xmldb:get-child-collections($config:tls-data-root||'/domain') return <option value="{$d}">{tlslib:capitalize-first($d)}</option>}</select></span>
     <span>　　<span class="btn badge badge-light" type="button" data-toggle="collapse" data-target="#mark-buttons" >Mark</span>
 
     <span id="mark-buttons" class="collapse"><p>{for $d in collection($config:tls-data-root)//tei:TEI[@xml:id="facts-def"]//tei:div[@type='inline'] return 
     <button onClick="save_mark('{data($d/@xml:id)}','{$d//tei:head/text()}')" style="{data($d/@rend)}">{$d//tei:head/text()}</button>}</p></span></span>
-    
+    </span>
     <button type="button" class="close" onclick="hide_new_att()" aria-label="Close" title="Close"><img class="icon" src="resources/icons/open-iconic-master/svg/circle-x.svg"/></button>
     </h5>
     <h6 class="text-muted">At:  <span id="swl-line-id-span" class="ml-2">Id of line</span>&#160;

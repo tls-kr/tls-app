@@ -1693,8 +1693,9 @@ function copyToClipboard(element) {
 function quick_search(){
    var start = 1;
    var count = 25;
-   var stype = '5' // search only this text
-   var mode = 'rating'
+   var stype = '5'; // search only this text
+   var mode = 'rating';
+   $('#domain-lookup-mark').html("");
    do_quick_search(start, count, stype, mode);
 };
 
