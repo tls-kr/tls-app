@@ -1535,14 +1535,25 @@ else ()
 declare function tlsapi:quick-search($map as map(*)){
 let $hits := tlslib:ngram-query($map?query, $map?mode, $map?search-type, $map?textid)
 , $disp := subsequence($hits, $map?start, $map?count)
+, $title := tlslib:get-title($map?textid)
 , $start := xs:int($map?start)
 , $count := xs:int($map?count)
 , $total := count($hits)
-, $prevp := if ($start = 1) then "" else 'do_quick_search('||$start||' - '||$count||', '||$count ||')'
-, $nextp := if ($total < $start + $count) then "" else 'do_quick_search('||$start||' + '||$count||', '||$count ||')'
+, $prevp := if ($start = 1) then "" else 'do_quick_search('||$start||' - '||$count||', '||$count ||', '||$map?search-type||', "'||$map?mode||'")'
+, $nextp := if ($total < $start + $count) then "" else 'do_quick_search('||$start||' + '||$count||', '||$count ||', '||$map?search-type||', "'||$map?mode||'")'
 , $qs := tokenize($map?query, "\s")
 return
-<div><p>Total: {$total} matches, showing {$start} to {min(($start + $count -1, $total))}.</p>
+<div><p>Total: {$total} matches {if ($map?search-type eq "5") then "in "||$title else () }, showing {$start} to {min(($start + $count -1, $total))}. {
+if ($map?search-type eq "5") then 
+   (<button class="btn badge badge-light" onclick="do_quick_search(1, 25, 1, 'date')">Search in all texts (by textdate)</button>,
+   <button class="btn badge badge-light" onclick="do_quick_search(1, 25, 1, 'rating')">Search in all texts (<span class="bold" style="color:red;">★</span> texts first)</button>) else 
+   <button class="btn  badge badge-light" onclick="do_quick_search(1, 25, 5,'{$map?mode}')">Search in {$title} only</button>}
+ {if ($map?search-type eq "1") then
+    if ($map?mode eq "rating") then 
+    <button class="btn badge badge-light" onclick="do_quick_search(1, 25, {$map?search-type}, 'date')">Order by textdate</button> else 
+    <button class="btn  badge badge-light" onclick="do_quick_search(1, 25, {$map?search-type}, 'rating')">Order <span class="bold" style="color:red;">★</span> texts first</button>
+else ()
+}</p>
 {
 for $h at $n in $disp
     let $head := $h/ancestor::tei:div[1]/tei:head[1],

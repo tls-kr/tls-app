@@ -1693,13 +1693,17 @@ function copyToClipboard(element) {
 function quick_search(){
    var start = 1;
    var count = 25;
-   do_quick_search(start, count);
+   var stype = '5' // search only this text
+   var mode = 'rating'
+   do_quick_search(start, count, stype, mode);
 };
 
-function do_quick_search(start, count){
+function do_quick_search(start, count, stype, mode){
 //    var word = $("#swl-query-span").text();
     var word = $("input[name=query]").val();
-    $.get("api/responder.xql?func=quick-search&query="+word+"&start="+start+"&count="+count+"&mode=rating&search-type=1&textid=", "html", 
+    var textid = $("#swl-line-id-span" ).text().split("_")[0]
+    console.log(textid)
+    $.get("api/responder.xql?func=quick-search&query="+word+"&start="+start+"&count="+count+"&mode="+mode+"&search-type="+stype+"&textid="+textid, "html", 
     function(resp){
          $('#swl-select').html(resp);
          // we might introduce buttons for the other search functions here at some point
