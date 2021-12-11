@@ -32,8 +32,8 @@ declare function local:string-to-ncr($s as xs:string) as xs:string{
 (: quick fix, this needs to be made user-extensible :)
 declare function tlslib:annotation-types($type as xs:string){
   let $map := 
- map{'nswl' : ('SWL', 'Syntactic Word Location'), 
-     'rdl' : ('RDL', 'Rhetoric Device Location'),
+ map{'nswl' : ('Grammar', 'Syntactic Word Location'), 
+     'rdl' : ('Rhetoric', 'Rhetoric Device Location'),
      'drug' : ('本草', 'Drug Location')}
  return
  if (count($map($type))> 0) then $map($type) else ( collection($config:tls-data-root)//tei:TEI[@xml:id="facts-def"]//tei:div[@xml:id=$type]/tei:head/text(), '')
@@ -707,6 +707,7 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
       <div id="srcref" class="col-sm-12 collapse" data-toggle="collapse">
       {tlslib:textinfo($model?textid)}
       </div>
+      <!-- here is where we select what to display -->
       {if (count($atypes) > 1) then 
       <div id="swlrow" class="col-sm-12 swl collapse" data-toggle="collapse">
        <div class="row">
@@ -959,7 +960,7 @@ else if ($anntype eq "drug") then
 </div>
 else
 (: not swl, eg: rhet-dev etc :)
-<div class="row bg-light {$anntype}">
+<div class="row bg-light {$anntype}" style="{if ($anntype ne 'nswl') then 'display:None;' else ()}">
 {
 let $role := if (ends-with(data($node/tls:text[tls:srcline[@target="#"||$options?line-id]]/@role), 'start')) then "(●" else "●)"
 return

@@ -157,6 +157,11 @@ return
 </div>
 <div class="row">
 <div class="col-sm-2"/>
+<div class="col-sm-2"><span class="font-weight-bold float-right">Electronic Version:</span></div>
+<div class="col-sm-5"><a class="btn badge badge-light" target="GXDS" style="background-color:paleturquoise" href="https://archive.org/search.php?query={string-join(for $n in $m/mods:name return ($n/mods:namePart[@type='given'] || " " || $n/mods:namePart[@type='family']), ', ')}%20AND%20mediatype%3A%28texts%29 ">Find on Internet Archive</a> <button class="btn badge badge-warning" type="button" onclick="add_ref('')">Add direct link to this work</button></div>
+</div>
+<div class="row">
+<div class="col-sm-2"/>
 <div class="col-sm-2"><span class="font-weight-bold float-right">Referred from</span></div>
 <div class="col-sm-5">{for $t in collection($config:tls-data-root)//tei:ref[@target="#"||$uuid] 
          let $cid := $t/ancestor::tei:div/@xml:id
@@ -176,6 +181,9 @@ else
 </div>
   
 </div>
+(: https://archive.org/search.php?query=Christoph%20Harbsmeier%20AND%20mediatype%3A%28texts%29 
+<a class="btn badge badge-light" target="GXDS" title="Search {$c} in 國學大師字典 (External link)" style="background-color:paleturquoise" href="http://www.guoxuedashi.com/so.php?sokeytm={$c}&amp;ka=100">{$c}</a>
+:)
 };
 
 

@@ -1254,11 +1254,11 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
     </h5>
     {if ($def) then <p class="ml-4">{$def[1]}</p> else ()}
     {if ($e//tei:listBibl) then 
-         <ul>
+         <div><button class="btn" data-toggle="collapse" data-target="#bib-{$entry-id}">Show references</button><ul id="bib-{$entry-id}" class="collapse" data-toggle="collapse">
         {for $d in $e//tei:bibl
         return
         tlslib:display-bibl($d)
-     }</ul>  
+     }</ul></div>  
     else ()} 
     <ul>{for $sw in $e/tei:sense
     return
@@ -1872,7 +1872,7 @@ declare
 function app:bibliography($node as node()*, $model as map(*), $uuid as xs:string){
     <div class="card">
     <div class="card-header">
-    <h4 class="card-title">Bibliography <button class="btn badge badge-primary ml-2" type="button" onclick="edit_bib('{$node/@xml:id}')">Edit this reference</button></h4>
+    <h4 class="card-title"><a class="btn" href="browse.html?type=biblio">Bibliography</a> <button class="btn badge badge-primary ml-2" type="button" onclick="edit_bib('{$node/@xml:id}')">Edit this reference</button></h4>
     </div>
     <div class="card-text">{
     bib:display-mods($uuid)
