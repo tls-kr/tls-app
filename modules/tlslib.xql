@@ -78,6 +78,15 @@ return
 matches(replace($string, '\s', ''), concat("^[", $kanji, $pua, "]+$" ))
 };
 
+(: check if most characters are kanji :)
+declare function tlslib:mostly-kanji($string as xs:string) as xs:boolean {
+let $q := sum(for $s in string-to-codepoints($string)
+    return
+    if ($s > 500) then 1 else 0 )
+return
+if ($q div string-length($string) > 0.5) then xs:boolean("1") else xs:boolean(0)
+};
+
 (:~ 
 : check if the tei:seg node passed in is the first in the paragraph
 : @param  $seg a tei:seg element

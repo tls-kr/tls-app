@@ -619,6 +619,8 @@ function modify_rd_dialog(){
     if (obstype == 'rhetdev'){
         $('#select-rhetdev').val("");
     } else {
+    // facts.xml should declare wether first line is used as name for block object (or whether it needs a name)
+    // the name should not be empty!
        $('#select-rhetdev').val(line);
     }
     $('#block-name').html(obslabel);
