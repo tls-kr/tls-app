@@ -1543,7 +1543,7 @@ let $hits := tlslib:ngram-query($map?query, $map?mode, $map?search-type, $map?te
 , $nextp := if ($total < $start + $count) then "" else 'do_quick_search('||$start||' + '||$count||', '||$count ||', '||$map?search-type||', "'||$map?mode||'")'
 , $qs := tokenize($map?query, "\s")
 return
-<div><p>Total: {$total} matches {if ($map?search-type eq "5") then "in "||$title else () }, showing {$start} to {min(($start + $count -1, $total))}. {
+<div><p><span class="font-weight-bold">{$start}</span> to <span class="font-weight-bold">{min(($start + $count -1, $total))}</span> of <span class="font-weight-bold">{$total}</span> hits. {if ($map?search-type eq "5") then "in "||$title else () } {
 if ($map?search-type eq "5") then 
    (<button class="btn badge badge-light" onclick="do_quick_search(1, 25, 1, 'date')">Search in all texts (by textdate)</button>,
    <button class="btn badge badge-light" onclick="do_quick_search(1, 25, 1, 'rating')">Search in all texts (<span class="bold" style="color:red;">★</span> texts first)</button>) else 
