@@ -115,6 +115,7 @@ return
     {$topheader}
     </div>
     <div class="tab-pane" id="byusage" role="tabpanel">    
+    <h3>Works which have been most frequently referenced</h3>
     {$topusage}
     </div>
     </div>
