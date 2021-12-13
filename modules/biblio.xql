@@ -265,6 +265,7 @@ bib:biblio-short($q, "title")
 
 declare function bib:fix-mods($m as node()){
 (:let $m := collection($config:tls-data-root||"/bibliography")//mods:mods[@ID=$uuid]:)
+let $usage := count(collection($config:tls-data-root)//tei:ref[@target="#"||$m/@ID] )
 let $fix := (
 for $t in $m//mods:title
  let $val := if (tlslib:mostly-kanji($t)) then "Hant" else "Latn"
@@ -306,6 +307,7 @@ for $t in $m//mods:title
       update insert <subject xmlns="http://www.loc.gov/mods/v3" xmlns:tls="http://hxwd.org/ns/1.0">{$se}</subject> into $m
   return
   update delete $n
+, update insert <note  xmlns="http://www.loc.gov/mods/v3" type="ref-usage">{$usage}</note> into $m  
  )   
 return "OK"
 };
