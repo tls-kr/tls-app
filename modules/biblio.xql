@@ -84,7 +84,13 @@ if ($c eq $filterString and $mode eq "topic") then
 <a class="badge badge-pill badge-light" name="{$c}"><span>{$c}</span></a>
 else
 <a class="badge badge-pill badge-light" href="browse.html?type=biblio&amp;filter={$c}&amp;mode=topic"><span>{$c}</span></a>
-
+, $topusage := <ul>{for $u in $biblio//mods:note[@type='ref-usage'] 
+let $c := xs:int($u)
+where $c > 0
+order by $c descending
+return
+<li>{bib:biblio-short($u/ancestor::mods:mods, "title")}</li>
+}</ul> 
 return 
 <div><h4>Browse the bibliography <button class="btn badge badge-warning ml-2" type="button" onclick="add_ref('')">Add new reference</button></h4>
 
@@ -95,6 +101,8 @@ return
     href="#bytitle" data-toggle="tab">Titles</a></li>
     <li class="nav-item"> <a class="nav-link" id="top-tab" role="tab" 
     href="#bytopic" data-toggle="tab">Topics</a></li>
+    <li class="nav-item"> <a class="nav-link" id="top-tab" role="tab" 
+    href="#byusage" data-toggle="tab">Most referred</a></li>
     </ul>
     <div class="tab-content" id="TabContent">    
     <div class="tab-pane" id="byauthor" role="tabpanel">    
@@ -105,6 +113,9 @@ return
     </div>
     <div class="tab-pane" id="bytopic" role="tabpanel">    
     {$topheader}
+    </div>
+    <div class="tab-pane" id="byusage" role="tabpanel">    
+    {$topusage}
     </div>
     </div>
 <div>
@@ -151,7 +162,7 @@ let $user := sm:id()//sm:real/sm:username/text()
 return
 
 <li><span class="font-weight-bold">{string-join(for $n in $m//mods:name return bib:display-author($n), '; ')}</span>　<a href="bibliography.html?uuid={$m/@ID}">{string-join($m//mods:title/text(), " ")}, {$m//mods:dateIssued/text()}　</a>   
-
+<span class="badge badge-light">{$m//mods:note[@type='ref-usage']}</span>
   {if (contains($usergroups, "tls-editor" )) then 
     tlslib:format-button("delete_swl('bib', '" || data($m/@ID) || "')", "Immediately delete this reference", "open-iconic-master/svg/x.svg", "small", "close", "tls-editor")
    else ()}{if ($mode eq "topic") then 
