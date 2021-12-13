@@ -515,6 +515,8 @@ function get_sw(sel, xid, line){
    var dw = document.documentElement.clientWidth;
    var dh = document.documentElement.clientHeight;
    var new_width = $("#toprow").outerWidth() - $("#toprow-1").outerWidth() - $("#toprow-2").outerWidth();
+   $('#domain-lookup-mark').show();
+
    var domain = $('#domain-select').val();
    console.log("selection: ", sel);
    var url = "http://www.kaom.net/z_hmy_zidian88.php?"+"word="+encodeURI(sel)+"&mode=word&bianti=no&page=no";
@@ -1697,7 +1699,7 @@ function quick_search(){
    var count = 25;
    var stype = '5'; // search only this text
    var mode = 'rating';
-   $('#domain-lookup-mark').html("");
+   $('#domain-lookup-mark').hide();
    do_quick_search(start, count, stype, mode);
 };
 

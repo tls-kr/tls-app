@@ -1543,15 +1543,15 @@ let $hits := tlslib:ngram-query($map?query, $map?mode, $map?search-type, $map?te
 , $nextp := if ($total < $start + $count) then "" else 'do_quick_search('||$start||' + '||$count||', '||$count ||', '||$map?search-type||', "'||$map?mode||'")'
 , $qs := tokenize($map?query, "\s")
 return
-<div><p><span class="font-weight-bold">{$start}</span> to <span class="font-weight-bold">{min(($start + $count -1, $total))}</span> of <span class="font-weight-bold">{$total}</span> hits. {if ($map?search-type eq "5") then "in "||$title else () } {
+<div><p><span class="font-weight-bold">{$start}</span> to <span class="font-weight-bold">{min(($start + $count -1, $total))}</span> of <span class="font-weight-bold">{$total}</span> hits {if ($map?search-type eq "5") then "in "||$title else "in all texts" }. {
 if ($map?search-type eq "5") then 
    (<button class="btn badge badge-light" onclick="do_quick_search(1, 25, 1, 'date')">Search in all texts (by textdate)</button>,
    <button class="btn badge badge-light" onclick="do_quick_search(1, 25, 1, 'rating')">Search in all texts (<span class="bold" style="color:red;">★</span> texts first)</button>) else 
    <button class="btn  badge badge-light" onclick="do_quick_search(1, 25, 5,'{$map?mode}')">Search in {$title} only</button>}
  {if ($map?search-type eq "1") then
     if ($map?mode eq "rating") then 
-    <button class="btn badge badge-light" onclick="do_quick_search(1, 25, {$map?search-type}, 'date')">Order by textdate</button> else 
-    <button class="btn  badge badge-light" onclick="do_quick_search(1, 25, {$map?search-type}, 'rating')">Order <span class="bold" style="color:red;">★</span> texts first</button>
+    <button class="btn badge badge-light" onclick="do_quick_search(1, 25, {$map?search-type}, 'date')">Sort by textdate</button> else 
+    <button class="btn  badge badge-light" onclick="do_quick_search(1, 25, {$map?search-type}, 'rating')">Sort <span class="bold" style="color:red;">★</span> texts first</button>
 else ()
 }</p>
 {
