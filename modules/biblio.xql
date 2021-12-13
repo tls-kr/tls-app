@@ -89,7 +89,7 @@ let $c := xs:int($u)
 where $c > 0
 order by $c descending
 return
-<li>{bib:biblio-short($u/ancestor::mods:mods, "title")}</li>
+bib:biblio-short($u/ancestor::mods:mods, "title")
 }</ul> 
 return 
 <div><h4>Browse the bibliography <button class="btn badge badge-warning ml-2" type="button" onclick="add_ref('')">Add new reference</button></h4>
