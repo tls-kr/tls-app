@@ -1533,7 +1533,10 @@ else ()
 };
 
 declare function tlsapi:quick-search($map as map(*)){
-let $hits := tlslib:ngram-query($map?query, $map?mode, $map?search-type, $map?textid)
+let $hits := if (contains($map?query, ";" )) then 
+       tlslib:multi-query($map?query, $map?mode, $map?search-type, $map?textid) 
+      else
+       tlslib:ngram-query($map?query, $map?mode, $map?search-type, $map?textid)
 , $disp := subsequence($hits, $map?start, $map?count)
 , $title := tlslib:get-title($map?textid)
 , $start := xs:int($map?start)

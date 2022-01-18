@@ -1704,9 +1704,55 @@ declare function tlslib:ngram-query($queryStr as xs:string?, $mode as xs:string?
     where $filter
     return $hit 
 };
+(: query for multiple terms :)
+declare function tlslib:multi-query($queryStr as xs:string?, $mode as xs:string?, $search-type as xs:string?, $stextid as xs:string?)
+{
+tlslib:ngram-query($queryStr, $mode, $search-type, $stextid)
+};
 
+declare function tlslib:multi-query1($queryStr as xs:string?, $mode as xs:string?, $search-type as xs:string?, $stextid as xs:string?)
+{
+    let $dataroot := ($config:tls-data-root, $config:tls-texts-root, $config:tls-user-root)
+    let $qs := tokenize($queryStr, ";"),
+    $user := sm:id()//sm:real/sm:username/text(),
+    $ratings := doc($config:tls-user-root || $user || "/ratings.xml")//text,
+    $dates := if (exists(doc("/db/users/" || $user || "/textdates.xml")//date)) then 
+      doc("/db/users/" || $user || "/textdates.xml")//data else 
+      doc($config:tls-texts-root || "/tls/textdates.xml")//data,
+    (: HACK: if no login, use date mode for sorting :)
+    $mode := if ($user = "guest") then "date" else $mode,
+    $matches := if  (count($qs) > 1) then 
+      collection($dataroot)//tei:p[ngram:wildcard-contains(., $qs[1]) and ngram:wildcard-contains(., $qs[2])]
+      else
+      collection($dataroot)//tei:p[ngram:wildcard-contains(., $qs[1])]
+    for $hit in $matches
+      let $textid := substring-before(tokenize(document-uri(root($hit)), "/")[last()], ".xml"),
+      (: for the CHANT text no text date data exist, so we use this flag to cheat a bit :)
+      $flag := substring($textid, 1, 3),
+      $filter := if ($search-type = "5") then $stextid = $textid else 
+       if ($search-type = "6") then 
+        let $x := "#" || $hit/@xml:id
+        return collection($config:tls-translation-root)//tei:seg[@corresp=$x]
+      else true(),
+      $r := 
+      if ($mode = "rating") then 
+        (: the order by is ascending because of the dates, so here we inverse the rating :)
+        if ($ratings[@id=$textid]) then - xs:int($ratings[@id=$textid]/@rating) else 0
+      else
+        switch ($flag)
+         case "CH1" return 0
+         case "CH2" return 300
+         case "CH7" return 700
+         case "CH8" return -200
+         default return
+         if (string-length($dates[@corresp="#" || $textid]/@notafter) > 0) then tlslib:getdate($dates[@corresp="#" || $textid]) else 0
+(:    let $id := $hit/ancestor::tei:TEI/@xml:id :)     
+    order by $r ascending
+    where $filter
+    return $hit
+};
 
-(: get related texts: look at Manifest.xml? not yet :)
+(: get related texts: look at Manifest.xml :)
 
 declare function tlslib:get-related($map as map(*)){
 let $line := $map?line

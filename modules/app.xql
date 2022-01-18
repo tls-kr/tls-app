@@ -283,7 +283,10 @@ function app:query($node as node()*, $model as map(*), $query as xs:string?, $mo
     session:create(),
     let $hits := 
      if ($search-type = ("1", "5", "6", "8")) then
-      tlslib:ngram-query($query, $mode, $search-type, $textid) 
+      if (contains($query, ";" )) then 
+       tlslib:multi-query($query, $mode, $search-type, $textid) 
+      else
+       tlslib:ngram-query($query, $mode, $search-type, $textid) 
       else if ($search-type = "2") then 
       (: searching for kanji in dictionary, eg. the words in concepts :)
       tlslib:dic-query($query, $mode)

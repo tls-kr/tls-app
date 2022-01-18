@@ -16,7 +16,7 @@ x.Selector = {};
 x.Selector.getSelected = function() {
     var t = '';
     if (window.getSelection) {
-        t = window.getSelection();
+        t = window.getSelection ();    
     } else if (document.getSelection) {
         t = document.getSelection();
     } else if (document.selection) {
@@ -649,7 +649,16 @@ $( ".zh" )
   // 2021-04-22 temporarily changin this back
   var xid = sel.anchorNode.parentNode.id.toString();
   const line = sel.anchorNode.parentNode.innerText;
-  get_sw(sel.toString(), xid, line)
+  if (sel.rangeCount > 1) {
+  var storedSelections = [];
+  for (var i = 0; i < sel.rangeCount; i++) {
+        storedSelections.push (sel.getRangeAt (i));
+  }
+  t = storedSelections.join(";");
+  } else {
+  t = sel.toString()    
+  }  
+  get_sw(t, xid, line)
    // this is to activate the click on the text line to get the context
   $('[data-toggle="popover"]').popover({'content' : get_atts})
   });
