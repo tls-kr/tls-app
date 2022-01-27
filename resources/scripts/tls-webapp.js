@@ -86,11 +86,12 @@ function get_swl_for_page(){
 // called ftom textview, toprow
 // slot is slot1 or slot2, type is 'transl' or 'comm', no is the item number in the list
 function get_tr_for_page(slot, myid){
-  var location = window.location.search;
+//  var location = window.location.search;
+  var location = $('#chunkcol-left').children('div').eq(0).children('div').eq(0).attr('id');
   $.ajax({
   type : "GET",
   dataType : "html",
-  url : "api/get_tr_for_page.xql"+location+"&slot="+slot+"&content-id="+myid, 
+  url : "api/get_tr_for_page.xql?location="+location+"&slot="+slot+"&content-id="+myid, 
   success : function(resp){
    var obj = JSON.parse(resp);
    for (var prop in obj) {

@@ -115,9 +115,9 @@ declare function krx:get-varseg-ed($sid as xs:string, $ed as xs:string){
 let $edid := string-join(tokenize($sid, "_")[position()>=1 and position()<3], "_")
 let $ltab := collection("/db/apps/tls-texts/aux/lnk")/kx:nexusList[@ed=$edid]
 ,$tok := collection("/db/apps/tls-texts/aux/tok")
-,$r := $ltab/seg[@id=$sid]/ref[@ed=$ed]
+,$r := $ltab/kx:nexus[@xml:id=$sid]/kx:locationRef[@ed=$ed]
 , $tc := xs:int($r/@tcount)
-, $tx := $tok/div[@ed=$ed]/t[@tp=$r/@tp] 
+, $tx := $tok//kx:tList[@ed=$ed]//kx:t[@tp=$r/@tp] 
 , $tks := $tx/following::kx:t[fn:position() < $tc + 1]
 return string-join(for $t in $tks return ($t || data($t/@f)), '')
 };

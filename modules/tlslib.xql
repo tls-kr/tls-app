@@ -234,7 +234,7 @@ let $user := sm:id()//sm:real/sm:username/text()
    map:entry($tid, ($t, $resp, if ($lg) then $lg else "en", if ($lic) then xs:int($lic) else 3, $type)),
    (: now we look for variants :)
    for $v in collection($config:tls-texts-root || "/manifests/")//mf:edition[starts-with(@id, $textid)]
-   for $ed in $v/ancestor::mf:editions/mf:edition
+   for $ed in $v/ancestor::mf:editions//mf:edition
     let $lang := data($ed/@language)
     , $edid := data($ed/@id)
     , $desc := $ed/mf:description/text()
@@ -1040,10 +1040,11 @@ declare function tlslib:display-seg($seg as node()*, $options as map(*) ) {
      else map:get($options, $options?slot1)[1] else ()
   ,$slot2 := if ($show-transl and not($ann = 'false')) then map:get($options, $options?slot2)[1] else ()
   (: check if transl + comment are related, if yes than do not manipulate tab-index :)
-  , $px1 := replace($slot1//tei:seg[@corresp="#"||$seg/@xml:id]/@resp, '#', '')
+  (: if tei:TEI, then we have a translation, otherwise a variant :)
+  , $px1 := typeswitch ($slot1) case element(tei:TEI) return  replace($slot1//tei:seg[@corresp="#"||$seg/@xml:id]/@resp, '#', '') default return () 
   ,$resp1 := if ($px1) then "Resp: "||doc($config:tls-data-root || "/vault/members.xml")//tei:person[@xml:id=$px1]//tei:persName/text() else ()
-  , $px2 := replace($slot2//tei:seg[@corresp="#"||$seg/@xml:id]/@resp, '#', '')
-  ,$resp2 := if ($px2) then "Resp: "||doc($config:tls-data-root || "/vault/members.xml")//tei:person[@xml:id=$px2]//tei:persName/text() else ()
+  , $px2 :=  typeswitch ($slot2) case element(tei:TEI) return replace($slot2//tei:seg[@corresp="#"||$seg/@xml:id]/@resp, '#', '') default return () 
+  ,$resp2 :=  if ($px2) then "Resp: "||doc($config:tls-data-root || "/vault/members.xml")//tei:person[@xml:id=$px2]//tei:persName/text() else () 
 
 return
 (
@@ -1705,12 +1706,15 @@ declare function tlslib:ngram-query($queryStr as xs:string?, $mode as xs:string?
     return $hit 
 };
 (: query for multiple terms :)
-declare function tlslib:multi-query($queryStr as xs:string?, $mode as xs:string?, $search-type as xs:string?, $stextid as xs:string?)
+declare function tlslib:multi-query1($queryStr as xs:string?, $mode as xs:string?, $search-type as xs:string?, $stextid as xs:string?)
 {
 tlslib:ngram-query($queryStr, $mode, $search-type, $stextid)
 };
 
-declare function tlslib:multi-query1($queryStr as xs:string?, $mode as xs:string?, $search-type as xs:string?, $stextid as xs:string?)
+(: 
+:)
+
+declare function tlslib:multi-query($queryStr as xs:string?, $mode as xs:string?, $search-type as xs:string?, $stextid as xs:string?)
 {
     let $dataroot := ($config:tls-data-root, $config:tls-texts-root, $config:tls-user-root)
     let $qs := tokenize($queryStr, ";"),
@@ -1734,6 +1738,11 @@ declare function tlslib:multi-query1($queryStr as xs:string?, $mode as xs:string
         let $x := "#" || $hit/@xml:id
         return collection($config:tls-translation-root)//tei:seg[@corresp=$x]
       else true(),
+      $sx := for $s in $hit//tei:seg
+            return
+            if (matches($s, $qs[1]) or matches($s, $qs[2])) then
+                $s else (),
+
       $r := 
       if ($mode = "rating") then 
         (: the order by is ascending because of the dates, so here we inverse the rating :)
@@ -1749,7 +1758,7 @@ declare function tlslib:multi-query1($queryStr as xs:string?, $mode as xs:string
 (:    let $id := $hit/ancestor::tei:TEI/@xml:id :)     
     order by $r ascending
     where $filter
-    return $hit
+    return $sx
 };
 
 (: get related texts: look at Manifest.xml :)
