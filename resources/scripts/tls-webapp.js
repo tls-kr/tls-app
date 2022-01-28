@@ -88,10 +88,11 @@ function get_swl_for_page(){
 function get_tr_for_page(slot, myid){
 //  var location = window.location.search;
   var location = $('#chunkcol-left').children('div').eq(0).children('div').eq(0).attr('id');
+  var foll = $('#chunkcol-left').children('div').length / 2
   $.ajax({
   type : "GET",
   dataType : "html",
-  url : "api/get_tr_for_page.xql?location="+location+"&slot="+slot+"&content-id="+myid, 
+  url : "api/get_tr_for_page.xql?location="+location+"&prec=0&foll="+foll+"&slot="+slot+"&content-id="+myid, 
   success : function(resp){
    var obj = JSON.parse(resp);
    for (var prop in obj) {
