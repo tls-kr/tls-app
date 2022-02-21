@@ -214,11 +214,19 @@ let $user := sm:id()//sm:real/sm:username/text()
   :)
   , $t1 := collection($config:tls-user-root || $user || "/translations")//tei:bibl[@corresp="#"||$textid]/ancestor::tei:fileDesc//tei:editor[@role='translator' or @role='creator'] 
   , $t2 := collection($config:tls-translation-root)//tei:bibl[@corresp="#"||$textid]/ancestor::tei:fileDesc//tei:editor[@role='translator' or @role='creator']
+  , $rn := collection($config:tls-data-root||"/notes/research")//tei:bibl[@corresp="#"||$textid]/ancestor::tei:fileDesc//tei:editor[@role='translator' or @role='creator']
+  , $t3 := if (exists($rn)) then $rn else 
+  (: create research notes file if necessary :)
+  let $tmp := tlslib:store-new-translation("en", $textid, "TLS Project", "Research Notes", "", "option4", "option2", "notes", "") 
+  return 
+    collection($config:tls-data-root||"/notes/research")//tei:bibl[@corresp="#"||$textid]/ancestor::tei:fileDesc//tei:editor[@role='translator' or @role='creator']   
  let $tr := map:merge((
-  for $ed in  ($t1, $t2)
+  for $ed in  ($t1, $t2, $t3)
    let $t := $ed/ancestor::tei:TEI
    , $tid := data($t/@xml:id)
-   , $type := if ($t/@type) then if ($t/@type = "transl") then "Translation" else "Comments" else "Translation"
+   , $type := if ($t/@type) then if ($t/@type = "transl") then "Translation" else 
+   if ($t/@type = "notes") then "Research Notes" else
+   "Comments" else "Translation"
    , $lg := if ($type = "Translation") then
        $t//tei:bibl[@corresp="#"||$textid]/following-sibling::tei:lang/text() 
        else  
@@ -227,7 +235,7 @@ let $user := sm:id()//sm:real/sm:username/text()
         , $this-tr := ($t1, $t2)[ancestor::tei:TEI[@xml:id=$rel-tr]] 
        return
         "to transl. by " || $this-tr/text()
-       else "n/a" 
+       else "" 
    , $lic := $t//tei:availability/@status
    , $resp := if ($ed/text()) then $ed/text() else "anon"
    return
@@ -635,7 +643,7 @@ declare function tlslib:trsubmenu($textid as xs:string, $slot as xs:string, $tri
         {  for $k at $i in $keys
             return 
          if ($tr($k)[5] = "Comments") then 
-        <a class="dropdown-item" id="sel{$slot}-{$i}" onclick="get_tr_for_page('{$slot}', '{$k}')" href="#">{$tr($k)[5] } for {$tr($k)[3]}</a>
+        <a class="dropdown-item" id="sel{$slot}-{$i}" onclick="get_tr_for_page('{$slot}', '{$k}')" href="#">{$tr($k)[5] || " " }  {$tr($k)[3]}</a>
         else
         if ($tr($k)[5] = $edtps) then 
         <a class="dropdown-item" id="sel{$slot}-{$i}" onclick="get_tr_for_page('{$slot}', '{$k}')" href="#">Edition {substring-after($tr($k)[1], "::")} ({$k}, {substring($tr($k)[5], 1, 3)} )</a>
@@ -2407,3 +2415,107 @@ for $s in subsequence($seq, 2)
   else ()}
   </tls:contents>
 }; 
+
+
+(: 2022-02-21 - moved this from tlsapi to allow non-api use :)
+
+declare function tlslib:store-new-translation($lang as xs:string, $txtid as xs:string, $translator as xs:string, $trtitle as xs:string, $bibl as xs:string, $vis as xs:string, $copy as xs:string, $type as xs:string, $rel-id as xs:string){
+  let $user := sm:id()//sm:real/sm:username/text()
+  ,$fullname := sm:id()//sm:real/sm:fullname/text()
+  ,$uuid := util:uuid()
+  (: 2022-02-21 new option4 == store a Research Note file in /notes/research/ :)
+  ,$newid := if ($vis = "option4") then $txtid else $txtid || "-" || $lang || "-" || tokenize($uuid, "-")[1]
+  ,$lg := $config:languages($lang)
+  ,$title := tlslib:get-title($txtid)
+  ,$trcoll := if ($vis="option3") then $config:tls-user-root || $user || "/translations" 
+    else if ($vis = "option4") then $config:tls-data-root || "/notes/research" 
+    else $config:tls-translation-root || "/" || $lang
+  ,$trcollavailable := xmldb:collection-available($trcoll) or 
+   (if ($vis="option3") then
+    xmldb:create-collection($config:tls-user-root || $user, "translations")
+   else
+   (xmldb:create-collection($config:tls-translation-root, $lang),
+    sm:chmod(xs:anyURI($trcoll), "rwxrwxr--"),
+(:    sm:chown(xs:anyURI($trcoll), "tls"),:)
+    sm:chgrp(xs:anyURI($trcoll), "tls-user")
+    )
+  )
+  , $trx := if (not($translator = "yy")) then $translator else if ($vis = "option3") then $fullname else "TLS Project"
+  , $doc := 
+    doc(xmldb:store($trcoll, $newid || ".xml", 
+   <TEI xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$newid}" type="{$type}">
+  <teiHeader>
+      <fileDesc>
+            {if ($type = "transl") then 
+         <titleStmt>
+            <title>Translation of {$title} into ({$lg})</title>
+            <editor role="translator">{$trx}</editor>
+         </titleStmt>
+            else if ($type = "notes") then
+         <titleStmt>
+            <title>Research Notes for {$title}</title>
+            <editor role="creator">{$trx}</editor>
+         </titleStmt>
+            else
+         <titleStmt>
+            <title>Comments to {$title}</title>
+            <editor role="creator">{$trx}</editor>
+         </titleStmt>
+            }
+         <publicationStmt>
+            <p>published electronically as part of the TLS project at https://hxwd.org</p>
+            {if ($copy = "option1") then 
+            <availability status="1">This work is in the public domain</availability> 
+            else 
+             if ($copy = "option2") then
+            <availability status="2">This work has been licensed for use in the TLS</availability> 
+            else 
+             if ($copy = "option3") then
+            <availability status="3">This work has not been licensed for use in the TLS</availability> 
+            else
+            <availability status="4">The copyright status of this work is unclear</availability> 
+            }
+         </publicationStmt>
+         <sourceDesc>
+            {if (not($bibl = "") or not ($trtitle = "")) then 
+            <bibl><title>{$trtitle}</title>{$bibl}</bibl> else 
+            <p>Created by members of the TLS project</p>}
+            
+            {if ($type="transl") then 
+             <ab>Translation of <bibl corresp="#{$txtid}">
+                  <title xml:lang="och">{$title}</title>
+               </bibl> into <lang xml:lang="{$lang}">{$lg}</lang>.</ab>
+             else 
+             <p>Comments and notes to <bibl corresp="#{$txtid}">
+                  <title xml:lang="och">{$title}</title>
+               </bibl>{if (string-length($rel-id) > 0) then ("for translation ", <ref target="#{$rel-id}"></ref>) else ()}.</p>
+             }
+         </sourceDesc>
+      </fileDesc>
+     <profileDesc>
+        <creation resp="#{$user}">Initially created: <date>{current-dateTime()}</date> by {$user}</creation>
+     </profileDesc>
+  </teiHeader>
+  <text>
+      <body>
+      {if ($type = "transl") then 
+      <div><head>Translated parts</head><p xml:id="{$txtid}-start"></p></div>
+      else 
+      <div><head>Comments</head><p xml:id="{$txtid}-start"></p></div>
+      }
+      </body>
+  </text>
+</TEI>))
+return
+if (not($vis="option3")) then 
+ let $uri := document-uri($doc)
+ return
+ (
+    sm:chmod(xs:anyURI($uri), "rwxrwxr--"),
+(:    sm:chown(xs:anyURI($uri), "tls"),:)
+    sm:chgrp(xs:anyURI($uri), "tls-user")
+ )
+ else ()
+};
+
+

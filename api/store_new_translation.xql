@@ -10,8 +10,7 @@ declare option output:media-type "application/json";
 &synfunc="+synfunc_id+"&synfunc-val="+synfunc_val+"&semfeat="+semfeat_id+"
 &semfeat-val="+semfeat_val+"&guangyun="+guangyun_id+"&def="+def_val,
  :)
-
-import module namespace tlsapi="http://hxwd.org/tlsapi" at "tlsapi.xql";
+import module namespace tlslib="http://hxwd.org/lib" at "../modules/tlslib.xql";
 
 let $bibl := request:get-parameter("bibl", "")
 , $trtitle := request:get-parameter("trtitle", "")
@@ -25,5 +24,5 @@ let $bibl := request:get-parameter("bibl", "")
 
 
 return
-tlsapi:store-new-translation($lang, $textid, $translator, $trtitle, $bibl, $vis, $copy, $type, $rel-id)
+tlslib:store-new-translation($lang, $textid, $translator, $trtitle, $bibl, $vis, $copy, $type, $rel-id)
 
