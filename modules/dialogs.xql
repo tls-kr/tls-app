@@ -462,3 +462,37 @@ return
      </div>
 </div>
 };
+
+declare function dialogs:merge-word($map as map(*)){
+let $eid := collection($config:tls-data-root||"/concepts")//tei:*[@xml:id=$map?wid]/ancestor::tei:entry
+return
+<div id="merge-word-dialog" class="modal" tabindex="-1" role="dialog" style="display: none;">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header"><h5>Delete {$map?word} and move existing annotation(s) to another SW</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" title="Close">x</button>
+            </div>
+            <div class="modal-body">
+            <h6 class="font-weight-bold">Select the target:</h6>
+              <div id="select-target-div" class="form-group">
+                 <select class="form-control" id="select-target">
+                  {for $s in $eid//tei:sense
+                    where not ($map?wid = $s/@xml:id)
+                    return
+                    <option value="{$s/@xml:id}">{$s//tls:syn-func/text() || " | " || $s//tls:sem-feat/text() ||" " || $s//tei:def/text()}</option>
+                   } 
+                 </select>                 
+              </div>
+            
+            <div>
+            <p>There are {$map?count} attributions, so this might take a while.</p>
+            </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="do_merge_word('{$map?wid}')">Merge</button>
+           </div>
+         </div>
+     </div>
+</div>
+};

@@ -1136,8 +1136,10 @@ declare function tlslib:display-sense($sw as node(), $count as xs:int, $display-
       </button> else (),
       if ($count = 0) then
       tlslib:format-button("delete_word_from_concept('"|| $id || "')", "Delete the syntactic word "|| $sf || ".", "open-iconic-master/svg/x.svg", "", "", "tls-editor") else 
-      if ($count > 0) then
-      tlslib:format-button("move_word('"|| $char || "', '"|| $id ||"', '"||$count||"')", "Move the SW  '"|| $sf || " including "|| $count ||"attribution(s) to a different concept.", "open-iconic-master/svg/move.svg", "", "", "tls-editor")       
+      if ($count > 0) then (
+      tlslib:format-button("move_word('"|| $char || "', '"|| $id ||"', '"||$count||"')", "Move the SW  '"|| $sf || "' including "|| $count ||"attribution(s) to a different concept.", "open-iconic-master/svg/move.svg", "", "", "tls-editor") ,      
+      tlslib:format-button("merge_word('"|| $sf || "', '"|| $id ||"', '"||$count||"')", "Delete the SW '"|| $sf || "' and merge "|| $count ||"attribution(s) to a different SW.", "open-iconic-master/svg/wrench.svg", "", "", "tls-editor")       
+      )
       else ()
       }
       <div id="{$id}-resp" class="collapse container"></div>
@@ -1335,6 +1337,30 @@ let $doc :=
 return $doc
 };
 
+declare function tlslib:merge-sw-word($map as map(*)){
+let $sw := collection($config:tls-data-root||"/concepts")//tei:*[@xml:id=$map?wid]
+, $target := collection($config:tls-data-root||"/concepts")//tei:*[@xml:id=$map?target]
+,$user := sm:id()//sm:real/sm:username/text()
+, $r :=
+for $s in collection($config:tls-data-root||"/notes")//tei:sense[@corresp="#" || $map?wid] 
+ let $newsense := 
+ <sense xmlns="http://www.tei-c.org/ns/1.0" corresp="#{$target/@xml:id}">
+ {$target//tei:gramGrp, $target//tei:def}
+ </sense>
+ , $md := <respStmt xmlns="http://www.tei-c.org/ns/1.0" created="{current-dateTime()}" resp="#{$user}">
+ <resp>changed SW</resp>
+ <name>{$user}</name>
+ </respStmt>
+ , $ann := $s/ancestor::tls:ann
+ return 
+ if ($target) then
+   (
+   update replace $ann//tei:sense with $newsense,
+   update insert $md into $ann//tls:metadata
+   )
+ else ()
+return "OK"
+};
 
 (:~
  : move W with all SW to a new concept
@@ -1685,6 +1711,13 @@ declare function tlslib:ngram-query($queryStr as xs:string?, $mode as xs:string?
     $mode := if ($user = "guest") then "date" else $mode,
     $matches := if  (count($qs) > 1) then 
       collection($dataroot)//tei:seg[ngram:wildcard-contains(., $qs[1]) and ngram:wildcard-contains(., $qs[2])]
+      else
+      (: 2022-02-24 for one char searches, go only in tls texts; this needs more discussion... :)
+      if ($search-type = "5") then 
+      collection($dataroot)//tei:TEI[@xml:id=$stextid]//tei:seg[ngram:wildcard-contains(., $qs[1])]
+      else
+      if (string-length($qs[1]) < 2) then
+      collection($config:tls-texts-root || "/tls")//tei:seg[ngram:wildcard-contains(., $qs[1])]
       else
       collection($dataroot)//tei:seg[ngram:wildcard-contains(., $qs[1])]
     for $hit in $matches

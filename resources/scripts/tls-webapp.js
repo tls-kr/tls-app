@@ -981,6 +981,45 @@ function edit_swl(uid){
   });
 };
 
+function merge_word(word, wid, count, type){
+  $.ajax({
+  type : "GET",
+  dataType : "html",  
+  url : "api/responder.xql?func=dialogs:merge-word&word=" + word+"&wid="+wid+"&count="+count+"&type="+type, 
+  success : function(resp){
+  $('#remoteDialog').html(resp);
+  $('#merge-word-dialog').modal('show');
+  }
+  });
+};
+
+function do_merge_word(wid){
+ // $("#select-target option:selected" ).text();
+  var target =  $('#select-target').val();
+  $.ajax({
+  type : "GET",
+  dataType : "html",  
+  url : "api/responder.xql?func=tlslib:merge-sw-word&wid=" + wid + "&target="+target, 
+  success : function(resp){
+     console.log(resp)
+     if (resp.startsWith("OK")) {
+       $('#'+wid).html("");
+       toastr.info("Merged into target.", "HXWD says:");
+       //now delete the sense from this word
+       delete_word_from_concept(wid, 'sense')
+     } else {
+      toastr.error("A problem occurred.", "HXWD says:");
+     }
+  }
+  });
+  $('#merge-word-dialog').modal('hide');
+  toastr.info("SW is being moved.", "HXWD says:");   
+}
+
+
+
+
+
 function move_word(word, wid, count, type){
   $.ajax({
   type : "GET",
