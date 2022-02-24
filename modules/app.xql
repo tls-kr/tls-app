@@ -1377,7 +1377,7 @@ return
                     <input type="hidden" name="textid" value="{map:get($model, 'textid')}"/>
                         <input id="query-inp" name="query" class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search" value="{if (string-length($query) > 0) then $query else ()}"/> in 
         <select class="form-control input-sm" name="search-type">
-          <option selected="true" value="1">{$app:tmap?1}</option>
+          <option selected="true" value="{if ($context = "textview") then '5' else '1'}">{$app:tmap?1}</option>
           <option value="7">{$app:tmap?7}</option>
           <option value="2">{$app:tmap?2}</option>
           <option value="3">{$app:tmap?3}</option>
