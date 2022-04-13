@@ -3,6 +3,8 @@ xquery version "3.1";
 declare namespace output = "http://www.w3.org/2010/xslt-xquery-serialization";
 
 import module namespace config="http://hxwd.org/config" at "../modules/config.xqm";
+import module namespace tlslib="http://hxwd.org/lib" at "../modules/tlslib.xql";
+import module namespace tlsapi="http://hxwd.org/tlsapi" at "tlsapi.xql";
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
@@ -11,11 +13,11 @@ declare namespace tls="http://hxwd.org/ns/1.0";
 
 declare option output:media-type "text/html";
 
-import module namespace tlsapi="http://hxwd.org/tlsapi" at "tlsapi.xql";
 
 let $sense-id := request:get-parameter("sense-id", "uuid-20c9da30-27bc-4b0a-ab0a-787663fdf4b2", false())
 , $start := request:get-parameter("start", "1", false())
 , $count := request:get-parameter("count", "100", false())
+, $mode  :=  request:get-parameter("mode", "date", false())
 ,$sense := collection($config:tls-data-root)//tei:sense[@xml:id = $sense-id]
 ,$concept-id := $sense/ancestor::tei:div[@type='concept']/@xml:id
 ,$ann := for $c in collection($config:tls-data-root||"/notes")//tls:ann[@concept-id=$concept-id]
@@ -46,7 +48,17 @@ let $sense-id := request:get-parameter("sense-id", "uuid-20c9da30-27bc-4b0a-ab0a
               return $h:)
     ,$flag := substring($textid, 1, 3)
     (: should I switch this to date sorting as well? :) 
-    ,$r := if ($ratings[@id=$textid]) then xs:int($ratings[@id=$textid]/@rating) else 0
+    ,$r :=  if ($mode = "rating") then 
+        if ($ratings[@id=$textid]) then xs:int($ratings[@id=$textid]/@rating) else 0
+      else
+        switch ($flag)
+         case "CH1" return 0
+         case "CH2" return 300
+         case "CH7" return 700
+         case "CH8" return -200
+         default return
+         if (string-length($dates[@corresp="#" || $textid]/@notafter) > 0) then tlslib:getdate($dates[@corresp="#" || $textid]) else 0
+    
     order by $r descending
     (: I am ignoring all lines that have an attribution to this concept ...  :)
     where $tr and not (contains("#" || $target , $ann))
@@ -67,7 +79,7 @@ return
 , $cnt := count($ret)
 return 
 if ($cnt > 0) then
-<div><p class="ml-2 font-weight-bold">Found {$cnt} matches, returning {min((xs:int($count), $cnt))}, starting with the starred texts.</p>
+<div><p class="ml-2 font-weight-bold">Found {$cnt} matches, returning {min((xs:int($count), $cnt))}.</p>
 {
 subsequence($ret, $start, $count)
 }</div>
