@@ -41,7 +41,7 @@ declare variable $config:repo-descriptor := doc(concat($config:app-root, "/repo.
 declare variable $config:expath-descriptor := doc(concat($config:app-root, "/expath-pkg.xml"))/expath:package;
 
 declare variable $config:tls-data-root := substring-before($config:app-root, data($config:expath-descriptor/@abbrev)) || "tls-data";
-declare variable $config:tls-texts-root := substring-before($config:app-root, data($config:expath-descriptor/@abbrev)) || "tls-texts";
+declare variable $config:tls-texts-root := substring-before($config:app-root, data($config:expath-descriptor/@abbrev)) || "tls-texts.new";
 declare variable $config:tls-krx-root := substring-before($config:app-root, data($config:expath-descriptor/@abbrev)) || "tls-krx";
 declare variable $config:tls-translation-root := concat($config:tls-data-root, "/translations");
 declare variable $config:tls-user-root := "/db/users/";

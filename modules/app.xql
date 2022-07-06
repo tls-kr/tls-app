@@ -380,6 +380,7 @@ let $query := map:get($model, "query")
     ,$map := session:get-attribute($app:SESSION || ".types")
     ,$user := sm:id()//sm:real/sm:username/text()
     ,$qs := tokenize($query, "\s")
+    ,$q1 := substring($qs[1], 1, 1)
     ,$rat := "Go to the menu -> Browse -> Texts to rate your favorite texts."
     ,$qc := for $c in string-to-codepoints($query) 
        where $c > 255
@@ -470,15 +471,18 @@ let $query := map:get($model, "query")
     if ($search-type=("1", "3", "5", "6")) then
     <div>
     <table class="table">
-    {for $h at $c in subsequence(map:get($model, "hits"), $start, $resno)
+    {for $hx at $c in subsequence(map:get($model, "hits"), $start, $resno)
+      for $h in util:expand($hx)//exist:match/ancestor::tei:seg
       let $loc := if ($search-type="3") then substring($h/@corresp,2) else $h/@xml:id,
-      $cseg := if ($search-type="3") then collection($config:tls-texts-root)//tei:seg[@xml:id=$loc] else (),
-      $head := if ($search-type="3") then $cseg/ancestor::tei:div[1]/tei:head[1] else $h/ancestor::tei:div[1]/tei:head[1],
-      $title := if ($search-type="3") then $cseg/ancestor::tei:TEI//tei:titleStmt/tei:title/text() else $h/ancestor::tei:TEI//tei:titleStmt/tei:title/text(),
+      $m1 := substring(($h/exist:match)[1]/text(), 1, 1),
+      $cseg := collection($config:tls-texts-root)//tei:seg[@xml:id=$loc],
+      $head :=  $cseg/ancestor::tei:div[1]/tei:head[1]/text() ,
+      $title := $cseg/ancestor::tei:TEI//tei:titleStmt/tei:title/text(),
 (:     at some point use this to select the translation the user prefers
       $tr := tlslib:get-translations($model?textid),
       $slot1-id := tlslib:get-content-id($model?textid, 'slot1', $tr),:)
       $tr := collection($config:tls-translation-root)//tei:seg[@corresp="#"||$h/@xml:id]
+      where $m1 = $q1
     return
       <tr>
         <td>{$c + $start -1}</td>
@@ -487,13 +491,11 @@ let $query := map:get($model, "query")
         {if ($search-type = "3") then  
         (<td>{$cseg}</td>,<td>{$h}</td>) else
         <td>{ 
-        $h/preceding-sibling::tei:seg[position()<4],
-        if (count($qs) > 1 or not($iskanji)) then $h else
-        (substring-before($h, $query), 
-        <mark>{$query}</mark> 
-        ,substring-after($h, $query)), 
+        for $sh in $h/preceding-sibling::tei:seg[position()<4] return tlslib:proc-seg($sh),
+        tlslib:proc-seg($h),
         (: this is a hack, it will probably show the most recent translation if there are more, but we want to make this predictable... :)
-        $h/following-sibling::tei:seg[position()<4]}{if (exists($tr)) then (<br/>,"..." , $tr[last()] , "...") else ()
+        for $sh in $h/following-sibling::tei:seg[position()<4] return tlslib:proc-seg($sh)}
+        {if (exists($tr)) then (<br/>,"..." , $tr[last()] , "...") else ()
         }</td>
         }
         </tr>

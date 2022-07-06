@@ -47,7 +47,7 @@ concat($callback, "([", string-join($payload, ","), "]);")
 :)
 
 declare function tlsapi:make-attribution($line-id as xs:string, $sense-id as xs:string, 
- $user as xs:string, $currentword as xs:string) as element(){
+ $user as xs:string, $currentword as xs:string, $pos as xs:string) as element(){
 let $line := collection($config:tls-texts-root)//tei:seg[@xml:id=$line-id],
 $textid := tokenize($line-id, "_")[1],
 (: we generally use the translation from slot1 :)
@@ -70,7 +70,7 @@ $newswl :=
 <tls:ann xmlns="http://www.tei-c.org/ns/1.0" concept="{$concept}" concept-id="{$concept-id}" xml:id="{$uuid}">
 <link target="#{$line-id} #{$sense-id}"/>
 <tls:text>
-<tls:srcline title="{$title}" target="#{$line-id}" pos="{functx:index-of-string(string-join($line/text(), ""), $word)}">{$line/text()}</tls:srcline>
+<tls:srcline title="{$title}" target="#{$line-id}" pos="{$pos}">{$line/text()}</tls:srcline>
 <tls:line title="{$title-en}" transl-id="{$trid}" src="{$tr-resp}">{$tr/text()}</tls:line>
 </tls:text>
 <form  corresp="{$sense/parent::tei:entry/tei:form/@corresp}" orig="{$currentword}">
@@ -93,13 +93,13 @@ $newswl
 
 (: instead of using a uuid-named file hierarchy, this version uses one file per text to store the annotations :)
 declare function tlsapi:save-swl-to-docs($line-id as xs:string, $sense-id as xs:string, 
-$user as xs:string, $currentword as xs:string) {
+$user as xs:string, $currentword as xs:string, $pos as xs:string) {
 let $data-root := "/db/apps/tls-data"
 let $targetcoll := if (xmldb:collection-available($data-root || "/notes/doc")) then $data-root || "/notes/doc" else 
     concat($data-root || "/notes", xmldb:create-collection($data-root || "/notes", "doc"))
 ,$textid := tokenize($line-id, "_")[1]
 ,$docname :=  $textid || "-ann.xml"
-,$newswl:=tlsapi:make-attribution($line-id, $sense-id, $user, $currentword)
+,$newswl:=tlsapi:make-attribution($line-id, $sense-id, $user, $currentword, $pos)
 ,$targetdoc :=   if (doc-available(concat($targetcoll,"/",$docname))) then
                     doc(concat($targetcoll,"/", $docname)) else 
                     (
@@ -132,7 +132,7 @@ let $targetcoll := if (xmldb:collection-available($data-root || "/notes/doc")) t
 
 let $targetnode := collection($targetcoll)//tei:seg[@xml:id=$line-id]
 ,$texturi := if (starts-with($textid, "CH")) then 
-                xs:anyURI("/db/apps/tls-texts/chant/" || substring($textid, 1, 3) || "/" || $textid || ".xml") else ()
+                xs:anyURI($config:tls-texts-root || "/chant/" || substring($textid, 1, 3) || "/" || $textid || ".xml") else ()
 
 return 
 if (sm:has-access($targetcoll, "w")) then
@@ -152,13 +152,22 @@ else
  else "No access"
 };
 
+(: this version saves to the text as anchor node :)
 
+declare function tlsapi:save-swl-to-text($line-id as xs:string, $sense-id as xs:string, 
+$user as xs:string, $currentword as xs:string, $pos as xs:string) {
+let $targetnode := collection($config:tls-texts-root)//tei:seg[@xml:id=$line-id]
+,$textid := tokenize($line-id, "_")[1]
+,$ipos := xs:int($pos)
+
+return ()
+};
 
 declare function tlsapi:save-swl-with-path($line-id as xs:string, $sense-id as xs:string, 
-$notes-path as xs:string, $user as xs:string, $currentword as xs:string){
+$notes-path as xs:string, $user as xs:string, $currentword as xs:string, $pos as xs:string ){
 
 if (($line-id != "xx") and ($sense-id != "xx")) then
-let $newswl:=tlsapi:make-attribution($line-id, $sense-id, $user, $currentword)
+let $newswl:=tlsapi:make-attribution($line-id, $sense-id, $user, $currentword, $pos)
 ,$uuid := $newswl/tls:ann/@xml:id
 ,$path := concat($notes-path, substring($uuid, 6, 2))
 return (
@@ -182,13 +191,13 @@ else
 };
 
 
-declare function tlsapi:save-swl($line-id as xs:string, $sense-id as xs:string){
+declare function tlsapi:save-swl($line-id as xs:string, $sense-id as xs:string, $pos as xs:string){
 let $notes-path := concat($config:tls-data-root, "/notes/new/")
 let $user := sm:id()//sm:real/sm:username/text()
 let $currentword := ""
 return
 (:tlsapi:save-swl-with-path($line-id, $sense-id, $notes-path, $user, $currentword):)
-tlsapi:save-swl-to-docs($line-id, $sense-id, $user, $currentword)
+tlsapi:save-swl-to-docs($line-id, $sense-id, $user, $currentword, $pos)
 
 };
 
@@ -1445,7 +1454,8 @@ let $hits := if (contains($map?query, ";" )) then
        tlslib:multi-query($map?query, $map?mode, $map?search-type, $map?textid) 
       else
        tlslib:ngram-query($map?query, $map?mode, $map?search-type, $map?textid)
-, $disp := subsequence($hits, $map?start, $map?count)
+, $dispx := subsequence($hits, $map?start, $map?count)
+, $disp := util:expand($dispx)//exist:match/ancestor::tei:seg
 , $title := tlslib:get-title($map?textid)
 , $start := xs:int($map?start)
 , $count := xs:int($map?count)
@@ -1453,8 +1463,10 @@ let $hits := if (contains($map?query, ";" )) then
 , $prevp := if ($start = 1) then "" else 'do_quick_search('||$start||' - '||$count||', '||$count ||', '||$map?search-type||', "'||$map?mode||'")'
 , $nextp := if ($total < $start + $count) then "" else 'do_quick_search('||$start||' + '||$count||', '||$count ||', '||$map?search-type||', "'||$map?mode||'")'
 , $qs := tokenize($map?query, "\s")
+,$q1 := substring($qs[1], 1, 1)
+
 return
-<div><p><span class="font-weight-bold">{$start}</span> to <span class="font-weight-bold">{min(($start + $count -1, $total))}</span> of <span class="font-weight-bold">{$total}</span> hits {if ($map?search-type eq "5") then "in "||$title else "in all texts" }. {
+<div><p><span class="font-weight-bold">{$start}</span> to <span class="font-weight-bold">{min(($start + $count -1, $total))}</span> of <span class="font-weight-bold">{$total}</span> <span class="font-weight-bold"> p</span> with <span class="font-weight-bold">{count($disp)}</span> hits  {if ($map?search-type eq "5") then "in "||$title else "in all texts" }. {
 if ($map?search-type eq "5") then 
    (<button class="btn badge badge-light" onclick="do_quick_search(1, 25, 1, 'date')">Search in all texts (by textdate)</button>,
    <button class="btn badge badge-light" onclick="do_quick_search(1, 25, 1, 'rating')">Search in all texts (<span class="bold" style="color:red;">★</span> texts first)</button>) else 
@@ -1467,22 +1479,24 @@ else ()
 }</p>
 {
 for $h at $n in $disp
-    let $head := $h/ancestor::tei:div[1]/tei:head[1],
-    $title := $h/ancestor::tei:TEI//tei:titleStmt/tei:title/text(),
-    $loc := $h/@xml:id,
+    let $loc := $h/@xml:id,
+    $cseg := collection($config:tls-texts-root)//tei:seg[@xml:id=$loc],
+    $head :=  $cseg/ancestor::tei:div[1]/tei:head[1]/text() ,
+    $title := $cseg/ancestor::tei:TEI//tei:titleStmt/tei:title/text(),
     $tr := collection($config:tls-translation-root)//tei:seg[@corresp="#"||$loc]
+    ,$m1 := substring(($h/exist:match)[1]/text(), 1, 1)
+    where $m1 = $q1
 (:  :)
 
 return
 <div class="row">
 <div class="col-md-1">{xs:int($map?start)+$n - 1}</div>
 <div class="col-md-3"><a href="textview.html?location={$loc}&amp;query={$map?query}">{$title, " / ", $head}</a></div>
-<div class="col-md-8">{ ($h/preceding-sibling::tei:seg)[position()>=1 and position()<4],
-        if (count($qs) > 1) then $h else
-        (substring-before($h, $map?query), 
-        <mark>{$map?query}</mark> 
-        ,substring-after($h, $map?query)), 
-        ($h/following-sibling::tei:seg)[position()>=1 and position()<4],
+<div class="col-md-8">{ 
+for $sh in $h/preceding-sibling::tei:seg[position()<4] return tlslib:proc-seg($sh),
+        tlslib:proc-seg($h),
+        (: this is a hack, it will probably show the most recent translation if there are more, but we want to make this predictable... :)
+        for $sh in $h/following-sibling::tei:seg[position()<4] return tlslib:proc-seg($sh),
         if ($tr) then (<br/>, $tr) else ()}</div>
 </div>
 }

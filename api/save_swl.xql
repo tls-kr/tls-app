@@ -9,7 +9,8 @@ import module namespace tlsapi="http://hxwd.org/tlsapi" at "tlsapi.xql";
 
 let $line-id := request:get-parameter("line", "xx")
 let $sense-id := request:get-parameter("sense", "xx")
+let $pos := request:get-parameter("pos", "0")
 
 return
 
-tlsapi:save-swl($line-id, $sense-id)
+tlsapi:save-swl($line-id, $sense-id, $pos)

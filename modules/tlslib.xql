@@ -380,13 +380,16 @@ if ($s > 0) then if ($s > 1) then <span> {$s} seconds </span> else <span> {$s} s
 : 2020-02-20: created this element because KR2m0054 has <note> elements in translation. 
 : @param $node a tei:seg node, typically
 :)
-declare function tlslib:procseg($node as node()){
+declare function tlslib:proc-seg($node as node()){
  typeswitch ($node)
  case element(tei:note) return ()
 (:     <small>{$node/text()}</small>:)
   case element (tei:l) return ()
+  case element (tei:c) return data($node/@n)
   case element (tei:lb)  return ()
-  case element(tei:seg) return for $n in $node/node() return tlslib:procseg($n)
+  case element (exist:match) return <mark>{$node/text()}</mark>
+  case element(tei:seg) return for $n in $node/node() return tlslib:proc-seg($n)
+  case attribute(*) return () 
  default return $node    
 };
 
@@ -406,7 +409,7 @@ declare function tlslib:get-rating($txtid){
 : @param $txtid
 :)
 declare function tlslib:get-title($txtid as xs:string){
-let $title := collection("/db/apps/tls-texts") //tei:TEI[@xml:id=$txtid]//tei:titleStmt/tei:title/text()
+let $title := collection($config:tls-texts-root) //tei:TEI[@xml:id=$txtid]//tei:titleStmt/tei:title/text()
 return $title
 };
 
@@ -1019,7 +1022,6 @@ else
 if (string-length($def) > 10) then concat(substring($def, 10), "...") else $def}</li>
 };
 
-
 (:~
 : displays a tei:seg element, that is, a line of text, including associated items like translation and swl
 : @param $seg the tei:seg to display
@@ -1053,11 +1055,11 @@ declare function tlslib:display-seg($seg as node()*, $options as map(*) ) {
   ,$resp1 := if ($px1) then "Resp: "||doc($config:tls-data-root || "/vault/members.xml")//tei:person[@xml:id=$px1]//tei:persName/text() else ()
   , $px2 :=  typeswitch ($slot2) case element(tei:TEI) return replace($slot2//tei:seg[@corresp="#"||$seg/@xml:id]/@resp, '#', '') default return () 
   ,$resp2 :=  if ($px2) then "Resp: "||doc($config:tls-data-root || "/vault/members.xml")//tei:person[@xml:id=$px2]//tei:persName/text() else () 
-
+(: normalize-space(string-join($seg/text(),'')) :)
 return
 (
 <div class="row {$mark}">
-<div class="{if ($seg/parent::tei:head) then 'tls-head ' else () }{if ($ann='false') then 'col-sm-4' else 'col-sm-2'} zh {$alpheios-class}" lang="{$lang}" id="{$seg/@xml:id}">{normalize-space(string-join($seg/text(),''))}{if ($seg/tei:anchor) then <span title="{normalize-space(string-join($seg/ancestor::tei:div//tei:note[tei:ptr/@target='#'||$seg/tei:anchor/@xml:id]/text()))}" >●</span> else ()}</div>　
+<div class="{if ($seg/parent::tei:head) then 'tls-head ' else () }{if ($ann='false') then 'col-sm-4' else 'col-sm-2'} zh {$alpheios-class}" lang="{$lang}" id="{$seg/@xml:id}" data-tei="{ util:node-id($seg) }">{tlslib:proc-seg($seg)}{(:if (exists($seg/tei:anchor/@xml:id)) then <span title="{normalize-space(string-join($seg/ancestor::tei:div//tei:note[tei:ptr/@target='#'||$seg/tei:anchor/@xml:id]/text()))}" >●</span> else ():) ()}</div>　
 <div class="col-sm-5 tr" title="{$resp1}" lang="en-GB" tabindex="{$options('pos')+500}" id="{$seg/@xml:id}-tr" contenteditable="{if (not($testuser)) then 'true' else 'false'}">{typeswitch ($slot1) 
 case element(tei:TEI) return  $slot1//tei:seg[@corresp="#"||$seg/@xml:id]/text()
 default return (krx:get-varseg-ed($seg/@xml:id, substring-before($slot1, "::")))
@@ -1695,8 +1697,13 @@ declare function tlslib:tr-query($queryStr as xs:string?, $mode as xs:string?)
   return $a
 };
 
+(: paragraph based query :)
+(:declare function tlslib:ngram-p-query($queryStr as xs:string?, $mode as xs:string?, $search-type as xs:string?, $stextid as xs:string?)
+{tlslib:do-ngram-query($queryStr, $mode, $search-type, $stextid, "tei:p")};:)
 
 (: query in texts :)
+(:declare function tlslib:ngram-query($queryStr as xs:string?, $mode as xs:string?, $search-type as xs:string?, $stextid as xs:string?)
+{tlslib:do-ngram-query($queryStr, $mode, $search-type, $stextid, "tei:seg")};:)
 
 declare function tlslib:ngram-query($queryStr as xs:string?, $mode as xs:string?, $search-type as xs:string?, $stextid as xs:string?)
 {
@@ -1710,16 +1717,16 @@ declare function tlslib:ngram-query($queryStr as xs:string?, $mode as xs:string?
     (: HACK: if no login, use date mode for sorting :)
     $mode := if ($user = "guest") then "date" else $mode,
     $matches := if  (count($qs) > 1) then 
-      collection($dataroot)//tei:seg[ngram:wildcard-contains(., $qs[1]) and ngram:wildcard-contains(., $qs[2])]
+      collection($dataroot)//tei:p[ngram:wildcard-contains(., $qs[1]) and ngram:wildcard-contains(., $qs[2])]
       else
       (: 2022-02-24 for one char searches, go only in tls texts; this needs more discussion... :)
       if ($search-type = "5") then 
-      collection($dataroot)//tei:TEI[@xml:id=$stextid]//tei:seg[ngram:wildcard-contains(., $qs[1])]
+      collection($dataroot)//tei:TEI[@xml:id=$stextid]//tei:p[ngram:wildcard-contains(., $qs[1])]
       else
       if (string-length($qs[1]) < 2) then
-      collection($config:tls-texts-root || "/tls")//tei:seg[ngram:wildcard-contains(., $qs[1])]
+      collection($config:tls-texts-root || "/tls")//tei:p[ngram:wildcard-contains(., $qs[1])]
       else
-      collection($dataroot)//tei:seg[ngram:wildcard-contains(., $qs[1])]
+      collection($dataroot)//tei:p[ngram:wildcard-contains(., $qs[1])]
     for $hit in $matches
       let $textid := substring-before(tokenize(document-uri(root($hit)), "/")[last()], ".xml"),
       (: for the CHANT text no text date data exist, so we use this flag to cheat a bit :)
@@ -2551,4 +2558,298 @@ if (not($vis="option3")) then
  else ()
 };
 
+declare function tlslib:edit-fragment($request as map(*)){
+    let $target := $request?parameters?type
+    let $docid := $request?parameters?docid
+return
+switch ($target)
+  case "teiheader" return
+<TEI xmlns="http://www.tei-c.org/ns/1.0">
+ {collection($config:tls-texts-root)//tei:TEI[@xml:id=$docid]/tei:teiHeader}
+ </TEI>
+default return
+<root>
+<test>{$docid}</test>
+</root>
+};
 
+declare function tlslib:save-fragment($request as map(*)){
+(:  this was used for debugging:
+         let $f := function($k, $v) {map:entry($k, $v)}
+         map:merge(map:for-each($request, $f))   :)
+
+ let $data := $request?body
+ let $target := $request?parameters?type
+ let $docid := $request?parameters?docid
+ let $targetnode := switch ($target) 
+  case "teiheader" return 
+    collection($config:tls-texts-root)//tei:TEI[@xml:id=$docid]/tei:teiHeader
+  default return ()
+ let $updatednode := $data//tei:teiHeader
+ return 
+ if ($targetnode and $updatednode) then 
+            ( 
+                 update replace $targetnode with $updatednode, 
+                 map{
+                   "status" : "updated",
+                   "user" : sm:id()//sm:real/sm:username/text(),
+                   "body" : $updatednode
+                 }
+            )
+else map{
+"status" : "not found",
+ "body" : $data//tei:teiHeader,
+ "data" : $data,
+ "tnode" : $targetnode,
+ "user" : sm:id()//sm:real/sm:username/text()
+}
+
+};
+
+
+declare function local:edit-xml-transform($nodes as node()*) {
+    for $node in $nodes
+    return
+        typeswitch ($node)
+            case element(tei:teiHeader) return 
+               <fx-group ref="{local-name($node)}">
+                    {for $c in $node/* return
+                     <fx-trigger>
+                       <paper-button raised="raised">{local-name($c)}</paper-button>
+                       <fx-toggle case="{local-name($c)}"></fx-toggle>
+                     </fx-trigger>                    
+                    }
+                    <fx-switch>
+                    { local:edit-xml-transform($node/node()) }
+                    </fx-switch>
+               </fx-group>
+            case element(tei:fileDesc) | element(tei:profileDesc) | element(tei:revisionDesc) return
+                <fx-case id="{local-name($node)}">
+                  <h2>{local-name($node)}</h2>
+                  {local:edit-xml-transform($node/node())}
+                </fx-case>
+            case element(tei:titleStmt) | element(tei:publicationStmt) | element (tei:sourceDesc) | element (tei:editionStmt) return 
+              <details><summary>{local-name($node)}</summary>
+              <fx-group ref=".//{local-name($node)}">
+              {local:edit-xml-transform($node/node())}
+              {if (local-name($node) = 'titleStmt' and not ($node/tei:author)) then 
+              local:edit-xml-transform(<tei:author></tei:author>) else ()}
+              </fx-group>
+              </details>
+            case element(tei:title) | element(tei:author) | element (tei:editor) return
+              (<h4>{local-name($node)}</h4>,
+              <fx-repeat ref="{local-name($node)}" id="{local-name($node)}s">
+                <template>
+                 <fx-control ref="."></fx-control>
+                 <fx-trigger class="deleteIcon">
+                    <button>x</button>
+                    <fx-delete ref="."></fx-delete>
+                </fx-trigger>
+                </template>
+              </fx-repeat>,
+              if ($node/parent::*[$node[position() = last()]]) then
+              <fx-trigger>
+              <button>add {local-name($node)}</button>
+              {if ($node/ancestor::tei:teiHeader) then
+              <fx-insert ref="{local-name($node)}" repeat="{local-name($node)}s"></fx-insert>
+              else 
+               switch (local-name($node))
+               case "author" return
+                 <fx-insert ref="titleStmt/author" repeat="{local-name($node)}s" origin="instance('templates')//author"></fx-insert>
+               default return ()
+              }
+              </fx-trigger> else ())
+            (: leave unknown elements intact, including attributes :)
+            case element(tei:p) return
+             (
+             <fx-control ref="{local-name($node)}">
+              <label>{local-name($node)}</label>
+             </fx-control>,
+             <fx-trigger class="deleteIcon">
+                <button>x</button>
+               <fx-delete ref="{local-name($node)}"></fx-delete>
+             </fx-trigger>
+             )
+            case element() return
+                element 
+                    { node-name($node) } 
+                    { $node/@*, local:edit-xml-transform($node/node()) }
+            case text() return
+                $node
+            default return
+                $node
+};
+
+declare function tlslib:xml-editor($request as map(*)){
+ let $target := $request?parameters?type
+ let $docid := $request?parameters?docid
+ let $path := "http://localhost:8080/exist/apps/tls-tp/"
+ let $targetnode := switch ($target) 
+  case "teiheader" return 
+    collection($config:tls-texts-root)//tei:TEI[@xml:id=$docid]/tei:teiHeader
+  default return ()
+  return
+<html lang="en" xmlns:tei="http://www.tei-c.org/ns/1.0">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, minimum-scale=1, initial-scale=1, user-scalable=yes" name="viewport"/>
+
+    <title>XML Fragment editor</title>
+    <link href="resources/fore/demo.css" rel="stylesheet"/>
+    <link href="resources/fore/vars.css" rel="stylesheet"/>
+    <style>
+        html{{
+            /*--inspector-bg:var(--paper-grey-700);*/
+            /*--inspector-pre-bg:var(--paper-grey-100);*/
+            /*--inspector-color:var(--paper-grey-800);*/
+            /*--inspector-pre-bg:blue;*/
+        }}
+    
+        body {{
+            background: var(--paper-light-blue-200);
+            color: var(--paper-light-blue-900)
+        }}
+
+        .card {{
+            background: white;
+            padding: 1rem;
+            border-radius: 0.5rem;
+        }}
+
+        #changes fx-repeatitem {{
+            display: grid;
+            grid-template-columns: auto min-content;
+            grid-column-gap: 1rem;
+        }}
+
+        #changes fx-repeatitem fx-output {{
+            white-space: nowrap;
+        }}
+
+        .deleteIcon button {{
+            border: none;
+            cursor: pointer;
+            background: transparent;
+            color: red;
+        }}
+
+        details {{
+            padding: 1rem;
+            margin: 1rem 0;
+            /*background: white;*/
+
+        }}
+
+        details[open] {{
+            /*background: var(--paper-grey-100);*/
+            /*background-color: rgba(255, 255, 255, 0.5);*/
+        }}
+
+        fx-case {{
+            margin-top: 1px;
+            border: 1px solid var(--paper-light-blue-900);
+            padding: 2rem;
+            background-color: rgba(255, 255, 255, 0.5);
+        }}
+
+        fx-control, input, textarea {{
+            width: 100%;
+            margin: 0.3rem 0;
+        }}
+
+        input {{
+            padding: 0.3rem;
+        }}
+
+        label {{
+            display: block;
+            color: var(--paper-blue-900);
+        }}
+
+        fx-control {{
+            /*margin-top: 1rem;*/
+        }}
+
+        fx-group {{
+            margin-top: 1rem;
+            padding: 1rem;
+        }}
+
+        h3, fx-output, input {{
+            border: none;
+        }}
+
+        h3, h4 {{
+            margin-bottom: 0;
+            margin-top: 1rem;
+        }}
+
+        fx-repeat {{
+            display: block;
+        }}
+
+        fx-repeatitem {{
+            display: block;
+        }}
+
+        fx-repeatitem {{
+            display: grid;
+            grid-template-columns: auto 30px;
+            width: 100%;
+            align-items: baseline;
+        }}
+
+        details.log {{
+            background: var(--paper-light-blue-100);
+        }}
+
+        pre {{
+            overflow: auto;
+        }}
+
+        #langs fx-repeatitem, #terms fx-repeatitem {{
+            display: inline-block;
+            width: auto;
+        }}
+
+        #langs fx-repeatitem fx-control, #terms fx-repeatitem fx-control {{
+            width: 2.5rem;
+        }}
+        .wrapper{{
+            overflow: scroll;
+        }}
+        fx-inspector pre{{
+            /*max-height:200px;*/
+        }}
+    </style>
+</head>
+<body unresolved="unresolved">
+<div class="wrapper">
+
+  <h1>Editing an TEI header</h1>
+    <fx-fore xpath-default-namespace="http://www.tei-c.org/ns/1.0">
+    <fx-model>
+     <fx-instance src="{$path}tls/edit/{$target}/{$docid}">
+     </fx-instance>
+     <fx-instance id="templates" src="resources/fragments/teiheader.xml">
+     </fx-instance>
+     <fx-instance id="result">
+     </fx-instance>
+     <fx-submission id="save"
+                           url="{$path}tls/edit/{$target}/{$docid}"
+                           method="put"
+                           replace="none">
+                           </fx-submission>
+    </fx-model>
+  {local:edit-xml-transform($targetnode)}
+   <fx-trigger>
+      <button>save</button>
+      <fx-send submission="save">
+      </fx-send>
+   </fx-trigger>
+</fx-fore>
+  </div>
+  <script type="module" src="http://localhost:8090/demo/demo.js"></script>
+  </body>
+</html>
+};

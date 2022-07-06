@@ -284,11 +284,11 @@ function show_swls_for_line(line_id){
 
 // this saves the SW for a line, called from save_this_swl (from the "Use" button)
 
-function save_swl_line(sense_id, line_id){
+function save_swl_line(sense_id, line_id, pos){
   $.ajax({
   type : "PUT",
   dataType : "html",
-  url : "api/save_swl.xql?line="+line_id+"&sense="+sense_id,
+  url : "api/save_swl.xql?line="+line_id+"&sense="+sense_id+"&pos="+pos,
   success : function(resp){
   hide_swl_form("#editSWLDialog");
   console.log("Hiding form");
@@ -305,7 +305,8 @@ function save_swl_line(sense_id, line_id){
 // save one attribution: the "Use" button calls this function
 function save_this_swl(sense_id){
     var line_id=document.getElementById( "swl-line-id-span" ).innerText;
-    save_swl_line(sense_id, line_id);
+    var pos = $( "#swl-query-span" ).attr("data-pos");
+    save_swl_line(sense_id, line_id, pos);
 };
 
 // save edited swl
@@ -520,6 +521,7 @@ function get_sw(sel, xid, line){
    $('#domain-lookup-mark').show();
 
    var domain = $('#domain-select').val();
+   var pos = window.getSelection().anchorOffset;
    console.log("selection: ", sel);
    var url = "http://www.kaom.net/z_hmy_zidian88.php?"+"word="+encodeURI(sel)+"&mode=word&bianti=no&page=no";
    // this needs to produce the form link for the lookup
@@ -541,7 +543,7 @@ function get_sw(sel, xid, line){
    $( "#swl-line-id-span" ).html(xid);
    $( "#swl-line-text-span" ).html(line);      
    $( "#swl-query" ).val( sel);
-   $( "#swl-query-span" ).html(sel);
+//   $( "#swl-query-span" ).html(sel);
    $( "#swl-select").html("");
    if (sel.length == 0) {
        $ ("#new-att-title").html("In other editions: ");
@@ -557,6 +559,7 @@ function get_sw(sel, xid, line){
        
    }
 //   $( "#swl-form" ).removeAttr("style");
+   $( "#swl-query-span" ).attr("data-pos", pos);
    $( "#swl-form" ).css("max-height", dh - 51);
    $( "#swl-form" ).css("max-width", new_width - 10);
    $( "#swl-form" ).show();
