@@ -805,7 +805,7 @@ declare function app:textlist(){
     <ul>{
     for $title in collection($coll)//tei:titleStmt/tei:title
      let $textid := data($title/ancestor::tei:TEI/@xml:id)
-     where string-length($title/text()) > 0
+     where string-length(string-join($title/text(), '')) > 0
     return
     <li class="list-group-item">
     <a href="textview.html?location={$textid}">{$title/text()}
