@@ -725,7 +725,11 @@ declare function app:textlist(){
          return map:entry($bu, count($c)))
     let $count :=  sum(map:for-each($bc, $fv)),
     $chantpath := concat($config:tls-texts-root, '/chant/'),
-    $chantcount := if (xmldb:collection-available($chantpath)) then 1184 else 0,
+    $chantcount := if (xmldb:collection-available($chantpath)) then 
+    sum(for $b in xmldb:get-child-collections($chantpath)
+       let $coll := concat($chantpath, $b)
+       return count(xmldb:get-child-resources($coll)))
+    else 0,
     $user := sm:id()//sm:real/sm:username/text(),
     $ratings := doc( $config:tls-user-root || $user || "/ratings.xml")//text,
     $starredcount := count($ratings)
@@ -1266,6 +1270,9 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
      }</ul></div>  
     else ()} 
     <ul>{for $sw in $e/tei:sense
+    let $sf := lower-case(($sw//tls:syn-func/text())[1]),
+    $sm := lower-case($sw//tls:sem-feat/text())
+    order by $sf || $sm
     return
     tlslib:display-sense($sw, count($ann//tei:sense[@corresp="#" || $sw/@xml:id]), false())
     }</ul>
