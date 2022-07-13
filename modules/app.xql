@@ -402,7 +402,7 @@ let $query := map:get($model, "query")
     for $h in map:get($model, "hits")
     let $loc := $h/ancestor::tei:TEI/@xml:id
     return
-    <li><a href="textview.html?location={$loc}">{data($loc) || " " || $h/text()}</a></li>
+    <li><a href="textview.html?location={$loc}">{data($loc) || " " || data($h)}</a></li>
     }
     </ul>
     else
