@@ -388,7 +388,7 @@ declare function tlslib:proc-seg($node as node()){
   case element (tei:c) return data($node/@n)
   case element (tei:lb)  return ()
   case element (exist:match) return <mark>{$node/text()}</mark>
-  case element(tei:seg) return for $n in $node/node() return tlslib:proc-seg($n)
+  case element(tei:seg) return (if (string-length($node/@n) > 0) then data($node/@n)||"　" else (), for $n in $node/node() return tlslib:proc-seg($n))
   case attribute(*) return () 
  default return $node    
 };
