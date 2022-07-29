@@ -710,13 +710,13 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
       $xpos := index-of($d//tei:seg/@xml:id, $targetseg/@xml:id),
 (:      $title := $model('title')/text(),:)
       $dseg := ($pseg, $targetseg, $fseg),
-      $textid := if (string-length($model?textid) > 0) then $model?textid else  tokenize($targetseg, "_")[1],
+      $model := if (string-length($model?textid) > 0) then $model else map:put($model, "textid", tokenize($targetseg, "_")[1]),
       $show-transl := not(contains(sm:id()//sm:group/text(), "guest")),
       $show-variants := xs:boolean(1),
       $visit := tlslib:record-visit($targetseg),
-      $tr := if ($show-transl) then tlslib:get-translations($textid) else map{},
-      $slot1-id := tlslib:get-content-id($textid, 'slot1', $tr),
-      $slot2-id := tlslib:get-content-id($textid, 'slot2', $tr),
+      $tr := if ($show-transl) then tlslib:get-translations($model?textid) else map{},
+      $slot1-id := tlslib:get-content-id($model?textid, 'slot1', $tr),
+      $slot2-id := tlslib:get-content-id($model?textid, 'slot2', $tr),
       $atypes := distinct-values(for $s in $dseg/@xml:id
         let $link := "#" || $s
         return
@@ -728,7 +728,7 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
       <div id="chunkrow" class="row">
       <!-- here is where we select what to display -->
       <div id="srcref" class="col-sm-12 collapse" data-toggle="collapse">
-      {tlslib:textinfo($textid)}
+      {tlslib:textinfo($model?textid)}
       </div>
       <!-- here is where we select what to display -->
       {if (count($atypes) > 1) then 
@@ -747,10 +747,10 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
        <div class="row">
         <div class="col-sm-2" id="toprow-1"><span class="font-weight-bold">{$head}</span><span class="btn badge badge-light">line {$xpos} / {($xpos * 100) idiv $sc}%</span><!-- zh --></div>
         <div class="col-sm-5" id="toprow-2"><!-- tr -->
-        {if ($show-transl) then tlslib:trsubmenu($textid, "slot1", $slot1-id, $tr) else ()}
+        {if ($show-transl) then tlslib:trsubmenu($model?textid, "slot1", $slot1-id, $tr) else ()}
         </div>
         <div class="col-sm-4" id="toprow-3">
-        {if ($show-transl) then tlslib:trsubmenu($textid, "slot2", $slot2-id, $tr) else ()}
+        {if ($show-transl) then tlslib:trsubmenu($model?textid, "slot2", $slot2-id, $tr) else ()}
         </div>
         </div>
       </div>
