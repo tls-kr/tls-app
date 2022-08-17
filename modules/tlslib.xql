@@ -710,7 +710,7 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
       $xpos := index-of($d//tei:seg/@xml:id, $targetseg/@xml:id),
 (:      $title := $model('title')/text(),:)
       $dseg := ($pseg, $targetseg, $fseg),
-      $model := if (string-length($model?textid) > 0) then $model else map:put($model, "textid", tokenize($targetseg, "_")[1]),
+(:      $model := if (string-length($model?textid) > 0) then $model else map:put($model, "textid", tokenize($targetseg, "_")[1]), :)
       $show-transl := not(contains(sm:id()//sm:group/text(), "guest")),
       $show-variants := xs:boolean(1),
       $visit := tlslib:record-visit($targetseg),
@@ -1052,9 +1052,9 @@ declare function tlslib:display-seg($seg as node()*, $options as map(*) ) {
   ,$slot2 := if ($show-transl and not($ann = 'false')) then map:get($options, $options?slot2)[1] else ()
   (: check if transl + comment are related, if yes than do not manipulate tab-index :)
   (: if tei:TEI, then we have a translation, otherwise a variant :)
-  , $px1 := typeswitch ($slot1) case element(tei:TEI) return  replace($slot1//tei:seg[@corresp="#"||$seg/@xml:id]/@resp, '#', '') default return () 
+  , $px1 := typeswitch ($slot1) case element(tei:TEI) return  replace(($slot1//tei:seg[@corresp="#"||$seg/@xml:id]/@resp)[1], '#', '') default return () 
   ,$resp1 := if ($px1) then "Resp: "||doc($config:tls-data-root || "/vault/members.xml")//tei:person[@xml:id=$px1]//tei:persName/text() else ()
-  , $px2 :=  typeswitch ($slot2) case element(tei:TEI) return replace($slot2//tei:seg[@corresp="#"||$seg/@xml:id]/@resp, '#', '') default return () 
+  , $px2 :=  typeswitch ($slot2) case element(tei:TEI) return replace(($slot2//tei:seg[@corresp="#"||$seg/@xml:id]/@resp)[1], '#', '') default return () 
   ,$resp2 :=  if ($px2) then "Resp: "||doc($config:tls-data-root || "/vault/members.xml")//tei:person[@xml:id=$px2]//tei:persName/text() else () 
 (: normalize-space(string-join($seg/text(),'')) :)
 return
