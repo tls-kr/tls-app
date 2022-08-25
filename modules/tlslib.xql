@@ -2854,3 +2854,91 @@ declare function tlslib:xml-editor($request as map(*)){
   </body>
 </html>
 };
+
+
+(: this is for the char editing :)
+
+
+(: retrieve the pron for this entry (given through its id) :)
+
+declare function tlslib:pron-for-entry($uuid){
+let $f := collection($config:tls-data-root||"/concepts")//tei:entry[@xml:id=$uuid]/tei:form
+return
+$f
+};
+
+(: create tax stub for char :)
+declare function tlslib:char-tax-stub($char as xs:string){
+let $doc := doc($config:tls-data-root||"/core/taxchar.xml")
+, $res:= tlslib:getwords($char, map{})
+, $pmap := map:merge(
+  for $k in map:keys($res)
+   let $v := map:get($res, $k)
+   , $f := tlslib:pron-for-entry($k)
+   return map:entry($k, $f//@corresp))
+  
+, $gy := distinct-values(for $k in map:keys($pmap)
+   return map:get($pmap, $k))
+
+return 
+
+<div xml:id="uuid-{util:uuid()}" type="taxchar">
+<head>{$char}</head>
+{
+for $g in $gy
+let $c := substring($g, 2)
+, $e:= collection($config:tls-data-root ||"/guangyun")//tx:guangyun-entry[@xml:id=$c]
+, $p := for $s in ($e//tx:mandarin/tx:jin|$e//tx:mandarin/tx:jiu) 
+       return 
+       if (string-length(normalize-space($s)) > 0) then $s else (),
+$py := normalize-space(string-join($p, ';'))
+, $oc := normalize-space($e//tx:old-chinese/tx:pan-wuyun/tx:oc/text())
+, $mc := normalize-space($e//tx:middle-chinese//tx:baxter/text())
+, $fq := ($e//tx:fanqie/tx:fanqie-shangzi//tx:graph/text() || $e//tx:fanqie/tx:fanqie-xiazi//tx:graph/text())
+return
+<list>
+<item type="pron" corresp="{$g}">{$py || " 反切： " || $fq || "； 聲調： " || $e//tx:調 || "； 廣韻：【" || $e//tx:gloss ||" 】"}</item>
+<list>{
+for $k in map:keys($pmap)
+let $v := map:get($pmap, $k)
+where $v eq $g
+return <item><span type="fun"></span><ref target="#{map:get($res, $k)[1]}">{map:get($res, $k)[2]}</ref></item>
+}</list>
+</list>
+}
+</div>
+};
+
+(: get concepts not yet defined in taxchar :)
+declare function tlslib:char-tax-newconcepts($char){
+ let $cdoc := doc($config:tls-data-root || "/core/taxchar.xml")
+ , $chead :=  $cdoc//tei:head[. = $char]
+ , $cdiv := $chead/ancestor::tei:div[@type='taxchar']
+ , $emap := tlslib:getwords($char, map{})
+ , $cseq := for $r in $cdiv//tei:ref
+   let $id := substring($r/@target, 2)
+   return $id
+  , $em1 := map:merge( for $r in map:keys($emap)
+   let $k := map:get($emap, $r)[1]
+   where not ($k = $cseq)
+   return map:entry($r, map:get($emap, $r)))
+ return 
+ <div type="taxchar-add">
+ <head>{$char}</head>
+ <list>{
+ for $r in  map:keys($em1)
+ return <item corresp="#{$r}"><ref target="#{map:get($emap, $r)[1]}">{map:get($emap, $r)[2]}</ref></item>
+ }</list></div>
+};
+
+(: get XML representation of char in request :)
+
+declare function tlslib:char-tax-xml($request as map(*)){
+ let $char := $request?parameters?char
+ , $cdoc := doc($config:tls-data-root || "/core/taxchar.xml")
+ , $chead :=  $cdoc//tei:head[. = $char]
+ , $cdiv := $chead/ancestor::tei:div[@type='taxchar']
+ , $emap := tlslib:getwords($char, map{})
+ return if (exists($cdiv)) then $cdiv else tlslib:char-tax-stub($char)
+};
+
