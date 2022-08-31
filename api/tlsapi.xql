@@ -1621,6 +1621,13 @@ let $user := sm:id()//sm:real/sm:username/text()
     <span  id="textdate" data-not-before="{$map?nb}" data-not-after="{$na}">{$pr} {$nh}</span>
 };
 
+declare function tlsapi:save-taxchar($map as map(*)){
+let $user := sm:id()//sm:real/sm:username/text()
+, $data := request:get-data()
+return $data
+};
+
+
 
 declare function tlsapi:stub($map as map(*)){
 () 

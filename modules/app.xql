@@ -850,10 +850,11 @@ declare function app:textlist(){
 (: taxchar display :)
 declare 
     %templates:wrap
-function app:char($node as node()*, $model as map(*), $char as xs:string?, $id as xs:string?)
+function app:char($node as node()*, $model as map(*), $char as xs:string?, $id as xs:string?, $edit as xs:string?)
 {
     (session:create(),
     let $key := replace($id, '#', '')
+    let $e := string-length($edit) > 0
     let $n := if (string-length($id) > 0) then
       doc(concat($config:tls-data-root, "/core/taxchar.xml"))//tei:div[@xml:id = $id]
     else
@@ -861,12 +862,14 @@ function app:char($node as node()*, $model as map(*), $char as xs:string?, $id a
     return
     <div class="card">
     <div class="card-header">
-    <h4 class="card-title">{if ($n) then <span>Taxonomy of meanings for {$n/tei:head/text()}:</span> else 
-    <span>The character {$char} has not been analyzed yet.</span>
+    <h4 class="card-title">{if ($n) then <span>Taxonomy of meanings for {$n/tei:head/text()}:　　</span> else 
+    <span>The character {$char} has not been analyzed yet.　　</span>,
+    if ($e) then <span><button id="save-taxchar-button" type="button" class="btn btn-primary" onclick="save_taxchar()">Save taxonomy</button>　　<a class="btn btn-secondary" href="char.html?char={$char}">Leave edit mode</a></span> else <a class="btn btn-secondary" href="char.html?char={$char}&amp;edit=true">Edit taxonomy</a>
     }</h4>
     </div>
-    <div class="card-text">
-     {for $l in $n/tei:list return tlslib:proc-char($l)}
+    <div class="card-text" id="{if ($e) then 'chartree' else 'notree'}">
+     {if ($n) then for $l in $n/tei:list return tlslib:proc-char($l, $edit)
+     else tlslib:char-tax-stub($char)}
     </div>
     <div class="card-footer">
     <ul class="pagination">
@@ -879,6 +882,9 @@ function app:char($node as node()*, $model as map(*), $char as xs:string?, $id a
     <li class="page-item disabled"><a class="page-link">&#187;</a></li>
     {for $c in $n/following::tei:div[position()< 6]
     return
+    if ($e) then
+    <li class="page-item"><a class="page-link" href="char.html?id={$c/@xml:id}&amp;edit=true">{$c/tei:head/text()}</a></li>
+    else
     <li class="page-item"><a class="page-link" href="char.html?id={$c/@xml:id}">{$c/tei:head/text()}</a></li>
     }
     </ul>

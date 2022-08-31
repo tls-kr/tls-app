@@ -254,23 +254,36 @@ let $user := sm:id()//sm:real/sm:username/text()
    return $tr
 };
   
-declare function tlslib:proc-char($node as node())
+  
+declare function tlslib:proc-char($node as node(), $edit as xs:string?)
 { 
 typeswitch ($node)
   case element(tei:div) return
-      <div>{for $n in $node/node() return tlslib:proc-char($n)}</div>
+      <div>{for $n in $node/node() return tlslib:proc-char($n, $edit)}</div>
   case element(tei:head) return
   <h4 class="card-title">{$node/text()}</h4>
   case element(tei:list) return
   <ul >{for $n in $node/node()
        return
-       tlslib:proc-char($n)
+       tlslib:proc-char($n, $edit)
   }</ul>
   case element(tei:item) return
-    <li>{for $n in $node/node()
+    if (exists($node/tei:ref)) then
+    <li class="jstree-open" tei-target="{$node/tei:ref/@target}" tei-ref="{$node/tei:ref/text()}">{for $n in $node/node()
         return
-            tlslib:proc-char($n)
+            tlslib:proc-char($n, $edit)
     }</li>
+    else
+    <li class="jstree-open" tei-type="{$node/@type}">{for $n in $node/node()
+        return
+            tlslib:proc-char($n, $edit)
+    }</li>
+  case element(tei:refx) return
+     let $id := substring($node/@target, 2)
+     ,$concept := normalize-space($node/text())
+     return
+      <a href="concept.html?uuid={$id}" class="mr-2 ml-2">{$concept}</a>
+  
   case element(tei:ref) return
      let $id := substring($node/@target, 2),
      $char := tokenize($node/ancestor::tei:div[1]/tei:head/text(), "\s")[1],
@@ -279,7 +292,12 @@ typeswitch ($node)
      ,$alt := $node/@altname
      ,$swl-count := count($swl)
      ,$concept := normalize-space($node/text())
+     , $e := string-length($edit) > 0
      return
+      if ($e) then 
+      (: only show the plain concept when editing :)
+      $concept
+       else
       <span>
       {if ($swl-count = 0) then 
       if ($alt) then 
@@ -289,7 +307,7 @@ typeswitch ($node)
       else 
       (
       <a href="concept.html?uuid={$id}" class="mr-2 ml-2">{$concept}</a>
-      ,
+       ,
       <button title="click to reveal {count($swl)} syntactic words" class="btn badge badge-light" type="button" 
       data-toggle="collapse" data-target="#{$id}-swl">{$swl-count}</button>)}
       <ul class="list-unstyled collapse" id="{$id}-swl"> 
@@ -2880,9 +2898,9 @@ let $doc := doc($config:tls-data-root||"/core/taxchar.xml")
 , $gy := distinct-values(for $k in map:keys($pmap)
    return map:get($pmap, $k))
 
-return 
+, $stub :=
 
-<div xml:id="uuid-{util:uuid()}" type="taxchar">
+<div xml:id="uuid-{util:uuid()}" type="taxchar" xmlns="http://www.tei-c.org/ns/1.0">
 <head>{$char}</head>
 {
 for $g in $gy
@@ -2896,17 +2914,21 @@ $py := normalize-space(string-join($p, ';'))
 , $mc := normalize-space($e//tx:middle-chinese//tx:baxter/text())
 , $fq := ($e//tx:fanqie/tx:fanqie-shangzi//tx:graph/text() || $e//tx:fanqie/tx:fanqie-xiazi//tx:graph/text())
 return
-<list>
-<item type="pron" corresp="{$g}">{$py || " 反切： " || $fq || "； 聲調： " || $e//tx:調 || "； 廣韻：【" || $e//tx:gloss ||" 】"}</item>
-<list>{
+<list xmlns="http://www.tei-c.org/ns/1.0">
+<item type="pron" corresp="{$g}">{$py || " 反切： " || $fq || "； 聲調： " || $e//tx:調 || "； 廣韻：【" || $e//tx:gloss ||" 】"}
+<list xmlns="http://www.tei-c.org/ns/1.0">{
 for $k in map:keys($pmap)
 let $v := map:get($pmap, $k)
 where $v eq $g
-return <item><span type="fun"></span><ref target="#{map:get($res, $k)[1]}">{map:get($res, $k)[2]}</ref></item>
-}</list>
+return <item xmlns="http://www.tei-c.org/ns/1.0"> x <ref target="#{map:get($res, $k)[1]}">{map:get($res, $k)[2]}</ref></item>
+}</list></item>
 </list>
 }
 </div>
+return
+for $l in $stub/tei:list
+return
+tlslib:proc-char($l, "true")
 };
 
 (: get concepts not yet defined in taxchar :)
@@ -2923,7 +2945,7 @@ declare function tlslib:char-tax-newconcepts($char){
    where not ($k = $cseq)
    return map:entry($r, map:get($emap, $r)))
  return 
- <div type="taxchar-add">
+ <div type="taxchar-add"  xmlns="http://www.tei-c.org/ns/1.0">
  <head>{$char}</head>
  <list>{
  for $r in  map:keys($em1)
@@ -2941,4 +2963,5 @@ declare function tlslib:char-tax-xml($request as map(*)){
  , $emap := tlslib:getwords($char, map{})
  return if (exists($cdiv)) then $cdiv else tlslib:char-tax-stub($char)
 };
+
 

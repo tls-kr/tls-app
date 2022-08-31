@@ -5,7 +5,27 @@ $(function() {
     set_keyup ();
     get_swls();
     $("#blue-eye").attr("title", "Press here to show annotations.");
-
+    // this is for the taxchar editing
+    $('#chartree').jstree({
+     "core" : {
+       // so that create works
+       // we want only rename
+       "check_callback" : function(operation, node, node_parent, node_position, more){
+           return (operation === 'rename_node' || operation === 'move_node') ? true : false;
+       }
+     },
+     "contextmenu" : {
+    "items" : function ($node) {
+        var tree = $("#chartree").jstree(true);
+        return {
+            "rename" : {
+                "label" : "Edit label",
+                "action" : function (obj) { tree.edit($node);}
+            }
+            };}},
+    "plugins" : ["dnd", "contextmenu" ]
+  }
+    );
 });            
 
 if (!window.x) {
@@ -1980,6 +2000,36 @@ function toggle_alt_labels(){
  * or this:
  * 
 */
+
+function save_taxchar(){
+  // save the tree in #chartree
+// alert("Not yet implemented")  
+  var data = $("#chartree").prop('outerHTML');
+//  console.log("data:"+data);
+  $.ajax({
+  type : "POST",
+  dataType : "html",
+  contentType: 'application/xml',
+  url : "api/responder.xql?func=save-taxchar",
+  data: data,
+  success : function(resp){
+    if (resp.startsWith("Could not")) {
+    toastr.error(resp, "漢學文典 says:");
+/*    toastr.error("Could not save translation for "+line+".", "HXWD says:");        */
+    } else {
+    toastr.info("Modification saved.", "漢學文典 says:");
+    dirty = false;
+    }
+  },
+  error : function(resp){
+  console.log(resp);
+    alert("PROBLEM: "+resp.statusText + "\n " + resp.responseText);
+  }
+  });    
+
+
+
+};
 
 window.onbeforeunload = function() {
     return dirty ? "If you leave this page you will lose your unsaved changes." : null;
