@@ -859,15 +859,39 @@ function app:char($node as node()*, $model as map(*), $char as xs:string?, $id a
       doc(concat($config:tls-data-root, "/core/taxchar.xml"))//tei:div[@xml:id = $id]
     else
       doc(concat($config:tls-data-root, "/core/taxchar.xml"))//tei:div[tei:head[. = $char]]
+    let $char := if (string-length($char)> 0) then $char else ($n//tei:head)[1]/text()
+      
     return
     <div class="card">
     <div class="card-header">
-    <h4 class="card-title">{if ($n) then <span>Taxonomy of meanings for {$n/tei:head/text()}:　　</span> else 
+    <h4 class="card-title">{if ($n) then <span>Taxonomy of meanings for {string-join($n/tei:head/text(), ' / ')}:　　</span> else 
     <span>The character {$char} has not been analyzed yet.　　</span>,
     if ($e) then <span><button id="save-taxchar-button" type="button" class="btn btn-primary" onclick="save_taxchar()">Save taxonomy</button>　　<a class="btn btn-secondary" href="char.html?char={$char}">Leave edit mode</a></span> else <a class="btn btn-secondary" href="char.html?char={$char}&amp;edit=true">Edit taxonomy</a>
     }</h4>
     </div>
-    <div class="card-text" id="{if ($e) then 'chartree' else 'notree'}">
+    
+    {if ($e) then 
+    <div class="card" id="help-content">
+    <div class="card-header" id="help-head">
+      <h5 class="mb-0">
+        <button class="btn" data-toggle="collapse" data-target="#help" >
+          Hints for editing the character taxonomy
+        </button>
+      </h5>
+      </div>
+      <div id="help" class="collapse" data-parent="#help-content">
+      <ul>
+      <li>Lines can be moved around with the mouse.</li>
+      <li>Save before leaving the page.</li>
+      <li>When editing the label, please leave the name of the concept unchanged at the very end of the label.</li>
+      <li>Text after the name of the concept will not be saved.</li>
+      </ul>
+      </div>
+    </div>
+    else ()}
+    
+    
+    <div class="card-text" id="{if ($e) then 'chartree' else 'notree'}" tei-id="{$n/@xml:id}" tei-head="{if (exists($n/tei:head)) then string-join($n/tei:head/text(), ' / ') else $char}">
      {if ($n) then for $l in $n/tei:list return tlslib:proc-char($l, $edit)
      else tlslib:char-tax-stub($char)}
     </div>

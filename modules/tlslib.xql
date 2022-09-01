@@ -258,10 +258,6 @@ let $user := sm:id()//sm:real/sm:username/text()
 declare function tlslib:proc-char($node as node(), $edit as xs:string?)
 { 
 typeswitch ($node)
-  case element(tei:div) return
-      <div>{for $n in $node/node() return tlslib:proc-char($n, $edit)}</div>
-  case element(tei:head) return
-  <h4 class="card-title">{$node/text()}</h4>
   case element(tei:list) return
   <ul >{for $n in $node/node()
        return
@@ -269,10 +265,9 @@ typeswitch ($node)
   }</ul>
   case element(tei:item) return
     if (exists($node/tei:ref)) then
-    <li class="jstree-open" tei-target="{$node/tei:ref/@target}" tei-ref="{$node/tei:ref/text()}">{for $n in $node/node()
-        return
-            tlslib:proc-char($n, $edit)
-    }</li>
+    <li class="jstree-open" tei-target="{$node/tei:ref/@target}" tei-ref="{$node/tei:ref/text()}">{normalize-space(string-join(for $n in $node/node()
+        return tlslib:proc-char($n, $edit)
+    ))}</li>
     else
     <li class="jstree-open" tei-type="{$node/@type}">{for $n in $node/node()
         return
@@ -289,9 +284,8 @@ typeswitch ($node)
      $char := tokenize($node/ancestor::tei:div[1]/tei:head/text(), "\s")[1],
      $swl := collection($config:tls-data-root)//tei:div[@xml:id=$id]//tei:entry[tei:form/tei:orth[. = $char]]//tei:sense
       (: this is the concept originally defined in the taxononomy file! :)
-     ,$alt := $node/@altname
      ,$swl-count := count($swl)
-     ,$concept := normalize-space($node/text())
+     ,$concept := if (exists($node/@altname)) then data($node/@altname) else normalize-space($node/text())
      , $e := string-length($edit) > 0
      return
       if ($e) then 
@@ -300,9 +294,6 @@ typeswitch ($node)
        else
       <span>
       {if ($swl-count = 0) then 
-      if ($alt) then 
-      <a href="concept.html?uuid={$id}" class="text-muted mr-2 ml-2" title="Concept pending: not yet attributed. Alternate name: {string($alt)}">{$concept}</a>
-      else 
       <a href="concept.html?uuid={$id}" class="text-muted mr-2 ml-2" title="Concept pending: not yet attributed">{$concept}</a>
       else 
       (
@@ -2964,4 +2955,33 @@ declare function tlslib:char-tax-xml($request as map(*)){
  return if (exists($cdiv)) then $cdiv else tlslib:char-tax-stub($char)
 };
 
+declare function tlslib:char-tax-html2xml($node as node()){
+typeswitch ($node)
+case element(li) return 
+let $concept := data($node/@tei-ref)
+,$target := $node/@tei-target
+,$type := $node/@tei-type
+,$ref := if (string-length($concept) > 0) then <tei:ref target="{$target}">{$concept}</tei:ref> else ()
+,$txt := if (string-length($concept) > 0) then normalize-space(substring-before(string-join(for $n in $node/node() return tlslib:char-tax-html2xml($n)), $concept))
+         else 
+         for $n in $node/node() return tlslib:char-tax-html2xml($n)
+return
+if ($type = 'pron') then 
+<tei:item>{for $n in $node/node() return tlslib:char-tax-html2xml($n)}</tei:item>
+else
+<tei:item>{($txt,$ref)}{if (exists($node/ul)) then tlslib:char-tax-html2xml($node/ul) else ()}</tei:item>
+case element(ul) return <tei:list>{$node/text(), for $n in $node/node() return tlslib:char-tax-html2xml($n)}</tei:list>
+case element(div) return 
+let $id := if (string-length($node/@tei-id) > 0) then $node/@tei-id else "uuid" || util:uuid()
+return
+<tei:div type="taxchar" xml:id="{$id}" >
+{for $h in tokenize($node/@tei-head, '/') return <tei:head>{$h}</tei:head>}
+{for $n in $node/node() return tlslib:char-tax-html2xml($n)}
+</tei:div>
+case element(i) return for $n in $node/node() return tlslib:char-tax-html2xml($n)
+case element(a) return normalize-space( for $n in $node/node() return tlslib:char-tax-html2xml($n))
+case text() return $node
+default 
+return <name>{$node}</name>
+};
 

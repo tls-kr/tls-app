@@ -1623,8 +1623,25 @@ let $user := sm:id()//sm:real/sm:username/text()
 
 declare function tlsapi:save-taxchar($map as map(*)){
 let $user := sm:id()//sm:real/sm:username/text()
+, $doc := doc($config:tls-data-root||"/core/taxchar.xml")
 , $data := request:get-data()
-return $data
+, $xml := tlslib:char-tax-html2xml($data/div)
+, $id := data($data/div/@tei-id)
+, $node := $doc//tei:div[@xml:id=$id]
+, $updnode := $doc//tei:div[@xml:id=$id]
+
+return
+(
+if ($node) then (
+(: update insert attribute modified {current-dateTime()} into $node,
+ update insert attribute resp-change {"#" || $user} into $node,
+ update rename $node/@xml:id as 'src-id',
+ update insert $node following (tlslib:get-crypt-file("chartax")//tei:div[last()])[1],:)
+ update replace $updnode with $xml
+) else (),
+<div id="{$id}">
+{$xml}</div>
+)
 };
 
 
