@@ -1626,10 +1626,15 @@ let $user := sm:id()//sm:real/sm:username/text()
 , $doc := doc($config:tls-data-root||"/core/taxchar.xml")
 , $data := request:get-data()
 , $xml := tlslib:char-tax-html2xml($data/div)
-, $id := data($data/div/@tei-id)
-, $node := $doc//tei:div[@xml:id=$id]
-, $updnode := $doc//tei:div[@xml:id=$id]
-
+, $id := data(tokenize($data/div/@tei-id))
+, $node := $doc//tei:div[@xml:id=$id[1]]
+, $updnode := $doc//tei:div[@xml:id=$id[1]]
+, $excess := 
+    if (count($id) > 1) then for $i in subsequence($id, 2) return
+      let $delnode := $doc//tei:div[@xml:id=$i]
+      return
+      update delete $delnode 
+    else ()
 return
 (
 if ($node) then (

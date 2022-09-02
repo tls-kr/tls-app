@@ -236,11 +236,11 @@ declare function app:browse-word($type as xs:string?, $filter as xs:string?)
  : taxchar if available, otherwise look for words? :)
 declare function app:browse-char($type as xs:string?, $filter as xs:string?)
 {<div><h4>Analyzed characters by frequency</h4><small>1</small>
-   { for $hit at $pos in collection($config:tls-data-root)//tei:div[@type=$type]
+   { for $hit at $pos in collection($config:tls-data-root||"/core")//tei:div[@type=$type]
      let $head := $hit/tei:head
      ,$id := $hit/@xml:id
     return 
-    (<a class="ml-2" href="char.html?id={$id}">{$head}</a>,
+    (<a class="ml-2" href="char.html?char={$head[1]}">{$head}</a>,
     if ($pos mod 30 = 0) then (<br/>,<small>{$pos}</small>) else () )
    }
 </div>    
@@ -861,11 +861,12 @@ function app:char($node as node()*, $model as map(*), $char as xs:string?, $id a
     else
       doc(concat($config:tls-data-root, "/core/taxchar.xml"))//tei:div[tei:head[. = $char]]
     let $char := if (string-length($char)> 0) then $char else ($n//tei:head)[1]/text()
+    , $h := string-join(distinct-values($n/tei:head/text()), ' / ')
       
     return
     <div class="card">
     <div class="card-header">
-    <h4 class="card-title">{if ($n) then <span>Taxonomy of meanings for {string-join($n/tei:head/text(), ' / ')}:　　</span> else 
+    <h4 class="card-title">{if ($n) then <span>Taxonomy of meanings for {$h}:　　</span> else 
     <span>The character {$char} has not been analyzed yet.　　</span>,
     if ($e) then 
        <span><button id="save-taxchar-button" type="button" class="btn btn-primary" onclick="save_taxchar()">Save taxonomy</button>　　<a class="btn btn-secondary" href="char.html?char={$char}">Leave edit mode</a></span> 
@@ -892,15 +893,16 @@ function app:char($node as node()*, $model as map(*), $char as xs:string?, $id a
       <li><b>Save before leaving the page!</b></li>
       <li>Start editing the label by right-clicking on it. </li>
       <li>When editing the label, please leave the name of the concept unchanged at the very end of the label.</li>
-      <li>Text after the name of the concept will not be saved.</li>
-      <li>There might be some lines at the bottom for new concepts, that have been added since the last editing of this character.</li>
+      <li>Text <b>after</b> the name of the concept will <b>not</b> be saved.</li>
+      <li>"Delete" will delete a subtree.  Move lines you want to keep to other subtrees before deleting the upper level item(s).</li>
+      <li>There might be some lines at the bottom with new concepts that have been added since the last editing of this character.</li>
       </ul>
       </div>
     </div>
     else ()}
     
     
-    <div class="card-text" id="{if ($e) then 'chartree' else 'notree'}" tei-id="{$n/@xml:id}" tei-head="{if (exists($n/tei:head)) then string-join($n/tei:head/text(), ' / ') else $char}">
+    <div class="card-text" id="{if ($e) then 'chartree' else 'notree'}" tei-id="{$n/@xml:id}" tei-head="{if (exists($n/tei:head)) then $h else $char}">
      {if ($n) then (for $l in $n/tei:list return tlslib:proc-char($l, $edit), 
         for $l in tlslib:char-tax-newconcepts($char)//tei:list return tlslib:proc-char($l, $edit) )
      else tlslib:char-tax-stub($char)}
@@ -912,7 +914,7 @@ function app:char($node as node()*, $model as map(*), $char as xs:string?, $id a
     <li class="page-item"><a class="page-link" href="char.html?id={$c/@xml:id}">{$c/tei:head/text()}</a></li>
     }    
     <li class="page-item disabled"><a class="page-link">&#171;</a></li>
-    <li class="page-item disabled"><a class="page-link">{$n/tei:head/text()}</a></li>
+    <li class="page-item disabled"><a class="page-link">{$h}</a></li>
     <li class="page-item disabled"><a class="page-link">&#187;</a></li>
     {for $c in $n/following::tei:div[position()< 6]
     return

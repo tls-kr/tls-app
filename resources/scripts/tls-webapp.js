@@ -9,20 +9,8 @@ $(function() {
     $('#chartree').jstree({
      "core" : {
        // so that create works
-       // we want only rename
-       "check_callback" : function(operation, node, node_parent, node_position, more){
-           return (operation === 'rename_node' || operation === 'move_node') ? true : false;
-       }
+       "check_callback" :  true 
      },
-     "contextmenu" : {
-    "items" : function ($node) {
-        var tree = $("#chartree").jstree(true);
-        return {
-            "rename" : {
-                "label" : "Edit label",
-                "action" : function (obj) { tree.edit($node);}
-            }
-            };}},
     "plugins" : ["dnd", "contextmenu" ]
   }
     );

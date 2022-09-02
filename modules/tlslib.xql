@@ -294,7 +294,7 @@ typeswitch ($node)
        else
       <span>
       {if ($swl-count = 0) then 
-      <a href="concept.html?uuid={$id}" class="text-muted mr-2 ml-2" title="Concept pending: not yet attributed">{$concept}</a>
+      <a href="concept.html?uuid={$id}" class="text-muted mr-2 ml-2" title="Concept pending: not yet attributed for this character">{$concept}</a>
       else 
       (
       <a href="concept.html?uuid={$id}" class="mr-2 ml-2">{$concept}</a>
