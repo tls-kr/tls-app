@@ -1552,7 +1552,7 @@ let $user := sm:id()//sm:real/sm:username/text()
 (: creating a map as a combination of the concepts in taxchar and the existing concepts :)
 , $wm := map:merge((
     for $c in $taxdoc//tei:div[tei:head[. = $word]]//tei:ref
-        let $s := $c/ancestor::tei:list/preceding::tei:item[@type='pron'][1]/text()
+        let $s := $c/ancestor::tei:list/tei:item[@type='pron'][1]/text()
         let $pys := tokenize(normalize-space($s), '\s+')        
         , $py := if (tlslib:iskanji($pys[1])) then $pys[2] else $pys[1]
         return map:entry(substring($c/@target, 2), map {"concept": $c/text(), "py" : $py, "zi" : $word})
