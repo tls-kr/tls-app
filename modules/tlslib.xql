@@ -1553,9 +1553,12 @@ let $user := sm:id()//sm:real/sm:username/text()
 , $wm := map:merge((
     for $c in $taxdoc//tei:div[tei:head[. = $word]]//tei:ref
         let $s := $c/ancestor::tei:list/tei:item[@type='pron'][1]/text()
-        let $pys := tokenize(normalize-space($s), '\s+')        
-        , $py := if (tlslib:iskanji($pys[1])) then $pys[2] else $pys[1]
+    return
+        if (string-length($s) > 0) then (
+      let $pys := tokenize(normalize-space($s), '\s+') 
+       , $py := if (tlslib:iskanji($pys[1])) then $pys[2] else $pys[1]
         return map:entry(substring($c/@target, 2), map {"concept": $c/text(), "py" : $py, "zi" : $word})
+        ) else ()    
     ,
     for $w in $words
     let $concept := $w/ancestor::tei:div/tei:head/text(),
