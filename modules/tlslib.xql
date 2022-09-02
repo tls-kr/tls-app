@@ -2910,7 +2910,7 @@ return
 for $k in map:keys($pmap)
 let $v := map:get($pmap, $k)
 where $v eq $g
-return <item xmlns="http://www.tei-c.org/ns/1.0"> x <ref target="#{map:get($res, $k)[1]}">{map:get($res, $k)[2]}</ref></item>
+return <item xmlns="http://www.tei-c.org/ns/1.0"><ref target="#{map:get($res, $k)[1]}">{map:get($res, $k)[2]}</ref></item>
 }</list></item>
 </list>
 }
@@ -2983,7 +2983,7 @@ case element(div) return
 let $id := if (string-length($node/@tei-id) > 0) then $node/@tei-id else "uuid" || util:uuid()
 return
 <div type="taxchar" xml:id="{$id}" resp="{$user}" modified="{current-dateTime()}" xmlns="http://www.tei-c.org/ns/1.0" >
-{for $h in tokenize($node/@tei-head, '/') return <head xmlns="http://www.tei-c.org/ns/1.0">{$h}</head>}
+{for $h in tokenize($node/@tei-head, '/') return <head xmlns="http://www.tei-c.org/ns/1.0">{normalize-space($h)}</head>}
 {for $n in $node/node() return tlslib:char-tax-html2xml($n)}
 </div>
 case element(i) return for $n in $node/node() return tlslib:char-tax-html2xml($n)

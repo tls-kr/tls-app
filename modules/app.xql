@@ -888,10 +888,12 @@ function app:char($node as node()*, $model as map(*), $char as xs:string?, $id a
       <div id="help" class="collapse" data-parent="#help-content">
       <ul>
       <li>Lines can be moved around with the mouse.</li>
-      <li>Lines of the highest level indicate the reading for this part of the hierarchy</li>
-      <li>Save before leaving the page.</li>
+      <li>Lines of the highest level indicate the reading for this part of the hierarchy.</li>
+      <li><b>Save before leaving the page!</b></li>
+      <li>Start editing the label by right-clicking on it. </li>
       <li>When editing the label, please leave the name of the concept unchanged at the very end of the label.</li>
       <li>Text after the name of the concept will not be saved.</li>
+      <li>There might be some lines at the bottom for new concepts, that have been added since the last editing of this character.</li>
       </ul>
       </div>
     </div>
@@ -899,7 +901,8 @@ function app:char($node as node()*, $model as map(*), $char as xs:string?, $id a
     
     
     <div class="card-text" id="{if ($e) then 'chartree' else 'notree'}" tei-id="{$n/@xml:id}" tei-head="{if (exists($n/tei:head)) then string-join($n/tei:head/text(), ' / ') else $char}">
-     {if ($n) then for $l in $n/tei:list return tlslib:proc-char($l, $edit)
+     {if ($n) then (for $l in $n/tei:list return tlslib:proc-char($l, $edit), 
+        for $l in tlslib:char-tax-newconcepts($char)//tei:list return tlslib:proc-char($l, $edit) )
      else tlslib:char-tax-stub($char)}
     </div>
     <div class="card-footer">
