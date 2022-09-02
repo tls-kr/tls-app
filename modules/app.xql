@@ -853,6 +853,7 @@ declare
 function app:char($node as node()*, $model as map(*), $char as xs:string?, $id as xs:string?, $edit as xs:string?)
 {
     (session:create(),
+    let $usergroups := sm:id()//sm:group/text()
     let $key := replace($id, '#', '')
     let $e := string-length($edit) > 0
     let $n := if (string-length($id) > 0) then
@@ -866,7 +867,12 @@ function app:char($node as node()*, $model as map(*), $char as xs:string?, $id a
     <div class="card-header">
     <h4 class="card-title">{if ($n) then <span>Taxonomy of meanings for {string-join($n/tei:head/text(), ' / ')}:　　</span> else 
     <span>The character {$char} has not been analyzed yet.　　</span>,
-    if ($e) then <span><button id="save-taxchar-button" type="button" class="btn btn-primary" onclick="save_taxchar()">Save taxonomy</button>　　<a class="btn btn-secondary" href="char.html?char={$char}">Leave edit mode</a></span> else <a class="btn btn-secondary" href="char.html?char={$char}&amp;edit=true">Edit taxonomy</a>
+    if ($e) then 
+       <span><button id="save-taxchar-button" type="button" class="btn btn-primary" onclick="save_taxchar()">Save taxonomy</button>　　<a class="btn btn-secondary" href="char.html?char={$char}">Leave edit mode</a></span> 
+    else 
+       if ("tls-editor" = $usergroups) then
+       <a class="btn btn-secondary" href="char.html?char={$char}&amp;edit=true">Edit taxonomy</a>
+       else ()
     }</h4>
     </div>
     
@@ -882,6 +888,7 @@ function app:char($node as node()*, $model as map(*), $char as xs:string?, $id a
       <div id="help" class="collapse" data-parent="#help-content">
       <ul>
       <li>Lines can be moved around with the mouse.</li>
+      <li>Lines of the highest level indicate the reading for this part of the hierarchy</li>
       <li>Save before leaving the page.</li>
       <li>When editing the label, please leave the name of the concept unchanged at the very end of the label.</li>
       <li>Text after the name of the concept will not be saved.</li>
