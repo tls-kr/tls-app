@@ -32,12 +32,13 @@ let $sense-id := request:get-parameter("sense-id", "uuid-20c9da30-27bc-4b0a-ab0a
       doc("/db/users/" || $user || "/textdates.xml")//date else 
       doc($config:tls-texts-root || "/tls/textdates.xml")//date
 ,$ret := for $o in $orth/text()
-  for $line in  collection($config:tls-texts-root)//tei:seg[ngram:contains(., $o)]
+  for $p in  collection($config:tls-texts-root)//tei:p[ngram:contains(., $o)]
+    let $src := $p/ancestor::tei:TEI//tei:titleStmt/tei:title/text()
+    for $line in util:expand($p)//exist:match/ancestor::tei:seg
     let $target := $line/@xml:id,
     $locs := substring-before(tokenize(substring-before($target, "."), "_")[last()], "-"),
     $textid := tokenize($target, "_")[1],
     $loc := if (string-length($locs) > 0) then xs:int($locs) else $locs, 
-    $src := $line/ancestor::tei:TEI//tei:titleStmt/tei:title/text(),
     $tr := collection($config:tls-translation-root)//tei:seg[@corresp="#" || $target]
 (:    ,$atts := for $a in $ann 
                where $a = "#" || $target
