@@ -604,8 +604,9 @@ declare function tlslib:tv-header($node as node()*, $model as map(*)){
 declare function tlslib:generate-toc($node){
  if ($node/tei:head) then
   let $locseg := if ($node//tei:seg/@xml:id) then ($node//tei:seg/@xml:id)[1] else $node/following::tei:seg[1]/@xml:id
+  ,$head := if ($node/tei:head[1]/tei:seg) then ($node/tei:head[1]/tei:seg)/text() else $node//text()
   return 
-    <a class="dropdown-item" title="{$locseg}" href="textview.html?location={$locseg}&amp;prec=0&amp;foll=30">{$node/tei:head//text()}</a>
+    <a class="dropdown-item" title="{$locseg}" href="textview.html?location={$locseg}&amp;prec=0&amp;foll=30">{$head}</a>
   else (),
  for $d in $node/child::tei:div
  return tlslib:generate-toc($d)
@@ -714,7 +715,7 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
       $pseg := if ($prec > 0) then $targetseg/preceding::tei:seg[fn:position() < $prec] 
         else (),
       $d := $targetseg/ancestor::tei:div[1],
-      $head := $d/tei:head[1],
+      $head := if ($d/tei:head[1]/tei:seg) then ($d/tei:head[1]/tei:seg)/text() else $d//text(),
       $sc := count($d//tei:seg),
       $xpos := index-of($d//tei:seg/@xml:id, $targetseg/@xml:id),
 (:      $title := $model('title')/text(),:)
