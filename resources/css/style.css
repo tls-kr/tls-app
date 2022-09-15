@@ -164,6 +164,11 @@
   font-size: larger;  
 }
 
+.tls-comm {
+  font-size: smaller;  
+  background-color: #f3faf0;
+}
+
 .tls-div:before {
     height: 54px;
     margin-top: -54px;

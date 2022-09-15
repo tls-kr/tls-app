@@ -715,7 +715,9 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
       $pseg := if ($prec > 0) then $targetseg/preceding::tei:seg[fn:position() < $prec] 
         else (),
       $d := $targetseg/ancestor::tei:div[1],
-      $head := if ($d/tei:head[1]/tei:seg) then ($d/tei:head[1]/tei:seg)/text() else $d//text(),
+      $head := if ($d/tei:head[1]/tei:seg) then ($d/tei:head[1]/tei:seg)/text() 
+         else if ($d/ancestor::tei:div/tei:head) then $d/ancestor::tei:div/tei:head/tei:seg/text() 
+         else $d//text(),
       $sc := count($d//tei:seg),
       $xpos := index-of($d//tei:seg/@xml:id, $targetseg/@xml:id),
 (:      $title := $model('title')/text(),:)
@@ -1070,7 +1072,7 @@ declare function tlslib:display-seg($seg as node()*, $options as map(*) ) {
 return
 (
 <div class="row {$mark}">
-<div class="{if ($seg/parent::tei:head) then 'tls-head ' else () }{if ($ann='false') then 'col-sm-4' else 'col-sm-2'} zh {$alpheios-class}" lang="{$lang}" id="{$seg/@xml:id}" data-tei="{ util:node-id($seg) }">{tlslib:proc-seg($seg)}{(:if (exists($seg/tei:anchor/@xml:id)) then <span title="{normalize-space(string-join($seg/ancestor::tei:div//tei:note[tei:ptr/@target='#'||$seg/tei:anchor/@xml:id]/text()))}" >●</span> else ():) ()}</div>　
+<div class="{if ($seg/parent::tei:head) then 'tls-head ' else if ($seg/@type='comm') then 'tls-comm ' else () }{if ($ann='false') then 'col-sm-4' else 'col-sm-2'} zh {$alpheios-class}" lang="{$lang}" id="{$seg/@xml:id}" data-tei="{ util:node-id($seg) }">{tlslib:proc-seg($seg)}{(:if (exists($seg/tei:anchor/@xml:id)) then <span title="{normalize-space(string-join($seg/ancestor::tei:div//tei:note[tei:ptr/@target='#'||$seg/tei:anchor/@xml:id]/text()))}" >●</span> else ():) ()}</div>　
 <div class="col-sm-5 tr" title="{$resp1}" lang="en-GB" tabindex="{$options('pos')+500}" id="{$seg/@xml:id}-tr" contenteditable="{if (not($testuser)) then 'true' else 'false'}">{typeswitch ($slot1) 
 case element(tei:TEI) return  $slot1//tei:seg[@corresp="#"||$seg/@xml:id]/text()
 default return (krx:get-varseg-ed($seg/@xml:id, substring-before($slot1, "::")))
