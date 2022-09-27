@@ -98,7 +98,11 @@ let $data-root := "/db/apps/tls-data"
 let $targetcoll := if (xmldb:collection-available($data-root || "/notes/doc")) then $data-root || "/notes/doc" else 
     concat($data-root || "/notes", xmldb:create-collection($data-root || "/notes", "doc"))
 ,$textid := tokenize($line-id, "_")[1]
-,$docname :=  $textid || "-ann.xml"
+,$seg := collection($config:tls-texts-root)//tei:seg[@xml:id=$line-id]
+return
+if ($seg/@state='locked') then "Line is locked.  Please add punctuation before attempting to attribute."
+else (
+let $docname :=  $textid || "-ann.xml"
 ,$newswl:=tlsapi:make-attribution($line-id, $sense-id, $user, $currentword, $pos)
 ,$targetdoc :=   if (doc-available(concat($targetcoll,"/",$docname))) then
                     doc(concat($targetcoll,"/", $docname)) else 
@@ -144,12 +148,14 @@ else
  update insert <seg  xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$line-id}"><line>{$newswl//tls:srcline/text()}</line>{$newswl}</seg> into 
  $targetdoc//tei:p[@xml:id=concat($textid, "-start")]
  
- ,data($newswl/@xml:id)
+(: ,data($newswl/@xml:id):)
  ,sm:chmod(xs:anyURI($targetcoll || "/" || $docname), "rwxrwxr--")
  (: for the CHANT files: grant access when attribution is made :)
  ,if ($texturi) then sm:chmod($texturi, "rwxrwxr--") else ()
+ , "Attribution has been saved. Thank you for your contribution."
  )
  else "No access"
+ )
 };
 
 (: this version saves to the text as anchor node :)

@@ -1055,6 +1055,7 @@ declare function tlslib:display-seg($seg as node()*, $options as map(*) ) {
   (: we are displaying in a reduced context, only 2 rows  :)
   $ann := lower-case(map:get($options, "ann")),
   $loc := map:get($options, "loc"),
+  $state := $seg/@state = 'locked',
   $mark := if (data($seg/@xml:id) = $loc) then "mark" else ()
   ,$lang := 'zho'
   ,$alpheios-class := if ($user = 'test2') then 'alpheios-enabled' else ''

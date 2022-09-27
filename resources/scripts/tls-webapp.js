@@ -6,6 +6,8 @@ $(function() {
     get_swls();
     $("#blue-eye").attr("title", "Press here to show annotations.");
     // this is for the taxchar editing
+    try { 
+    // it seems this does not work... but the uncaught error does not seem to matter...
     $('#chartree').jstree({
      "core" : {
        // so that create works
@@ -14,7 +16,10 @@ $(function() {
     "plugins" : ["dnd", "contextmenu" ]
   }
     );
+} finally {}    
 });            
+
+
 
 if (!window.x) {
     x = {};
@@ -301,7 +306,12 @@ function save_swl_line(sense_id, line_id, pos){
   hide_swl_form("#editSWLDialog");
   console.log("Hiding form");
   show_swls_for_line(line_id);
-  toastr.info("Attribution has been saved. Thank you for your contribution.", "HXWD says:")
+  console.log("Response:", resp)
+  if (resp.startsWith("Attribution has")) {
+  toastr.info(resp, "HXWD says:")
+  } else {
+  toastr.error(resp, "HXWD says:")      
+  }
   },
   error : function(resp){
     console.log(resp)
