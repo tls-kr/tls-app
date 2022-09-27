@@ -476,7 +476,7 @@ let $query := map:get($model, "query")
       let $loc := if ($search-type="3") then substring($h/@corresp,2) else $h/@xml:id,
       $m1 := substring(($h/exist:match)[1]/text(), 1, 1),
       $cseg := collection($config:tls-texts-root)//tei:seg[@xml:id=$loc],
-      $head :=  $cseg/ancestor::tei:div[1]/tei:head[1]/text() ,
+      $head :=  $cseg/ancestor::tei:div[1]/tei:head[1]//text() ,
       $title := $cseg/ancestor::tei:TEI//tei:titleStmt/tei:title/text(),
 (:     at some point use this to select the translation the user prefers
       $tr := tlslib:get-translations($model?textid),
