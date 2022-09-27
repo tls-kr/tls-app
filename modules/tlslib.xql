@@ -1055,7 +1055,7 @@ declare function tlslib:display-seg($seg as node()*, $options as map(*) ) {
   (: we are displaying in a reduced context, only 2 rows  :)
   $ann := lower-case(map:get($options, "ann")),
   $loc := map:get($options, "loc"),
-  $state := $seg/@state = 'locked',
+  $locked := $seg/@state = 'locked',
   $mark := if (data($seg/@xml:id) = $loc) then "mark" else ()
   ,$lang := 'zho'
   ,$alpheios-class := if ($user = 'test2') then 'alpheios-enabled' else ''
@@ -1074,13 +1074,13 @@ return
 (
 <div class="row {$mark}">
 <div class="{if ($seg/parent::tei:head) then 'tls-head ' else if ($seg/@type='comm') then 'tls-comm ' else () }{if ($ann='false') then 'col-sm-4' else 'col-sm-2'} zh {$alpheios-class}" lang="{$lang}" id="{$seg/@xml:id}" data-tei="{ util:node-id($seg) }">{tlslib:proc-seg($seg)}{(:if (exists($seg/tei:anchor/@xml:id)) then <span title="{normalize-space(string-join($seg/ancestor::tei:div//tei:note[tei:ptr/@target='#'||$seg/tei:anchor/@xml:id]/text()))}" >●</span> else ():) ()}</div>　
-<div class="col-sm-5 tr" title="{$resp1}" lang="en-GB" tabindex="{$options('pos')+500}" id="{$seg/@xml:id}-tr" contenteditable="{if (not($testuser)) then 'true' else 'false'}">{typeswitch ($slot1) 
+<div class="col-sm-5 tr" title="{$resp1}" lang="en-GB" tabindex="{$options('pos')+500}" id="{$seg/@xml:id}-tr" contenteditable="{if (not($testuser) and not($locked)) then 'true' else 'false'}">{typeswitch ($slot1) 
 case element(tei:TEI) return  $slot1//tei:seg[@corresp="#"||$seg/@xml:id]/text()
 default return (krx:get-varseg-ed($seg/@xml:id, substring-before($slot1, "::")))
 }</div>
  {if ($ann = 'false') then () else 
  (: using en-GB for now, need to get that from translation in the future...  :)
-  <div class="col-sm-4 tr" title="{$resp2}" lang="en-GB" tabindex="{$options('pos')+1000}" id="{$seg/@xml:id}-ex" contenteditable="{if (not($testuser)) then 'true' else 'false'}">
+  <div class="col-sm-4 tr" title="{$resp2}" lang="en-GB" tabindex="{$options('pos')+1000}" id="{$seg/@xml:id}-ex" contenteditable="{if (not($testuser) and not($locked)) then 'true' else 'false'}">
   {typeswitch ($slot2) 
 case element(tei:TEI) return $slot2//tei:seg[@corresp="#"||$seg/@xml:id]/text()  
 default return
