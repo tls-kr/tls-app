@@ -496,3 +496,49 @@ return
      </div>
 </div>
 };
+
+
+
+declare function dialogs:punc-dialog($map as map(*)){
+ let $seg := collection($config:tls-texts-root)//tei:seg[@xml:id=$map?uid],
+ $pseg := $seg/preceding::tei:seg[1],
+ $nseg := $seg/following::tei:seg[1]
+
+ return
+ <div id="punc-dialog" class="modal" tabindex="-1" role="dialog" style="display: none;">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header"><h5>Punctuate current text segment <small class="text-muted ">{$map?uid}</small></h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" title="Close">x</button>
+            </div>
+            <div class="modal-body">
+            <h6 class="font-weight-bold">Previous segment</h6>
+            <div class="card-text"><small class="text-muted">{$pseg//text()}</small></div>
+            <h6 class="font-weight-bold mt-2">Current text segment</h6>
+            <div class="card-text flex-grow-1" contenteditable="true" id="current-seg">{$seg => string-join('') => normalize-space() => replace(' ', '')}</div>
+            <h6 class="font-weight-bold">Following segment</h6>
+            <div class="card-text"><small class="text-muted">{$nseg//text()}</small></div>
+            <h6 class="font-weight-bold mt-2">Context</h6>
+            <div>
+            <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                <label class="btn btn-success active">
+                    <input type="radio" name="actions" id="approve" autocomplete="off" checked="true">Approve</input>
+                </label>
+                <label class="btn btn-warning">
+                    <input type="radio" name="actions" id="change" autocomplete="off"> Suggest changes</input>
+                </label>
+                <label class="btn btn-danger">
+                    <input type="radio" name="actions" id="delete" autocomplete="off"> Mark for deletion</input>
+                </label>
+</div>            </div>  
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="save_punc('{$map?uid}', 'false')">Save text and close</button>
+                <button type="button" class="btn btn-primary" onclick="save_punc('{$map?uid}', 'true')">Save text and continue</button>
+           </div>
+     </div>
+     </div>
+</div>
+};
+

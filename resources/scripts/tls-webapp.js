@@ -2024,10 +2024,51 @@ function save_taxchar(){
     alert("PROBLEM: "+resp.statusText + "\n " + resp.responseText);
   }
   });    
-
-
-
 };
+
+// display dialog for punctuation
+function display_punc_dialog(uid){
+     $.ajax({
+     type : "GET",
+     dataType : "html",  
+     url : "api/responder.xql?func=dialogs:punc-dialog&uid=" + uid,
+     success : function(resp){
+     $('#remoteDialog').html(resp);
+     $('#punc-dialog').modal('show');
+   }
+  });
+};
+
+function save_punc(line_id, cont){
+  var seg = $('#current-seg').text();
+  console.log("Seg: ", seg);
+  $.ajax({
+  type : "PUT",
+  dataType : "html",
+  url : "api/responder.xql?func=save-punc&line="+line_id+"&seg="+seg+"&cont="+cont,
+  success : function(resp){
+  hide_swl_form("#editSWLDialog");
+  console.log("Hiding form");
+  show_swls_for_line(line_id);
+  console.log("Response:", resp)
+  // if cont = 'true', than the return value is the new segment id
+  if (cont === 'true'){
+      display_punc_dialog(resp)
+  }
+  if (resp.startsWith("Attribution has")) {
+  toastr.info(resp, "HXWD says:")
+  } else {
+  toastr.error(resp, "HXWD says:")      
+  }
+  },
+  error : function(resp){
+    console.log(resp)
+    alert(resp);
+  }
+  });       
+};
+
+
 
 window.onbeforeunload = function() {
     return dirty ? "If you leave this page you will lose your unsaved changes." : null;

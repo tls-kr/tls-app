@@ -43,6 +43,40 @@ declare function tlslib:remove-punc($s as xs:string) as xs:string{
 translate(normalize-space($s), ' ，。、&#xA;：；', '')
 };
 
+(: for adding punc :)
+
+(: get the nodes from the indexed text-node up to before the next text-node :)
+declare function local:subseq($i as xs:int, $s as node()*){
+    let $ix := for $n at $pos in $s
+        return
+       typeswitch($n)
+       case element(*) return ()
+       (: this is the text node :)
+       default return $pos
+    let $e := $ix[$i+1] - 1
+    return
+    $s[position() = ($ix[$i]+1 to $e )]
+};
+
+declare function local:add-nodes($tx as xs:string, $s as node()*){
+  for $n in analyze-string($tx, "\$\d+\$")//fn:*
+let $l := local-name($n)
+return
+if ($l = 'non-match') then local:add-c($n/text()) else 
+    let $i := xs:int(replace($n, '\$', ''))
+    return local:subseq($i, $s)
+};
+
+declare function local:add-c($s as xs:string){
+    let $x := analyze-string($s, '\p{P}')
+    return 
+        for $n in $x//fn:*
+        let $l := local-name($n)
+        return
+        if ($l = 'non-match') then $n/text() else 
+        <c xmlns="http://www.tei-c.org/ns/1.0" n="{$n/text()}"/>
+};
+
 
 declare function tlslib:num2hex($num as xs:int) as xs:string {
 let $h := "0123456789ABCDEF"
@@ -398,6 +432,18 @@ declare function tlslib:proc-seg($node as node()){
   case element (tei:lb)  return ()
   case element (exist:match) return <mark>{$node/text()}</mark>
   case element(tei:seg) return (if (string-length($node/@n) > 0) then data($node/@n)||"　" else (), for $n in $node/node() return tlslib:proc-seg($n))
+  case attribute(*) return () 
+ default return $node    
+};
+
+(: replace the lb and pb nodes with a placeholder, c with the @n content :)
+declare function tlslib:proc-seg-for-edit($node as node()){
+ typeswitch ($node)
+  case element (tei:l) return ()
+  case element (tei:c) return data($node/@n)
+  case element (tei:lb)  return "$"
+  case element (tei:pb)  return "$"
+  case element(tei:seg) return for $n in $node/node() return tlslib:proc-seg-for-edit($n)
   case attribute(*) return () 
  default return $node    
 };
@@ -1072,8 +1118,15 @@ declare function tlslib:display-seg($seg as node()*, $options as map(*) ) {
 (: normalize-space(string-join($seg/text(),'')) :)
 return
 (
-<div class="row {$mark}">
-<div class="{if ($seg/parent::tei:head) then 'tls-head ' else if ($seg/@type='comm') then 'tls-comm ' else () }{if ($ann='false') then 'col-sm-4' else 'col-sm-2'} zh {$alpheios-class}" lang="{$lang}" id="{$seg/@xml:id}" data-tei="{ util:node-id($seg) }">{tlslib:proc-seg($seg)}{(:if (exists($seg/tei:anchor/@xml:id)) then <span title="{normalize-space(string-join($seg/ancestor::tei:div//tei:note[tei:ptr/@target='#'||$seg/tei:anchor/@xml:id]/text()))}" >●</span> else ():) ()}</div>　
+<div class="row {$mark}">{
+if($locked) then tlslib:format-button("display_punc_dialog('" || data($seg/@xml:id) || "')", "Add punctuation to this text segment", "octicons/svg/lock.svg", "", "", "tls-editor") else ()
+}<div class="{
+if ($seg/parent::tei:head) then 'tls-head ' else 
+if ($seg/@type='comm') then 'tls-comm ' else 
+if($locked) then 'locked' else () }{
+if ($ann='false') then 'col-sm-4' else 'col-sm-2'} zh {$alpheios-class}" lang="{$lang}" id="{$seg/@xml:id}" data-tei="{ util:node-id($seg) }">{
+tlslib:proc-seg($seg)
+}{(:if (exists($seg/tei:anchor/@xml:id)) then <span title="{normalize-space(string-join($seg/ancestor::tei:div//tei:note[tei:ptr/@target='#'||$seg/tei:anchor/@xml:id]/text()))}" >●</span> else ():) ()}</div>　
 <div class="col-sm-5 tr" title="{$resp1}" lang="en-GB" tabindex="{$options('pos')+500}" id="{$seg/@xml:id}-tr" contenteditable="{if (not($testuser) and not($locked)) then 'true' else 'false'}">{typeswitch ($slot1) 
 case element(tei:TEI) return  $slot1//tei:seg[@corresp="#"||$seg/@xml:id]/text()
 default return (krx:get-varseg-ed($seg/@xml:id, substring-before($slot1, "::")))

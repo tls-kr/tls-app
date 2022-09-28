@@ -1658,6 +1658,14 @@ if ($node) then (
 )
 };
 
+(: Save a segment with user added punctuation.  
+Parameters: line_id = xml:id of segment
+seg = Punctuated text
+cont = 'false' or 'true'; when true display the dialog again with the next segment
+:)
+declare function tlsapi:save-punc($map as map(*)){
+() 
+};
 
 
 declare function tlsapi:stub($map as map(*)){
