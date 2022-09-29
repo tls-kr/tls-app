@@ -1123,7 +1123,7 @@ if($locked) then tlslib:format-button("display_punc_dialog('" || data($seg/@xml:
 }<div class="{
 if ($seg/parent::tei:head) then 'tls-head ' else 
 if ($seg/@type='comm') then 'tls-comm ' else 
-if($locked) then 'locked' else () }{
+if($locked) then 'locked ' else () }{
 if ($ann='false') then 'col-sm-4' else 'col-sm-2'} zh {$alpheios-class}" lang="{$lang}" id="{$seg/@xml:id}" data-tei="{ util:node-id($seg) }">{
 tlslib:proc-seg($seg)
 }{(:if (exists($seg/tei:anchor/@xml:id)) then <span title="{normalize-space(string-join($seg/ancestor::tei:div//tei:note[tei:ptr/@target='#'||$seg/tei:anchor/@xml:id]/text()))}" >●</span> else ():) ()}</div>　
