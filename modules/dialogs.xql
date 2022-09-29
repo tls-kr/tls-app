@@ -500,22 +500,33 @@ return
 
 
 declare function dialogs:punc-dialog($map as map(*)){
- let $seg := collection($config:tls-texts-root)//tei:seg[@xml:id=$map?uid],
- $pseg := $seg/preceding::tei:seg[1],
- $nseg := $seg/following::tei:seg[1]
-
+ let $seg := collection($config:tls-texts-root)//tei:seg[@xml:id=$map?uid]
+ , $pseg := $seg/preceding::tei:seg[1]
+ , $nseg := $seg/following::tei:seg[1]
+ , $type := $seg/@type
  return
  <div id="punc-dialog" class="modal" tabindex="-1" role="dialog" style="display: none;">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
-            <div class="modal-header"><h5>Punctuate current text segment <small class="text-muted ">{$map?uid}</small></h5>
+            <div class="modal-header"><h5>Edit current text segment <small class="text-muted ">{$map?uid}</small></h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close" title="Close">x</button>
             </div>
             <div class="modal-body">
             <h6 class="font-weight-bold">Previous segment</h6>
             <div class="card-text"><small class="text-muted">{$pseg//text()}</small></div>
             <h6 class="font-weight-bold mt-2">Current text segment</h6>
-            <div class="card-text flex-grow-1" contenteditable="true" id="current-seg">{$seg => string-join('') => normalize-space() => replace(' ', '')}</div>
+            <div class="form row">
+            <div class="form-group col-md-4"><select class="form-control" id="type">
+                  {for $s in map:keys($config:seg-types)
+                    return
+                    if ($type = $s ) then 
+                    <option value="{$s}" selected="true">{map:get($config:seg-types, $s)}</option>                    
+                    else
+                    <option value="{$s}">{map:get($config:seg-types, $s)}</option>
+                   } 
+                 </select>                 </div>
+                 </div>     
+            <div class="card-text" contenteditable="true" id="current-seg">{tlslib:proc-seg-for-edit($seg)  => string-join('') => normalize-space() => replace(' ', '')}</div>
             <h6 class="font-weight-bold">Following segment</h6>
             <div class="card-text"><small class="text-muted">{$nseg//text()}</small></div>
             <h6 class="font-weight-bold mt-2">Context</h6>

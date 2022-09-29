@@ -46,7 +46,7 @@ translate(normalize-space($s), ' ，。、&#xA;：；', '')
 (: for adding punc :)
 
 (: get the nodes from the indexed text-node up to before the next text-node :)
-declare function local:subseq($i as xs:int, $s as node()*){
+declare function tlslib:subseq($i as xs:int, $s as node()*){
     let $ix := for $n at $pos in $s
         return
        typeswitch($n)
@@ -58,16 +58,16 @@ declare function local:subseq($i as xs:int, $s as node()*){
     $s[position() = ($ix[$i]+1 to $e )]
 };
 
-declare function local:add-nodes($tx as xs:string, $s as node()*){
+declare function tlslib:add-nodes($tx as xs:string, $s as node()*){
   for $n in analyze-string($tx, "\$\d+\$")//fn:*
 let $l := local-name($n)
 return
-if ($l = 'non-match') then local:add-c($n/text()) else 
+if ($l = 'non-match') then tlslib:add-c($n/text()) else 
     let $i := xs:int(replace($n, '\$', ''))
-    return local:subseq($i, $s)
+    return tlslib:subseq($i, $s)
 };
 
-declare function local:add-c($s as xs:string){
+declare function tlslib:add-c($s as xs:string){
     let $x := analyze-string($s, '\p{P}')
     return 
         for $n in $x//fn:*

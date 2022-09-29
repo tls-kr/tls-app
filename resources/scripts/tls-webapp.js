@@ -2045,7 +2045,7 @@ function save_punc(line_id, cont){
   $.ajax({
   type : "PUT",
   dataType : "html",
-  url : "api/responder.xql?func=save-punc&line="+line_id+"&seg="+seg+"&cont="+cont,
+  url : "api/responder.xql?func=save-punc&line_id="+line_id+"&seg="+seg+"&cont="+cont,
   success : function(resp){
   hide_swl_form("#editSWLDialog");
   console.log("Hiding form");

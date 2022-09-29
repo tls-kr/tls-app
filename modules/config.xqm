@@ -52,6 +52,14 @@ declare variable $config:tls-manifests :=
   , :)$mf := "/manifests"
   return ((:"/db/users/"||$user||$mf,:) $config:tls-texts-root||$mf, $config:tls-krx-root||$mf) ;
 
+declare variable $config:seg-split-tokens := '[，。：．；？﹖！，』」]';
+
+declare variable $config:seg-types := map{
+"root" : "Root Text",
+"comm" : "Commentary",
+"head" : "Heading"
+};
+
 declare variable $config:status-map := map{
 0 : "pending",
 1 : "proposed",

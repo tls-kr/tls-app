@@ -23,6 +23,7 @@ declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
 declare namespace tx = "http://exist-db.org/tls";
 declare namespace mods="http://www.loc.gov/mods/v3";
+declare namespace fn="http://www.w3.org/2005/xpath-functions";
 
 (:~
 Data for the callback function used for autocompletion
@@ -1664,7 +1665,31 @@ seg = Punctuated text
 cont = 'false' or 'true'; when true display the dialog again with the next segment
 :)
 declare function tlsapi:save-punc($map as map(*)){
-() 
+let  $seg := collection($config:tls-texts-root)//tei:seg[@xml:id=$map?line_id]
+, $r0 := tlslib:proc-seg-for-edit($seg) => string-join('')=>normalize-space() => replace(' ', '') => tokenize('\$')
+, $r1 := tokenize($map?seg, '\$')
+, $res := string-join(for $r at $pos in tokenize($map?seg, '\$') return $r || "$" || $pos || "$", '')
+, $str := analyze-string ($res, $config:seg-split-tokens)
+return
+ if (count($r0) != count($r1)) then "Error: Text integrity check failed. Can not save edited text."
+ else 
+   let $segs := for $m at $pos in $str//fn:non-match
+        let $nm := $m/following-sibling::fn:*[1]
+        , $tx := tlslib:add-nodes($m/text(), $seg//node())
+        , $sl := string-join($tx, '')=>normalize-space() => replace(' ', '') 
+        where string-length($sl) > 0
+        return
+          <seg xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$map?line_id}.{$pos}" type="{$map?type}">{$tx, 
+            if (local-name($nm) = 'match') then <c n="{$nm/text()}"/> else ()}</seg>
+   return
+    if (count($segs) > 1) then
+     let $firstseg := $segs[1]/@xml:id
+     return (
+     update insert subsequence($segs, 2) following $seg
+     , update replace $seg with $segs[1]
+     )
+    else
+    update replace $seg with $segs
 };
 
 
