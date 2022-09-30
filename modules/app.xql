@@ -1357,6 +1357,7 @@ src="resources/icons/open-iconic-master/svg/person.svg"/>{sm:id()//sm:real/sm:us
 <div class="dropdown-menu" aria-labelledby="settingsDropdown">
 <a onclick="dologout()" class="dropdown-item bg-danger">Logout</a>
 <a class="dropdown-item" href="settings.html">Settings</a>
+<a class="dropdown-item" href="https://join.slack.com/t/tls-7al8577/shared_invite/zt-1h6hfirdt-8EdFCAxsQalvCIdIs3OK6w">Feedback channel</a>
 </div>
 </li>
 else
@@ -1653,15 +1654,20 @@ return
 declare
     %templates:wrap
 function app:stats($node as node()*, $model as map(*)){
-let $d := for $d1 in collection($config:tls-data-root||"/statistics/")//div[@type="statistics"]
+let $user := sm:id()//sm:real/sm:username/text()
+  , $d := for $d1 in collection($config:tls-data-root||"/statistics/")//div[@type="statistics"]
    let $m := xs:dateTime($d1/@modified)
    order by $m descending
    return $d1
 return
+(<p>
+            <span class="text-danger">This website is under development. {if ($user = "guest") then () else <a class="font-weight-bold" href="https://join.slack.com/t/tls-7al8577/shared_invite/zt-1h6hfirdt-8EdFCAxsQalvCIdIs3OK6w">Click here to access the feedback channel</a>}</span>
+        </p>,
 <div>
 <h3>Overview of the content of the database (last updated: {format-dateTime(xs:dateTime(data($d[1]/@modified)), "[MNn] [D], [Y]", "en", (), ())})</h3>
 {$d[1]//table[@id='stat-overview']}
-</div>
+</div>        
+)
 };
 
 declare

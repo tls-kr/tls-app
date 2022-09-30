@@ -650,10 +650,10 @@ declare function tlslib:tv-header($node as node()*, $model as map(*)){
 declare function tlslib:generate-toc($node){
  if ($node/tei:head) then
   let $locseg := if ($node//tei:seg/@xml:id) then ($node//tei:seg/@xml:id)[1] else $node/following::tei:seg[1]/@xml:id
-  ,$head := if ($node/tei:head[1]/tei:seg) then ($node/tei:head[1]/tei:seg)/text() else $node//text()
+  ,$head := if ($node/tei:head[1]/tei:seg) then ($node/tei:head[1]/tei:seg)/text() else ($node//text())[1]
   return 
     <a class="dropdown-item" title="{$locseg}" href="textview.html?location={$locseg}&amp;prec=0&amp;foll=30">{$head}</a>
-  else $node/text(),
+  else ($node/text())[1],
  for $d in $node/child::tei:div
  return tlslib:generate-toc($d)
 };
