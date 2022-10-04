@@ -1677,9 +1677,10 @@ return
         let $nm := $m/following-sibling::fn:*[1]
         , $tx := tlslib:add-nodes($m/text(), $seg//node())
         , $sl := string-join($tx, '')=>normalize-space() => replace(' ', '') 
+        , $nid := if ($pos > 1) then $map?line_id ||"." || ($pos - 1) else $map?line_id 
         where string-length($sl) > 0
         return
-          <seg xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$map?line_id}.{$pos}" type="{$map?type}">{$tx, 
+          <seg xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$nid}" type="{$map?type}">{$tx, 
             if (local-name($nm) = 'match') then <c n="{$nm/text()}"/> else ()}</seg>
    return
     if (count($segs) > 1) then

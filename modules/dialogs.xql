@@ -529,24 +529,11 @@ declare function dialogs:punc-dialog($map as map(*)){
             <div class="card-text" contenteditable="true" id="current-seg">{tlslib:proc-seg-for-edit($seg)  => string-join('') => normalize-space() => replace(' ', '')}</div>
             <h6 class="font-weight-bold">Following segment</h6>
             <div class="card-text"><small class="text-muted">{$nseg//text()}</small></div>
-            <h6 class="font-weight-bold mt-2">Context</h6>
-            <div>
-            <div class="btn-group btn-group-toggle" data-toggle="buttons">
-                <label class="btn btn-success active">
-                    <input type="radio" name="actions" id="approve" autocomplete="off" checked="true">Approve</input>
-                </label>
-                <label class="btn btn-warning">
-                    <input type="radio" name="actions" id="change" autocomplete="off"> Suggest changes</input>
-                </label>
-                <label class="btn btn-danger">
-                    <input type="radio" name="actions" id="delete" autocomplete="off"> Mark for deletion</input>
-                </label>
-</div>            </div>  
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" onclick="save_punc('{$map?uid}', 'false')">Save text and close</button>
-                <button type="button" class="btn btn-primary" onclick="save_punc('{$map?uid}', 'true')">Save text and continue</button>
+                <button type="button" class="btn btn-primary" onclick="save_punc('{$map?uid}', '')">Save text and close</button>
+                <button type="button" class="btn btn-primary" onclick="save_punc('{$map?uid}', '{$nseg/@xml:id}')">Save text and continue</button>
            </div>
      </div>
      </div>

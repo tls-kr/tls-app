@@ -2039,26 +2039,20 @@ function display_punc_dialog(uid){
   });
 };
 
-function save_punc(line_id, cont){
+function save_punc(line_id, next){
   var seg = $('#current-seg').text();
-  console.log("Seg: ", seg);
+  var type = $("#type" ).val();
   $.ajax({
   type : "PUT",
   dataType : "html",
-  url : "api/responder.xql?func=save-punc&line_id="+line_id+"&seg="+seg+"&cont="+cont,
+  url : "api/responder.xql?func=save-punc&line_id="+line_id+"&seg="+seg+"&type="+type,
   success : function(resp){
-  hide_swl_form("#editSWLDialog");
-  console.log("Hiding form");
-  show_swls_for_line(line_id);
-  console.log("Response:", resp)
   // if cont = 'true', than the return value is the new segment id
-  if (cont === 'true'){
-      display_punc_dialog(resp)
-  }
-  if (resp.startsWith("Attribution has")) {
-  toastr.info(resp, "HXWD says:")
+  $('#punc-dialog').modal('hide');
+  if (next.length > 1){
+      display_punc_dialog(next)
   } else {
-  toastr.error(resp, "HXWD says:")      
+      window.location.reload(true)
   }
   },
   error : function(resp){

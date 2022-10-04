@@ -1302,7 +1302,7 @@ declare function tlslib:get-visit-file($cm as xs:string){
             <title>Visited pages for month {$cm}</title>
          </titleStmt>
          <publicationStmt>
-            <p>published electronically as part of the TLS project at https://hxwd.org</p>
+            <ab>published electronically as part of the TLS project at https://hxwd.org</ab>
          </publicationStmt>
          <sourceDesc>
             <p>Created by members of the TLS project</p>
@@ -1341,7 +1341,7 @@ declare function tlslib:get-crypt-file($type as xs:string){
             <title>Recorded items for month {$cm}</title>
          </titleStmt>
          <publicationStmt>
-            <p>published electronically as part of the TLS project at https://hxwd.org</p>
+            <ab>published electronically as part of the TLS project at https://hxwd.org</ab>
          </publicationStmt>
          <sourceDesc>
             <p>Created by members of the TLS project</p>
@@ -2395,7 +2395,7 @@ declare function tlslib:get-obs-node($type as xs:string){
             <title>Observations of {collection($config:tls-data-root)//tei:TEI[@xml:id="facts-def"]//tei:div[@xml:id=$type]/tei:head/text()}s</title>
          </titleStmt>
          <publicationStmt>
-            <p>published electronically as part of the TLS project at https://hxwd.org</p>
+            <ab>published electronically as part of the TLS project at https://hxwd.org</ab>
          </publicationStmt>
          <sourceDesc>
             <p>Created by members of the TLS project</p>
@@ -2573,7 +2573,7 @@ declare function tlslib:store-new-translation($lang as xs:string, $txtid as xs:s
          </titleStmt>
             }
          <publicationStmt>
-            <p>published electronically as part of the TLS project at https://hxwd.org</p>
+            <ab>published electronically as part of the TLS project at https://hxwd.org</ab>
             {if ($copy = "option1") then 
             <availability status="1">This work is in the public domain</availability> 
             else 

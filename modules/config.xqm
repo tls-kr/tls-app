@@ -73,6 +73,8 @@ declare variable $config:languages := map{
 "de" : "German",
 "fr" : "French",
 "ru" : "Russian",
+"ko" : "Korean",
+"it" : "Italian",
 "la" : "Latin",
 "ogr" : "Old Greek",
 "ja" : "Japanese",
