@@ -472,7 +472,7 @@ let $query := map:get($model, "query")
     <div>
     <table class="table">
     {for $hx at $c in subsequence(map:get($model, "hits"), $start, $resno)
-      for $h in util:expand($hx)//exist:match/ancestor::tei:seg
+      for $h in if ($search-type="3") then $hx else util:expand($hx)//exist:match/ancestor::tei:seg
       let $loc := if ($search-type="3") then substring($h/@corresp,2) else $h/@xml:id,
       $m1 := substring(($h/exist:match)[1]/text(), 1, 1),
       $cseg := collection($config:tls-texts-root)//tei:seg[@xml:id=$loc],
@@ -482,7 +482,7 @@ let $query := map:get($model, "query")
       $tr := tlslib:get-translations($model?textid),
       $slot1-id := tlslib:get-content-id($model?textid, 'slot1', $tr),:)
       $tr := collection($config:tls-translation-root)//tei:seg[@corresp="#"||$h/@xml:id]
-      where $m1 = $q1
+      where if ($search-type="3") then $m1 = $m1 else $m1 = $q1
     return
       <tr>
         <td>{$c + $start -1}</td>
