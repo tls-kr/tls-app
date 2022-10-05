@@ -318,8 +318,9 @@ typeswitch ($node)
      $char := tokenize($node/ancestor::tei:div[1]/tei:head/text(), "\s")[1],
      $swl := collection($config:tls-data-root)//tei:div[@xml:id=$id]//tei:entry[tei:form/tei:orth[. = $char]]//tei:sense
       (: this is the concept originally defined in the taxononomy file! :)
-     ,$swl-count := count($swl)
-     ,$concept := if (exists($node/@altname)) then data($node/@altname) else normalize-space($node/text())
+     , $swl-count := count($swl)
+     , $concept := if (exists($node/@altname)) then data($node/@altname) else normalize-space($node/text())
+     , $cdef := $swl/ancestor::tei:div/tei:div[@type="definition"]/tei:p/text()
      , $e := string-length($edit) > 0
      return
       if ($e) then 
@@ -331,7 +332,7 @@ typeswitch ($node)
       <a href="concept.html?uuid={$id}" class="text-muted mr-2 ml-2" title="Concept pending: not yet attributed for this character">{$concept}</a>
       else 
       (
-      <a href="concept.html?uuid={$id}" class="mr-2 ml-2">{$concept}</a>
+      <a href="concept.html?uuid={$id}" class="mr-2 ml-2" title="{$cdef}">{$concept}</a>
        ,
       <button title="click to reveal {count($swl)} syntactic words" class="btn badge badge-light" type="button" 
       data-toggle="collapse" data-target="#{$id}-swl">{$swl-count}</button>)}
