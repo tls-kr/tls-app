@@ -1593,7 +1593,7 @@ return
 (: This displays the list of words by concept in the right hand popup pane  :)
 declare function tlslib:get-sw($word as xs:string, $context as xs:string, $domain as xs:string) as item()* {
 let $w-context := ($context = "dic") or contains($context, "concept")
-, $coll := if ($domain = "core") then "/concepts/" else "/domain/"||$domain
+, $coll := if ($domain = ("core", "undefined")) then "/concepts/" else "/domain/"||$domain
 let $words-tmp := if ($w-context) then 
   collection($config:tls-data-root||$coll)//tei:orth[contains(. , $word)]
   else
