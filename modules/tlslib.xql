@@ -3001,9 +3001,14 @@ declare function tlslib:char-tax-newconcepts($char){
  <head>{$char}</head>
  <list>{
  for $r in  map:keys($em1)
- return <item corresp="#{$r}"><ref target="#{map:get($emap, $r)[1]}">{map:get($emap, $r)[2]}</ref></item>
+ let $p := tlslib:pron-for-entry($r)/tei:pron[@xml:lang="zh-Latn-x-pinyin"]/text()
+ , $concept := map:get($emap, $r)[2]
+ order by $p || $concept
+ return <item corresp="#{$r}">{$p} <ref target="#{map:get($emap, $r)[1]}">{$concept}</ref></item>
  }</list></div>
 };
+
+(: as of 2022-10-06, the stuff about XML representation of char-tax is not used. :)
 
 (: get XML representation of char in request :)
 
