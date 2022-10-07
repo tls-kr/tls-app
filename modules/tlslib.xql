@@ -950,12 +950,15 @@ $zi := string-join($node/tei:form/tei:orth/text(), "/")
 ,$sm := $s//tls:sem-feat
 ,$def := tlslib:get-sense-def($link)
 ,$rid := $options?line-id || "-" || $node/@xml:id 
+, $exemplum := if ($node/tls:metadata/@rating) then xs:int($node/tls:metadata/@rating) else 0
+, $bg := if ($exemplum > 0) then "bg-secondary" else "bg-light"
+
 (:$pos := concat($sf, if ($sm) then (" ", $sm) else "")
 :)
 return
 if ($type = "row") then
 if ($anntype eq "nswl") then
-<div class="row bg-light {$anntype}">
+<div class="row {$bg} {$anntype}">
 {if (not($context = 'review')) then 
 <div class="col-sm-1"><span class="{$anntype}-col">●</span>
 <!--
@@ -1022,6 +1025,7 @@ if ("tls-editor"=sm:get-user-groups($user) and $node/@xml:id) then
    if (($user = $creator-id) or contains($usergroups, "tls-editor" )) then 
     tlslib:format-button("delete_swl('swl', '" || data($node/@xml:id) || "')", "Immediately delete this SWL for "||$zi[1], "open-iconic-master/svg/x.svg", "small", "close", "tls-editor")
    else (),
+   tlslib:format-button("incr_rating('swl', '" || data($node/@xml:id) || "')", "Mark this attribution as exemplary", "open-iconic-master/svg/star.svg", "small", "close", "tls-editor"),
    if (not ($user = $creator-id)) then
    (
 <span class="rp-5">
@@ -1254,15 +1258,17 @@ let $line := $a/tls:text/tls:srcline/text(),
 $tr := $a/tls:text/tls:line,
 $target := substring(data($a/tls:text/tls:srcline/@target), 2),
 $loc := xs:int((tokenize($target, "_")[3] => tokenize("-"))[1])
-
+, $exemplum := if ($a/tls:metadata/@rating) then xs:int($a/tls:metadata/@rating) else 0
+, $bg := if ($exemplum > 0) then "bg-secondary" else "bg-light"
 return
-<div class="row bg-light table-striped">
+<div class="row {$bg} table-striped">
 <div class="col-sm-2"><a href="textview.html?location={$target}" class="font-weight-bold">{$src, $loc}</a></div>
 <div class="col-sm-3"><span data-target="{$target}" data-toggle="popover">{$line}</span></div>
 <div class="col-sm-7"><span>{$tr/text()}</span>
 {if ((sm:has-access(document-uri(fn:root($a)), "w") and $a/@xml:id) and not(contains(sm:id()//sm:group, 'tls-test'))) then 
 (
 (:tlslib:format-button("review_swl_dialog('" || data($a/@xml:id) || "')", "Review this attribution", "octicons/svg/unverified.svg", "small", "close", "tls-editor"),:)
+tlslib:format-button("incr_rating('swl', '" || data($a/@xml:id) || "')", "Mark this attribution as exemplary", "open-iconic-master/svg/star.svg", "small", "close", "tls-editor"),
 tlslib:format-button("delete_swl('swl', '" || data($a/@xml:id) || "')", "Delete this attribution", "open-iconic-master/svg/x.svg", "small", "close", "tls-editor"),
  if (not ($user = substring($a/tls:metadata/@resp, 2))) then
     tlslib:format-button("save_swl_review('" || data($a/@xml:id) || "')", "Approve the SWL", "octicons/svg/thumbsup.svg", "small", "close", "tls-editor") else ()

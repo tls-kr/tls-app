@@ -1112,6 +1112,27 @@ function delete_word_from_concept(wid, type){
   })  
 };
 
+// increase rating of the attribution; this is the star on the attributions
+// for the moment, type is 'swl', but ...
+function incr_rating(type, uid){
+    var strconfirm = true 
+    if (strconfirm == true) {
+     $.ajax({
+     type : "GET",
+     dataType : "html",  
+     url : "api/responder.xql?func=incr-rating&uid="+uid+"&type="+type,
+     success : function(resp){
+   //  save_this_swl(resp.sense_id)
+      var line_id = resp.replace(/"/g, '')
+   //   console.log("Lineid: " & line_id);
+      show_swls_for_line(line_id);
+      toastr.info("Rating increased.", "HXWD says:");
+   }
+  });
+  }
+};
+
+
 // delete the attribution; this is the x on the attributions
 
 function delete_swl(type, uid){

@@ -645,6 +645,37 @@ if (count($atts) > 0) then
 else 
  <p class="font-weight-bold">No attributions found</p>
 };
+
+(:~
+ Increase rating of a syntactic word location.  We return the line-id, so that we can display the updated attributions.
+ params: type = type of thing to rate (eg swl), uid = uid of thing
+ @score is the community approval of the correctness of this attribution
+ @rating is the importance as a paradigmatic example
+:)
+declare function tlsapi:incr-rating($map as map(*)) {
+let  $user := sm:id()//sm:real/sm:username/text()
+, $action := 'incr-rating'
+, $comment := ''
+return
+if ($map?type eq 'swl') then 
+ let $swl := collection($config:tls-data-root|| "/notes")//tls:ann[@xml:id=$map?uid]
+,  $rating := if ($swl/tls:metadata/@rating) then xs:int($swl/tls:metadata/@rating) else 0
+, $link := substring(tokenize($swl/tei:link/@target)[1], 2)
+, $node := <respStmt xmlns="http://www.tei-c.org/ns/1.0">
+ <name>{$user}</name>
+ <resp notBefore="{current-dateTime()}">{$action}</resp>
+ {if (string-length($comment) > 0) then <note>{$comment}</note> else ()}
+</respStmt>
+, $res :=  (  if ($swl/tls:metadata/@rating) then 
+     update replace $swl/tls:metadata/@rating with $rating + 1 else
+     update insert attribute rating {$rating + 1}  into $swl/tls:metadata
+   , update insert $node into $swl/tls:metadata
+     )
+ return $link
+ else ()
+
+};
+
 (:~
  Delete a syntactic word location.  We return the line-id, so that we can display the updated attributions.
 :)
