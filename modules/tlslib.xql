@@ -3007,9 +3007,10 @@ declare function tlslib:char-tax-newconcepts($char){
  <head>{$char}</head>
  <list>{
  for $r in  map:keys($em1)
- let $p := tlslib:pron-for-entry($r)/tei:pron[@xml:lang="zh-Latn-x-pinyin"]/text()
+ let $pt := tlslib:pron-for-entry($r)/tei:pron[@xml:lang="zh-Latn-x-pinyin"]/text()
+ let $p := if ($pt) then string-join($pt, ' / ') else ""  
  , $concept := map:get($emap, $r)[2]
- order by $p || $concept
+  order by $p || $concept 
  return <item corresp="#{$r}">{$p} <ref target="#{map:get($emap, $r)[1]}">{$concept}</ref></item>
  }</list></div>
 };
