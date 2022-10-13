@@ -160,10 +160,6 @@
   overflow-y: auto;
 }
 
-.tls-head {
-  font-size: larger;  
-}
-
 .tls-comm {
   font-size: smaller;  
   background-color: #f3faf0;
@@ -190,6 +186,19 @@
  background-color: rgba(128,128,128, 0.95);   
   */
 }
+
+.tei-fw {
+ background-color: rgba(80,120,128, 0.25);       
+}
+
+.tei-byline {
+ background-color: rgba(32,120,100, 0.25);       
+}
+
+.tei-head {
+  font-size: larger;  
+}
+
 
 /* StarRating */
 

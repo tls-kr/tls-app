@@ -514,8 +514,9 @@ declare function dialogs:punc-dialog($map as map(*)){
             <div class="modal-body">
             <h6 class="font-weight-bold">Previous segment</h6>
             <div class="card-text"><small class="text-muted">{$pseg//text()}</small></div>
-            <h6 class="font-weight-bold mt-2">Current text segment</h6>
             <div class="form row">
+            <div class="font-weight-bold mt-2 col-md-4">Current text segment</div>
+            <div class="text-muted text-right mt-2 col-md-2">Type:</div>
             <div class="form-group col-md-4"><select class="form-control" id="type">
                   {for $s in map:keys($config:seg-types)
                     return
@@ -534,6 +535,7 @@ declare function dialogs:punc-dialog($map as map(*)){
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
                 <button type="button" class="btn btn-primary" onclick="save_punc('{$map?uid}', '')">Save text and close</button>
                 <button type="button" class="btn btn-primary" onclick="save_punc('{$map?uid}', '{$nseg/@xml:id}')">Save text and continue</button>
+                <button type="button" class="btn btn-primary" onclick="save_punc('{$map?uid}', 'merge')">Merge with following segment</button>
            </div>
      </div>
      </div>

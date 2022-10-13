@@ -18,6 +18,7 @@ import module namespace functx="http://www.functx.com" at "../modules/functx.xql
 import module namespace tlslib="http://hxwd.org/lib" at "../modules/tlslib.xql";
 import module namespace dialogs="http://hxwd.org/dialogs" at "../modules/dialogs.xql"; 
 import module namespace krx="http://hxwd.org/krx-utils" at "../modules/krx-utils.xql";
+import module namespace xed="http://hxwd.org/xml-edit" at "../modules/xml-edit.xql";
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
@@ -668,7 +669,7 @@ if ($map?type eq 'swl') then
 </respStmt>
 , $res :=  (  if ($swl/tls:metadata/@rating) then 
      update replace $swl/tls:metadata/@rating with $rating + 1 else
-     update insert attribute rating {$rating + 1}  into $swl/tls:metadata
+     update insert attribute rating {if ($rating > 1) then 0 else $rating + 1}  into $swl/tls:metadata
    , update insert $node into $swl/tls:metadata
      )
  return $link
@@ -1694,6 +1695,7 @@ if ($node) then (
 Parameters: line_id = xml:id of segment
 seg = Punctuated text
 cont = 'false' or 'true'; when true display the dialog again with the next segment
+type = one of the seg-types, defined in config.xqm
 :)
 declare function tlsapi:save-punc($map as map(*)){
 let  $seg := collection($config:tls-texts-root)//tei:seg[@xml:id=$map?line_id]
@@ -1704,17 +1706,23 @@ let  $seg := collection($config:tls-texts-root)//tei:seg[@xml:id=$map?line_id]
 return
  if (count($r0) != count($r1)) then "Error: Text integrity check failed. Can not save edited text."
  else 
-   let $segs := for $m at $pos in $str//fn:non-match
-        let $nm := $m/following-sibling::fn:*[1]
+   if ($map?type != $seg/@type) then 
+     let $res := xed:change-seg-type($seg, $map?type)
+     ,$p := $seg/parent::*
+     return ()
+   else 
+     let $segs := for $m at $pos in $str//fn:non-match
+         let $nm := $m/following-sibling::fn:*[1]
+        , $t := replace(string-join($nm/text(), ''), '/', '')
         , $tx := tlslib:add-nodes($m/text(), $seg//node())
         , $sl := string-join($tx, '')=>normalize-space() => replace(' ', '') 
         , $nid := if ($pos > 1) then $map?line_id ||"." || ($pos - 1) else $map?line_id 
         where string-length($sl) > 0
         return
           <seg xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$nid}" type="{$map?type}">{$tx, 
-            if (local-name($nm) = 'match') then <c n="{$nm/text()}"/> else ()}</seg>
+            if (local-name($nm) = 'match' and string-length($t) > 0) then <c n="{$t}"/> else ()}</seg>
    return
-    if (count($segs) > 1) then
+    (if (count($segs) > 1) then
      let $firstseg := $segs[1]/@xml:id
      return (
      update insert subsequence($segs, 2) following $seg
@@ -1722,6 +1730,18 @@ return
      )
     else
     update replace $seg with $segs
+    , $segs[last()]/@xml:id)
+};
+
+(: :)
+declare function tlsapi:merge-following-seg($map as map(*)){
+let  $segid := tlsapi:save-punc($map)
+, $seg := collection($config:tls-texts-root)//tei:seg[@xml:id=$segid]
+, $fseg := $seg/following::tei:seg[1]
+,$nseg := <seg xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$seg/@xml:id}" type="{$map?type}">{$seg/node(), $fseg/node()}</seg> 
+return 
+(update replace $seg with $nseg, 
+update delete $fseg)
 };
 
 

@@ -1126,7 +1126,7 @@ function incr_rating(type, uid){
       var line_id = resp.replace(/"/g, '')
    //   console.log("Lineid: " & line_id);
       show_swls_for_line(line_id);
-      toastr.info("Rating increased.", "HXWD says:");
+      toastr.info("Attribution has been marked.", "HXWD says:");
    }
   });
   }
@@ -2049,6 +2049,11 @@ function save_taxchar(){
 
 // display dialog for punctuation
 function display_punc_dialog(uid){
+     //what an ugly kludge...
+     if (uid == 'x-get-line-id') {
+        var line_id= $( "#swl-line-id-span" ).text();  
+        uid = line_id
+     }
      $.ajax({
      type : "GET",
      dataType : "html",  
@@ -2059,14 +2064,20 @@ function display_punc_dialog(uid){
    }
   });
 };
-
+// also used for merge-following-seg 
 function save_punc(line_id, next){
   var seg = $('#current-seg').text();
   var type = $("#type" ).val();
+  if (next == 'merge') {
+    var url = "api/responder.xql?func=merge-following-seg&line_id="+line_id+"&seg="+seg+"&type="+type;
+    next = line_id;
+  } else {
+    var url = "api/responder.xql?func=save-punc&line_id="+line_id+"&seg="+seg+"&type="+type;
+  }
   $.ajax({
   type : "PUT",
   dataType : "html",
-  url : "api/responder.xql?func=save-punc&line_id="+line_id+"&seg="+seg+"&type="+type,
+  url : url,
   success : function(resp){
   // if cont = 'true', than the return value is the new segment id
   $('#punc-dialog').modal('hide');
@@ -2080,7 +2091,7 @@ function save_punc(line_id, next){
     console.log(resp)
     alert(resp);
   }
-  });       
+  });      
 };
 
 
