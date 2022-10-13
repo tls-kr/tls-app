@@ -515,8 +515,13 @@ declare function dialogs:punc-dialog($map as map(*)){
             <h6 class="font-weight-bold">Previous segment</h6>
             <div class="card-text"><small class="text-muted">{$pseg//text()}</small></div>
             <div class="form row">
-            <div class="font-weight-bold mt-2 col-md-4">Current text segment</div>
-            <div class="text-muted text-right mt-2 col-md-2">Type:</div>
+            <div class="text-muted text-right mt-2 col-md-3">　</div>
+            <div class="mt-2 col-md-2"><span class="text-muted">Splitting characters:</span> </div>
+            <div class="mt-2 col-md-4"><span class="text-muted">{$config:seg-split-tokens}</span></div>
+            </div>
+            <div class="form row">
+            <div class="font-weight-bold mt-2 col-md-3">Current text segment</div>
+            <div class="text-muted mt-2 col-md-2">Type:</div>
             <div class="form-group col-md-4"><select class="form-control" id="type">
                   {for $s in map:keys($config:seg-types)
                     return
@@ -533,6 +538,7 @@ declare function dialogs:punc-dialog($map as map(*)){
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="save_punc('{$map?uid}', 'no_split')">Save but don't split</button>
                 <button type="button" class="btn btn-primary" onclick="save_punc('{$map?uid}', '')">Save text and close</button>
                 <button type="button" class="btn btn-primary" onclick="save_punc('{$map?uid}', '{$nseg/@xml:id}')">Save text and continue</button>
                 <button type="button" class="btn btn-primary" onclick="save_punc('{$map?uid}', 'merge')">Merge with following segment</button>

@@ -1711,6 +1711,12 @@ return
      ,$p := $seg/parent::*
      return ()
    else 
+   if ($map?action = "no_split") then 
+   let $tx := tlslib:add-nodes($res, $seg//node())
+   , $segs := <seg xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$map?line_id}" type="{$map?type}">{$tx}</seg>
+   return
+    update replace $seg with $segs
+   else 
      let $segs := for $m at $pos in $str//fn:non-match
          let $nm := $m/following-sibling::fn:*[1]
         , $t := replace(string-join($nm/text(), ''), '/', '')

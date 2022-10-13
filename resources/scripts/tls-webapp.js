@@ -2071,6 +2071,9 @@ function save_punc(line_id, next){
   if (next == 'merge') {
     var url = "api/responder.xql?func=merge-following-seg&line_id="+line_id+"&seg="+seg+"&type="+type;
     next = line_id;
+  } else if (next == 'no_split') {
+    var url = "api/responder.xql?func=merge-following-seg&line_id="+line_id+"&seg="+seg+"&type="+type+"&action="+next;
+    next = "";
   } else {
     var url = "api/responder.xql?func=save-punc&line_id="+line_id+"&seg="+seg+"&type="+type;
   }
