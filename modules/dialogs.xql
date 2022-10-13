@@ -533,6 +533,7 @@ declare function dialogs:punc-dialog($map as map(*)){
                  </select>                 </div>
                  </div>     
             <div class="card-text" contenteditable="true" id="current-seg">{tlslib:proc-seg-for-edit($seg)  => string-join('') => normalize-space() => replace(' ', '')}</div>
+            <div class="form row"><div class="mt-2 col-md-12"><small>IMPORTANT: <span class="font-weight-bold">'$'</span> characters represent important information not shown here, please do not remove!</small></div></div>
             <h6 class="font-weight-bold">Following segment</h6>
             <div class="card-text"><small class="text-muted">{$nseg//text()}</small></div>
             </div>
