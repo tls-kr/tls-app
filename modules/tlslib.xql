@@ -351,10 +351,10 @@ typeswitch ($node)
 };
    
 (: button, mostly at the right side, in which case class will be "close" :)
-declare function tlslib:format-button($onclick as xs:string, $title as xs:string, $icon as xs:string, $style as xs:string, $class as xs:string, $group as xs:string){
+declare function tlslib:format-button($onclick as xs:string, $title as xs:string, $icon as xs:string, $style as xs:string, $class as xs:string, $groups as xs:string+){
  let $usergroups := sm:id()//sm:group/text()
  return
- if (contains($usergroups, $group)) then
+ if (contains($usergroups, $groups)) then
  if (string-length($style) > 0) then
  <button type="button" class="btn {$class}" onclick="{$onclick}"
  title="{$title}">
@@ -877,7 +877,7 @@ declare function tlslib:swl-form-dialog($context as xs:string){
     </h5>
     <h6 class="text-muted">At:  <span id="swl-line-id-span" class="ml-2">Id of line</span>&#160;
     {tlslib:format-button-common("bookmark_this_line()","Bookmark this location", "open-iconic-master/svg/bookmark.svg"), 
-    tlslib:format-button("display_punc_dialog('x-get-line-id')", "Edit properties of this text segment", "octicons/svg/lock.svg", "", "close", "tls-editor")}</h6>
+    tlslib:format-button("display_punc_dialog('x-get-line-id')", "Edit properties of this text segment", "octicons/svg/lock.svg", "", "close", ("tls-editor", "tls-punc"))}</h6>
     <h6 class="text-muted">Line: <span id="swl-line-text-span" class="ml-2">Text of line</span>
     {tlslib:format-button-common("add_rd_here()","Add observation (regarding a text segment) starting on this line", "octicons/svg/comment.svg")}</h6>
     <div class="card-text">
@@ -1127,7 +1127,7 @@ declare function tlslib:display-seg($seg as node()*, $options as map(*) ) {
 return
 (
 <div class="row {$mark}">{
-if($locked) then tlslib:format-button("display_punc_dialog('" || data($seg/@xml:id) || "')", "Add punctuation to this text segment", "octicons/svg/lock.svg", "", "", "tls-editor") else ()
+if($locked) then tlslib:format-button("display_punc_dialog('" || data($seg/@xml:id) || "')", "Add punctuation to this text segment", "octicons/svg/lock.svg", "", "", ("tls-editor", "tls-punc")) else ()
 }<div class="{
 if ($seg/@type='comm') then 'tls-comm ' else 
 if($locked) then 'locked ' else () }{
