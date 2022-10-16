@@ -44,10 +44,10 @@ The app in in this repository will attempt to download and install these apps wh
 
 ## Memo
 A xquery script 'stat.xql' in modules can be used to create a report of the content of the database. It can be executed with a cron job, to automate this action. For this to work, the following has to be added to the exist conf.xml file:
-        <job type="user"
+        ```<job type="user"
              xquery="/db/apps/tls-app/modules/stat.xql"
              cron-trigger="0 5 0/12 * * ?">
-        </job>
+        </job>```
 
 This will execute the module five minutes past noon and midnight. It will be
 executed with the "guest" user identity, so the permission bits here have to be
