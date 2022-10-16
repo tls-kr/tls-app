@@ -64,7 +64,8 @@ let $l := local-name($n)
 return
 if ($l = 'non-match') then tlslib:add-c($n/text()) else 
     let $i := xs:int(replace($n, '\$', ''))
-    return tlslib:subseq($i, $s)
+    return $s[$i]
+(:    return tlslib:subseq($i, $s):)
 };
 
 declare function tlslib:add-c($s as xs:string){
@@ -441,14 +442,30 @@ declare function tlslib:proc-seg($node as node()){
 (: replace the lb and pb nodes with a placeholder, c with the @n content :)
 declare function tlslib:proc-seg-for-edit($node as node()){
  typeswitch ($node)
-  case element (tei:l) return ()
+  case element (tei:anchor) return "$"
   case element (tei:c) return data($node/@n)
   case element (tei:lb)  return "$"
   case element (tei:pb)  return "$"
+  case element (tei:p) return for $n in $node/node() return tlslib:proc-seg-for-edit($n)
   case element(tei:seg) return for $n in $node/node() return tlslib:proc-seg-for-edit($n)
   case attribute(*) return () 
  default return $node    
 };
+
+(: replace the lb and pb nodes with a placeholder, c with the @n content :)
+declare function tlslib:proc-p-for-edit($node as node()){
+ typeswitch ($node)
+  case element (tei:anchor) return "$"
+  case element (tei:g) return "$"
+  case element (tei:c) return data($node/@n)
+  case element (tei:lb)  return "$"
+  case element (tei:pb)  return "$"
+  case element (tei:p) return for $n in $node/node() return tlslib:proc-p-for-edit($n)
+  case element(*) return "$"
+  case attribute(*) return () 
+ default return $node    
+};
+
 
 (:~ 
 : get the rating (an integer between 0 and 10) of the text, identified by the passed in text id
@@ -2971,7 +2988,8 @@ let $c := substring($g, 2)
 $py := normalize-space(string-join($p, ';'))
 , $oc := normalize-space($e//tx:old-chinese/tx:pan-wuyun/tx:oc/text())
 , $mc := normalize-space($e//tx:middle-chinese//tx:baxter/text())
-, $fq := ($e//tx:fanqie/tx:fanqie-shangzi//tx:graph/text() || $e//tx:fanqie/tx:fanqie-xiazi//tx:graph/text())
+, $fq := try { ($e//tx:fanqie/tx:fanqie-shangzi//tx:graph/text() || $e//tx:fanqie/tx:fanqie-xiazi//tx:graph/text()) } catch
+* { () }
 return
 <list xmlns="http://www.tei-c.org/ns/1.0">
 <item type="pron" corresp="{$g}">{$py || " 反切： " || $fq || "； 聲調： " || $e//tx:調 || "； 廣韻：【" || $e//tx:gloss ||" 】"}
