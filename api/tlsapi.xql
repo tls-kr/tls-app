@@ -1720,7 +1720,7 @@ return
      let $segs := for $m at $pos in $str//fn:non-match
          let $nm := $m/following-sibling::fn:*[1]
         , $t := replace(string-join($nm/text(), ''), '/', '')
-        , $tx := tlslib:add-nodes($m/text(), $seg//node())
+        , $tx := tlslib:add-nodes($m/text(), $seg/child::*)
         , $sl := string-join($tx, '')=>normalize-space() => replace(' ', '') 
         , $nid := if ($pos > 1) then $map?line_id ||"." || ($pos - 1) else $map?line_id 
         where string-length($sl) > 0
