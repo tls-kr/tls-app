@@ -52,7 +52,7 @@ declare variable $config:tls-manifests :=
   , :)$mf := "/manifests"
   return ((:"/db/users/"||$user||$mf,:) $config:tls-texts-root||$mf, $config:tls-krx-root||$mf) ;
 
-declare variable $config:seg-split-tokens := '[，。：．；？﹖！，』」/]';
+declare variable $config:seg-split-tokens := '[，。：．；？﹖！，』」/、]';
 
 declare variable $config:seg-types := map{
 "root" : "Root Text",
