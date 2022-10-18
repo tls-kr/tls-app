@@ -702,7 +702,7 @@ function app:textview($node as node()*, $model as map(*), $location as xs:string
          return
          if ($visit) then 
          collection($config:tls-texts-root)//tei:seg[@xml:id=$visit]  else 
-         (collection($config:tls-texts-root)//tei:TEI[@xml:id=$location]//tei:body/tei:div)[1]
+         (collection($config:tls-texts-root)//tei:TEI[@xml:id=$location]//tei:body)[1]
 
       let $targetseg := if (local-name($firstdiv) = "seg") then $firstdiv else 
       if ($firstdiv//tei:seg) then ($firstdiv//tei:seg)[1] else  ($firstdiv/following::tei:seg)[1] 
