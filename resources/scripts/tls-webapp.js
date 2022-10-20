@@ -2069,16 +2069,19 @@ function save_punc(line_id, next){
   var seg = $('#current-seg').text();
   var type = $("#type" ).val();
   if (next == 'merge') {
-    var url = "api/responder.xql?func=merge-following-seg&line_id="+line_id+"&seg="+seg+"&type="+type;
+    var url = "api/responder.xql?func=merge-following-seg&line_id="+line_id+"&type="+type;
     next = line_id;
   } else if (next == 'no_split') {
-    var url = "api/responder.xql?func=merge-following-seg&line_id="+line_id+"&seg="+seg+"&type="+type+"&action="+next;
+    var url = "api/responder.xql?func=merge-following-seg&line_id="+line_id+"&type="+type+"&action="+next;
     next = "";
   } else {
-    var url = "api/responder.xql?func=save-punc&line_id="+line_id+"&seg="+seg+"&type="+type;
+    var url = "api/responder.xql?func=save-punc&line_id="+line_id+"&type="+type;
   }
   $.ajax({
   type : "PUT",
+  contentType: "text/plain;charset=UTF-8",
+  processData: false,
+  data: seg,
   dataType : "html",
   url : url,
   success : function(resp){
@@ -2096,8 +2099,6 @@ function save_punc(line_id, next){
   }
   });      
 };
-
-
 
 window.onbeforeunload = function() {
     return dirty ? "If you leave this page you will lose your unsaved changes." : null;
