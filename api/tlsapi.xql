@@ -19,6 +19,7 @@ import module namespace tlslib="http://hxwd.org/lib" at "../modules/tlslib.xql";
 import module namespace dialogs="http://hxwd.org/dialogs" at "../modules/dialogs.xql"; 
 import module namespace krx="http://hxwd.org/krx-utils" at "../modules/krx-utils.xql";
 import module namespace xed="http://hxwd.org/xml-edit" at "../modules/xml-edit.xql";
+import module namespace imp="http://hxwd.org/xml-import"at "../modules/import.xql"; 
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
@@ -1753,6 +1754,21 @@ return
 update delete $fseg)
 };
 
+declare function tlsapi:text-request($map as map(*)){
+let $user := sm:id()//sm:real/sm:username/text()
+, $text := doc($config:tls-add-titles)//work[@krid=$map?kid]
+, $req := if ($text/@request) then $text/@request || "," || $user else $user
+return 
+ if ($text/@request) then update replace $text/@request with $req 
+  else update insert attribute request {$req} into $text
+};
+
+declare function tlsapi:add-text($map as map(*)){
+let $w := doc($config:tls-add-titles)//work[@krid=$map?kid]
+, $cbid := $w/altid except $w/altid[matches(., "^(ZB|SB|SK)")]
+, $cv := try {imp:do-conversion($cbid) } catch * {()}
+return if ($cv = $map?kid) then update delete $w/@request else "Error:  can not import text"
+};
 
 declare function tlsapi:stub($map as map(*)){
 () 

@@ -398,13 +398,29 @@ let $query := map:get($model, "query")
     else ()}</h1>
     {
     if ($search-type = "7") then 
+    <div><h2>Existing texts in TLS:</h2>
+
     <ul>{
     for $h in map:get($model, "hits")
     let $loc := $h/ancestor::tei:TEI/@xml:id
     return
-    <li><a href="textview.html?location={$loc}">{data($loc) || " " || data($h)}</a></li>
+    <li><a href="textview.html?location={$loc}">{data($loc) || " " || data($h)}</a> </li>
     }
     </ul>
+    <h2>Texts in the Kanseki Repository:</h2>
+    <ul>{for $h in doc($config:tls-add-titles)//title[contains(., $query)]
+      let $w :=  $h/parent::work
+      , $kid := data($w/@krid)
+      , $req := if ($w/@request) then <span id="{$kid}-req">　Requests: {count(tokenize($w/@request, ','))}</span> else ()
+      , $but := <button type="button" class="btn btn-primary btn-sm" onclick="text_request('{$kid}')">Request for TLS</button>
+      , $av := not($w/note) 
+      order by $kid
+      where string-length($kid) > 5
+      return  <li>{if ($av) then $but else ()}　{$kid || " " || $h/text()} {$req}</li>
+    }
+    </ul>
+    </div>
+        
     else
     if ($search-type = "8") then 
     <div><p>Found {count($model("hits"))} matches, shown by text.<br/>
@@ -1480,6 +1496,7 @@ function app:review($node as node()*, $model as map(*), $type as xs:string, $iss
   case "swl" return tlslib:review-swl()
   case "gloss" return tlslib:review-gloss()
   case "special" return tlslib:review-special($issue)
+  case "request" return tlslib:review-request()
   default return ""
 };
 

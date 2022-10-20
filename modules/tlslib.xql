@@ -434,6 +434,9 @@ declare function tlslib:proc-seg($node as node()){
   case element (tei:c) return data($node/@n)
   case element (tei:lb)  return ()
   case element (exist:match) return <mark>{$node/text()}</mark>
+  case element (tei:anchor) return 
+    let $t := if (starts-with($node/@xml:id, "nkr_note_mod")) then $node/ancestor::tei:TEI//tei:note[@target = "#"|| $node/@xml:id]/text() else ()
+    return if ($t) then <span title="{$t}" class="text-muted"><img class="icon"  src="resources/icons/open-iconic-master/svg/media-record.svg"/></span> else ()
   case element(tei:seg) return (if (string-length($node/@n) > 0) then data($node/@n)||"　" else (), for $n in $node/node() return tlslib:proc-seg($n))
   case attribute(*) return () 
  default return $node    
@@ -589,6 +592,9 @@ declare function tlslib:navbar-review($context as xs:string){
      {if ($context = 'textview') then 
      <a class="dropdown-item" href="#" onClick="zh_start_edit()">Edit Chinese text</a>
      else ()}
+     {if (sm:id()//sm:group = "tls-admin") then 
+     <a class="dropdown-item" href="review.html?type=request">Add requested texts</a>
+     else () }
    </div>
  </li>
 };
@@ -2290,6 +2296,33 @@ return
 </div>
 </div>
 };
+
+declare function tlslib:review-request(){
+let $user := "#" || sm:id()//sm:username
+, $text := doc($config:tls-add-titles)//work[@request]
+
+return
+
+<div class="container">
+<div>
+<h3>Requested texts: {count($text)} items</h3>
+<small>Currently only implemented for CBETA texts (2022-10)</small>
+{for $w at $pos in $text
+      let $kid := data($w/@krid)
+      , $req := if ($w/@request) then <span id="{$kid}-req">　Requests: {count(tokenize($w/@request, ','))}</span> else ()
+      , $cbid := $w/altid except $w/altid[matches(., "^(ZB|SB|SK)")]
+return
+  <div class="row border-top pt-4" id="{data($w/@krid)}">
+  <div class="col-sm-4"><a href="textview.html?location={$kid}">{$kid}　{$w/title/text()}</a></div>
+  <div class="col-sm-2"><span>{string-join($w/@request, " / ")}</span> </div>  
+  <div class="col-sm-3"><span id="gloss-{$pos}" title="Click here to add text" onclick="add_text('{$kid}')">{$cbid}</span></div>
+  </div>,
+()
+}
+</div>
+</div>
+};
+
 
 
 declare function tlslib:review-swl(){
