@@ -1706,7 +1706,7 @@ let  $seg := collection($config:tls-texts-root)//tei:seg[@xml:id=$map?line_id]
 , $res := string-join(for $r at $pos in tokenize($new-seg, '\$') return $r || "$" || $pos || "$", '')
 , $str := analyze-string ($res, $config:seg-split-tokens)
 return
-if (count($r0) != count($r1)) then "Error: Text integrity check failed. Can not save edited text."
+if (count($r0) != count($r1)) then "Error: Text integrity check failed. Can not save edited text. " ||$r0 || "," || $r1
 else
     let $seg-with-updated-type :=
     if ($map?type != $seg/@type) then
@@ -1717,7 +1717,7 @@ else
         ()
     return
     if ($map?action = "no_split") then
-        let $tx := tlslib:add-nodes($res, $seg//node())
+        let $tx := tlslib:add-nodes($res, $seg/child::*[not(self::tei:c)])
         , $segs := <seg xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$map?line_id}" type="{$map?type}">{$tx}</seg>
         return update replace $seg with $segs
     else
