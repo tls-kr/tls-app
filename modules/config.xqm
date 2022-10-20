@@ -45,6 +45,7 @@ declare variable $config:tls-texts-root := substring-before($config:app-root, da
 declare variable $config:tls-krx-root := substring-before($config:app-root, data($config:expath-descriptor/@abbrev)) || "tls-krx";
 declare variable $config:tls-translation-root := concat($config:tls-data-root, "/translations");
 declare variable $config:tls-user-root := "/db/users/";
+declare variable $config:tls-add-titles := $config:tls-texts-root || "/krp-titles.xml";
 declare variable $config:exide-url :="https://hxwd.org:8443/exist/apps/eXide/index.html";
 declare variable $config:tls-manifests := 
   let (:$user := sm:id()//sm:real/sm:username/text()
