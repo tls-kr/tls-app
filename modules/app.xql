@@ -682,9 +682,9 @@ function app:textview($node as node()*, $model as map(*), $location as xs:string
     if (string-length($location) > 0) then
      if (contains($location, '_')) then
       let $textid := tokenize($location, '_')[1]
-      let $firstseg := collection($config:tls-texts-root)//tei:*[@xml:id=$location]
+      let $firstseg := collection($config:tls-texts-root)//tei:seg[@xml:id=$location]
       return
-        tlslib:display-chunk($firstseg, $model, $prec, $foll)
+        try {tlslib:display-chunk($firstseg, $model, $prec, $foll)} catch * {"An error occurred, can't display text. Code:" || count($firstseg) || " (firstseg)" }
      else
       if (not($mode = 'visit') and collection($config:tls-manifests)//mf:manifest[@xml:id=$location]) then 
       krx:show-manifest(collection($config:tls-manifests)//mf:manifest[@xml:id=$location]) 
@@ -707,7 +707,7 @@ function app:textview($node as node()*, $model as map(*), $location as xs:string
       let $targetseg := if (local-name($firstdiv) = "seg") then $firstdiv else 
       if ($firstdiv//tei:seg) then ($firstdiv//tei:seg)[1] else  ($firstdiv/following::tei:seg)[1] 
       return
-       tlslib:display-chunk($targetseg, $model, 0, $prec + $foll)
+        try {tlslib:display-chunk($targetseg, $model, 0, $prec + $foll)} catch * {"An error occurred, can't display text. Code:" || count($targetseg) || " (targetseg)"}
     else 
     app:textlist()
     )
