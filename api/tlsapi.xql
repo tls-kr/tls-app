@@ -1697,39 +1697,38 @@ seg = Punctuated text, must be passed in plain text in the body of the request
 cont = 'false' or 'true'; when true display the dialog again with the next segment
 type = one of the seg-types, defined in config.xqm
 :)
-
 declare function tlsapi:save-punc($map as map(*)){
 let  $seg := collection($config:tls-texts-root)//tei:seg[@xml:id=$map?line_id]
-, $new-seg := util:base64-decode(request:get-data())
+, $new-seg := util:base64-decode(request:get-data()) 
 , $r0 := tlslib:proc-seg-for-edit($seg) => string-join('') => normalize-space() => replace(' ', '') => tokenize('\$')
 , $r1 := tokenize($new-seg, '\$')
 , $res := string-join(for $r at $pos in tokenize($new-seg, '\$') return $r || "$" || $pos || "$", '')
 , $str := analyze-string ($res, $config:seg-split-tokens)
 return
-if (count($r0) != count($r1)) then "Error: Text integrity check failed. Can not save edited text. " ||$r0 || "," || $r1
-else
-    let $seg-with-updated-type :=
-    if ($map?type != $seg/@type) then
+if (count($r0) != count($r1)) then "Error: Text integrity check failed. Can not save edited text."
+else 
+    let $seg-with-updated-type := 
+    if ($map?type != $seg/@type) then 
         let $res := xed:change-seg-type($seg, $map?type)
         , $p := $seg/parent::*
         return ()
     else
         ()
     return
-    if ($map?action = "no_split") then
-        let $tx := tlslib:add-nodes($res, $seg/child::*[not(self::tei:c)])
+    if ($map?action = "no_split") then 
+        let $tx := tlslib:add-nodes($res, $seg//node())
         , $segs := <seg xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$map?line_id}" type="{$map?type}">{$tx}</seg>
         return update replace $seg with $segs
-    else
+    else 
         let $segs := for $m at $pos in $str//fn:non-match
             let $nm := $m/following-sibling::fn:*[1]
             , $t := replace(string-join($nm/text(), ''), '/', '')
             , $tx := tlslib:add-nodes($m/text(), $seg/child::*[not(self::tei:c)])
-            , $sl := string-join($tx, '') => normalize-space() => replace(' ', '')
-            , $nid := if ($pos > 1) then $map?line_id ||"." || ($pos - 1) else $map?line_id
+            , $sl := string-join($tx, '') => normalize-space() => replace(' ', '') 
+            , $nid := if ($pos > 1) then tlslib:generate-new-line-id($map?line_id , $pos - 1) else $map?line_id 
             where string-length($sl) > 0
             return
-            <seg xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$nid}" type="{$map?type}">{$tx,
+            <seg xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$nid}" type="{$map?type}">{$tx, 
                 if (local-name($nm) = 'match' and string-length($t) > 0) then <c n="{$t}"/> else ()}</seg>
         return (
         if (count($segs) > 1) then

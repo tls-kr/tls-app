@@ -3085,3 +3085,20 @@ default
 return <name>{$node}</name>
 };
 
+(: Generate a fresh xml:id for a segment based on some base line id that an index is appended to. 
+ : If appending the index results in an id that is already present in the database, the level
+ : parameter is also appended to the id. The level argument will be increased until a
+ : id that is not present in the database is found. :)
+declare function tlslib:generate-new-line-id($base-id as xs:string, $index as xs:int, $level as xs:int) as xs:string {
+    let $nid := $base-id || "." || $index || (if ($level = 0) then "" else "_" || $level)
+    return
+        if (collection($config:tls-texts-root)//tei:seg[@xml:id=$nid]) then
+            tlslib:generate-new-line-id($base-id, $index, $level + 1)
+        else
+            $nid
+};
+
+(: Just like the above function, with $level set to 0 as a default. :)
+declare function tlslib:generate-new-line-id($base-id as xs:string, $index as xs:int) as xs:string {
+    tlslib:generate-new-line-id($base-id, $index, 0)
+};
