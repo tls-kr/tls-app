@@ -19,6 +19,7 @@ import module namespace tlslib="http://hxwd.org/lib" at "../modules/tlslib.xql";
 import module namespace dialogs="http://hxwd.org/dialogs" at "../modules/dialogs.xql"; 
 import module namespace krx="http://hxwd.org/krx-utils" at "../modules/krx-utils.xql";
 import module namespace xed="http://hxwd.org/xml-edit" at "../modules/xml-edit.xql";
+import module namespace imp="http://hxwd.org/xml-import"at "../modules/import.xql"; 
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
@@ -1697,8 +1698,9 @@ cont = 'false' or 'true'; when true display the dialog again with the next segme
 type = one of the seg-types, defined in config.xqm
 new-seg = Punctuated text (Passed in request body, see below)
 :)
-declare function tlsapi:save-punc($map as map(*), $new-seg as xs:string){
+declare function tlsapi:save-punc($map as map(*)){
 let  $seg := collection($config:tls-texts-root)//tei:seg[@xml:id=$map?line_id]
+, $new-seg :=  $map?body
 , $res := string-join(for $r at $pos in tokenize($new-seg, '\$') return $r || "$" || $pos || "$", '')
 , $str := analyze-string ($res, $config:seg-split-tokens)
 return
@@ -1738,26 +1740,15 @@ else
         , $segs[last()]/@xml:id)
 };
 
-(: Save a segment with user added punctuation.  
-Parameters: line_id = xml:id of segment
-seg = Punctuated text, must be passed in plain text in the body of the request
-cont = 'false' or 'true'; when true display the dialog again with the next segment
-type = one of the seg-types, defined in config.xqm
-:)
-declare function tlsapi:save-punc($map as map(*)){
-let $new-seg := util:base64-decode(request:get-data())
-return tlsapi:save-punc($map, $new-seg)
-};
-
 (: :)
 declare function tlsapi:merge-following-seg($map as map(*)){
 let $segid := $map?line_id,
-    $seg := collection($config:tls-texts-root)//tei:seg[@xml:id=$segid],
-    $new-seg := util:base64-decode(request:get-data())
+    $new-seg :=  $map?body,
+    $seg := collection($config:tls-texts-root)//tei:seg[@xml:id=$segid]
 return 
     if (not(tlslib:check-edited-seg-valid($new-seg, $seg))) then "Error: Text integrity check failed. Can not save edited text."
     else
-        let $save-punc-rst := tlsapi:save-punc(map:put($map, "action", "no_split"), $new-seg) (: Use save-punc to update the edited part, wihtout splitting. :),
+        let $save-punc-rst := tlsapi:save-punc(map:put($map, "action", "no_split")) (: Use save-punc to update the edited part, wihtout splitting. :),
             $updated-seg := collection($config:tls-texts-root)//tei:seg[@xml:id=$segid],
             $fseg := $seg/following::tei:seg[1],
             $nseg := <seg xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$seg/@xml:id}" type="{$map?type}">{$seg/node(), $fseg/node()}</seg> 
@@ -1767,6 +1758,21 @@ return
         )
 };
 
+declare function tlsapi:text-request($map as map(*)){
+let $user := sm:id()//sm:real/sm:username/text()
+, $text := doc($config:tls-add-titles)//work[@krid=$map?kid]
+, $req := if ($text/@request) then $text/@request || "," || $user else $user
+return 
+ if ($text/@request) then update replace $text/@request with $req 
+  else update insert attribute request {$req} into $text
+};
+
+declare function tlsapi:add-text($map as map(*)){
+let $w := doc($config:tls-add-titles)//work[@krid=$map?kid]
+, $cbid := $w/altid except $w/altid[matches(., "^(ZB|SB|SK)")]
+, $cv := try {imp:do-conversion($cbid) } catch * {()}
+return if ($cv = $map?kid) then update delete $w/@request else "Error:  can not import text"
+};
 
 declare function tlsapi:stub($map as map(*)){
 () 

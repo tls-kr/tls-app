@@ -2116,7 +2116,38 @@ function save_punc(line_id, next){
   });      
 };
 
+function text_request(kid){
+  $.ajax({
+  type : "GET",
+  contentType: "text/plain;charset=UTF-8",
+  dataType : "html",
+  url : "api/responder.xql?func=text-request&kid="+kid,
+  success : function(resp){
+    toastr.info("Request received. Please leave a few days for processing", "漢學文典 says:");
+  },
+  error : function(resp){
+    console.log(resp)
+    alert(resp);
+  }
+  });
+};
 
+function add_text(kid){
+  $.ajax({
+  type : "GET",
+  contentType: "text/plain;charset=UTF-8",
+  dataType : "html",
+  url : "api/responder.xql?func=add-text&kid="+kid,
+  success : function(resp){
+    toastr.info("Request processed", "漢學文典 says:");
+  },
+  error : function(resp){
+    console.log(resp)
+    alert(resp);
+  }
+  });
+    
+};
 
 window.onbeforeunload = function() {
     return dirty ? "If you leave this page you will lose your unsaved changes." : null;
