@@ -187,9 +187,10 @@ declare function imp:recursive-update-ns($nodes as node()*, $ns as xs:string, $p
  default return $node
 };
 
+(: for KR we pass the text id as cbid :)
 declare function imp:get-local-copy($cbid as xs:string, $krid as xs:string){
-let $doc := parse-xml(imp:dl-cbeta-text($cbid))
-, $targetcoll := xmldb:create-collection($config:tls-texts-root || "/KR", substring($krid, 1, 3) || "/" || substring($krid, 1, 4) )
+let $doc := (if (starts-with($cbid, "KR")) then imp:dl-krp-text($cbid) else imp:dl-cbeta-text($cbid))
+, $targetcoll := xmldb:create-collection($config:tls-texts-root || "/KR/", substring($krid, 1, 3) || "/" || substring($krid, 1, 4) )
 , $uri :=  xmldb:store($targetcoll, $krid || ".xml", $doc)
 , $acl := (sm:chmod(xs:anyURI($uri), "rwxrwxr--"),
     sm:chgrp(xs:anyURI($uri), "tls-user"))
@@ -213,32 +214,22 @@ return
 ()
 };
 
-declare function imp:do-conversion($cbid as xs:string){
+declare function imp:do-conversion($kid as xs:string, $cbid as xs:string){
 let $krt := doc($config:tls-add-titles)
-, $kid := $krt//work[./altid = $cbid]/@krid
-, $doc := doc(imp:get-local-copy($cbid, $kid))
-, $h := imp:update-metadata($doc, $kid, $krt//work[@krid=$kid]/title/text())
-, $pref := if (starts-with($kid, "KR6")) then $kid || "_CBETA_" else ()
-, $bd := $doc//tei:text/tei:body
-, $res := update replace $bd with imp:recursive-update-ns($bd, "http://www.tei-c.org/ns/1.0", $pref)
-(:, $body := $doc//tei:text/tei:body
-, $target-els := imp:get-target-elements($body):)
-(:, $chars := $body =>normalize-space() => replace(' ', '') => string-length():)
-(:, $conv := 
-         for $p in $body//tei:p
-         let $ln := local-name($p)
-         return
-         if ($ln = "p") then 
-            let  $segs := imp:add-seg($p, $pref)
-            , $res := 
-             element {QName(namespace-uri($p), $ln)} {
-             $p/@* ,
-             $segs}
-           return 
-          update replace $p with $res
-         else ()
-:)
+(:, $kid := $krt//work[./altid = $cbid]/@krid :)
+ , $doc := doc(imp:get-local-copy($cbid, $kid))
+  (: this is for the CBETA texts :)
+ , $upd := if (starts-with($kid, "KR6")) then (let $pref := $kid || "_CBETA_" 
+   , $h := imp:update-metadata($doc, $kid, $krt//work[@krid=$kid]/title/text())
+   , $bd := $doc//tei:text/tei:body
+   , $res := update replace $bd with imp:recursive-update-ns($bd, "http://www.tei-c.org/ns/1.0", $pref) return () ) 
+  else (imp:do-prepare-krp($doc))
 return $kid
+};
+
+(: analyse the lines and turn them into paragraphs and segments :)
+declare function imp:do-prepare-krp($doc as node()){
+()
 };
 
 declare function imp:dl-cbeta-text($cbid as xs:string){
@@ -246,6 +237,15 @@ let $cbeta-gh-base := "https://raw.githubusercontent.com/cbeta-org/xml-p5/master
 , $path := substring($cbid, 1, 1) || "/" || substring($cbid, 1, 3) || "/" || $cbid || ".xml" 
 let $res :=  
             http:send-request(<http:request http-version="1.1" href="{xs:anyURI($cbeta-gh-base||$path)}" method="get">
+                                <http:header name="Connection" value="close"/>
+                              </http:request>)
+return $res[2]
+};
+
+declare function imp:dl-krp-text($kid as xs:string){
+let $krp-base := "https://www.kanripo.org/tlskr/"
+let $res :=  
+            http:send-request(<http:request http-version="1.1" href="{xs:anyURI($krp-base||$kid)}" method="get">
                                 <http:header name="Connection" value="close"/>
                               </http:request>)
 return $res[2]

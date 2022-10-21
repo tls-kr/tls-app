@@ -1764,9 +1764,9 @@ return
 };
 
 declare function tlsapi:add-text($map as map(*)){
-let $w := doc($config:tls-add-titles)//work[@krid=$map?kid]
-, $cbid := $w/altid except $w/altid[matches(., "^(ZB|SB|SK)")]
-, $cv := try {imp:do-conversion($cbid) } catch * {()}
+let $cbid := $map?cbid
+, $w := doc($config:tls-add-titles)//work[@krid=$map?kid]
+, $cv := try {imp:do-conversion($map?kid, $cbid) } catch * {()}
 return if ($cv = $map?kid) then update delete $w/@request else "Error:  can not import text"
 };
 

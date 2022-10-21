@@ -2310,12 +2310,16 @@ return
 {for $w at $pos in $text
       let $kid := data($w/@krid)
       , $req := if ($w/@request) then <span id="{$kid}-req">　Requests: {count(tokenize($w/@request, ','))}</span> else ()
-      , $cbid := $w/altid except $w/altid[matches(., "^(ZB|SB|SK)")]
+      , $cb := $w/altid except $w/altid[matches(., "^(ZB|SB|SK)")] 
+      , $cbid := if ($cb) then $cb else $kid
 return
   <div class="row border-top pt-4" id="{data($w/@krid)}">
   <div class="col-sm-4"><a href="textview.html?location={$kid}">{$kid}　{$w/title/text()}</a></div>
   <div class="col-sm-2"><span>{string-join($w/@request, " / ")}</span> </div>  
-  <div class="col-sm-3"><span id="gloss-{$pos}" title="Click here to add text" onclick="add_text('{$kid}')">{$cbid}</span></div>
+  <div class="col-sm-3"><span id="gloss-{$pos}" title="Click here to add text" onclick="add_text('{$kid}', '{$cbid=> string-join('$')}')">{$cbid}</span></div>
+  <div class="col-sm-3"><a href="{
+      concat($config:exide-url, "?open=", $config:tls-texts-root || "/KR/", substring($kid, 1, 3) || "/" || substring($kid, 1, 4) || "/"  || $kid || ".xml")}"
+      >Open in eXide</a></div>
   </div>,
 ()
 }

@@ -2117,14 +2117,18 @@ function text_request(kid){
   });
 };
 
-function add_text(kid){
+function add_text(kid, cbid){
   $.ajax({
   type : "GET",
   contentType: "text/plain;charset=UTF-8",
   dataType : "html",
-  url : "api/responder.xql?func=add-text&kid="+kid,
+  url : "api/responder.xql?func=add-text&kid="+kid+"&cbid="+cbid,
   success : function(resp){
-    toastr.info("Request processed", "漢學文典 says:");
+     if (resp.startsWith('Error')) {
+     toastr.error(resp, "HXWD says:");
+     } else {
+     toastr.info("Request processed", "漢學文典 says:");
+     }
   },
   error : function(resp){
     console.log(resp)
