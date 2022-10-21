@@ -16,9 +16,12 @@ declare option output:media-type "text/html";
 
 let $func := request:get-parameter("func", "xx")
 let $resmap := map:merge(
-   for $p in request:get-parameter-names()
+   for $p in (request:get-parameter-names(), "body")
    where not ($p = "func")
    return
+   if ($p = 'body') then
+   map:entry($p, util:base64-decode(request:get-data()))
+   else
    map:entry($p, request:get-parameter($p, "xx")))
 return 
 if (starts-with($func, "dialogs")) then

@@ -1701,7 +1701,7 @@ type = one of the seg-types, defined in config.xqm
 
 declare function tlsapi:save-punc($map as map(*)){
 let  $seg := collection($config:tls-texts-root)//tei:seg[@xml:id=$map?line_id]
-, $new-seg := util:base64-decode(request:get-data())
+, $new-seg :=  $map?body
 , $r0 := tlslib:proc-seg-for-edit($seg) => string-join('') => normalize-space() => replace(' ', '') => tokenize('\$')
 , $r1 := tokenize($new-seg, '\$')
 , $res := string-join(for $r at $pos in tokenize($new-seg, '\$') return $r || "$" || $pos || "$", '')
