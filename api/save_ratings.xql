@@ -18,6 +18,7 @@ declare variable $userhome := "/db/users/";
 let $textid-in := request:get-parameter("textid", "xx"),
 $textid := substring-after($textid-in, "input-") 
 let $rating := request:get-parameter("rating", "xx")
+let $is-delete := request:get-parameter("delete", "n") = "y"
 let $user := sm:id()//sm:real/sm:username/text()
 let $usercoll := $userhome || $user 
 let $ratingsfile := "/ratings.xml",
@@ -31,7 +32,13 @@ let $doc := if (doc-available($usercoll || $ratingsfile )) then doc($usercoll ||
 let $newnode := <text id="{$textid}" rating="{$rating}">{$title}</text>,
 $currentnode := $doc//text[@id=$textid]
 return 
-if ($currentnode) then
-update replace $currentnode with $newnode
-else
-update insert $newnode into $doc/textlist
+    if ($is-delete) then
+        if ($currentnode) then
+            update delete $currentnode
+        else
+            ()
+    else
+        if ($currentnode) then
+            update replace $currentnode with $newnode
+        else
+            update insert $newnode into $doc/textlist

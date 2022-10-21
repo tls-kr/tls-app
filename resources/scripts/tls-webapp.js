@@ -948,6 +948,22 @@ $('.rating').on('rating:change', function(event, value, caption) {
   }
  });
 });
+// save deletion of ratings of the texts
+$('.rating').on('rating:clear', function(event, value, caption) {
+        console.log(value);
+        console.log(this.id);
+  $.ajax({
+  type : "PUT",
+  url : "api/save_ratings.xql?textid="+this.id+"&delete=y",
+  success : function(resp){
+    toastr.info("Your rating has been cleared.", "HXWD says:")
+  },
+  error : function(resp){
+    console.log(resp)
+    alert(resp);
+  }
+ });
+});
 // ratings for the SWL ratings
 $('.starRating').on('click', function(event, value, caption) {
         console.log(value);
@@ -2072,7 +2088,7 @@ function save_punc(line_id, next){
     var url = "api/responder.xql?func=merge-following-seg&line_id="+line_id+"&type="+type;
     next = line_id;
   } else if (next == 'no_split') {
-    var url = "api/responder.xql?func=save-punc&line_id="+line_id+"&type="+type+"&action="+next;
+    var url = "api/responder.xql?func=merge-following-seg&line_id="+line_id+"&type="+type+"&action="+next;
     next = "";
   } else {
     var url = "api/responder.xql?func=save-punc&line_id="+line_id+"&type="+type;
@@ -2090,8 +2106,7 @@ function save_punc(line_id, next){
   if (next.length > 1){
       display_punc_dialog(next)
   } else {
-//    console.log("not reloading")
-     window.location.reload(true)
+      window.location.reload(true)
   }
   },
   error : function(resp){
@@ -2100,6 +2115,8 @@ function save_punc(line_id, next){
   }
   });      
 };
+
+
 
 window.onbeforeunload = function() {
     return dirty ? "If you leave this page you will lose your unsaved changes." : null;
