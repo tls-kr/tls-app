@@ -1693,19 +1693,16 @@ if ($node) then (
 
 (: Save a segment with user added punctuation.  
 Parameters: line_id = xml:id of segment
-seg = Punctuated text, must be passed in plain text in the body of the request
 cont = 'false' or 'true'; when true display the dialog again with the next segment
 type = one of the seg-types, defined in config.xqm
+new-seg = Punctuated text (Passed in request body, see below)
 :)
-declare function tlsapi:save-punc($map as map(*)){
+declare function tlsapi:save-punc($map as map(*), $new-seg as xs:string){
 let  $seg := collection($config:tls-texts-root)//tei:seg[@xml:id=$map?line_id]
-, $new-seg := util:base64-decode(request:get-data()) 
-, $r0 := tlslib:proc-seg-for-edit($seg) => string-join('') => normalize-space() => replace(' ', '') => tokenize('\$')
-, $r1 := tokenize($new-seg, '\$')
 , $res := string-join(for $r at $pos in tokenize($new-seg, '\$') return $r || "$" || $pos || "$", '')
 , $str := analyze-string ($res, $config:seg-split-tokens)
 return
-if (count($r0) != count($r1)) then "Error: Text integrity check failed. Can not save edited text."
+if (not(tlslib:check-edited-seg-valid($new-seg, $seg))) then "Error: Text integrity check failed. Can not save edited text."
 else 
     let $seg-with-updated-type := 
     if ($map?type != $seg/@type) then 
@@ -1716,16 +1713,16 @@ else
         ()
     return
     if ($map?action = "no_split") then 
-        let $tx := tlslib:add-nodes($res, $seg//node())
+        let $tx := tlslib:reinsert-nodes-after-edit($res, $seg)
         , $segs := <seg xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$map?line_id}" type="{$map?type}">{$tx}</seg>
         return update replace $seg with $segs
     else 
         let $segs := for $m at $pos in $str//fn:non-match
             let $nm := $m/following-sibling::fn:*[1]
             , $t := replace(string-join($nm/text(), ''), '/', '')
-            , $tx := tlslib:add-nodes($m/text(), $seg/child::*[not(self::tei:c)])
+            , $tx := tlslib:reinsert-nodes-after-edit($m/text(), $seg)
             , $sl := string-join($tx, '') => normalize-space() => replace(' ', '') 
-            , $nid := if ($pos > 1) then tlslib:generate-new-line-id($map?line_id , $pos - 1) else $map?line_id 
+            , $nid := if ($pos > 1) then tlslib:generate-new-line-id($map?line_id, $pos - 1) else $map?line_id 
             where string-length($sl) > 0
             return
             <seg xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$nid}" type="{$map?type}">{$tx, 
@@ -1741,15 +1738,33 @@ else
         , $segs[last()]/@xml:id)
 };
 
+(: Save a segment with user added punctuation.  
+Parameters: line_id = xml:id of segment
+seg = Punctuated text, must be passed in plain text in the body of the request
+cont = 'false' or 'true'; when true display the dialog again with the next segment
+type = one of the seg-types, defined in config.xqm
+:)
+declare function tlsapi:save-punc($map as map(*)){
+let $new-seg := util:base64-decode(request:get-data())
+return tlsapi:save-punc($map, $new-seg)
+};
+
 (: :)
 declare function tlsapi:merge-following-seg($map as map(*)){
-let  $segid := tlsapi:save-punc($map)
-, $seg := collection($config:tls-texts-root)//tei:seg[@xml:id=$segid]
-, $fseg := $seg/following::tei:seg[1]
-,$nseg := <seg xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$seg/@xml:id}" type="{$map?type}">{$seg/node(), $fseg/node()}</seg> 
+let $segid := $map?line_id,
+    $seg := collection($config:tls-texts-root)//tei:seg[@xml:id=$segid],
+    $new-seg := util:base64-decode(request:get-data())
 return 
-(update replace $seg with $nseg, 
-update delete $fseg)
+    if (not(tlslib:check-edited-seg-valid($new-seg, $seg))) then "Error: Text integrity check failed. Can not save edited text."
+    else
+        let $save-punc-rst := tlsapi:save-punc(map:put($map, "action", "no_split"), $new-seg) (: Use save-punc to update the edited part, wihtout splitting. :),
+            $updated-seg := collection($config:tls-texts-root)//tei:seg[@xml:id=$segid],
+            $fseg := $seg/following::tei:seg[1],
+            $nseg := <seg xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$seg/@xml:id}" type="{$map?type}">{$seg/node(), $fseg/node()}</seg> 
+        return (
+            update replace $seg with $nseg, 
+            update delete $fseg
+        )
 };
 
 
