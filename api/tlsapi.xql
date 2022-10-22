@@ -1666,7 +1666,7 @@ let $user := sm:id()//sm:real/sm:username/text()
 , $doc := doc($config:tls-data-root||"/core/taxchar.xml")
 , $data := $map?body
 , $xml := tlslib:char-tax-html2xml($data/div)
-, $id := data(tokenize($data/div/@tei-id))
+, $id := data(tokenize($data/div/@tei-id))[1]
 , $node := $doc//tei:div[@xml:id=$id[1]]
 , $updnode := $doc//tei:div[@xml:id=$id[1]]
 , $excess := 
