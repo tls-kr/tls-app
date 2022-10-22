@@ -322,13 +322,15 @@ typeswitch ($node)
      , $entry-id := $swl/ancestor::tei:entry/@xml:id
      , $swl-count := count($swl)
      (: do not take the concept name from the taxonomy, it might have been changed! :)
-     , $concept := $swl/ancestor::tei:div[@type='concept']/tei:head/text() => string-join() => normalize-space() => replace(' ', '_')
+     , $concept := (if ($swl-count = 0) then $node/text() else $swl/ancestor::tei:div[@type='concept']/tei:head/text()) => string-join() => normalize-space() 
      , $cdef := $swl/ancestor::tei:div/tei:div[@type="definition"]/tei:p/text()
      , $e := string-length($edit) > 0
      return
-      if ($e) then 
-      (: only show the plain concept when editing :)
-      $concept
+      if ($e) then
+       let $c := $concept => replace(' ', '_')
+       return
+       (: only show the plain concept when editing :)
+       " "|| $c
        else
       <span>
       {if ($swl-count = 0) then 
@@ -346,7 +348,7 @@ typeswitch ($node)
       </ul>
       </span>
   case text() return
-      $node
+     $node
   default
   return 
   <not-handled>{$node}</not-handled>
@@ -2779,18 +2781,19 @@ declare function tlslib:char-tax-newconcepts($char){
  let $p := (tlslib:pron-for-entry($r)/tei:pron[@xml:lang="zh-Latn-x-pinyin"]/text())[1]
  , $concept := map:get($emap, $r)[2]
  order by $p || $concept
- return <item corresp="#{$r}">@py:{$p} <ref target="#{map:get($emap, $r)[1]}">{$concept}</ref></item>
+ return <item corresp="#{$r}">{$p}  <ref target="#{map:get($emap, $r)[1]}">{$concept}</ref></item>
  }</list></div>
 };
 
 
 declare function tlslib:char-tax-contentline($str as xs:string){
-let $as := analyze-string($str, "[A-Z_0-9]+$")//fn:*
+let $as := analyze-string(normalize-space($str), "[A-Z_0-9]+$")//fn:*
 , $concept := $as[last()]/text()
-return ($as[position() < last()]/text() || " ", <ref xmlns="http://www.tei-c.org/ns/1.0" target="#{tlslib:get-concept-id($concept)}">{$concept}</ref>)
+return ($as[position() < last()]/text() || " ", 
+ <ref xmlns="http://www.tei-c.org/ns/1.0" target="#{tlslib:get-concept-id($concept)}">{$concept => replace("_", " ")}</ref>)
 };
-
-declare function tlslib:char-tax-html2xml($node as node()){
+(: the pinyin handling is broken, we dont go down this rabbit hole :)
+declare function tlslib:char-tax-html2xml-py($node as node()){
 let $user := sm:id()//sm:real/sm:username/text()
 return
 typeswitch ($node)
@@ -2818,8 +2821,46 @@ typeswitch ($node)
      </div>
   case element(i) return for $n in $node/node() return tlslib:char-tax-html2xml($n)
   case element(a) return 
+    let $str := string-join($node) => replace("@py:", "")
+    return
     if ($node/parent::li[@tei-type='pron'] or starts-with($node, "@py:")) then replace($node/text(), "@py:", "")
-    else tlslib:char-tax-contentline($node/text())
+    else if (string-length($str) > 0) then tlslib:char-tax-contentline($str) else ()
+  case text() return $node
+  default 
+  return <name>{$node}</name>
+};
+
+
+declare function tlslib:char-tax-html2xml($node as node()){
+let $user := sm:id()//sm:real/sm:username/text()
+return
+typeswitch ($node)
+  case element(li) return 
+    let $type := $node/@tei-type
+    return
+       if ($type = 'pron') then 
+        (: @corresp is the link to the guangyun file, currently available only for new taxchar structures :)
+        if (string-length($node/@tei-corresp) > 0) then 
+            <item xmlns="http://www.tei-c.org/ns/1.0" type="pron" corresp="{$node/@tei-corresp}">{for $n in $node/node() return tlslib:char-tax-html2xml($n)}</item>
+        else
+            <item xmlns="http://www.tei-c.org/ns/1.0" type="pron">{for $n in $node/node() return tlslib:char-tax-html2xml($n)}</item>
+      else
+      <item xmlns="http://www.tei-c.org/ns/1.0">
+       { for $n in $node/node() return tlslib:char-tax-html2xml($n)}</item>
+  case element(ul) return <list xmlns="http://www.tei-c.org/ns/1.0">{$node/text(), for $n in $node/node() return tlslib:char-tax-html2xml($n)}</list>
+  case element(div) return 
+     let $id := if (string-length($node/@tei-id) > 0) then $node/@tei-id else "uuid" || util:uuid()
+     return
+     <div type="taxchar" xml:id="{$id}" resp="{$user}" modified="{current-dateTime()}" xmlns="http://www.tei-c.org/ns/1.0" >
+       {for $h in tokenize($node/@tei-head, '/') return <head xmlns="http://www.tei-c.org/ns/1.0">{normalize-space($h)}</head>}
+       {for $n in $node/node() return tlslib:char-tax-html2xml($n)}
+     </div>
+  case element(i) return for $n in $node/node() return tlslib:char-tax-html2xml($n)
+  case element(a) return 
+    let $str := string-join($node) 
+    return
+    if ($node/parent::li[@tei-type='pron']) then $str
+    else if (string-length($str) > 0) then tlslib:char-tax-contentline($str) else ()
   case text() return $node
   default 
   return <name>{$node}</name>
