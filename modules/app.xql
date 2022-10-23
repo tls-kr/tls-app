@@ -409,8 +409,12 @@ let $query := map:get($model, "query")
     </ul>
     <h2>Texts in the Kanseki Repository:</h2>
     <ul>{
-       for $w in if (matches($query, "^[A-Z]"))  then  
-          doc($config:tls-add-titles)//work[contains(@krid, $query)]
+       for $w in 
+       if (matches($query, "^[A-Z]"))  then  
+          if (starts-with($query, "KR")) then 
+            doc($config:tls-add-titles)//work[contains(@krid, $query)]
+          else 
+            doc($config:tls-add-titles)//work[altid[contains(., $query)]]
         else 
           doc($config:tls-add-titles)//work[title[contains(., $query)]]
       let $h :=  $w/title
@@ -424,7 +428,7 @@ let $query := map:get($model, "query")
       return if ($tls) then 
            <li><a href="textview.html?location={$kid}">{data($kid) || " " || data($h)}</a> </li>
             else
-          <li>{if ($av) then $but else ()}　{$kid || " " || $h/text()} {$req}</li>
+          <li>{if ($av) then $but else ()}　{$kid || " " || $h/text() || " "} <span class="text-muted"><small>{ string-join($w/altid, " / ")}</small></span>  {$req}</li>
     }
     </ul>
     </div>

@@ -1767,7 +1767,13 @@ declare function tlsapi:add-text($map as map(*)){
 let $cbid := $map?cbid
 , $w := doc($config:tls-add-titles)//work[@krid=$map?kid]
 , $cv := try {imp:do-conversion($map?kid, $cbid) } catch * {()}
-return if ($cv = $map?kid) then update delete $w/@request else "Error:  can not import text"
+, $tls := attribute tls {current-dateTime()}
+return 
+ if ($cv = $map?kid) then 
+  (update delete $w/@request, 
+   if ($w/@tls) then update replace $w/@tls with $tls 
+   else update insert $tls into $w ) 
+ else "Error:  can not import text"
 };
 
 declare function tlsapi:stub($map as map(*)){
