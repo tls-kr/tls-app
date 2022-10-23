@@ -1829,16 +1829,20 @@ declare function tlslib:ngram-query($queryStr as xs:string?, $mode as xs:string?
     (: HACK: if no login, use date mode for sorting :)
     $mode := if ($user = "guest") then "date" else $mode,
     $matches := if  (count($qs) > 1) then 
-      collection($dataroot)//tei:p[ngram:wildcard-contains(., $qs[1]) and ngram:wildcard-contains(., $qs[2])]
+      (collection($dataroot)//tei:p[ngram:wildcard-contains(., $qs[1]) and ngram:wildcard-contains(., $qs[2])] |
+       collection($dataroot)//tei:lg[ngram:wildcard-contains(., $qs[1]) and ngram:wildcard-contains(., $qs[2])])
       else
       (: 2022-02-24 for one char searches, go only in tls texts; this needs more discussion... :)
       if ($search-type = "5") then 
-      collection($dataroot)//tei:TEI[@xml:id=$stextid]//tei:p[ngram:wildcard-contains(., $qs[1])]
+      (collection($dataroot)//tei:TEI[@xml:id=$stextid]//tei:p[ngram:wildcard-contains(., $qs[1])] |
+      collection($dataroot)//tei:TEI[@xml:id=$stextid]//tei:lg[ngram:wildcard-contains(., $qs[1])])
       else
       if (string-length($qs[1]) < 2) then
-      collection($config:tls-texts-root || "/tls")//tei:p[ngram:wildcard-contains(., $qs[1])]
+      (collection($config:tls-texts-root || "/tls")//tei:p[ngram:wildcard-contains(., $qs[1])],
+      collection($config:tls-texts-root || "/tls")//tei:lg[ngram:wildcard-contains(., $qs[1])])
       else
-      collection($dataroot)//tei:p[ngram:wildcard-contains(., $qs[1])]
+      (collection($dataroot)//tei:p[ngram:wildcard-contains(., $qs[1])] | 
+      collection($dataroot)//tei:lg[ngram:wildcard-contains(., $qs[1])])
     for $hit in $matches
       let $textid := substring-before(tokenize(document-uri(root($hit)), "/")[last()], ".xml"),
       (: for the CHANT text no text date data exist, so we use this flag to cheat a bit :)
