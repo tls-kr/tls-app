@@ -2787,7 +2787,7 @@ declare function tlslib:char-tax-newconcepts($char){
 
 
 declare function tlslib:char-tax-contentline($str as xs:string){
-let $as := analyze-string(normalize-space($str), "[A-Z_0-9]+$")//fn:*
+let $as := analyze-string(normalize-space($str), $config:concept-name-chars||"+$")//fn:*
 , $concept := $as[last()]/text()
 return ($as[position() < last()]/text() || " ", 
  <ref xmlns="http://www.tei-c.org/ns/1.0" target="#{tlslib:get-concept-id($concept)}">{$concept => replace("_", " ")}</ref>)
