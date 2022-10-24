@@ -218,8 +218,8 @@ declare function imp:do-conversion($kid as xs:string, $cbid as xs:string){
 let $krt := doc($config:tls-add-titles)
 (:, $kid := $krt//work[./altid = $cbid]/@krid :)
  , $doc := doc(imp:get-local-copy($cbid, $kid))
+ , $state := xed:set-state($doc, "red")
   (: this is for the CBETA texts :)
-  , $state := update insert attribute state {"red"} into $doc//tei:TEI
  , $upd := if (starts-with($kid, "KR6")) then (let $pref := $kid || "_CBETA_" 
    , $h := imp:update-metadata($doc, $kid, $krt//work[@krid=$kid]/title/text())
    , $bd := $doc//tei:text/tei:body
@@ -228,9 +228,12 @@ let $krt := doc($config:tls-add-titles)
 return $kid
 };
 
-(: analyse the lines and turn them into paragraphs and segments :)
 declare function imp:do-prepare-krp($doc as node()){
-()
+let $doc-uri := document-uri(root($doc))
+, $remove-lbs := xed:remove-extra-lbs($doc//tei:lb)
+, $handle-gaiji := xed:g-to-unicode(doc($doc-uri))
+, $handle-space := xed:space-to-element(doc($doc-uri))
+return ()
 };
 
 declare function imp:dl-cbeta-text($cbid as xs:string){

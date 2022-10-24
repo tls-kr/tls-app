@@ -2319,34 +2319,48 @@ return
 declare function tlslib:review-request(){
 let $user := "#" || sm:id()//sm:username
 , $text := doc($config:tls-add-titles)//work[@request]
-
+, $recent := doc($config:tls-add-titles)//work[@requested-by]
 return
 
 <div class="container">
 <div>
 <h3>Requested texts: {count($text)} items</h3>
-<small>Currently only implemented for CBETA texts (2022-10)</small>
-{for $w at $pos in $text
+{tlslib:review-request-rows($text)}
+</div>
+<div>
+<h3>Recently added texts: {count($recent)} items</h3>
+{tlslib:review-request-rows($recent)}
+</div>
+
+</div>
+};
+
+declare function tlslib:review-request-rows($res as node()*){
+for $w at $pos in $res
       let $kid := data($w/@krid)
-      , $req := if ($w/@request) then <span id="{$kid}-req">　Requests: {count(tokenize($w/@request, ','))}</span> else ()
+      , $req := if ($w/@request) then 
+        <span id="{$kid}-req">　Requests: {count(tokenize($w/@request, ','))}</span> else 
+        <span id="{$kid}-req">　Requested by: {data($w/@requested-by)}</span>
       , $cb := $w/altid except $w/altid[matches(., "^(ZB|SB|SK)")] 
       , $cbid := if ($cb) then $cb else $kid
+      , $date := if ($w/@tls-added) then xs:dateTime($w/@tls-added) else xs:dateTime($w/@request-date)
+    order by $date descending
 return
   <div class="row border-top pt-4" id="{data($w/@krid)}">
-  <div class="col-sm-4"><a href="textview.html?location={$kid}">{$kid}　{$w/title/text()}</a></div>
-  <div class="col-sm-2"><span>{string-join($w/@request, " / ")}</span> </div>  
-  <div class="col-sm-3"><span id="gloss-{$pos}" title="Click here to add text" onclick="add_text('{$kid}', '{$cbid=> string-join('$')}')">{$cbid}</span></div>
+  <div class="col-sm-3"><a href="textview.html?location={$kid}">{$kid}　{$w/title/text()}</a></div>
+  <div class="col-sm-3"><span>{$req}</span> {" "||data($w/@tls-added)}</div>  
+  {if ($w/@request) then
+  <div class="col-sm-3"><span id="gloss-{$pos}" title="Click here to add text" onclick="add_text('{$kid}', '{$cbid=> string-join('$')}')">Add: {$cbid}</span></div>
+  else
+  <div class="col-sm-3"><span id="gloss-{$pos}" title="Click here to analyze text" onclick="analyze_text('{$kid}')">Analyze this text</span></div>
+  }
   <div class="col-sm-3"><a href="{
       concat($config:exide-url, "?open=", $config:tls-texts-root || "/KR/", substring($kid, 1, 3) || "/" || substring($kid, 1, 4) || "/"  || $kid || ".xml")}"
       >Open in eXide</a></div>
   </div>,
 ()
-}
-</div>
-</div>
+  
 };
-
-
 
 declare function tlslib:review-swl(){
 let $user := "#" || sm:id()//sm:username
