@@ -1292,7 +1292,8 @@ let $src := data($a/tls:text/tls:srcline/@title)
 let $line := $a/tls:text/tls:srcline/text(),
 $tr := $a/tls:text/tls:line,
 $target := substring(data($a/tls:text/tls:srcline/@target), 2),
-$loc := xs:int((tokenize($target, "_")[3] => tokenize("-"))[1])
+(: TODO find a better way, get juan for CBETA texts :)
+$loc := try {xs:int((tokenize($target, "_")[3] => tokenize("-"))[1])} catch * {0}
 , $exemplum := if ($a/tls:metadata/@rating) then xs:int($a/tls:metadata/@rating) else 0
 , $bg := if ($exemplum > 0) then "bg-secondary" else "bg-light"
 return

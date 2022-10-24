@@ -56,7 +56,7 @@ declare variable $config:tls-manifests :=
 declare variable $config:seg-split-tokens := '[，。：．；？﹖！，』」/、]';
 
 (: the underscore is in reality a space, for the purpose at hand has to be escaped :) 
-declare variable $config:concept-name-chars := "['_,-/3ABCDEFGHIJKLMNOPQRSTUVWXYZx]";
+declare variable $config:concept-name-chars := "['_,-/3ABCDEFGHIJKLMNOPQRSTUVWXYZx:]";
 declare variable $config:pinyin-chars := "[abcdefghijklmnopqrstuwxyzàáèéìíòóùúüāēěīōūǎǐǒǔǘǚǜ̀́]";
 
 declare variable $config:seg-types := map{

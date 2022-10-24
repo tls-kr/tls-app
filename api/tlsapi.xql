@@ -1760,18 +1760,20 @@ let $user := sm:id()//sm:real/sm:username/text()
 , $req := if ($text/@request) then $text/@request || "," || $user else $user
 return 
  if ($text/@request) then update replace $text/@request with $req 
-  else update insert attribute request {$req} into $text
+  else (update insert attribute request {$req} into $text,
+  update insert attribute request-date {current-dateTime()} into $text
+  )
 };
 
 declare function tlsapi:add-text($map as map(*)){
 let $cbid := $map?cbid
 , $w := doc($config:tls-add-titles)//work[@krid=$map?kid]
 , $cv := try {imp:do-conversion($map?kid, $cbid) } catch * {()}
-, $tls := attribute tls {current-dateTime()}
+, $tls := attribute tls-added {current-dateTime()}
 return 
  if ($cv = $map?kid) then 
-  (update delete $w/@request, 
-   if ($w/@tls) then update replace $w/@tls with $tls 
+  (update rename $w/@request to "requested-by", 
+   if ($w/@tls-added) then update replace $w/@tls-added with $tls 
    else update insert $tls into $w ) 
  else "Error:  can not import text"
 };

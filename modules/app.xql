@@ -419,7 +419,7 @@ let $query := map:get($model, "query")
           doc($config:tls-add-titles)//work[title[contains(., $query)]]
       let $h :=  $w/title
       , $kid := data($w/@krid)
-      , $tls := $w/@tls
+      , $tls := $w/@tls-added
       , $req := if ($w/@request) then <span id="{$kid}-req">　Requests: {count(tokenize($w/@request, ','))}</span> else ()
       , $but := <button type="button" class="btn btn-primary btn-sm" onclick="text_request('{$kid}')">Request for TLS</button>
       , $av := not($w/note) 
