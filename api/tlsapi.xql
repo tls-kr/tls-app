@@ -1772,7 +1772,7 @@ let $cbid := $map?cbid
 , $tls := attribute tls-added {current-dateTime()}
 return 
  if ($cv = $map?kid) then 
-  (update rename $w/@request to "requested-by", 
+  (update rename $w/@request as "requested-by", 
    if ($w/@tls-added) then update replace $w/@tls-added with $tls 
    else update insert $tls into $w ) 
  else "Error:  can not import text"
