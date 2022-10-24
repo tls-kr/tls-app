@@ -948,6 +948,22 @@ $('.rating').on('rating:change', function(event, value, caption) {
   }
  });
 });
+// save deletion of ratings of the texts
+$('.rating').on('rating:clear', function(event, value, caption) {
+        console.log(value);
+        console.log(this.id);
+  $.ajax({
+  type : "PUT",
+  url : "api/save_ratings.xql?textid="+this.id+"&delete=y",
+  success : function(resp){
+    toastr.info("Your rating has been cleared.", "HXWD says:")
+  },
+  error : function(resp){
+    console.log(resp)
+    alert(resp);
+  }
+ });
+});
 // ratings for the SWL ratings
 $('.starRating').on('click', function(event, value, caption) {
         console.log(value);
@@ -2090,8 +2106,7 @@ function save_punc(line_id, next){
   if (next.length > 1){
       display_punc_dialog(next)
   } else {
-//    console.log("not reloading")
-     window.location.reload(true)
+      window.location.reload(true)
   }
   },
   error : function(resp){

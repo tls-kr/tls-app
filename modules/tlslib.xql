@@ -59,13 +59,30 @@ declare function tlslib:subseq($i as xs:int, $s as node()*){
 };
 
 declare function tlslib:add-nodes($tx as xs:string, $s as node()*){
-  for $n in analyze-string($tx, "\$\d+\$")//fn:*
-let $l := local-name($n)
-return
-if ($l = 'non-match') then tlslib:add-c($n/text()) else 
-    let $i := xs:int(replace($n, '\$', ''))
-    return $s[$i]
-(:    return tlslib:subseq($i, $s):)
+    for $n in analyze-string($tx, "\$\d+\$")//fn:*
+    let $l := local-name($n)
+    return
+    if ($l = 'non-match') then 
+        tlslib:add-c($n/text()) 
+    else 
+        let $i := xs:int(replace($n, '\$', ''))
+        return $s[$i]
+};
+
+(: Re-insert the nodes that have been removed from $orig-seg by tlslib:proc-seg-for-edit from $orig-node. 
+ : $tx is the edited text, with each '$' replaced by '$i$', where i is the index of that '$' 
+ : in the string. :)
+declare function tlslib:reinsert-nodes-after-edit($tx as xs:string, $orig-seg as node()) as node()* {
+    tlslib:add-nodes($tx, $orig-seg/(child::tei:anchor | child::tei:lb | child::tei:pb)) (: Only count those nodes that are actually replaced by '$' in tlslib:proc-seg-for-edit. TODO: The list of those element names should probably be stored in a variable somewhere. :)
+};
+
+(: Check whether a edit for a segment processed by tlslib:proc-seg-for-edit is valid,
+ : i.e. retains the correct number of '$' that have been substituted for children. :)
+declare function tlslib:check-edited-seg-valid($new-seg-text as xs:string, $orig-seg as node()) as xs:boolean {
+    let $r0 := tlslib:proc-seg-for-edit($orig-seg) => string-join('') => normalize-space() => replace(' ', '') => tokenize('\$'),
+        $r1 := tokenize($new-seg-text, '\$')
+    return
+        count($r0) = count($r1)
 };
 
 declare function tlslib:add-c($s as xs:string){
@@ -2889,3 +2906,20 @@ typeswitch ($node)
   return <name>{$node}</name>
 };
 
+(: Generate a fresh xml:id for a segment based on some base line id that an index is appended to. 
+ : If appending the index results in an id that is already present in the database, the level
+ : parameter is also appended to the id. The level argument will be increased until a
+ : id that is not present in the database is found. :)
+declare function tlslib:generate-new-line-id($base-id as xs:string, $index as xs:int, $level as xs:int) as xs:string {
+    let $nid := $base-id || "." || $index || (if ($level = 0) then "" else "." || $level)
+    return
+        if (collection($config:tls-texts-root)//tei:seg[@xml:id=$nid]) then
+            tlslib:generate-new-line-id($base-id, $index, $level + 1)
+        else
+            $nid
+};
+
+(: Just like the above function, with $level set to 0 as a default. :)
+declare function tlslib:generate-new-line-id($base-id as xs:string, $index as xs:int) as xs:string {
+    tlslib:generate-new-line-id($base-id, $index, 0)
+};

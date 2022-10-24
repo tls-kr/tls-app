@@ -19,7 +19,7 @@ import module namespace tlslib="http://hxwd.org/lib" at "../modules/tlslib.xql";
 import module namespace dialogs="http://hxwd.org/dialogs" at "../modules/dialogs.xql"; 
 import module namespace krx="http://hxwd.org/krx-utils" at "../modules/krx-utils.xql";
 import module namespace xed="http://hxwd.org/xml-edit" at "../modules/xml-edit.xql";
-import module namespace imp="http://hxwd.org/xml-import"at "../modules/import.xql"; 
+import module namespace imp="http://hxwd.org/xml-import" at "../modules/import.xql"; 
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
@@ -1694,43 +1694,40 @@ if ($node) then (
 
 (: Save a segment with user added punctuation.  
 Parameters: line_id = xml:id of segment
-seg = Punctuated text, must be passed in plain text in the body of the request
 cont = 'false' or 'true'; when true display the dialog again with the next segment
 type = one of the seg-types, defined in config.xqm
+new-seg = Punctuated text (Passed in request body, see below)
 :)
-
 declare function tlsapi:save-punc($map as map(*)){
 let  $seg := collection($config:tls-texts-root)//tei:seg[@xml:id=$map?line_id]
 , $new-seg :=  $map?body
-, $r0 := tlslib:proc-seg-for-edit($seg) => string-join('') => normalize-space() => replace(' ', '') => tokenize('\$')
-, $r1 := tokenize($new-seg, '\$')
 , $res := string-join(for $r at $pos in tokenize($new-seg, '\$') return $r || "$" || $pos || "$", '')
 , $str := analyze-string ($res, $config:seg-split-tokens)
 return
-if (count($r0) != count($r1)) then "Error: Text integrity check failed. Can not save edited text. " ||$r0 || "," || $r1
-else
-    let $seg-with-updated-type :=
-    if ($map?type != $seg/@type) then
+if (not(tlslib:check-edited-seg-valid($new-seg, $seg))) then "Error: Text integrity check failed. Can not save edited text."
+else 
+    let $seg-with-updated-type := 
+    if ($map?type != $seg/@type) then 
         let $res := xed:change-seg-type($seg, $map?type)
         , $p := $seg/parent::*
         return ()
     else
         ()
     return
-    if ($map?action = "no_split") then
-        let $tx := tlslib:add-nodes($res, $seg/child::*[not(self::tei:c)])
+    if ($map?action = "no_split") then 
+        let $tx := tlslib:reinsert-nodes-after-edit($res, $seg)
         , $segs := <seg xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$map?line_id}" type="{$map?type}">{$tx}</seg>
         return update replace $seg with $segs
-    else
+    else 
         let $segs := for $m at $pos in $str//fn:non-match
             let $nm := $m/following-sibling::fn:*[1]
             , $t := replace(string-join($nm/text(), ''), '/', '')
-            , $tx := tlslib:add-nodes($m/text(), $seg/child::*[not(self::tei:c)])
-            , $sl := string-join($tx, '') => normalize-space() => replace(' ', '')
-            , $nid := if ($pos > 1) then $map?line_id ||"." || ($pos - 1) else $map?line_id
+            , $tx := tlslib:reinsert-nodes-after-edit($m/text(), $seg)
+            , $sl := string-join($tx, '') => normalize-space() => replace(' ', '') 
+            , $nid := if ($pos > 1) then tlslib:generate-new-line-id($map?line_id, $pos - 1) else $map?line_id 
             where string-length($sl) > 0
             return
-            <seg xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$nid}" type="{$map?type}">{$tx,
+            <seg xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$nid}" type="{$map?type}">{$tx, 
                 if (local-name($nm) = 'match' and string-length($t) > 0) then <c n="{$t}"/> else ()}</seg>
         return (
         if (count($segs) > 1) then
@@ -1745,13 +1742,22 @@ else
 
 (: :)
 declare function tlsapi:merge-following-seg($map as map(*)){
-let  $segid := tlsapi:save-punc($map)
-, $seg := collection($config:tls-texts-root)//tei:seg[@xml:id=$segid]
-, $fseg := $seg/following::tei:seg[1]
-,$nseg := <seg xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$seg/@xml:id}" type="{$map?type}">{$seg/node(), $fseg/node()}</seg> 
-return 
-(update replace $seg with $nseg, 
-update delete $fseg)
+let $segid := $map?line_id,
+    $new-seg :=  $map?body,
+    $seg := collection($config:tls-texts-root)//tei:seg[@xml:id=$segid]
+return
+    if ($new-seg = ()) then "Error: Please use the function under 內部 to completely delete segment" 
+    else if (not(tlslib:check-edited-seg-valid($new-seg, $seg))) then "Error: Text integrity check failed. Can not save edited text."
+    else 
+        (: Use save-punc to update the edited part, without splitting. :)
+        let $save-punc-rst := tlsapi:save-punc(map:put($map, "action", "no_split")),
+            $updated-seg := collection($config:tls-texts-root)//tei:seg[@xml:id=$segid],
+            $fseg := $updated-seg/following::tei:seg[1],
+            $nseg := <seg xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$segid}" type="{$map?type}">{$updated-seg/node(), $fseg/node()}</seg>
+        return (
+            update replace $seg with $nseg, 
+            update delete $fseg
+        )
 };
 
 declare function tlsapi:text-request($map as map(*)){
