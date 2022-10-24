@@ -2911,7 +2911,7 @@ typeswitch ($node)
  : parameter is also appended to the id. The level argument will be increased until a
  : id that is not present in the database is found. :)
 declare function tlslib:generate-new-line-id($base-id as xs:string, $index as xs:int, $level as xs:int) as xs:string {
-    let $nid := $base-id || "." || $index || (if ($level = 0) then "" else "_" || $level)
+    let $nid := $base-id || "." || $index || (if ($level = 0) then "" else "." || $level)
     return
         if (collection($config:tls-texts-root)//tei:seg[@xml:id=$nid]) then
             tlslib:generate-new-line-id($base-id, $index, $level + 1)
