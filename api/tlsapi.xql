@@ -19,7 +19,7 @@ import module namespace tlslib="http://hxwd.org/lib" at "../modules/tlslib.xql";
 import module namespace dialogs="http://hxwd.org/dialogs" at "../modules/dialogs.xql"; 
 import module namespace krx="http://hxwd.org/krx-utils" at "../modules/krx-utils.xql";
 import module namespace xed="http://hxwd.org/xml-edit" at "../modules/xml-edit.xql";
-import module namespace imp="http://hxwd.org/xml-import"at "../modules/import.xql"; 
+import module namespace imp="http://hxwd.org/xml-import" at "../modules/import.xql"; 
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
@@ -1748,7 +1748,8 @@ let $segid := $map?line_id,
 return 
     if (not(tlslib:check-edited-seg-valid($new-seg, $seg))) then "Error: Text integrity check failed. Can not save edited text."
     else
-        let $save-punc-rst := tlsapi:save-punc(map:put($map, "action", "no_split")) (: Use save-punc to update the edited part, wihtout splitting. :),
+        let $save-punc-rst := tlsapi:save-punc(map:put($map, "action", "no_split")) 
+        (: Use save-punc to update the edited part, without splitting. :),
             $updated-seg := collection($config:tls-texts-root)//tei:seg[@xml:id=$segid],
             $fseg := $seg/following::tei:seg[1],
             $nseg := <seg xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$seg/@xml:id}" type="{$map?type}">{$seg/node(), $fseg/node()}</seg> 

@@ -1,2 +1,4 @@
 build/
 node_modules/
+.existdb.json
+*.code-workspace
