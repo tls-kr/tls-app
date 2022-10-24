@@ -46,7 +46,7 @@ declare variable $config:tls-krx-root := substring-before($config:app-root, data
 declare variable $config:tls-translation-root := concat($config:tls-data-root, "/translations");
 declare variable $config:tls-user-root := "/db/users/";
 declare variable $config:tls-add-titles := $config:tls-texts-root || "/krp-titles.xml";
-declare variable $config:exide-url :="https://hxwd.org:8443/exist/apps/eXide/index.html";
+declare variable $config:exide-url := "/exist/apps/eXide/index.html";
 declare variable $config:tls-manifests := 
   let (:$user := sm:id()//sm:real/sm:username/text()
   , $approot := substring-before($config:app-root, data($config:expath-descriptor/@abbrev))
@@ -54,6 +54,12 @@ declare variable $config:tls-manifests :=
   return ((:"/db/users/"||$user||$mf,:) $config:tls-texts-root||$mf, $config:tls-krx-root||$mf) ;
 
 declare variable $config:seg-split-tokens := '[，。：．；？﹖！，』」/、]';
+
+(: the underscore is in reality a space, for the purpose at hand has to be escaped :) 
+declare variable $config:concept-name-chars := "['_,-/3ABCDEFGHIJKLMNOPQRSTUVWXYZx:]";
+declare variable $config:pinyin-chars := "[abcdefghijklmnopqrstuwxyzàáèéìíòóùúüāēěīōūǎǐǒǔǘǚǜ̀́]";
+declare variable $config:pua-base-cbeta := 983040;
+declare variable $config:pua-base-krp := 1069056;
 
 declare variable $config:seg-types := map{
 "root" : "Root Text",
@@ -86,6 +92,8 @@ declare variable $config:languages := map{
 "ja" : "Japanese",
 "ja-ku" : "Japanese Kundoku"
 };
+
+declare variable $config:circle := "resources/icons/open-iconic-master/svg/media-record.svg";
 
 (: translation attribution :)
 (: Just for reference, might want to use this later...

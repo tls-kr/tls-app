@@ -408,15 +408,27 @@ let $query := map:get($model, "query")
     }
     </ul>
     <h2>Texts in the Kanseki Repository:</h2>
-    <ul>{for $h in doc($config:tls-add-titles)//title[contains(., $query)]
-      let $w :=  $h/parent::work
+    <ul>{
+       for $w in 
+       if (matches($query, "^[A-Z]"))  then  
+          if (starts-with($query, "KR")) then 
+            doc($config:tls-add-titles)//work[contains(@krid, $query)]
+          else 
+            doc($config:tls-add-titles)//work[altid[contains(., $query)]]
+        else 
+          doc($config:tls-add-titles)//work[title[contains(., $query)]]
+      let $h :=  $w/title
       , $kid := data($w/@krid)
+      , $tls := $w/@tls-added
       , $req := if ($w/@request) then <span id="{$kid}-req">　Requests: {count(tokenize($w/@request, ','))}</span> else ()
       , $but := <button type="button" class="btn btn-primary btn-sm" onclick="text_request('{$kid}')">Request for TLS</button>
       , $av := not($w/note) 
       order by $kid
       where string-length($kid) > 5
-      return  <li>{if ($av) then $but else ()}　{$kid || " " || $h/text()} {$req}</li>
+      return if ($tls) then 
+           <li><a href="textview.html?location={$kid}">{data($kid) || " " || data($h)}</a> </li>
+            else
+          <li>{if ($av) then $but else ()}　{$kid || " " || $h/text() || " "} <span class="text-muted"><small>{ string-join($w/altid, " / ")}</small></span>  {$req}</li>
     }
     </ul>
     </div>

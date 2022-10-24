@@ -195,6 +195,88 @@ declare function xed:save-nodes($seg as node(), $segs as node()*){
     , $segs[last()]/@xml:id)
 };
 
+(: the following is mainly for dealing with imported texts, maybe move to import module? :) 
+
+declare function xed:line2lb($line as node()){
+$line/node()
+};
+
+declare function xed:set-state ($node as node(), $state as xs:string){
+let $tei := $node/ancestor-or-self::tei:TEI
+return 
+ if ($tei/@state) then 
+    update replace $tei/@state with $state 
+ else
+    update insert attribute state {$state} into $tei
+};
+
+(: remove short notes and replace with () notation :)
+(: this exist in import.xql, but needs to be generalized, operate on <note> element :)
+declare function xed:process-inline-notes($node as node(), $limit as xs:int ){
+()
+};
+
+
+(: replace ideographic space characters with space elements :)
+(: TODO probably reimplement as recursion with one save operation will be more efficient :)
+declare function xed:space-to-element($node as node()){
+let $tei := $node/ancestor-or-self::tei:TEI
+let $res := for $s in $tei//tei:text//text()[contains(., "　")]
+    let $as := analyze-string($s, "　+")
+    , $r := for $n in $as/node()
+    return
+        if (local-name($n)='match') then 
+         element {QName(namespace-uri($s), "space")} { 
+         attribute n {$n},
+         attribute quantity {string-length($n)}}
+        else $n/text()
+    return xed:save-nodes($s, $r)
+return $res
+};
+
+(: the g element needs to be represented with a codepoint from the unicode PUA area.
+CBETA texts and krp texts have different ranges of codepoint values
+@param: node is any element-node in the document, we will get the tei:TEI element from there 
+:)
+declare function xed:g-to-unicode($node as node()){
+let $tei := $node/ancestor-or-self::tei:TEI
+, $is-cbeta := $tei//tei:distributor[contains(., "CBETA")]
+, $pua-const:= if ($is-cbeta) then $config:pua-base-cbeta else $config:pua-base-krp
+return
+ for $g in $tei//tei:text//tei:g
+ let $r := xs:int(substring($g/@ref, 4))
+ , $t := $g/text()
+ , $p := $g/preceding-sibling::text()[1]
+ , $f := $g/following-sibling::text()[1]
+ , $nc :=  if (string-length($t) > 0) then $t else codepoints-to-string($r+$pua-const)
+  (: if g has text content, it is the normalized form of the character, which we will use here :)
+ return (if ($p) then update replace $p with $p || $nc else update replace $f with $nc || $f , update delete $g)
+};
+
+
+
+
+declare function xed:lb2line($lb as node()){
+let $nlb := $lb/following-sibling::tei:lb[1]
+, $line := $lb/following-sibling::node() intersect $nlb/preceding-sibling::node()
+return  
+    element {QName(namespace-uri($lb),"line")} {$lb, $line} 
+};
+
+declare function xed:remove-extra-lbs($lbs as node()*){
+let $root := root($lbs[1])
+let $res :=
+  for $lb in $lbs
+    let $line := xed:lb2line($lb)
+  , $lt := $line//text() => string-join('') => normalize-space() => replace(' ', '')  
+  return if ($line/tei:pb and string-length($lt)=0) then (update delete $lb, 1)  else ()
+return if (sum($res) > 0) then xed:remove-extra-lbs($root//tei:lb) else 0
+};
+
+(: for KR WYG texts, there are some with paragraphs marked with 2 spaces (type B) and others with the original layout (type A). 
+We need to distinguish these types :)
+
+
 declare function xed:stub($map as map(*)){
 () 
 };

@@ -669,7 +669,7 @@ if ($map?type eq 'swl') then
  {if (string-length($comment) > 0) then <note>{$comment}</note> else ()}
 </respStmt>
 , $res :=  (  if ($swl/tls:metadata/@rating) then 
-     update replace $swl/tls:metadata/@rating with $rating + 1 else
+     update replace $swl/tls:metadata/@rating with if ($rating > 3) then 0 else $rating + 1 else
      update insert attribute rating {if ($rating > 1) then 0 else $rating + 1}  into $swl/tls:metadata
    , update insert $node into $swl/tls:metadata
      )
@@ -1664,9 +1664,9 @@ let $user := sm:id()//sm:real/sm:username/text()
 declare function tlsapi:save-taxchar($map as map(*)){
 let $user := sm:id()//sm:real/sm:username/text()
 , $doc := doc($config:tls-data-root||"/core/taxchar.xml")
-, $data := request:get-data()
+, $data := $map?body
 , $xml := tlslib:char-tax-html2xml($data/div)
-, $id := data(tokenize($data/div/@tei-id))
+, $id := data(tokenize($data/div/@tei-id))[1]
 , $node := $doc//tei:div[@xml:id=$id[1]]
 , $updnode := $doc//tei:div[@xml:id=$id[1]]
 , $excess := 
@@ -1765,14 +1765,22 @@ let $user := sm:id()//sm:real/sm:username/text()
 , $req := if ($text/@request) then $text/@request || "," || $user else $user
 return 
  if ($text/@request) then update replace $text/@request with $req 
-  else update insert attribute request {$req} into $text
+  else (update insert attribute request {$req} into $text,
+  update insert attribute request-date {current-dateTime()} into $text
+  )
 };
 
 declare function tlsapi:add-text($map as map(*)){
-let $w := doc($config:tls-add-titles)//work[@krid=$map?kid]
-, $cbid := $w/altid except $w/altid[matches(., "^(ZB|SB|SK)")]
-, $cv := try {imp:do-conversion($cbid) } catch * {()}
-return if ($cv = $map?kid) then update delete $w/@request else "Error:  can not import text"
+let $cbid := $map?cbid
+, $w := doc($config:tls-add-titles)//work[@krid=$map?kid]
+, $cv := try {imp:do-conversion($map?kid, $cbid) } catch * {()}
+, $tls := attribute tls-added {current-dateTime()}
+return 
+ if ($cv = $map?kid) then 
+  (update rename $w/@request as "requested-by", 
+   if ($w/@tls-added) then update replace $w/@tls-added with $tls 
+   else update insert $tls into $w ) 
+ else "Error:  can not import text"
 };
 
 declare function tlsapi:stub($map as map(*)){

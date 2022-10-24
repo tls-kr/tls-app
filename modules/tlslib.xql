@@ -306,7 +306,7 @@ let $user := sm:id()//sm:real/sm:username/text()
    return $tr
 };
   
-  
+(: prepare the character taxonomy display :)
 declare function tlslib:proc-char($node as node(), $edit as xs:string?)
 { 
 typeswitch ($node)
@@ -338,13 +338,16 @@ typeswitch ($node)
       (: this is the concept originally defined in the taxononomy file! :)
      , $entry-id := $swl/ancestor::tei:entry/@xml:id
      , $swl-count := count($swl)
-     , $concept := if (exists($node/@altname)) then data($node/@altname) else normalize-space($node/text())
+     (: do not take the concept name from the taxonomy, it might have been changed! :)
+     , $concept := (if ($swl-count = 0) then $node/text() else $swl/ancestor::tei:div[@type='concept']/tei:head/text()) => string-join() => normalize-space() 
      , $cdef := $swl/ancestor::tei:div/tei:div[@type="definition"]/tei:p/text()
      , $e := string-length($edit) > 0
      return
-      if ($e) then 
-      (: only show the plain concept when editing :)
-      $concept
+      if ($e) then
+       let $c := $concept => replace(' ', '_')
+       return
+       (: only show the plain concept when editing :)
+       " "|| $c
        else
       <span>
       {if ($swl-count = 0) then 
@@ -362,7 +365,7 @@ typeswitch ($node)
       </ul>
       </span>
   case text() return
-      $node
+     $node
   default
   return 
   <not-handled>{$node}</not-handled>
@@ -389,6 +392,13 @@ declare function tlslib:format-button($onclick as xs:string, $title as xs:string
 declare function tlslib:format-button-common($onclick as xs:string, $title as xs:string, $icon as xs:string){
   tlslib:format-button($onclick, $title, $icon, "", "close", "tls-user")
 };
+
+declare function tlslib:get-concept-id($str as xs:string){
+let $concept := replace($str, "_", " ")
+for $c in collection(concat($config:tls-data-root, '/concepts/'))//tei:head[. = $concept]
+return data($c/ancestor::tei:div[@type='concept']/@xml:id)
+};
+
 
 (:~
 : looks for a word in the tei:orth element of concepts
@@ -453,7 +463,7 @@ declare function tlslib:proc-seg($node as node()){
   case element (exist:match) return <mark>{$node/text()}</mark>
   case element (tei:anchor) return 
     let $t := if (starts-with($node/@xml:id, "nkr_note_mod")) then $node/ancestor::tei:TEI//tei:note[@target = "#"|| $node/@xml:id]/text() else ()
-    return if ($t) then <span title="{$t}" class="text-muted"><img class="icon"  src="resources/icons/open-iconic-master/svg/media-record.svg"/></span> else ()
+    return if ($t) then <span title="{$t}" class="text-muted"><img class="icon note-anchor"  src="{$config:circle}"/></span> else ()
   case element(tei:seg) return (if (string-length($node/@n) > 0) then data($node/@n)||"　" else (), for $n in $node/node() return tlslib:proc-seg($n))
   case attribute(*) return () 
  default return $node    
@@ -464,6 +474,8 @@ declare function tlslib:proc-seg-for-edit($node as node()){
  typeswitch ($node)
   case element (tei:anchor) return "$"
   case element (tei:c) return data($node/@n)
+  case element (tei:g) return "$"
+  case element (tei:space)  return "$"
   case element (tei:lb)  return "$"
   case element (tei:pb)  return "$"
   case element (tei:p) return for $n in $node/node() return tlslib:proc-seg-for-edit($n)
@@ -478,6 +490,7 @@ declare function tlslib:proc-p-for-edit($node as node()){
   case element (tei:anchor) return "$"
   case element (tei:g) return "$"
   case element (tei:c) return data($node/@n)
+  case element (tei:space)  return "$"
   case element (tei:lb)  return "$"
   case element (tei:pb)  return "$"
   case element (tei:p) return for $n in $node/node() return tlslib:proc-p-for-edit($n)
@@ -803,6 +816,8 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
       $pseg := if ($prec > 0) then $targetseg/preceding::tei:seg[fn:position() < $prec] 
         else (),
       $d := $targetseg/ancestor::tei:div[1],
+      $state := if ($d/ancestor::tei:TEI/@state) then $d/ancestor::tei:TEI/@state else "yellow" ,
+      $pb := $targetseg/preceding::tei:pb[1] ,
       $head := if ($d/tei:head[1]/tei:seg) then ( $d/tei:head[1]/tei:seg)/text() 
          else if ($d/ancestor::tei:div/tei:head) then $d/ancestor::tei:div/tei:head/tei:seg/text() 
          else ($d//text())[1],
@@ -826,11 +841,10 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
     return
       (
       <div id="chunkrow" class="row">
-      <!-- here is where we select what to display -->
       <div id="srcref" class="col-sm-12 collapse" data-toggle="collapse">
       {tlslib:textinfo($model?textid)}
       </div>
-      <!-- here is where we select what to display -->
+      <!-- here is where we select what kind of annotation to display -->
       {if (count($atypes) > 1) then 
       <div id="swlrow" class="col-sm-12 swl collapse" data-toggle="collapse">
        <div class="row">
@@ -845,7 +859,7 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
       {(:  this is the same structure as the one display-seg will fill it 
       with selection for translation etc, we use this as a header line :)()}
        <div class="row">
-        <div class="col-sm-2" id="toprow-1"><span class="font-weight-bold">{$head}</span><span class="btn badge badge-light">line {$xpos} / {($xpos * 100) idiv $sc}%</span><!-- zh --></div>
+        <div class="col-sm-2" id="toprow-1"><img class="icon state-{$state}"  src="{$config:circle}"/><span class="font-weight-bold">{$head}</span><span class="btn badge badge-light">line {$xpos} / {($xpos * 100) idiv $sc}%</span> <span class="btn badge badge-light" title="{$pb/@xml:id}">{data($pb/@n)}</span><!-- zh --></div>
         <div class="col-sm-5" id="toprow-2"><!-- tr -->
         {if ($show-transl) then tlslib:trsubmenu($model?textid, "slot1", $slot1-id, $tr) else ()}
         </div>
@@ -1299,7 +1313,8 @@ let $src := data($a/tls:text/tls:srcline/@title)
 let $line := $a/tls:text/tls:srcline/text(),
 $tr := $a/tls:text/tls:line,
 $target := substring(data($a/tls:text/tls:srcline/@target), 2),
-$loc := xs:int((tokenize($target, "_")[3] => tokenize("-"))[1])
+(: TODO find a better way, get juan for CBETA texts :)
+$loc := try {xs:int((tokenize($target, "_")[3] => tokenize("-"))[1])} catch * {0}
 , $exemplum := if ($a/tls:metadata/@rating) then xs:int($a/tls:metadata/@rating) else 0
 , $bg := if ($exemplum > 0) then "bg-secondary" else "bg-light"
 return
@@ -1836,16 +1851,20 @@ declare function tlslib:ngram-query($queryStr as xs:string?, $mode as xs:string?
     (: HACK: if no login, use date mode for sorting :)
     $mode := if ($user = "guest") then "date" else $mode,
     $matches := if  (count($qs) > 1) then 
-      collection($dataroot)//tei:p[ngram:wildcard-contains(., $qs[1]) and ngram:wildcard-contains(., $qs[2])]
+      (collection($dataroot)//tei:p[ngram:wildcard-contains(., $qs[1]) and ngram:wildcard-contains(., $qs[2])] |
+       collection($dataroot)//tei:lg[ngram:wildcard-contains(., $qs[1]) and ngram:wildcard-contains(., $qs[2])])
       else
       (: 2022-02-24 for one char searches, go only in tls texts; this needs more discussion... :)
       if ($search-type = "5") then 
-      collection($dataroot)//tei:TEI[@xml:id=$stextid]//tei:p[ngram:wildcard-contains(., $qs[1])]
+      (collection($dataroot)//tei:TEI[@xml:id=$stextid]//tei:p[ngram:wildcard-contains(., $qs[1])] |
+      collection($dataroot)//tei:TEI[@xml:id=$stextid]//tei:lg[ngram:wildcard-contains(., $qs[1])])
       else
       if (string-length($qs[1]) < 2) then
-      collection($config:tls-texts-root || "/tls")//tei:p[ngram:wildcard-contains(., $qs[1])]
+      (collection($config:tls-texts-root || "/tls")//tei:p[ngram:wildcard-contains(., $qs[1])],
+      collection($config:tls-texts-root || "/tls")//tei:lg[ngram:wildcard-contains(., $qs[1])])
       else
-      collection($dataroot)//tei:p[ngram:wildcard-contains(., $qs[1])]
+      (collection($dataroot)//tei:p[ngram:wildcard-contains(., $qs[1])] | 
+      collection($dataroot)//tei:lg[ngram:wildcard-contains(., $qs[1])])
     for $hit in $matches
       let $textid := substring-before(tokenize(document-uri(root($hit)), "/")[last()], ".xml"),
       (: for the CHANT text no text date data exist, so we use this flag to cheat a bit :)
@@ -2317,30 +2336,48 @@ return
 declare function tlslib:review-request(){
 let $user := "#" || sm:id()//sm:username
 , $text := doc($config:tls-add-titles)//work[@request]
-
+, $recent := doc($config:tls-add-titles)//work[@requested-by]
 return
 
 <div class="container">
 <div>
 <h3>Requested texts: {count($text)} items</h3>
-<small>Currently only implemented for CBETA texts (2022-10)</small>
-{for $w at $pos in $text
-      let $kid := data($w/@krid)
-      , $req := if ($w/@request) then <span id="{$kid}-req">　Requests: {count(tokenize($w/@request, ','))}</span> else ()
-      , $cbid := $w/altid except $w/altid[matches(., "^(ZB|SB|SK)")]
-return
-  <div class="row border-top pt-4" id="{data($w/@krid)}">
-  <div class="col-sm-4"><a href="textview.html?location={$kid}">{$kid}　{$w/title/text()}</a></div>
-  <div class="col-sm-2"><span>{string-join($w/@request, " / ")}</span> </div>  
-  <div class="col-sm-3"><span id="gloss-{$pos}" title="Click here to add text" onclick="add_text('{$kid}')">{$cbid}</span></div>
-  </div>,
-()
-}
+{tlslib:review-request-rows($text)}
 </div>
+<div>
+<h3>Recently added texts: {count($recent)} items</h3>
+{tlslib:review-request-rows($recent)}
+</div>
+
 </div>
 };
 
-
+declare function tlslib:review-request-rows($res as node()*){
+for $w at $pos in $res
+      let $kid := data($w/@krid)
+      , $req := if ($w/@request) then 
+        <span id="{$kid}-req">　Requests: {count(tokenize($w/@request, ','))}</span> else 
+        <span id="{$kid}-req">　Requested by: {data($w/@requested-by)}</span>
+      , $cb := $w/altid except $w/altid[matches(., "^(ZB|SB|SK)")] 
+      , $cbid := if ($cb) then $cb else $kid
+      , $date := if ($w/@tls-added) then xs:dateTime($w/@tls-added) else xs:dateTime($w/@request-date)
+    order by $date descending
+return
+  <div class="row border-top pt-4" id="{data($w/@krid)}">
+  <div class="col-sm-3"><a href="textview.html?location={$kid}">{$kid}　{$w/title/text()}</a></div>
+  <div class="col-sm-3"><span>{$req}</span> {" "||data($w/@tls-added)}</div>  
+  {if ($w/@request) then
+  <div class="col-sm-3"><span id="gloss-{$pos}" title="Click here to add text" onclick="add_text('{$kid}', '{$cbid=> string-join('$')}')">Add: {$cbid}</span></div>
+  else
+  <div class="col-sm-3"><span id="gloss-{$pos}" title="Click here to analyze text" onclick="analyze_text('{$kid}')">Analyze this text</span></div>
+  }
+  <div class="col-sm-3"><a href="{
+      concat($config:exide-url, "?open=", $config:tls-texts-root || "/KR/", substring($kid, 1, 3) || "/" || substring($kid, 1, 4) || "/"  || $kid || ".xml")}"
+      >Open in eXide</a></div>
+  </div>,
+()
+  
+};
 
 declare function tlslib:review-swl(){
 let $user := "#" || sm:id()//sm:username
@@ -2704,302 +2741,6 @@ if (not($vis="option3")) then
  else ()
 };
 
-declare function tlslib:edit-fragment($request as map(*)){
-    let $target := $request?parameters?type
-    let $docid := $request?parameters?docid
-return
-switch ($target)
-  case "teiheader" return
-<TEI xmlns="http://www.tei-c.org/ns/1.0">
- {collection($config:tls-texts-root)//tei:TEI[@xml:id=$docid]/tei:teiHeader}
- </TEI>
-default return
-<root>
-<test>{$docid}</test>
-</root>
-};
-
-declare function tlslib:save-fragment($request as map(*)){
-(:  this was used for debugging:
-         let $f := function($k, $v) {map:entry($k, $v)}
-         map:merge(map:for-each($request, $f))   :)
-
- let $data := $request?body
- let $target := $request?parameters?type
- let $docid := $request?parameters?docid
- let $targetnode := switch ($target) 
-  case "teiheader" return 
-    collection($config:tls-texts-root)//tei:TEI[@xml:id=$docid]/tei:teiHeader
-  default return ()
- let $updatednode := $data//tei:teiHeader
- return 
- if ($targetnode and $updatednode) then 
-            ( 
-                 update replace $targetnode with $updatednode, 
-                 map{
-                   "status" : "updated",
-                   "user" : sm:id()//sm:real/sm:username/text(),
-                   "body" : $updatednode
-                 }
-            )
-else map{
-"status" : "not found",
- "body" : $data//tei:teiHeader,
- "data" : $data,
- "tnode" : $targetnode,
- "user" : sm:id()//sm:real/sm:username/text()
-}
-
-};
-
-
-declare function local:edit-xml-transform($nodes as node()*) {
-    for $node in $nodes
-    return
-        typeswitch ($node)
-            case element(tei:teiHeader) return 
-               <fx-group ref="{local-name($node)}">
-                    {for $c in $node/* return
-                     <fx-trigger>
-                       <paper-button raised="raised">{local-name($c)}</paper-button>
-                       <fx-toggle case="{local-name($c)}"></fx-toggle>
-                     </fx-trigger>                    
-                    }
-                    <fx-switch>
-                    { local:edit-xml-transform($node/node()) }
-                    </fx-switch>
-               </fx-group>
-            case element(tei:fileDesc) | element(tei:profileDesc) | element(tei:revisionDesc) return
-                <fx-case id="{local-name($node)}">
-                  <h2>{local-name($node)}</h2>
-                  {local:edit-xml-transform($node/node())}
-                </fx-case>
-            case element(tei:titleStmt) | element(tei:publicationStmt) | element (tei:sourceDesc) | element (tei:editionStmt) return 
-              <details><summary>{local-name($node)}</summary>
-              <fx-group ref=".//{local-name($node)}">
-              {local:edit-xml-transform($node/node())}
-              {if (local-name($node) = 'titleStmt' and not ($node/tei:author)) then 
-              local:edit-xml-transform(<tei:author></tei:author>) else ()}
-              </fx-group>
-              </details>
-            case element(tei:title) | element(tei:author) | element (tei:editor) return
-              (<h4>{local-name($node)}</h4>,
-              <fx-repeat ref="{local-name($node)}" id="{local-name($node)}s">
-                <template>
-                 <fx-control ref="."></fx-control>
-                 <fx-trigger class="deleteIcon">
-                    <button>x</button>
-                    <fx-delete ref="."></fx-delete>
-                </fx-trigger>
-                </template>
-              </fx-repeat>,
-              if ($node/parent::*[$node[position() = last()]]) then
-              <fx-trigger>
-              <button>add {local-name($node)}</button>
-              {if ($node/ancestor::tei:teiHeader) then
-              <fx-insert ref="{local-name($node)}" repeat="{local-name($node)}s"></fx-insert>
-              else 
-               switch (local-name($node))
-               case "author" return
-                 <fx-insert ref="titleStmt/author" repeat="{local-name($node)}s" origin="instance('templates')//author"></fx-insert>
-               default return ()
-              }
-              </fx-trigger> else ())
-            (: leave unknown elements intact, including attributes :)
-            case element(tei:p) return
-             (
-             <fx-control ref="{local-name($node)}">
-              <label>{local-name($node)}</label>
-             </fx-control>,
-             <fx-trigger class="deleteIcon">
-                <button>x</button>
-               <fx-delete ref="{local-name($node)}"></fx-delete>
-             </fx-trigger>
-             )
-            case element() return
-                element 
-                    { node-name($node) } 
-                    { $node/@*, local:edit-xml-transform($node/node()) }
-            case text() return
-                $node
-            default return
-                $node
-};
-
-declare function tlslib:xml-editor($request as map(*)){
- let $target := $request?parameters?type
- let $docid := $request?parameters?docid
- let $path := "http://localhost:8080/exist/apps/tls-tp/"
- let $targetnode := switch ($target) 
-  case "teiheader" return 
-    collection($config:tls-texts-root)//tei:TEI[@xml:id=$docid]/tei:teiHeader
-  default return ()
-  return
-<html lang="en" xmlns:tei="http://www.tei-c.org/ns/1.0">
-<head>
-    <meta charset="utf-8"/>
-    <meta content="width=device-width, minimum-scale=1, initial-scale=1, user-scalable=yes" name="viewport"/>
-
-    <title>XML Fragment editor</title>
-    <link href="resources/fore/demo.css" rel="stylesheet"/>
-    <link href="resources/fore/vars.css" rel="stylesheet"/>
-    <style>
-        html{{
-            /*--inspector-bg:var(--paper-grey-700);*/
-            /*--inspector-pre-bg:var(--paper-grey-100);*/
-            /*--inspector-color:var(--paper-grey-800);*/
-            /*--inspector-pre-bg:blue;*/
-        }}
-    
-        body {{
-            background: var(--paper-light-blue-200);
-            color: var(--paper-light-blue-900)
-        }}
-
-        .card {{
-            background: white;
-            padding: 1rem;
-            border-radius: 0.5rem;
-        }}
-
-        #changes fx-repeatitem {{
-            display: grid;
-            grid-template-columns: auto min-content;
-            grid-column-gap: 1rem;
-        }}
-
-        #changes fx-repeatitem fx-output {{
-            white-space: nowrap;
-        }}
-
-        .deleteIcon button {{
-            border: none;
-            cursor: pointer;
-            background: transparent;
-            color: red;
-        }}
-
-        details {{
-            padding: 1rem;
-            margin: 1rem 0;
-            /*background: white;*/
-
-        }}
-
-        details[open] {{
-            /*background: var(--paper-grey-100);*/
-            /*background-color: rgba(255, 255, 255, 0.5);*/
-        }}
-
-        fx-case {{
-            margin-top: 1px;
-            border: 1px solid var(--paper-light-blue-900);
-            padding: 2rem;
-            background-color: rgba(255, 255, 255, 0.5);
-        }}
-
-        fx-control, input, textarea {{
-            width: 100%;
-            margin: 0.3rem 0;
-        }}
-
-        input {{
-            padding: 0.3rem;
-        }}
-
-        label {{
-            display: block;
-            color: var(--paper-blue-900);
-        }}
-
-        fx-control {{
-            /*margin-top: 1rem;*/
-        }}
-
-        fx-group {{
-            margin-top: 1rem;
-            padding: 1rem;
-        }}
-
-        h3, fx-output, input {{
-            border: none;
-        }}
-
-        h3, h4 {{
-            margin-bottom: 0;
-            margin-top: 1rem;
-        }}
-
-        fx-repeat {{
-            display: block;
-        }}
-
-        fx-repeatitem {{
-            display: block;
-        }}
-
-        fx-repeatitem {{
-            display: grid;
-            grid-template-columns: auto 30px;
-            width: 100%;
-            align-items: baseline;
-        }}
-
-        details.log {{
-            background: var(--paper-light-blue-100);
-        }}
-
-        pre {{
-            overflow: auto;
-        }}
-
-        #langs fx-repeatitem, #terms fx-repeatitem {{
-            display: inline-block;
-            width: auto;
-        }}
-
-        #langs fx-repeatitem fx-control, #terms fx-repeatitem fx-control {{
-            width: 2.5rem;
-        }}
-        .wrapper{{
-            overflow: scroll;
-        }}
-        fx-inspector pre{{
-            /*max-height:200px;*/
-        }}
-    </style>
-</head>
-<body unresolved="unresolved">
-<div class="wrapper">
-
-  <h1>Editing an TEI header</h1>
-    <fx-fore xpath-default-namespace="http://www.tei-c.org/ns/1.0">
-    <fx-model>
-     <fx-instance src="{$path}tls/edit/{$target}/{$docid}">
-     </fx-instance>
-     <fx-instance id="templates" src="resources/fragments/teiheader.xml">
-     </fx-instance>
-     <fx-instance id="result">
-     </fx-instance>
-     <fx-submission id="save"
-                           url="{$path}tls/edit/{$target}/{$docid}"
-                           method="put"
-                           replace="none">
-                           </fx-submission>
-    </fx-model>
-  {local:edit-xml-transform($targetnode)}
-   <fx-trigger>
-      <button>save</button>
-      <fx-send submission="save">
-      </fx-send>
-   </fx-trigger>
-</fx-fore>
-  </div>
-  <script type="module" src="http://localhost:8090/demo/demo.js"></script>
-  </body>
-</html>
-};
-
 
 (: this is for the char editing :)
 
@@ -3080,59 +2821,89 @@ declare function tlslib:char-tax-newconcepts($char){
  let $p := (tlslib:pron-for-entry($r)/tei:pron[@xml:lang="zh-Latn-x-pinyin"]/text())[1]
  , $concept := map:get($emap, $r)[2]
  order by $p || $concept
- return <item corresp="#{$r}">{$p} <ref target="#{map:get($emap, $r)[1]}">{$concept}</ref></item>
+ return <item corresp="#{$r}">{$p}  <ref target="#{map:get($emap, $r)[1]}">{$concept}</ref></item>
  }</list></div>
 };
 
-(: as of 2022-10-06, the stuff about XML representation of char-tax is not used. :)
 
-(: get XML representation of char in request :)
-
-declare function tlslib:char-tax-xml($request as map(*)){
- let $char := $request?parameters?char
- , $cdoc := doc($config:tls-data-root || "/core/taxchar.xml")
- , $chead :=  $cdoc//tei:head[. = $char]
- , $cdiv := $chead/ancestor::tei:div[@type='taxchar']
- , $emap := tlslib:getwords($char, map{})
- return if (exists($cdiv)) then $cdiv else tlslib:char-tax-stub($char)
+declare function tlslib:char-tax-contentline($str as xs:string){
+let $as := analyze-string(normalize-space($str), $config:concept-name-chars||"+$")//fn:*
+, $concept := $as[last()]/text()
+return ($as[position() < last()]/text() || " ", 
+ <ref xmlns="http://www.tei-c.org/ns/1.0" target="#{tlslib:get-concept-id($concept)}">{$concept => replace("_", " ")}</ref>)
 };
+(: the pinyin handling is broken, we dont go down this rabbit hole :)
+declare function tlslib:char-tax-html2xml-py($node as node()){
+let $user := sm:id()//sm:real/sm:username/text()
+return
+typeswitch ($node)
+  case element(li) return 
+    (: Problem with this code:  can't rely on @tei-*, since they do not get updated during the editing process. :)
+    let $new-node-w-py := starts-with($node/child::a, "@py:")
+    let $type := if ($new-node-w-py) then "pron" else $node/@tei-type
+    return
+       if ($type = 'pron') then 
+        (: @corresp is the link to the guangyun file, currently available only for new taxchar structures :)
+        if (string-length($node/@tei-corresp) > 0) then 
+            <item xmlns="http://www.tei-c.org/ns/1.0" type="pron" corresp="{$node/@tei-corresp}">{for $n in $node/node() return tlslib:char-tax-html2xml($n)}</item>
+        else
+            <item xmlns="http://www.tei-c.org/ns/1.0" type="pron">{for $n in $node/node() return tlslib:char-tax-html2xml($n)}</item>
+      else
+      <item xmlns="http://www.tei-c.org/ns/1.0">
+       { for $n in $node/node() return tlslib:char-tax-html2xml($n)}</item>
+  case element(ul) return <list xmlns="http://www.tei-c.org/ns/1.0">{$node/text(), for $n in $node/node() return tlslib:char-tax-html2xml($n)}</list>
+  case element(div) return 
+     let $id := if (string-length($node/@tei-id) > 0) then $node/@tei-id else "uuid" || util:uuid()
+     return
+     <div type="taxchar" xml:id="{$id}" resp="{$user}" modified="{current-dateTime()}" xmlns="http://www.tei-c.org/ns/1.0" >
+       {for $h in tokenize($node/@tei-head, '/') return <head xmlns="http://www.tei-c.org/ns/1.0">{normalize-space($h)}</head>}
+       {for $n in $node/node() return tlslib:char-tax-html2xml($n)}
+     </div>
+  case element(i) return for $n in $node/node() return tlslib:char-tax-html2xml($n)
+  case element(a) return 
+    let $str := string-join($node) => replace("@py:", "")
+    return
+    if ($node/parent::li[@tei-type='pron'] or starts-with($node, "@py:")) then replace($node/text(), "@py:", "")
+    else if (string-length($str) > 0) then tlslib:char-tax-contentline($str) else ()
+  case text() return $node
+  default 
+  return <name>{$node}</name>
+};
+
 
 declare function tlslib:char-tax-html2xml($node as node()){
 let $user := sm:id()//sm:real/sm:username/text()
 return
 typeswitch ($node)
-case element(li) return 
-let $concept := data($node/@tei-ref)
-,$target := $node/@tei-target
-,$type := $node/@tei-type
-,$ref := if (string-length($concept) > 0) then <ref xmlns="http://www.tei-c.org/ns/1.0" target="{$target}">{$concept}</ref> else ()
-,$txt := if (string-length($concept) > 0) then normalize-space(substring-before(string-join(for $n in $node/node() return tlslib:char-tax-html2xml($n)), $concept))
-         else 
-         for $n in $node/node() return tlslib:char-tax-html2xml($n)
-return
-if ($type = 'pron') then 
- (: @corresp is the link to the guangyun file, currently available only for new taxchar structures :)
- if (string-length($node/@tei-corresp) > 0) then 
-  <item xmlns="http://www.tei-c.org/ns/1.0" type="pron" corresp="{$node/@tei-corresp}">{for $n in $node/node() return tlslib:char-tax-html2xml($n)}</item>
- else
-  <item xmlns="http://www.tei-c.org/ns/1.0" type="pron">{for $n in $node/node() return tlslib:char-tax-html2xml($n)}</item>
-else
-<item xmlns="http://www.tei-c.org/ns/1.0">{($txt,$ref)}
-{ (: here we need to make sure to skip over the text, which has already been output, very clumsy :-( :)
-for $n in $node/node() except $node/text() return if (name($n) = 'ul') then tlslib:char-tax-html2xml($n) else ()}</item>
-case element(ul) return <list xmlns="http://www.tei-c.org/ns/1.0">{$node/text(), for $n in $node/node() return tlslib:char-tax-html2xml($n)}</list>
-case element(div) return 
-let $id := if (string-length($node/@tei-id) > 0) then $node/@tei-id else "uuid" || util:uuid()
-return
-<div type="taxchar" xml:id="{$id}" resp="{$user}" modified="{current-dateTime()}" xmlns="http://www.tei-c.org/ns/1.0" >
-{for $h in tokenize($node/@tei-head, '/') return <head xmlns="http://www.tei-c.org/ns/1.0">{normalize-space($h)}</head>}
-{for $n in $node/node() return tlslib:char-tax-html2xml($n)}
-</div>
-case element(i) return for $n in $node/node() return tlslib:char-tax-html2xml($n)
-case element(a) return normalize-space( for $n in $node/node() return tlslib:char-tax-html2xml($n))
-case text() return $node
-default 
-return <name>{$node}</name>
+  case element(li) return 
+    let $type := $node/@tei-type
+    return
+       if ($type = 'pron') then 
+        (: @corresp is the link to the guangyun file, currently available only for new taxchar structures :)
+        if (string-length($node/@tei-corresp) > 0) then 
+            <item xmlns="http://www.tei-c.org/ns/1.0" type="pron" corresp="{$node/@tei-corresp}">{for $n in $node/node() return tlslib:char-tax-html2xml($n)}</item>
+        else
+            <item xmlns="http://www.tei-c.org/ns/1.0" type="pron">{for $n in $node/node() return tlslib:char-tax-html2xml($n)}</item>
+      else
+      <item xmlns="http://www.tei-c.org/ns/1.0">
+       { for $n in $node/node() return tlslib:char-tax-html2xml($n)}</item>
+  case element(ul) return <list xmlns="http://www.tei-c.org/ns/1.0">{$node/text(), for $n in $node/node() return tlslib:char-tax-html2xml($n)}</list>
+  case element(div) return 
+     let $id := if (string-length($node/@tei-id) > 0) then $node/@tei-id else "uuid" || util:uuid()
+     return
+     <div type="taxchar" xml:id="{$id}" resp="{$user}" modified="{current-dateTime()}" xmlns="http://www.tei-c.org/ns/1.0" >
+       {for $h in tokenize($node/@tei-head, '/') return <head xmlns="http://www.tei-c.org/ns/1.0">{normalize-space($h)}</head>}
+       {for $n in $node/node() return tlslib:char-tax-html2xml($n)}
+     </div>
+  case element(i) return for $n in $node/node() return tlslib:char-tax-html2xml($n)
+  case element(a) return 
+    let $str := string-join($node) 
+    return
+    if ($node/parent::li[@tei-type='pron']) then $str
+    else if (string-length($str) > 0) then tlslib:char-tax-contentline($str) else ()
+  case text() return $node
+  default 
+  return <name>{$node}</name>
 };
 
 (: Generate a fresh xml:id for a segment based on some base line id that an index is appended to. 
