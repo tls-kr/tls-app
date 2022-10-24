@@ -1745,14 +1745,15 @@ declare function tlsapi:merge-following-seg($map as map(*)){
 let $segid := $map?line_id,
     $new-seg :=  $map?body,
     $seg := collection($config:tls-texts-root)//tei:seg[@xml:id=$segid]
-return 
-    if (not(tlslib:check-edited-seg-valid($new-seg, $seg))) then "Error: Text integrity check failed. Can not save edited text."
-    else
-        let $save-punc-rst := tlsapi:save-punc(map:put($map, "action", "no_split")) 
-        (: Use save-punc to update the edited part, without splitting. :),
+return
+    if ($new-seg = ()) then "Error: Please use the function under 內部 to completely delete segment" 
+    else if (not(tlslib:check-edited-seg-valid($new-seg, $seg))) then "Error: Text integrity check failed. Can not save edited text."
+    else 
+        (: Use save-punc to update the edited part, without splitting. :)
+        let $save-punc-rst := tlsapi:save-punc(map:put($map, "action", "no_split")),
             $updated-seg := collection($config:tls-texts-root)//tei:seg[@xml:id=$segid],
-            $fseg := $seg/following::tei:seg[1],
-            $nseg := <seg xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$seg/@xml:id}" type="{$map?type}">{$seg/node(), $fseg/node()}</seg> 
+            $fseg := $updated-seg/following::tei:seg[1],
+            $nseg := <seg xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$segid}" type="{$map?type}">{$updated-seg/node(), $fseg/node()}</seg>
         return (
             update replace $seg with $nseg, 
             update delete $fseg
