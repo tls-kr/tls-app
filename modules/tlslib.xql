@@ -446,7 +446,7 @@ declare function tlslib:proc-seg($node as node()){
   case element (exist:match) return <mark>{$node/text()}</mark>
   case element (tei:anchor) return 
     let $t := if (starts-with($node/@xml:id, "nkr_note_mod")) then $node/ancestor::tei:TEI//tei:note[@target = "#"|| $node/@xml:id]/text() else ()
-    return if ($t) then <span title="{$t}" class="text-muted"><img class="icon"  src="resources/icons/open-iconic-master/svg/media-record.svg"/></span> else ()
+    return if ($t) then <span title="{$t}" class="text-muted"><img class="icon note-anchor"  src="{$config:circle}"/></span> else ()
   case element(tei:seg) return (if (string-length($node/@n) > 0) then data($node/@n)||"　" else (), for $n in $node/node() return tlslib:proc-seg($n))
   case attribute(*) return () 
  default return $node    
@@ -457,6 +457,8 @@ declare function tlslib:proc-seg-for-edit($node as node()){
  typeswitch ($node)
   case element (tei:anchor) return "$"
   case element (tei:c) return data($node/@n)
+  case element (tei:g) return "$"
+  case element (tei:space)  return "$"
   case element (tei:lb)  return "$"
   case element (tei:pb)  return "$"
   case element (tei:p) return for $n in $node/node() return tlslib:proc-seg-for-edit($n)
@@ -471,6 +473,7 @@ declare function tlslib:proc-p-for-edit($node as node()){
   case element (tei:anchor) return "$"
   case element (tei:g) return "$"
   case element (tei:c) return data($node/@n)
+  case element (tei:space)  return "$"
   case element (tei:lb)  return "$"
   case element (tei:pb)  return "$"
   case element (tei:p) return for $n in $node/node() return tlslib:proc-p-for-edit($n)
@@ -796,6 +799,8 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
       $pseg := if ($prec > 0) then $targetseg/preceding::tei:seg[fn:position() < $prec] 
         else (),
       $d := $targetseg/ancestor::tei:div[1],
+      $state := if ($d/ancestor::tei:TEI/@state) then $d/ancestor::tei:TEI/@state else "yellow" ,
+      $pb := $targetseg/preceding::tei:pb[1] ,
       $head := if ($d/tei:head[1]/tei:seg) then ( $d/tei:head[1]/tei:seg)/text() 
          else if ($d/ancestor::tei:div/tei:head) then $d/ancestor::tei:div/tei:head/tei:seg/text() 
          else ($d//text())[1],
@@ -819,11 +824,10 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
     return
       (
       <div id="chunkrow" class="row">
-      <!-- here is where we select what to display -->
       <div id="srcref" class="col-sm-12 collapse" data-toggle="collapse">
       {tlslib:textinfo($model?textid)}
       </div>
-      <!-- here is where we select what to display -->
+      <!-- here is where we select what kind of annotation to display -->
       {if (count($atypes) > 1) then 
       <div id="swlrow" class="col-sm-12 swl collapse" data-toggle="collapse">
        <div class="row">
@@ -838,7 +842,7 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
       {(:  this is the same structure as the one display-seg will fill it 
       with selection for translation etc, we use this as a header line :)()}
        <div class="row">
-        <div class="col-sm-2" id="toprow-1"><span class="font-weight-bold">{$head}</span><span class="btn badge badge-light">line {$xpos} / {($xpos * 100) idiv $sc}%</span><!-- zh --></div>
+        <div class="col-sm-2" id="toprow-1"><img class="icon state-{$state}"  src="{$config:circle}"/><span class="font-weight-bold">{$head}</span><span class="btn badge badge-light">line {$xpos} / {($xpos * 100) idiv $sc}%</span> <span class="btn badge badge-light" title="{$pb/@xml:id}">{data($pb/@n)}</span><!-- zh --></div>
         <div class="col-sm-5" id="toprow-2"><!-- tr -->
         {if ($show-transl) then tlslib:trsubmenu($model?textid, "slot1", $slot1-id, $tr) else ()}
         </div>

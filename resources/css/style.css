@@ -198,7 +198,28 @@
 .tei-head {
   font-size: larger;  
 }
+/* The following from stackexchange https://stackoverflow.com/questions/22252472/how-to-change-the-color-of-an-svg-element
+ * HEX Color picker : google
+ * filter calculator : https://isotropic.co/tool/hex-color-to-css-filter/
+ *  */
 
+/* #b51421 */
+.state-red {
+    filter: invert(15%) sepia(78%) saturate(3487%) hue-rotate(343deg) brightness(89%) contrast(102%);
+}
+/* #e8b50c  */
+.state-yellow {
+    filter: invert(68%) sepia(20%) saturate(7489%) hue-rotate(14deg) brightness(114%) contrast(91%);
+}
+
+.state-green {
+    filter: invert(48%) sepia(79%) saturate(2476%) hue-rotate(86deg) brightness(118%) contrast(119%);
+}
+
+/* #d1cdbe */ 
+.note-anchor {
+    filter: invert(89%) sepia(2%) saturate(1135%) hue-rotate(10deg) brightness(90%) contrast(100%);
+}
 
 /* StarRating */
 

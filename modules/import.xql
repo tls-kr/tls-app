@@ -219,6 +219,7 @@ let $krt := doc($config:tls-add-titles)
 (:, $kid := $krt//work[./altid = $cbid]/@krid :)
  , $doc := doc(imp:get-local-copy($cbid, $kid))
   (: this is for the CBETA texts :)
+  , $state := update insert attribute state {"red"} into $doc//tei:TEI
  , $upd := if (starts-with($kid, "KR6")) then (let $pref := $kid || "_CBETA_" 
    , $h := imp:update-metadata($doc, $kid, $krt//work[@krid=$kid]/title/text())
    , $bd := $doc//tei:text/tei:body

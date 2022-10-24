@@ -91,6 +91,8 @@ declare variable $config:languages := map{
 "ja-ku" : "Japanese Kundoku"
 };
 
+declare variable $config:circle := "resources/icons/open-iconic-master/svg/media-record.svg";
+
 (: translation attribution :)
 (: Just for reference, might want to use this later...
 "None" : "TJAN TJOE SOM 1949FF", (\: BHT 白虎通 :\)
