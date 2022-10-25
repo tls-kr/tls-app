@@ -622,7 +622,7 @@ declare function tlslib:has-edit-permission($text-id as xs:string) as xs:boolean
 (: Returns whether the 內部 should be displayed for a user. It is always shown when they are member of the "tls-editor" group, otherwise,
    it is shown in the textview context when a user has permission to edit that particular text. :)
 declare function tlslib:should-display-navbar-review($context as xs:string, $model as map(*)) as xs:boolean {
-  sm:id()//sm:group = "tls-editor" or ($context = "textview" and tlslib:has-edit-permission($model("textid")))
+  sm:id()//sm:group = "tls-editor" or ($context = "textview" and $model("textid") and tlslib:has-edit-permission($model("textid")))
 };
 
 (:     
