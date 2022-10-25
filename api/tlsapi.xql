@@ -20,6 +20,7 @@ import module namespace dialogs="http://hxwd.org/dialogs" at "../modules/dialogs
 import module namespace krx="http://hxwd.org/krx-utils" at "../modules/krx-utils.xql";
 import module namespace xed="http://hxwd.org/xml-edit" at "../modules/xml-edit.xql";
 import module namespace imp="http://hxwd.org/xml-import" at "../modules/import.xql"; 
+import module namespace wd="http://hxwd.org/wikidata" at "../modules/wikidata.xql"; 
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
@@ -1490,10 +1491,15 @@ else ()
 };
 
 declare function tlsapi:quick-search($map as map(*)){
-let $hits := if (contains($map?query, ";" )) then 
-       tlslib:multi-query($map?query, $map?mode, $map?search-type, $map?textid) 
-      else
-       tlslib:ngram-query($map?query, $map?mode, $map?search-type, $map?textid)
+let $hits := 
+      if ($map?target = 'texts') then
+         if (contains($map?query, ";" )) then 
+             tlslib:multi-query($map?query, $map?mode, $map?search-type, $map?textid) 
+         else
+             tlslib:ngram-query($map?query, $map?mode, $map?search-type, $map?textid)
+      else if ($map?target = 'wikidata') then 
+            wd:search($map?query)
+      else ()
 , $dispx := subsequence($hits, $map?start, $map?count)
 , $disp := util:expand($dispx)//exist:match/ancestor::tei:seg
 , $title := tlslib:get-title($map?textid)
@@ -1503,9 +1509,11 @@ let $hits := if (contains($map?query, ";" )) then
 , $prevp := if ($start = 1) then "" else 'do_quick_search('||$start||' - '||$count||', '||$count ||', '||$map?search-type||', "'||$map?mode||'")'
 , $nextp := if ($total < $start + $count) then "" else 'do_quick_search('||$start||' + '||$count||', '||$count ||', '||$map?search-type||', "'||$map?mode||'")'
 , $qs := tokenize($map?query, "\s")
-,$q1 := substring($qs[1], 1, 1)
+, $q1 := substring($qs[1], 1, 1)
 
 return
+if ($map?target = 'wikidata') then $hits
+else
 <div><p><span class="font-weight-bold">{$start}</span> to <span class="font-weight-bold">{min(($start + $count -1, $total))}</span> of <span class="font-weight-bold">{$total}</span> <span class="font-weight-bold"> p</span> with <span class="font-weight-bold">{count($disp)}</span> hits  {if ($map?search-type eq "5") then "in "||$title else "in all texts" }. {
 if ($map?search-type eq "5") then 
    (<button class="btn badge badge-light" onclick="do_quick_search(1, 25, 1, 'date')">Search in all texts (by textdate)</button>,

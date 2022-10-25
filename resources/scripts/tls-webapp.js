@@ -1802,21 +1802,33 @@ function copyToClipboard(element) {
     focused.focus();
 }
 
+function wikidata_search(){
+   var start = 1;
+   var count = 25;
+   var stype = '5'; // search only this text
+   var mode = 'rating';
+   var target = 'wikidata';
+   $('#domain-lookup-mark').hide();
+   do_quick_search(start, count, stype, mode, target);
+};
+
 function quick_search(){
    var start = 1;
    var count = 25;
    var stype = '5'; // search only this text
    var mode = 'rating';
+   var target = 'texts';
    $('#domain-lookup-mark').hide();
-   do_quick_search(start, count, stype, mode);
+   do_quick_search(start, count, stype, mode, target);
 };
 
-function do_quick_search(start, count, stype, mode){
+function do_quick_search(start, count, stype, mode, target){
 //    var word = $("#swl-query-span").text();
     var word = $("input[name=query]").val();
     var textid = $("#swl-line-id-span" ).text().split("_")[0]
     console.log(textid)
-    $.get("api/responder.xql?func=quick-search&query="+word+"&start="+start+"&count="+count+"&mode="+mode+"&search-type="+stype+"&textid="+textid, "html", 
+    $.get("api/responder.xql?func=quick-search&query="+word+"&start="+start+"&count="+count+"&mode="+mode+"&search-type="+stype+"&textid="+textid+"&target="+target, 
+      "html", 
     function(resp){
          $('#swl-select').html(resp);
          // we might introduce buttons for the other search functions here at some point
@@ -1826,8 +1838,10 @@ function do_quick_search(start, count, stype, mode){
   $('#new-att-title').html("Searching for "+word);
   $('#new-att-detail').html("　　　　　　　　　　　　　　　　　　　　　　　　　　　　");
   $('#swl-select').html("Please wait ...");  
-    
-}
+};
+
+
+
 // delete_zi_from_word('uuid-f1f8819f-cfae-4128-a9ed-8e9586c9e146','1','咳欬')
 function delete_zi_from_word(wid, pos, ch){
 $.get("api/responder.xql?func=delete-zi-from-word&wid="+wid+"&pos="+pos+"&char="+ch, "html", 
