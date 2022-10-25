@@ -608,8 +608,21 @@ return
 ) 
 };
 
-declare function tlslib:should-display-navbar-review($context as xs:string) {
-  contains(sm:id()//sm:group, "tls-editor")
+(: Checks whether user has editing permission for a specific text :)
+declare function tlslib:has-edit-permission($text-id as xs:string) as xs:boolean {
+  if (sm:id()//sm:group = "tls-editor") then
+    true()
+  else
+    let $permissions := doc("/db/users/tls-admin/permissions.xml")
+    return $text-id and 
+        sm:id()//sm:group = "tls-punc" and 
+        $permissions//tls:text-permissions[@text-id = $text-id]/tls:allow-review[@user-id = sm:id()//sm:username/text()]
+};
+
+(: Returns whether the 內部 should be displayed for a user. It is always shown when they are member of the "tls-editor" group, otherwise,
+   it is shown in the textview context when a user has permission to edit that particular text. :)
+declare function tlslib:should-display-navbar-review($context as xs:string, $model as map(*)) as xs:boolean {
+  sm:id()//sm:group = "tls-editor" or ($context = "textview" and tlslib:has-edit-permission($model("textid")))
 };
 
 (:     
@@ -619,12 +632,18 @@ declare function tlslib:navbar-review($context as xs:string){
  <li class="nav-item dropdown">
   <a class="nav-link dropdown-toggle" href="#"  id="navbarDropdownEditors" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">內部</a>
    <div class="dropdown-menu" aria-labelledby="navbarDropdownEditors">
-     <a class="dropdown-item" href="review.html?type=swl">Review SWLs</a>
-     <a class="dropdown-item" href="review.html?type=gloss">Add pronounciation glosses</a>
-     <a class="dropdown-item" href="review.html?type=special">Special pages</a>
+     {if (sm:id()//sm:group = "tls-editor") then
+        (<a class="dropdown-item" href="review.html?type=swl">Review SWLs</a>,
+        <a class="dropdown-item" href="review.html?type=gloss">Add pronounciation glosses</a>,
+        <a class="dropdown-item" href="review.html?type=special">Special pages</a>)
+       else
+        ()
+     }
+     
      {if ($context = 'textview') then 
      <a class="dropdown-item" href="#" onClick="zh_start_edit()">Edit Chinese text</a>
      else ()}
+
      {if (sm:id()//sm:group = "tls-admin") then 
      <a class="dropdown-item" href="review.html?type=request">Add requested texts</a>
      else () }
