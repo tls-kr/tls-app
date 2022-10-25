@@ -608,6 +608,10 @@ return
 ) 
 };
 
+declare function tlslib:should-display-navbar-review($context as xs:string) {
+  contains(sm:id()//sm:group, "tls-editor")
+};
+
 (:     
      :)
 
