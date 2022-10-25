@@ -25,11 +25,12 @@ return
 (: , $r := parse-xml("<r>"||data($c/@titlesnippet)||"</r>")  :)
 <div>
 <h3>Searched Wikidata for {$q}, found {data($res[2]//searchinfo/@totalhits)} hits</h3>
+<p class="text-muted">Showing up to 100 results here. <a style="background-color:paleturquoise" target="dict" title="Search for {$q} on WikiData (External link)" href="https://www.wikidata.org/w/index.php?search={$q}&amp;title=Special%3ASearch&amp;ns0=1&amp;ns120=1">See all</a></p>
 <ul>{
 for $c in $res[2]//p
    let $ts := parse-xml("<span>" || $c/@titlesnippet || "</span>")
    , $t := data($c/@snippet)
-   return <li><a href="https://www.wikidata.org/wiki/{$c/@title}">{data($c/@title)}</a> / <span class="text-muted">{$t}</span> {$ts}</li>
+   return <li><a target="dict" title="Open page in WikiData (External link)" style="background-color:paleturquoise" href="https://www.wikidata.org/wiki/{$c/@title}">{data($c/@title)}</a> / <span class="text-muted">{$t}</span> {$ts}</li>
 }</ul>
 </div>
 };
