@@ -1352,7 +1352,7 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
     </div>
     </div>
     </div>
-        <div class="col-sm-0">{tlslib:swl-form-dialog('concept')}</div>
+        <div class="col-sm-0">{tlslib:swl-form-dialog('concept', $model)}</div>
     </div>
     )
     

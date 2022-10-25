@@ -608,9 +608,10 @@ return
 ) 
 };
 
-(: Checks whether user has editing permission for a specific text :)
+(: Checks whether the currently logged in user has editing permission for a specific text. Users have editing permission if they are
+   a member of the "tls-editor" or "tls-adming" group, or are a member of the "tls-punc" group, and have explicit permission to edit $text-id. :)
 declare function tlslib:has-edit-permission($text-id as xs:string) as xs:boolean {
-  if (sm:id()//sm:group = "tls-editor") then
+  if (sm:id()//sm:group = ("tls-editor", "tls-admin")) then
     true()
   else
     let $permissions := doc("/db/users/tls-admin/permissions.xml")
@@ -896,7 +897,7 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
           'loc' : data($targetseg/@xml:id), 
           'pos' : $pos, "ann" : "xfalse.x"})))}</div>
       <div id="chunkcol-right" class="col-sm-0">
-      {tlslib:swl-form-dialog('textview')}
+      {tlslib:swl-form-dialog('textview', $model)}
     </div>
     </div>,
       <div class="row">
@@ -932,7 +933,7 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
 
 (: This is the stub for the dynamic display in the right section.  Called from textview, it is used for attributions; from other contexts, just for display :)
 
-declare function tlslib:swl-form-dialog($context as xs:string){
+declare function tlslib:swl-form-dialog($context as xs:string, $model as map(*)) {
 <div id="swl-form" class="card ann-dialog overflow-auto">
 {if ($context = 'textview') then
  <div class="card-body">
@@ -954,7 +955,9 @@ declare function tlslib:swl-form-dialog($context as xs:string){
     </h5>
     <h6 class="text-muted">At:  <span id="swl-line-id-span" class="ml-2">Id of line</span>&#160;
     {tlslib:format-button-common("bookmark_this_line()","Bookmark this location", "open-iconic-master/svg/bookmark.svg"), 
-    tlslib:format-button("display_punc_dialog('x-get-line-id')", "Edit properties of this text segment", "octicons/svg/lock.svg", "", "close", ("tls-editor", "tls-punc"))}</h6>
+     if ($model("textid") and tlslib:has-edit-permission($model("textid"))) then 
+      tlslib:format-button("display_punc_dialog('x-get-line-id')", "Edit properties of this text segment", "octicons/svg/lock.svg", "", "close", ("tls-editor", "tls-punc"))
+     else ()}</h6>
     <h6 class="text-muted">Line: <span id="swl-line-text-span" class="ml-2">Text of line</span>
     {tlslib:format-button-common("add_rd_here()","Add observation (regarding a text segment) starting on this line", "octicons/svg/comment.svg")}</h6>
     <div class="card-text">
@@ -1186,6 +1189,7 @@ declare function tlslib:display-seg($seg as node()*, $options as map(*) ) {
   $ann := lower-case(map:get($options, "ann")),
   $loc := map:get($options, "loc"),
   $locked := $seg/@state = 'locked',
+  $textid := string($seg/ancestor::tei:TEI/@xml:id),
   $mark := if (data($seg/@xml:id) = $loc) then "mark" else ()
   ,$lang := 'zho'
   ,$alpheios-class := if ($user = 'test2') then 'alpheios-enabled' else ''
@@ -1204,7 +1208,9 @@ declare function tlslib:display-seg($seg as node()*, $options as map(*) ) {
 return
 (
 <div class="row {$mark}">{
-if($locked) then tlslib:format-button("display_punc_dialog('" || data($seg/@xml:id) || "')", "Add punctuation to this text segment", "octicons/svg/lock.svg", "", "", ("tls-editor", "tls-punc")) else ()
+if($locked and $textid and tlslib:has-edit-permission($textid)) then 
+  tlslib:format-button("display_punc_dialog('" || data($seg/@xml:id) || "')", "Add punctuation to this text segment", "octicons/svg/lock.svg", "", "", ("tls-editor", "tls-punc")) 
+else ()
 }<div class="{
 if ($seg/@type='comm') then 'tls-comm ' else 
 if($locked) then 'locked ' else () }{
