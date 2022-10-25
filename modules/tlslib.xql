@@ -73,7 +73,8 @@ declare function tlslib:add-nodes($tx as xs:string, $s as node()*){
  : $tx is the edited text, with each '$' replaced by '$i$', where i is the index of that '$' 
  : in the string. :)
 declare function tlslib:reinsert-nodes-after-edit($tx as xs:string, $orig-seg as node()) as node()* {
-    tlslib:add-nodes($tx, $orig-seg/(child::tei:anchor | child::tei:lb | child::tei:pb)) (: Only count those nodes that are actually replaced by '$' in tlslib:proc-seg-for-edit. TODO: The list of those element names should probably be stored in a variable somewhere. :)
+    (: Only count those nodes that are actually replaced by '$' in tlslib:proc-seg-for-edit.  :)
+    tlslib:add-nodes($tx, $orig-seg/child::*[local-name() = $config:proc-seg-for-edit-hidden-element-names]) 
 };
 
 (: Check whether a edit for a segment processed by tlslib:proc-seg-for-edit is valid,
@@ -469,19 +470,17 @@ declare function tlslib:proc-seg($node as node()){
  default return $node    
 };
 
-(: replace the lb and pb nodes with a placeholder, c with the @n content :)
+(: replace the nodes listed in $config:proc-seg-for-edit-hidden-element-names with a placeholder, c with the @n content :)
 declare function tlslib:proc-seg-for-edit($node as node()){
- typeswitch ($node)
-  case element (tei:anchor) return "$"
-  case element (tei:c) return data($node/@n)
-  case element (tei:g) return "$"
-  case element (tei:space)  return "$"
-  case element (tei:lb)  return "$"
-  case element (tei:pb)  return "$"
-  case element (tei:p) return for $n in $node/node() return tlslib:proc-seg-for-edit($n)
-  case element(tei:seg) return for $n in $node/node() return tlslib:proc-seg-for-edit($n)
-  case attribute(*) return () 
- default return $node    
+  if ($node/local-name() = $config:proc-seg-for-edit-hidden-element-names) then
+    "$"
+  else
+    typeswitch ($node)
+      case element (tei:c) return data($node/@n)
+      case element (tei:p) return for $n in $node/node() return tlslib:proc-seg-for-edit($n)
+      case element(tei:seg) return for $n in $node/node() return tlslib:proc-seg-for-edit($n)
+      case attribute(*) return () 
+      default return $node    
 };
 
 (: replace the lb and pb nodes with a placeholder, c with the @n content :)
