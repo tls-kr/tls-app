@@ -1498,7 +1498,7 @@ let $hits :=
          else
              tlslib:ngram-query($map?query, $map?mode, $map?search-type, $map?textid)
       else if ($map?target = 'wikidata') then 
-            wd:search($map?query)
+            wd:search($map)
       else ()
 , $dispx := subsequence($hits, $map?start, $map?count)
 , $disp := util:expand($dispx)//exist:match/ancestor::tei:seg

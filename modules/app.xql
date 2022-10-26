@@ -23,6 +23,7 @@ import module namespace kwic="http://exist-db.org/xquery/kwic"
 import module namespace tlslib="http://hxwd.org/lib" at "tlslib.xql";
 import module namespace krx="http://hxwd.org/krx-utils" at "krx-utils.xql";
 import module namespace bib="http://hxwd.org/biblio" at "biblio.xql";
+import module namespace wd="http://hxwd.org/wikidata" at "wikidata.xql"; 
 
 declare variable $app:SESSION := "tls:results";
 declare variable $app:tmap := map{
@@ -404,7 +405,8 @@ let $query := map:get($model, "query")
     for $h in map:get($model, "hits")
     let $loc := $h/ancestor::tei:TEI/@xml:id
     return
-    <li><a href="textview.html?location={$loc}">{data($loc) || " " || data($h)}</a> </li>
+    <li><a href="textview.html?location={$loc}">{data($loc) || " " || data($h)}</a> 
+    {tlslib:format-button("do_wikidata_search('"||data($h)||"','title', '"||data($loc)||"')", "Wikidata Search","open-iconic-master/svg/magnifying-glass.svg", "", "", "tls-user")}</li>
     }
     </ul>
     <h2>Texts in the Kanseki Repository:</h2>
@@ -426,9 +428,12 @@ let $query := map:get($model, "query")
       order by $kid
       where string-length($kid) > 5
       return if ($tls) then 
-           <li><a href="textview.html?location={$kid}">{data($kid) || " " || data($h)}</a> </li>
+           <li><a href="textview.html?location={$kid}">{data($kid) || " " || data($h)}</a> 
+    {tlslib:format-button("do_wikidata_search('"||data($h)||"','title', '"||data($kid)||"')", "Wikidata Search","open-iconic-master/svg/magnifying-glass.svg", "", "", "tls-user")}
+            </li>
             else
-          <li>{if ($av) then $but else ()}　{$kid || " " || $h/text() || " "} <span class="text-muted"><small>{ string-join($w/altid, " / ")}</small></span>  {$req}</li>
+          <li>{if ($av) then $but else ()}　{$kid || " " || $h/text() || " "} <span class="text-muted"><small>{ string-join($w/altid, " / ")}</small></span>  {$req} 
+              {tlslib:format-button("do_wikidata_search('"||data($h)||"','title', '"||data($kid)||"')", "Wikidata Search","open-iconic-master/svg/magnifying-glass.svg", "", "", "tls-user")}</li>
     }
     </ul>
     </div>
@@ -566,6 +571,7 @@ let $query := map:get($model, "query")
      }
     </div>
     }
+    <div class="col-sm-0">{wd:quick-search-form('title')}</div>
     </div>
 };    
 
@@ -1692,6 +1698,7 @@ return
 (<p>
             <span class="text-danger">This website is under development. {if ($user = "guest") then () else <a class="font-weight-bold" href="https://join.slack.com/t/tls-7al8577/shared_invite/zt-1h6hfirdt-8EdFCAxsQalvCIdIs3OK6w">Click here to access the feedback channel</a>}</span>
         </p>,
+        <p>Problems and suggestions can be reported and discussed also on <a href="https://github.com/tls-kr/tls-app/issues">GitHub Issues</a></p>,
 <div>
 <h3>Overview of the content of the database (last updated: {format-dateTime(xs:dateTime(data($d[1]/@modified)), "[MNn] [D], [Y]", "en", (), ())})</h3>
 {$d[1]//table[@id='stat-overview']}
