@@ -72,6 +72,13 @@ declare variable $config:seg-types := map{
 "head-" : "Heading (higher)"
 };
 
+(: List of element names that are hidden from the user when editing a segment. For all elements not listed here (except tei:c, tei:seg and tei:p that are handled separately),
+  their content is displayed. :)
+declare variable $config:proc-seg-for-edit-hidden-element-names := (
+    "anchor", "g", "space", "lb","pb", "note"
+);
+
+
 declare variable $config:status-map := map{
 0 : "pending",
 1 : "proposed",
