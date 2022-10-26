@@ -1722,15 +1722,18 @@ else
     else
         ()
     return
+    (: Need to query the segment again, because changing its type to heading might modify the element :)
+    let $seg-with-new-type := collection($config:tls-texts-root)//tei:seg[@xml:id=$map?line_id]
+    return
     if ($map?action = "no_split") then 
-        let $tx := tlslib:reinsert-nodes-after-edit($res, $seg)
+        let $tx := tlslib:reinsert-nodes-after-edit($res, $seg-with-new-type)
         , $segs := <seg xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$map?line_id}" type="{$map?type}">{$tx}</seg>
         return update replace $seg with $segs
     else 
         let $segs := for $m at $pos in $str//fn:non-match
             let $nm := $m/following-sibling::fn:*[1]
             , $t := replace(string-join($nm/text(), ''), '/', '')
-            , $tx := tlslib:reinsert-nodes-after-edit($m/text(), $seg)
+            , $tx := tlslib:reinsert-nodes-after-edit($m/text(), $seg-with-new-type)
             , $sl := string-join($tx, '') => normalize-space() => replace(' ', '') 
             , $nid := if ($pos > 1) then tlslib:generate-new-line-id($map?line_id, $pos - 1) else $map?line_id 
             where string-length($sl) > 0
@@ -1741,10 +1744,10 @@ else
         if (count($segs) > 1) then
             let $firstseg := $segs[1]/@xml:id
             return (
-                update insert subsequence($segs, 2) following $seg
-                , update replace $seg with $segs[1])
+                update insert subsequence($segs, 2) following $seg-with-new-type
+                , update replace $seg-with-new-type with $segs[1])
         else
-            update replace $seg with $segs
+            update replace $seg-with-new-type with $segs
         , $segs[last()]/@xml:id)
 };
 
