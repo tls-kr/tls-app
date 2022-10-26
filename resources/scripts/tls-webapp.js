@@ -1802,6 +1802,39 @@ function copyToClipboard(element) {
     focused.focus();
 }
 
+/* Wikidata related stuff */
+
+// this function is called from a link, without direct text input / the type of id depends on the item given in context
+function do_wikidata_search(query,context,id){
+    $("#swl-query-span").text(query);
+    $("#wd-search").val(query)
+    $("#swl-form" ).show(); 
+    $.get("api/responder.xql?func=wd:search&query="+query+"&context="+context+"&id="+id, 
+      "html", 
+    function(resp){
+         $('#swl-select').html(resp);
+         $('#new-att-detail').html("");
+        }
+    )
+  $('#new-att-title').html("Associate <span id='textid'>"+id+"</span>: Searching for "+query);
+  $('#new-att-detail').html("　　　　　　　　　　　　　　　　　　　　　　　　　　　　");
+  $('#swl-select').html("Please wait ...");  
+};
+
+function wikidata_search_again(){
+    var query = $("#wd-search").val()
+    var context = 'title'
+    var id = $("#textid").text()
+    $.get("api/responder.xql?func=wd:search&query="+query+"&context="+context+"&id="+id, 
+      "html", 
+    function(resp){
+         $('#swl-select').html(resp);
+         $('#new-att-detail').html("");
+        }
+    )
+};
+
+// this function is called from the attribution floater, works similar to the quick search for texts
 function wikidata_search(){
    var start = 1;
    var count = 25;
@@ -1811,6 +1844,22 @@ function wikidata_search(){
    $('#domain-lookup-mark').hide();
    do_quick_search(start, count, stype, mode, target);
 };
+
+// this gets called from the "Use" button, we now do the work:)
+function save_qitem(qitem,context,id,label){
+    var title = $("#swl-query-span").text();
+    $.get("api/responder.xql?func=wd:save-qitem&qitem="+qitem+"&context="+context+"&id="+id+"&title="+title+"&label="+label+"&locallabel="+title, 
+      "html", 
+    function(resp){
+         toastr.info(qitem+" has been saved.", "漢學文典 says:");
+         $('#swl-select').html(resp);
+         $('#new-att-detail').html("");
+         $( "#swl-form" ).hide(); 
+        }
+    )
+    
+}
+
 
 function quick_search(){
    var start = 1;
