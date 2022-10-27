@@ -1826,10 +1826,11 @@ function do_wikidata_search(query,context,id){
 };
 
 function wikidata_search_again(){
-    var query = $("#wd-search").val()
-    var context = 'title'
+    var query = $("#wd-search").val();
+    var context = 'title' ;
+    var type = $("#wd-stype option:selected").val();
     var id = $("#wd-textid").text()
-    $.get("api/responder.xql?func=wd:search&query="+query+"&context="+context+"&id="+id, 
+    $.get("api/responder.xql?func=wd:search&query="+query+"&context="+context+"&id="+id+"&type="+type, 
       "html", 
     function(resp){
          $('#wd-search-results').html(resp);
@@ -1851,14 +1852,14 @@ function wikidata_search(){
 
 // this gets called from the "Use" button, we now do the work:)
 function save_qitem(qitem,context,id,label){
-    var title = $("#swl-query-span").text();
+    var title = $("#wd-query-span").text();
     $.get("api/responder.xql?func=wd:save-qitem&qitem="+qitem+"&context="+context+"&id="+id+"&title="+title+"&label="+label+"&locallabel="+title, 
       "html", 
     function(resp){
          toastr.info(qitem+" has been saved.", "漢學文典 says:");
-         $('#swl-select').html(resp);
-         $('#new-att-detail').html("");
-         $( "#swl-form" ).hide(); 
+         $('#wd-search-results').html(resp);
+         $('#wd-detail').html("");
+         $('#swl-form' ).hide(); 
         }
     )
     

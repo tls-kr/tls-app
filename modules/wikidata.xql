@@ -9,11 +9,19 @@ declare namespace tei= "http://www.tei-c.org/ns/1.0";
 
 declare variable $wd:wikidata-api := "https://www.wikidata.org/w/api.php?format=xml&amp;action=query&amp;list=search&amp;srlimit=100&amp;srprop=titlesnippet%7Csnippet&amp;uselang=zh&amp;srsearch=";
 
+declare variable $wd:qtypes := map{
+  "Q7725634" : "Literary Work",
+  "Q5" : "Human",
+  "P497" : "CBDB",
+  "P6772" : "Buddhist Author Authority Database ID",
+  "P4517" : "ctext work ID"
+};
 
 declare function wd:search($map){
-let $q := $map?query
+let $q := encode-for-uri($map?query)
+, $type := if ($map?type = ('no-selection', 'undefined')) then "" else "%20" || $map?type
 let $res :=  try {
-            http:send-request(<http:request http-version="1.1" href="{xs:anyURI($wd:wikidata-api||$q)}" method="get">
+            http:send-request(<http:request http-version="1.1" href="{xs:anyURI($wd:wikidata-api||$q||$type)}" method="get">
                                 <http:header name="Connection" value="close"/>
                               </http:request>)} 
              catch * {"Illegal search term.  Please try again"}
@@ -31,8 +39,8 @@ return
 if (starts-with($res, "Ill")) then $res 
 else
 <div>
-<h3>Searched Wikidata for {$q}, found {data($res[2]//searchinfo/@totalhits)} hits</h3>
-<p class="text-muted">Showing up to 100 results here. <a style="background-color:paleturquoise" target="dict" title="Search for {$q} on WikiData (External link)" href="https://www.wikidata.org/w/index.php?search={$q}&amp;title=Special%3ASearch&amp;ns0=1&amp;ns120=1">See all</a></p>
+<h3>Searched Wikidata for {util:unescape-uri($q, 'UTF-8')}, found {data($res[2]//searchinfo/@totalhits)} hits</h3>
+<p class="text-muted">Showing up to 100 results here. <a style="background-color:paleturquoise" target="dict" title="Search for {util:unescape-uri($q, 'UTF-8')} on WikiData (External link)" href="https://www.wikidata.org/w/index.php?search={$q}&amp;title=Special%3ASearch&amp;ns0=1&amp;ns120=1">See all</a></p>
 <ul>{
 for $c in $res[2]//p
    let $ts := parse-xml("<span>" || $c/@titlesnippet || "</span>")
@@ -55,16 +63,26 @@ declare function wd:quick-search-form($context as xs:string){
     <button type="button" class="close" onclick="hide_form('wd-form')" aria-label="Close" title="Close"><img class="icon" src="resources/icons/open-iconic-master/svg/circle-x.svg"/></button>
     </h5>
      <div class="form-row">
-       <div class="col-md-4"><strong class="ml-2"><span id="wd-query-span"></span></strong>
+       <div class="col-md-3"><strong class="ml-2"><span id="wd-query-span"></span></strong>
        </div>
-       <div id="input-search-group" class="col-md-4">
-           <input id="wd-search" class="form-control" required="" value=""></input>
+       <div  class="col-md-4">
+           <input id="wd-search" class="form-control" value=""></input>
        </div>    
-       <div id="input-search-group" class="col-md-2">
+       <div  class="col-md-1">
            <button id="wd-search-again" class="btn badge btn-outline-success" onclick="wikidata_search_again()">
                 <img class="icon" src="resources/icons/open-iconic-master/svg/magnifying-glass.svg"/>
            </button>
        </div>
+       <div  class="col-md-1">
+         <span class="text-muted"><small><strong>Type:</strong></small></span>
+       </div>
+       <div class="col-md-3">
+             <select class="form-control input-sm" id="wd-stype">
+             <option value="no-selection" selected="true">No selection</option>
+             {for $m in map:keys($wd:qtypes) return
+             <option value="{$m}">{map:get($wd:qtypes, $m)}</option>}
+             </select>
+        </div>
      </div>
     <p><span id="wd-detail"></span></p>
     <p>
@@ -143,6 +161,18 @@ declare function wd:display-qitems($idref as xs:string, $context as xs:string, $
            
 };
 
+declare function wd:recent-qitems($map as map(*)){
+let $n := if ($map?n) then $map?n else 5
+, $items := if ($map?context) then 
+             collection($config:tls-data-root||"/qitems")//tei:item[@type=$map?context] 
+            else
+             collection($config:tls-data-root||"/qitems")//tei:item               
+for $i at $pos in $items
+  let $time := xs:dateTime($i/@modified)
+  order by $time descending
+  where $pos <= $n
+  return $i
+};
 
 declare function wd:stub($map as map(*)){
 () 
