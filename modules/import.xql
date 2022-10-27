@@ -60,21 +60,24 @@ let $s := string-join(
 return $s
 };
 
-declare function imp:add-seg($node as node(), $pref as xs:string){
+declare function imp:add-cb-seg($node as node(), $pref as xs:string){
 let $pstr := string-join(imp:prepare-element($node))
 , $res := string-join(for $r at $pos in tokenize($pstr, '\$') return $r || "$" || $pos || "$", '')
-, $id := if ($node/@xml:id) then $node/@xml:id => replace('_master_', '_tls_') else local-name($node) || "-" || (util:uuid())
+, $juan := ($node/preceding::cb:juan)[last()]/@n 
+, $jid := if ($juan) then $juan else "000" 
+, $lb := if ($node/@xml:id) then substring($node/@xml:id , 6) else $node/preceding::tei:lb[1]/@n
+, $id  := $jid || "-" || $lb
 , $astr := analyze-string ($res, $config:seg-split-tokens)
 , $segs := for $m at $pos in $astr//fn:non-match
      let $nm := $m/following-sibling::fn:*[1]
      , $t := replace(string-join($nm/text(), ''), '/', '')
      , $tx := tlslib:add-nodes($m/text(), $node/child::*)
      , $sl := string-join($tx, '')=>normalize-space() => replace(' ', '') 
-     , $nid := $pref  || $id ||"-s" || ($pos )  
+     , $nid := $pref  || $id ||".s" || ($pos )  
         where string-length($sl) > 0
         return
             element {QName(namespace-uri($node), "seg")} {
-               $node/@* except $node/@xml:id ,
+               $node/@* except ($node/@xml:id , $node/@cb:place) ,
                if ($node/ancestor::*:div[1]/@type = 'commentary') then 
                  attribute {"type"} {"comm"}  else (),
                attribute xml:id {$nid}, 
@@ -164,11 +167,11 @@ declare function imp:recursive-update-ns($nodes as node()*, $ns as xs:string, $p
  for $node in $nodes return
  typeswitch($node)
  case element (tei:p) return 
-             element {QName($ns, local-name($node))} { $node/@* , imp:add-seg($node, $pref)}
+             element {QName($ns, local-name($node))} { $node/@* , imp:add-cb-seg($node, $pref)}
  case element (tei:byline) return 
-             element {QName($ns, local-name($node))} { $node/@* , imp:add-seg($node, $pref)}
+             element {QName($ns, local-name($node))} { $node/@* , imp:add-cb-seg($node, $pref)}
  case element (tei:l) return  
-             element {QName($ns, local-name($node))} { $node/@* , imp:add-seg($node, $pref)} 
+             element {QName($ns, local-name($node))} { $node/@* , imp:add-cb-seg($node, $pref)} 
 (:             let $id := $pref || $node/parent::tei:lg/@xml:id || "." || count($node/preceding-sibling::*) 
              return
              element {QName($ns, "seg")} { 
@@ -177,9 +180,9 @@ declare function imp:recursive-update-ns($nodes as node()*, $ns as xs:string, $p
                 attribute {"type"} {"l"},
                $node/node()}:)
  case element (tei:head) return        
-             element {QName($ns, local-name($node))} { $node/@* , imp:add-seg($node, $pref)}
+             element {QName($ns, local-name($node))} { $node/@* , imp:add-cb-seg($node, $pref)}
  case element (cb:jhead) return        
-             element {QName($ns, "fw")} { $node/@* , imp:add-seg($node, $pref)}
+             element {QName($ns, "fw")} { $node/@* , imp:add-cb-seg($node, $pref)}
 
  case element (*) return element {QName($ns, local-name($node))} {
              imp:remove-attr-ns($node/@*) , 
@@ -201,12 +204,12 @@ declare function imp:update-metadata($doc as node(), $kid as xs:string, $title a
 let $cbid := $doc/tei:TEI/@xml:id
 , $idno := update insert attribute xml:id {$cbid} into $doc//tei:idno[@type="CBETA"]
 , $newid := update replace $doc/tei:TEI/@xml:id with $kid
+, $state := update insert attribute state {"red"} into $doc/tei:TEI
 , $user := sm:id()//sm:real/sm:username/text()
 , $nt := <titleStmt xmlns="http://www.tei-c.org/ns/1.0">
 			<title>{$title}</title>
 {$doc//tei:titleStmt/tei:author, $doc//tei:titleStmt/tei:respStmt}
 		</titleStmt>
-, $body := $doc//tei:text/tei:body
 , $dt := update replace $doc//tei:titleStmt with $nt
 , $rev := <change  xmlns="http://www.tei-c.org/ns/1.0" when="{current-dateTime()}"> <name>{$user}</name>Various changes for compatibility with the TLS Application, derived from the version published by CBETA on GitHub.</change>          
 , $rv := update insert $rev into  $doc//tei:revisionDesc
@@ -229,11 +232,36 @@ return $kid
 };
 
 declare function imp:do-prepare-krp($doc as node()){
-let $doc-uri := document-uri(root($doc))
-, $remove-lbs := xed:remove-extra-lbs($doc//tei:lb)
-, $handle-gaiji := xed:g-to-unicode(doc($doc-uri))
-, $handle-space := xed:space-to-element(doc($doc-uri))
+ let $doc-uri := document-uri(root($doc))
+ , $bd := $doc//tei:text/tei:body
+ , $res := update replace $bd with imp:prepare-krp($bd) 
+ , $doc := doc($doc-uri)
+ , $remove-lbs := xed:remove-extra-lbs($doc//tei:lb)
+
 return ()
+};
+
+declare function imp:prepare-krp($nodes as node()*){
+  for $node in $nodes  return 
+  typeswitch($node)
+  case element(tei:g) return
+     let $r := xs:int(substring($node/@ref, 4))
+       , $t := $node/text()
+     return
+       if (string-length($t) > 0) then $t else codepoints-to-string($r+$config:pua-base-krp)
+   case text() return
+      let $as := analyze-string($node, "　+")
+      for $n in $as/node() return
+        if (local-name($n)='match') then 
+         element {QName(namespace-uri($node), "space")} { 
+         attribute n {$n},
+         attribute quantity {string-length($n)}}
+        else $n/text()
+    case element (*) return element {QName(namespace-uri($node), local-name($node))} {
+             imp:remove-attr-ns($node/@*) , 
+             imp:prepare-krp($node/node()) }            
+
+  default return $node
 };
 
 declare function imp:dl-cbeta-text($cbid as xs:string){
@@ -253,6 +281,41 @@ let $res :=
                                 <http:header name="Connection" value="close"/>
                               </http:request>)
 return $res[2]
+};
+
+declare function imp:de-duplicate-ids($doc as node()){
+let $ds := $doc//tei:body//tei:seg
+, $dupl-ids := for $s in $ds 
+               let $c := count($ds[@xml:id=$s/@xml:id])
+               where $c > 1
+               return (update replace $s/@xml:id with $s/@xml:id || ".1", 1)  
+return <dedup>{$dupl-ids}</dedup>
+};
+
+declare function imp:check-document($doc as node()){
+let $ds := $doc//tei:body//tei:seg
+, $segs := count($ds)
+, $seg-ids := count(distinct-values($ds/@xml:id))
+, $seg-noid := count($ds[not(@xml:id)])
+, $els := for $e in distinct-values(for $d in $doc//tei:body//node() return local-name($d)) 
+           order by $e 
+           return $e
+, $chars := string-join($ds) => normalize-space()
+, $ccnt := for $c in distinct-values(string-to-codepoints($chars))
+           order by $c
+           return <char n="{$c}">{codepoints-to-string($c)}</char>
+ , $dedup:= if($segs = $seg-ids + $seg-noid) then () else imp:de-duplicate-ids($doc)           
+, $rep := <report id="{$doc/@xml:id}" date="{util:system-dateTime()}">
+<title>{$doc//tei:titleStmt/tei:title/text()}</title>
+{$dedup}
+<r status="{if($segs = $seg-ids + $seg-noid) then "OK" else "Error"}">Segs:  {$segs, $seg-ids, $seg-noid}</r>
+<r>Para: {count($doc//tei:body//tei:p)}</r>
+<r>Punc: {count($doc//tei:body//tei:c)}</r>
+<r>Elements: {$els}</r>
+<r>Characters: {string-length($chars)}, {count($ccnt)} </r>
+<r>{$ccnt}</r>
+</report>
+return (xmldb:store("/db/apps/tls-texts/rep2", concat($doc/@xml:id, ".xml"), $rep), $doc/@xml:id) 
 };
 
 declare function imp:stub($node as node()){

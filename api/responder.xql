@@ -7,6 +7,7 @@ xquery version "3.1";
 import module namespace tlsapi="http://hxwd.org/tlsapi" at "tlsapi.xql";
 import module namespace dialogs="http://hxwd.org/dialogs" at "../modules/dialogs.xql"; 
 import module namespace tlslib="http://hxwd.org/lib" at "../modules/tlslib.xql";
+import module namespace wd="http://hxwd.org/wikidata" at "../modules/wikidata.xql"; 
 
 declare namespace output = "http://www.w3.org/2010/xslt-xquery-serialization";
 (:import module namespace console="http://exist-db.org/xquery/console";:)
@@ -44,6 +45,9 @@ if (starts-with($func, "dialogs")) then
 util:eval($func || "($resmap)" )
 else
 if (starts-with($func, "tlslib")) then
+util:eval($func || "($resmap)" )
+else
+if (starts-with($func, "wd")) then
 util:eval($func || "($resmap)" )
 else
 
