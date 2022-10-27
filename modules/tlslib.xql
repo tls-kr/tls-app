@@ -1008,8 +1008,8 @@ $zi := string-join($node/tei:form/tei:orth/text(), "/")
 ,$def := tlslib:get-sense-def($link)
 ,$rid := $options?line-id || "-" || $node/@xml:id 
 , $exemplum := if ($node/tls:metadata/@rating) then xs:int($node/tls:metadata/@rating) else 0
-, $bg := if ($exemplum > 0) then "bg-secondary" else "bg-light"
-
+, $bg := if ($exemplum > 0) then "protypical-"||$exemplum else "bg-light"
+, $marktext := if ($exemplum = 0) then "Mark this attribution as prototypical" else "Currently marked as prototypical "||$exemplum ||". Increase up to 3 then reset."
 (:$pos := concat($sf, if ($sm) then (" ", $sm) else "")
 :)
 return
@@ -1082,7 +1082,7 @@ if ("tls-editor"=sm:get-user-groups($user) and $node/@xml:id) then
    if (($user = $creator-id) or contains($usergroups, "tls-editor" )) then 
     tlslib:format-button("delete_swl('swl', '" || data($node/@xml:id) || "')", "Immediately delete this SWL for "||$zi[1], "open-iconic-master/svg/x.svg", "small", "close", "tls-editor")
    else (),
-   tlslib:format-button("incr_rating('swl', '" || data($node/@xml:id) || "')", "Mark this attribution as prototypical", "open-iconic-master/svg/star.svg", "small", "close", "tls-editor"),
+   tlslib:format-button("incr_rating('swl', '" || data($node/@xml:id) || "')", $marktext, "open-iconic-master/svg/star.svg", "small", "close", "tls-editor"),
    if (not ($user = $creator-id)) then
    (
 <span class="rp-5">
@@ -1317,7 +1317,7 @@ $target := substring(data($a/tls:text/tls:srcline/@target), 2),
 (: TODO find a better way, get juan for CBETA texts :)
 $loc := try {xs:int((tokenize($target, "_")[3] => tokenize("-"))[1])} catch * {0}
 , $exemplum := if ($a/tls:metadata/@rating) then xs:int($a/tls:metadata/@rating) else 0
-, $bg := if ($exemplum > 0) then "bg-secondary" else "bg-light"
+, $bg := if ($exemplum > 0) then "protypical-"||$exemplum else "bg-light"
 return
 <div class="row {$bg} table-striped">
 <div class="col-sm-2"><a href="textview.html?location={$target}" class="font-weight-bold">{$src, $loc}</a></div>

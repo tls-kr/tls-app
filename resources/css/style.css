@@ -221,6 +221,18 @@
     filter: invert(89%) sepia(2%) saturate(1135%) hue-rotate(10deg) brightness(90%) contrast(100%);
 }
 
+.protypical-1 {
+  background-color: #6C757D
+}
+
+.protypical-2 {
+ background-color:  #7D6C6E
+}
+
+.protypical-3 {
+  background-color:  #7B7D6C
+}
+
 /* StarRating */
 
 .starRating:not(old){
