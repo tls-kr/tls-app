@@ -1716,11 +1716,13 @@ new-seg = Punctuated text (Passed in request body, see below)
 :)
 declare function tlsapi:save-punc($map as map(*)){
 let  $seg := collection($config:tls-texts-root)//tei:seg[@xml:id=$map?line_id]
+, $txtid := tokenize($map?line_id, "_")[1]
 , $new-seg :=  $map?body
 , $res := string-join(for $r at $pos in tokenize($new-seg, '\$') return $r || "$" || $pos || "$", '')
 , $str := analyze-string ($res, $config:seg-split-tokens)
 return
-if (not(tlslib:check-edited-seg-valid($new-seg, $seg))) then "Error: Text integrity check failed. Can not save edited text."
+if (not($txtid and tlslib:has-edit-permission($txtid))) then "Error: You do not have permission to update edit this text."
+else if (not(tlslib:check-edited-seg-valid($new-seg, $seg))) then "Error: Text integrity check failed. Can not save edited text."
 else 
     let $seg-with-updated-type := 
     if ($map?type != $seg/@type) then 
@@ -1762,10 +1764,12 @@ else
 (: :)
 declare function tlsapi:merge-following-seg($map as map(*)){
 let $segid := $map?line_id,
+    $txtid := tokenize($segid, "_")[1],
     $new-seg :=  $map?body,
     $seg := collection($config:tls-texts-root)//tei:seg[@xml:id=$segid]
 return
-    if ($new-seg = ()) then "Error: Please use the function under 內部 to completely delete segment" 
+    if (not($txtid and tlslib:has-edit-permission($txtid))) then "Error: You do not have permission to update edit this text."
+    else if ($new-seg = ()) then "Error: Please use the function under 內部 to completely delete segment" 
     else if (not(tlslib:check-edited-seg-valid($new-seg, $seg))) then "Error: Text integrity check failed. Can not save edited text."
     else 
         (: Use save-punc to update the edited part, without splitting. :)
