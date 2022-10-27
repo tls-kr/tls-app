@@ -642,8 +642,13 @@ declare function tlslib:navbar-review($context as xs:string){
      }
      
      {if ($context = 'textview') then 
-     <a class="dropdown-item" href="#" onClick="zh_start_edit()">Edit Chinese text</a>
+      (<a class="dropdown-item" href="#" onClick="zh_start_edit()">Edit Chinese text</a>,
+      if (sm:id()//sm:group = "tls-admin") then
+        <a class="dropdown-item" href="#" onClick="display_edit_text_permissions_dialog()">Change editing permissions</a>
+      else 
+        ())
      else ()}
+
 
      {if (sm:id()//sm:group = "tls-admin") then 
      <a class="dropdown-item" href="review.html?type=request">Add requested texts</a>
