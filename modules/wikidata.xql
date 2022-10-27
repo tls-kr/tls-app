@@ -12,10 +12,11 @@ declare variable $wd:wikidata-api := "https://www.wikidata.org/w/api.php?format=
 
 declare function wd:search($map){
 let $q := $map?query
-let $res :=  
+let $res :=  try {
             http:send-request(<http:request http-version="1.1" href="{xs:anyURI($wd:wikidata-api||$q)}" method="get">
                                 <http:header name="Connection" value="close"/>
-                              </http:request>)
+                              </http:request>)} 
+             catch * {"Illegal search term.  Please try again"}
 , $s := <api batchcomplete="">
     <query>
         <searchinfo totalhits="2"/>
@@ -27,6 +28,8 @@ let $res :=
 </api>
 return
 (: , $r := parse-xml("<r>"||data($c/@titlesnippet)||"</r>")  :)
+if (starts-with($res, "Ill")) then $res 
+else
 <div>
 <h3>Searched Wikidata for {$q}, found {data($res[2]//searchinfo/@totalhits)} hits</h3>
 <p class="text-muted">Showing up to 100 results here. <a style="background-color:paleturquoise" target="dict" title="Search for {$q} on WikiData (External link)" href="https://www.wikidata.org/w/index.php?search={$q}&amp;title=Special%3ASearch&amp;ns0=1&amp;ns120=1">See all</a></p>
@@ -46,27 +49,27 @@ for $c in $res[2]//p
 (: this function needs to construct the whole dialog for the search results :)
 (: TODO add search box to refine query if necessary :)
 declare function wd:quick-search-form($context as xs:string){
-<div id="swl-form" class="card ann-dialog overflow-auto">
+<div id="wd-form" class="card ann-dialog overflow-auto">
  <div class="card-body">
-    <h5 class="card-title"><span id="new-att-title">Searching Wikipedia</span>
-    <button type="button" class="close" onclick="hide_new_att()" aria-label="Close" title="Close"><img class="icon" src="resources/icons/open-iconic-master/svg/circle-x.svg"/></button>
+    <h5 class="card-title"><span id="wd-title">Searching Wikidata</span>
+    <button type="button" class="close" onclick="hide_form('wd-form')" aria-label="Close" title="Close"><img class="icon" src="resources/icons/open-iconic-master/svg/circle-x.svg"/></button>
     </h5>
      <div class="form-row">
-       <div class="col-md-4"><strong class="ml-2"><span id="swl-query-span"></span></strong>
+       <div class="col-md-4"><strong class="ml-2"><span id="wd-query-span"></span></strong>
        </div>
        <div id="input-search-group" class="col-md-4">
            <input id="wd-search" class="form-control" required="" value=""></input>
        </div>    
        <div id="input-search-group" class="col-md-2">
-           <button id="wd-search-again" class="btn" onclick="wikidata_search_again()">
+           <button id="wd-search-again" class="btn badge btn-outline-success" onclick="wikidata_search_again()">
                 <img class="icon" src="resources/icons/open-iconic-master/svg/magnifying-glass.svg"/>
            </button>
        </div>
      </div>
-    <p><span id="new-att-detail"></span></p>
+    <p><span id="wd-detail"></span></p>
     <p>
      </p>
-    <ul id="swl-select" class="list-unstyled"></ul>
+    <ul id="wd-search-results" class="list-unstyled"></ul>
 </div>
 </div>
 };
@@ -124,7 +127,21 @@ declare function wd:get-qitem-file($map as map(*)){
   return $doc
 };
 
-
+(: display links etc for the qitem referenced in qitem-ref :)
+declare function wd:display-qitems($idref as xs:string, $context as xs:string, $label as xs:string){
+  let  $qitems := collection($config:tls-data-root||"/qitems")//tei:ref[@target="#"||$idref]
+  return
+  if ($qitems) then
+   for $q in $qitems
+    let $qr := $q/ancestor::tei:TEI
+      , $qlabel := tokenize($qr//tei:titleStmt/tei:title/text(), '\$\$')[last()]
+    return
+    (<span class="ml-2"><a  class="btn badge badge-light" target="dict" title="View {$qlabel} in Wikidata (External link)" style="background-color:paleturquoise" href="https://www.wikidata.org/wiki/{$qr/@xml:id}">{$qlabel}</a></span>,
+       <span class="badge badge-info ml-2" onclick="do_wikidata_search('{$label}','{$context}:change', '{$idref}')" title="Click here to change association of {$label} with {data($qr/@xmlid)}">WD</span>)             
+  else 
+       <span class="badge badge-info ml-2" onclick="do_wikidata_search('{$label}','{$context}', '{$idref}')" title="Click here to search for {$label} in WikiData">WD</span>             
+           
+};
 
 
 declare function wd:stub($map as map(*)){

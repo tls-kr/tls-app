@@ -153,7 +153,7 @@ function log:get-or-create-log-file($log-collection as xs:string, $timestamp as 
       else()
 
   (: NOTE(AR) the TimeZone here will be whatever timezone the query is executed in... more specifically it is the timezone of the host system :)
-  let $log-file-name := "log." || fn:format-dateTime($timestamp, "[Y0001][M01][D01]") || ".xml"
+  let $log-file-name := "log." || fn:format-dateTime($timestamp, "[Y0001]-[M01]-[D01]") || ".xml"
   let $log-file-path := $log-collection || "/" || $log-file-name
   return
     if (fn:doc-available($log-file-path))

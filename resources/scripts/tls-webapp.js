@@ -234,6 +234,10 @@ var word = $("#swl-query-span").text();
   });
 };
 
+function hide_form(form){
+  $("#"+form).hide()  
+};
+
 function hide_new_att(){
 // restore the search button to its original function
   $('#search-submit' ).attr("type", "submit");
@@ -1806,30 +1810,30 @@ function copyToClipboard(element) {
 
 // this function is called from a link, without direct text input / the type of id depends on the item given in context
 function do_wikidata_search(query,context,id){
-    $("#swl-query-span").text(query);
+    $("#wd-query-span").text(query);
     $("#wd-search").val(query)
-    $("#swl-form" ).show(); 
+    $("#wd-form" ).show(); 
     $.get("api/responder.xql?func=wd:search&query="+query+"&context="+context+"&id="+id, 
       "html", 
     function(resp){
-         $('#swl-select').html(resp);
-         $('#new-att-detail').html("");
+         $('#wd-search-results').html(resp);
+         $('#wd-detail').html("");
         }
     )
-  $('#new-att-title').html("Associate <span id='textid'>"+id+"</span>: Searching for "+query);
-  $('#new-att-detail').html("　　　　　　　　　　　　　　　　　　　　　　　　　　　　");
-  $('#swl-select').html("Please wait ...");  
+  $('#wd-title').html("Associate <span id='wd-textid'>"+id+"</span>:");
+  $('#wd-detail').html("　　　　　　　　　　　　　　　　　　　　　　　　　　　　");
+  $('#wd-search-results').html("Please wait ...");  
 };
 
 function wikidata_search_again(){
     var query = $("#wd-search").val()
     var context = 'title'
-    var id = $("#textid").text()
+    var id = $("#wd-textid").text()
     $.get("api/responder.xql?func=wd:search&query="+query+"&context="+context+"&id="+id, 
       "html", 
     function(resp){
-         $('#swl-select').html(resp);
-         $('#new-att-detail').html("");
+         $('#wd-search-results').html(resp);
+         $('#wd-detail').html("");
         }
     )
 };
