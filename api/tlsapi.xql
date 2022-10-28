@@ -670,7 +670,7 @@ if ($map?type eq 'swl') then
  {if (string-length($comment) > 0) then <note>{$comment}</note> else ()}
 </respStmt>
 , $res :=  (  if ($swl/tls:metadata/@rating) then 
-     update replace $swl/tls:metadata/@rating with if ($rating > 3) then 0 else $rating + 1 else
+     update replace $swl/tls:metadata/@rating with if ($rating > 2) then 0 else $rating + 1 else
      update insert attribute rating {if ($rating > 1) then 0 else $rating + 1}  into $swl/tls:metadata
    , update insert $node into $swl/tls:metadata
      )
