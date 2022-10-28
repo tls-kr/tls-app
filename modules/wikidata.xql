@@ -217,11 +217,11 @@ let $n := if ($map?n) then $map?n else 5
              collection($config:tls-data-root||"/qitems")//tei:item[@type=$map?context] 
             else
              collection($config:tls-data-root||"/qitems")//tei:item               
-for $i at $pos in $items
+, $items-sorted := for $i in $items
   let $time := xs:dateTime($i/@modified)
   order by $time descending
-  where $pos <= $n
   return $i
+return subsequence($items-sorted, 1, $n)
 };
 
 declare function wd:stub($map as map(*)){
