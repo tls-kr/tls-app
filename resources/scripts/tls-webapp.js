@@ -2252,6 +2252,7 @@ function add_editing_permissions(textid) {
     success: function(resp) {
       toastr.info("Permission added for user " + userid, "HXWD says:");
       // Reload dialog
+      $('#edit-text-permissions-dialog').modal('hide');
       display_edit_text_permissions_dialog();
     },
     error: function(resp) {
@@ -2269,6 +2270,7 @@ function remove_editing_permissions(textid, userid) {
     success: function(resp) {
       toastr.info("Permission revoked for user " + userid, "HXWD says:");
       // Reload dialog
+      $('#edit-text-permissions-dialog').modal('hide');
       display_edit_text_permissions_dialog();
     },
     error: function(resp) {

@@ -582,7 +582,7 @@ return
                 <div class="form-group col-md-4"><select class="form-control" id="edit-text-permissions-dialog-add-users-select">
                     {
                         for $gm in sm:get-group-members("tls-punc")
-                        where not($cur-allowed-users = $gm)
+                        where not($cur-allowed-users = $gm or sm:get-group-members("tls-editor") = $gm)
                         return
                             <option value="{$gm}">{$gm}</option>
                     } 

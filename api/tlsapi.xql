@@ -21,6 +21,7 @@ import module namespace krx="http://hxwd.org/krx-utils" at "../modules/krx-utils
 import module namespace xed="http://hxwd.org/xml-edit" at "../modules/xml-edit.xql";
 import module namespace imp="http://hxwd.org/xml-import" at "../modules/import.xql"; 
 import module namespace wd="http://hxwd.org/wikidata" at "../modules/wikidata.xql"; 
+import module namespace dbu="http://exist-db.org/xquery/utility/db" at "../modules/db-utility.xqm";
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
@@ -1805,6 +1806,34 @@ return
    if ($w/@tls-added) then update replace $w/@tls-added with $tls 
    else update insert $tls into $w ) 
  else "Error:  can not import text"
+};
+
+
+(: Add user to the list of users that are allowed to edit a certain text :)
+declare function tlsapi:add-text-editing-permission($map as map(*)) {
+  if ((sm:id()//sm:group = ("tls-admin"))) then
+    let $userid := $map?userid,
+        $textid := $map?textid
+    return
+      if (not($userid and $textid)) then
+        "Error: Missing parameter"
+      else if (not(sm:get-user-groups($userid) = "tls-punc")) then
+        "Error: Only members of the 'tls-punc' group may be granted permission to edit texts"
+      else if (not(collection($config:tls-texts-root)//tei:TEI[@xml:id=$textid])) then
+        "Error: A text with this id does not exist in the db."
+      else 
+        let $permissions := doc(dbu:ensure-resource("/db/users/tls-admin/", "permissions.xml", <permissions xmlns="http://hxwd.org/ns/1.0"/>, map { "owner": "admin", "group": "tls-admin", "mode": "rwxrwxr--"}))/tls:permissions,
+            $text-permissions := $permissions//tls:text-permissions[@text-id = $textid]
+        return 
+          (if (not($text-permissions)) then
+            update insert <text-permissions xmlns="http://hxwd.org/ns/1.0" text-id="{$textid}" /> into $permissions
+          else
+            (),
+          let $text-permissions2 := $permissions//tls:text-permissions[@text-id = $textid]
+          return
+            update insert <allow-review xmlns="http://hxwd.org/ns/1.0" user-id="{$userid}"/>  into $text-permissions2)
+  else
+    "Error: You do not have permission to modify permissions."
 };
 
 declare function tlsapi:stub($map as map(*)){
