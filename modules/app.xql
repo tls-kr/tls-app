@@ -406,7 +406,8 @@ let $query := map:get($model, "query")
     let $loc := $h/ancestor::tei:TEI/@xml:id
     return
     <li><a href="textview.html?location={$loc}">{data($loc) || " " || data($h)}</a> 
-    {tlslib:format-button("do_wikidata_search('"||data($h)||"','title', '"||data($loc)||"')", "Wikidata Search","open-iconic-master/svg/magnifying-glass.svg", "", "", "tls-user")}</li>
+    {wd:display-qitems(data($loc),'title',data($h))}
+</li>
     }
     </ul>
     <h2>Texts in the Kanseki Repository:</h2>
@@ -429,11 +430,12 @@ let $query := map:get($model, "query")
       where string-length($kid) > 5
       return if ($tls) then 
            <li><a href="textview.html?location={$kid}">{data($kid) || " " || data($h)}</a> 
-    {tlslib:format-button("do_wikidata_search('"||data($h)||"','title', '"||data($kid)||"')", "Wikidata Search","open-iconic-master/svg/magnifying-glass.svg", "", "", "tls-user")}
-            </li>
+           {wd:display-qitems(data($kid),'title',data($h))}
+           </li>
             else
           <li>{if ($av) then $but else ()}　{$kid || " " || $h/text() || " "} <span class="text-muted"><small>{ string-join($w/altid, " / ")}</small></span>  {$req} 
-              {tlslib:format-button("do_wikidata_search('"||data($h)||"','title', '"||data($kid)||"')", "Wikidata Search","open-iconic-master/svg/magnifying-glass.svg", "", "", "tls-user")}</li>
+           {wd:display-qitems(data($kid),'title',data($h))}
+           </li>
     }
     </ul>
     </div>
@@ -1336,6 +1338,7 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
     (: move :)
     tlslib:format-button("move_word('"|| $zi || "', '"|| $entry-id ||"', '"||$wc||"', 'word')", "Move the word "|| $zi || ", including all syntactic words to another concept.", "open-iconic-master/svg/move.svg", "", "", "tls-editor")
     }
+    {wd:display-qitems($entry-id, 'concept', $zi)}
     </h5>
     {if ($def) then <p class="ml-4">{$def[1]}</p> else ()}
     {if ($e//tei:listBibl) then 
@@ -1358,7 +1361,8 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
     </div>
     </div>
     </div>
-        <div class="col-sm-0">{tlslib:swl-form-dialog('concept', $model)}</div>
+        <div class="col-sm-0">{tlslib:swl-form-dialog('concept')}</div>
+        <div class="col-sm-1">{wd:quick-search-form('concept')}</div>
     </div>
     )
     

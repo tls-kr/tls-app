@@ -13,7 +13,7 @@ module namespace tlslib="http://hxwd.org/lib";
 import module namespace config="http://hxwd.org/config" at "config.xqm";
 
 import module namespace krx="http://hxwd.org/krx-utils" at "krx-utils.xql";
-
+import module namespace wd="http://hxwd.org/wikidata" at "wikidata.xql"; 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
 
@@ -929,6 +929,7 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
        <button type="button" class="btn" onclick="page_move('{$dseg/following::tei:seg[last()]/@xml:id}&amp;prec={$foll+$prec -2}&amp;foll=0')" title="Go to the last page"><span style="color: blue">Last</span></button>
        else ()}
        </div> 
+        {wd:quick-search-form('title')}
       </div>
       )
 
@@ -1038,8 +1039,8 @@ $zi := string-join($node/tei:form/tei:orth/text(), "/")
 ,$def := tlslib:get-sense-def($link)
 ,$rid := $options?line-id || "-" || $node/@xml:id 
 , $exemplum := if ($node/tls:metadata/@rating) then xs:int($node/tls:metadata/@rating) else 0
-, $bg := if ($exemplum > 0) then "bg-secondary" else "bg-light"
-
+, $bg := if ($exemplum > 0) then "protypical-"||$exemplum else "bg-light"
+, $marktext := if ($exemplum = 0) then "Mark this attribution as prototypical" else "Currently marked as prototypical "||$exemplum ||". Increase up to 3 then reset."
 (:$pos := concat($sf, if ($sm) then (" ", $sm) else "")
 :)
 return
@@ -1112,7 +1113,7 @@ if ("tls-editor"=sm:get-user-groups($user) and $node/@xml:id) then
    if (($user = $creator-id) or contains($usergroups, "tls-editor" )) then 
     tlslib:format-button("delete_swl('swl', '" || data($node/@xml:id) || "')", "Immediately delete this SWL for "||$zi[1], "open-iconic-master/svg/x.svg", "small", "close", "tls-editor")
    else (),
-   tlslib:format-button("incr_rating('swl', '" || data($node/@xml:id) || "')", "Mark this attribution as prototypical", "open-iconic-master/svg/star.svg", "small", "close", "tls-editor"),
+   tlslib:format-button("incr_rating('swl', '" || data($node/@xml:id) || "')", $marktext, "open-iconic-master/svg/star.svg", "small", "close", "tls-editor"),
    if (not ($user = $creator-id)) then
    (
 <span class="rp-5">
@@ -1350,7 +1351,7 @@ $target := substring(data($a/tls:text/tls:srcline/@target), 2),
 (: TODO find a better way, get juan for CBETA texts :)
 $loc := try {xs:int((tokenize($target, "_")[3] => tokenize("-"))[1])} catch * {0}
 , $exemplum := if ($a/tls:metadata/@rating) then xs:int($a/tls:metadata/@rating) else 0
-, $bg := if ($exemplum > 0) then "bg-secondary" else "bg-light"
+, $bg := if ($exemplum > 0) then "protypical-"||$exemplum else "bg-light"
 return
 <div class="row {$bg} table-striped">
 <div class="col-sm-2"><a href="textview.html?location={$target}" class="font-weight-bold">{$src, $loc}</a></div>
@@ -1779,8 +1780,9 @@ onclick="show_newsw({{'wid':'xx', 'py': '{string-join($py, "/")}','concept' : '{
 
 {if ($scnt > 0) then      
 <span>      
+ {if ($context = 'dic') then wd:display-qitems($wid, $context, $zi) else ()}
 {if (count($syn) > 0) then
-<button title="Click to view {count($syn)} synonyms" class="btn badge badge-info" data-toggle="collapse" data-target="#{$wid}-syn">SYN</button> else 
+<button title="Click to view {count($syn)} synonyms" class="btn badge badge-info ml-2" data-toggle="collapse" data-target="#{$wid}-syn">SYN</button> else 
 if ($edit) then 
 <button title="Click to add synonyms" class="btn" onclick="new_syn_dialog({{'char' : '{$zi}','concept' : '{$concept}', 'concept_id' : '{$id}'}})">＋</button>
 else ()
@@ -2586,7 +2588,7 @@ return
          <div class="row">
            <div class="col-sm-1"/>
            <div class="col-sm-2"><span class="font-weight-bold float-right">Edition:</span></div>
-           <div class="col-sm-5"><span class="sm">{collection($config:tls-texts-root)//ab[@refid=$textid]}</span>　</div>
+           <div class="col-sm-5"><span class="sm">{collection($config:tls-texts-root)//ab[@refid=$textid]}</span></div>　
          </div>  
          <div class="row">
            <div class="col-sm-1"/>
@@ -2615,6 +2617,11 @@ return
            <div class="col-sm-1"/>
            <div class="col-sm-2"><span class="font-weight-bold float-right">Comment:</span></div>
            <div class="col-sm-5"><span class="tr-x" id="{$textid}-com" contenteditable="true">　</span></div>    
+         </div>  
+         <div class="row">
+           <div class="col-sm-1"/>
+           <div class="col-sm-2"><span class="font-weight-bold float-right">Wikidata:</span></div>
+           <div class="col-sm-5">{wd:display-qitems($textid, 'title', tlslib:get-title($textid))}</div>    
          </div>  
          <div class="row">
            <div class="col-sm-1"/>
