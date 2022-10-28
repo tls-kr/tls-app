@@ -1809,12 +1809,12 @@ function copyToClipboard(element) {
 /* Wikidata related stuff */
 
 // this function is called from a link, without direct text input / the type of id depends on the item given in context
-function do_wikidata_search(query,context,id){
+function do_wikidata_search(query,context,id,qitem){
     $("#wd-query-span").text(query);
     $("#wd-search").val(query)
+    $("#wd-qitem").text(qitem)
     $("#wd-form" ).show(); 
-    $.get("api/responder.xql?func=wd:search&query="+query+"&context="+context+"&id="+id, 
-      "html", 
+    $.get("api/responder.xql?func=wd:search&query="+query+"&context="+context+"&id="+id+"&qitem="+qitem, 
     function(resp){
          $('#wd-search-results').html(resp);
          $('#wd-detail').html("");
@@ -1828,10 +1828,10 @@ function do_wikidata_search(query,context,id){
 function wikidata_search_again(){
     var query = $("#wd-search").val();
     var context = 'title' ;
+    $("#wd-recent").html('')
     var type = $("#wd-stype option:selected").val();
     var id = $("#wd-textid").text()
-    $.get("api/responder.xql?func=wd:search&query="+query+"&context="+context+"&id="+id+"&type="+type, 
-      "html", 
+    $.get("api/responder.xql?func=wd:search&query="+query+"&context="+context+"&id="+id+"&type="+type+"&qitem=None",  
     function(resp){
          $('#wd-search-results').html(resp);
          $('#wd-detail').html("");
@@ -1853,8 +1853,9 @@ function wikidata_search(){
 // this gets called from the "Use" button, we now do the work:)
 function save_qitem(qitem,context,id,label){
     var title = $("#wd-query-span").text();
-    $.get("api/responder.xql?func=wd:save-qitem&qitem="+qitem+"&context="+context+"&id="+id+"&title="+title+"&label="+label+"&locallabel="+title, 
-      "html", 
+    var oldqitem = $("#wd-qitem").text()
+    
+    $.get("api/responder.xql?func=wd:save-qitem&qitem="+qitem+"&context="+context+"&id="+id+"&title="+title+"&label="+label+"&locallabel="+title+"&oldqitem="+oldqitem, 
     function(resp){
          toastr.info(qitem+" has been saved.", "漢學文典 says:");
          $('#wd-search-results').html(resp);
