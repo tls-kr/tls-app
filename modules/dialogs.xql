@@ -550,7 +550,7 @@ declare function dialogs:punc-dialog($map as map(*)){
 };
 
 declare function dialogs:edit-text-permissions-dialog($map as map(*)) as node() {
-let $textid := $map?location,
+let $textid := tokenize($map?location, "_")[1],
     $cur-allowed-users := doc("/db/users/tls-admin/permissions.xml")//tls:text-permissions[@text-id = $textid]/tls:allow-review/@user-id
 return
 <div id="edit-text-permissions-dialog" class="modal" tabindex="-1" role="dialog" style="display: none;">
