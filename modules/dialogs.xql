@@ -549,3 +549,52 @@ declare function dialogs:punc-dialog($map as map(*)){
 </div>
 };
 
+declare function dialogs:edit-text-permissions-dialog($map as map(*)) as node() {
+let $textid := tokenize($map?location, "_")[1],
+    $cur-allowed-users := doc("/db/users/tls-admin/permissions.xml")//tls:text-permissions[@text-id = $textid]/tls:allow-review/@user-id
+return
+<div id="edit-text-permissions-dialog" class="modal" tabindex="-1" role="dialog" style="display: none;">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header"><h5>Change editing permissions <small class="text-muted ">{$textid}</small></h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" title="Close">x</button>
+            </div>
+            <div class="modal-body">
+                <h6 class="font-weight-bold">Users that currently may edit this text:</h6>
+                <div id="edit-text-permissions-dialog-remove-users-container">
+                    {
+                        for $gm in sm:get-group-members("tls-punc")
+                        where ($cur-allowed-users = $gm)
+                        return
+                            <div id="editing-permissions-remove-{$textid}-{$gm}">{$gm} 
+                                <button type="button" class="btn" onclick="remove_editing_permissions('{$textid}', '{$gm}')"
+                                        title="Remove editing permission for user {$gm}">
+                                    <img class="icon" src="resources/icons/open-iconic-master/svg/x.svg" /> 
+                                </button>
+                            </div>
+
+                    }
+                </div>
+                <small class="text-muted ">( + all in the tls-editor group)</small>
+                <br /><br />
+                <h6 class="font-weight-bold">Users in tls-punc group without editing permission:</h6>
+
+                <div class="form-group col-md-4"><select class="form-control" id="edit-text-permissions-dialog-add-users-select">
+                    {
+                        for $gm in sm:get-group-members("tls-punc")
+                        where not($cur-allowed-users = $gm or sm:get-group-members("tls-editor") = $gm)
+                        return
+                            <option value="{$gm}">{$gm}</option>
+                    } 
+                </select></div>
+                <button type="button" class="btn btn-primary" onclick="add_editing_permissions('{$textid}')">
+                    Allow editing for this text
+                </button>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+           </div>
+        </div>
+    </div>
+</div>
+};

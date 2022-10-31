@@ -21,6 +21,7 @@ import module namespace krx="http://hxwd.org/krx-utils" at "../modules/krx-utils
 import module namespace xed="http://hxwd.org/xml-edit" at "../modules/xml-edit.xql";
 import module namespace imp="http://hxwd.org/xml-import" at "../modules/import.xql"; 
 import module namespace wd="http://hxwd.org/wikidata" at "../modules/wikidata.xql"; 
+import module namespace dbu="http://exist-db.org/xquery/utility/db" at "../modules/db-utility.xqm";
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
@@ -1131,36 +1132,44 @@ return
 :)
 declare function tlsapi:save-zh($map as map(*)){
 let $user := sm:id()//sm:real/sm:username/text()
+,$txtid := tokenize($id, "_")[1]
 ,$id := $map?id
 ,$zh-to-save := $map?line
 ,$node := collection($config:tls-texts-root)//tei:seg[@xml:id=$id]
 ,$seg := <seg xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$id}" resp="#{$user}" modified="{current-dateTime()}">{$zh-to-save}</seg>
 return
-if ($node) then (
- update insert attribute modified {current-dateTime()} into $node,
- update insert attribute resp-change {"#" || $user} into $node,
- update insert $node into (tlslib:get-crypt-file("text")//tei:div/tei:p[last()])[1],
- if (update replace $node[1] with $seg) then () else "Success. Updated text." 
- )
-else 
- "Could not save text."
+if ($txtid and tlslib:has-edit-permission($txtid)) then
+  if ($node) then (
+  update insert attribute modified {current-dateTime()} into $node,
+  update insert attribute resp-change {"#" || $user} into $node,
+  update insert $node into (tlslib:get-crypt-file("text")//tei:div/tei:p[last()])[1],
+  if (update replace $node[1] with $seg) then () else "Success. Updated text." 
+  )
+  else 
+  "Could not save text."
+else
+  "You do not have permission to edit this text."
 };
 
 declare function tlsapi:zh-delete-line($map as map(*)){
 let $id := $map?id
+,$txtid := tokenize($id, "_")[1]
 ,$user := sm:id()//sm:real/sm:username/text()
 ,$node := collection($config:tls-texts-root)//tei:seg[@xml:id=$id]
 (: todo: check if this node has been referenced? :)
 return
-if ($node) then (
- update insert attribute modified {current-dateTime()} into $node,
- update insert attribute resp-change {"#" || $user} into $node,
- update insert attribute change {"deletion"} into $node,
- update insert $node into (tlslib:get-crypt-file("text")//tei:div/tei:p[last()])[1],
- if (update delete $node[1]) then () else "Success. Deleted line." 
- )
-else 
- "Could not delete line."
+if ($txtid and tlslib:has-edit-permission($txtid)) then
+  if ($node) then (
+  update insert attribute modified {current-dateTime()} into $node,
+  update insert attribute resp-change {"#" || $user} into $node,
+  update insert attribute change {"deletion"} into $node,
+  update insert $node into (tlslib:get-crypt-file("text")//tei:div/tei:p[last()])[1],
+  if (update delete $node[1]) then () else "Success. Deleted line." 
+  )
+  else 
+  "Could not delete line."
+else
+  "You do not have permission to edit this text."
 };
 
 (:~
@@ -1708,11 +1717,13 @@ new-seg = Punctuated text (Passed in request body, see below)
 :)
 declare function tlsapi:save-punc($map as map(*)){
 let  $seg := collection($config:tls-texts-root)//tei:seg[@xml:id=$map?line_id]
+, $txtid := tokenize($map?line_id, "_")[1]
 , $new-seg :=  $map?body
 , $res := string-join(for $r at $pos in tokenize($new-seg, '\$') return $r || "$" || $pos || "$", '')
 , $str := analyze-string ($res, $config:seg-split-tokens)
 return
-if (not(tlslib:check-edited-seg-valid($new-seg, $seg))) then "Error: Text integrity check failed. Can not save edited text."
+if (not($txtid and tlslib:has-edit-permission($txtid))) then "Error: You do not have permission to update edit this text."
+else if (not(tlslib:check-edited-seg-valid($new-seg, $seg))) then "Error: Text integrity check failed. Can not save edited text."
 else 
     let $seg-with-updated-type := 
     if ($map?type != $seg/@type) then 
@@ -1754,10 +1765,12 @@ else
 (: :)
 declare function tlsapi:merge-following-seg($map as map(*)){
 let $segid := $map?line_id,
+    $txtid := tokenize($segid, "_")[1],
     $new-seg :=  $map?body,
     $seg := collection($config:tls-texts-root)//tei:seg[@xml:id=$segid]
 return
-    if ($new-seg = ()) then "Error: Please use the function under 內部 to completely delete segment" 
+    if (not($txtid and tlslib:has-edit-permission($txtid))) then "Error: You do not have permission to update edit this text."
+    else if ($new-seg = ()) then "Error: Please use the function under 內部 to completely delete segment" 
     else if (not(tlslib:check-edited-seg-valid($new-seg, $seg))) then "Error: Text integrity check failed. Can not save edited text."
     else 
         (: Use save-punc to update the edited part, without splitting. :)
@@ -1793,6 +1806,55 @@ return
    if ($w/@tls-added) then update replace $w/@tls-added with $tls 
    else update insert $tls into $w ) 
  else "Error:  can not import text"
+};
+
+
+(: Add user to the list of users that are allowed to edit a certain text :)
+declare function tlsapi:add-text-editing-permission($map as map(*)) {
+  if ((sm:id()//sm:group = ("tls-admin"))) then
+    let $userid := $map?userid,
+        $textid := $map?textid
+    return
+      if (not($userid and $textid)) then
+        "Error: Missing parameter"
+      else if (not(sm:get-user-groups($userid) = "tls-punc")) then
+        "Error: Only members of the 'tls-punc' group may be granted permission to edit texts"
+      else if (not(collection($config:tls-texts-root)//tei:TEI[@xml:id=$textid])) then
+        "Error: A text with this id does not exist in the db."
+      else
+        (: The collection needs x fpr all users so that resources in it are accesible, whereas the resource itself needs r to be opened. :)
+        let $tls-admin-collection := dbu:ensure-collection("/db/users/tls-admin/", map { "owner": "admin", "group": "tls-admin", "mode": "rwxrwx--x"}),
+            $permissions := doc(dbu:ensure-resource($tls-admin-collection, "permissions.xml", <permissions xmlns="http://hxwd.org/ns/1.0"/>, map { "owner": "admin", "group": "tls-admin", "mode": "rwxrwxr--"}))/tls:permissions,
+            $text-permissions := $permissions//tls:text-permissions[@text-id = $textid]
+        return 
+          (if (not($text-permissions)) then
+            update insert <text-permissions xmlns="http://hxwd.org/ns/1.0" text-id="{$textid}" /> into $permissions
+          else
+            (),
+          let $text-permissions2 := $permissions//tls:text-permissions[@text-id = $textid]
+          return
+            update insert <allow-review xmlns="http://hxwd.org/ns/1.0" user-id="{$userid}"/>  into $text-permissions2)
+  else
+    "Error: You do not have permission to modify permissions."
+};
+
+(: Remove user from the list of users that are allowed to edit a certain text :)
+declare function tlsapi:remove-text-editing-permission($map as map(*)) {
+  if ((sm:id()//sm:group = ("tls-admin"))) then
+    let $userid := $map?userid,
+        $textid := $map?textid
+    return
+      if (not($userid and $textid)) then
+        "Error: Missing parameter"
+      else 
+        let $permission := doc("/db/users/tls-admin/permissions.xml")//tls:text-permissions[@text-id = $textid]/tls:allow-review[@user-id = $userid]
+        return 
+          if (not($permission)) then
+            "Error: User did not previously have permission to edit text"  
+          else
+            update delete $permission
+  else
+    "Error: You do not have permission to modify permissions."
 };
 
 declare function tlsapi:stub($map as map(*)){
