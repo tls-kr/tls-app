@@ -45,7 +45,7 @@ return
 if (starts-with($res, "Ill")) then $res 
 else
 <div>
-{if ($map?qitem) then () else 
+{if ($map?qitem or $map?target='wikidata') then () else 
 <div id="wd-recent"><h3>Recent Qitems:</h3>
 <ul>{for $i in wd:recent-qitems(map{"n" : 3}) 
 let $title := substring-after($i/ancestor::tei:TEI//tei:titleStmt/tei:title/text(), '::')

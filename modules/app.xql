@@ -435,6 +435,10 @@ let $query := map:get($model, "query")
             else
           <li>{if ($av) then $but else ()}　{$kid || " " || $h/text() || " "} <span class="text-muted"><small>{ string-join($w/altid, " / ")}</small></span>  {$req} 
            {wd:display-qitems(data($kid),'title',data($h))}
+           {if ($av) then 
+             <span class="ml-2">{
+              <a class="btn badge badge-light" target="kanripo" title="View {data($h)} in Kanseki Repository (External link)" style="background-color:paleturquoise" href="https://www.kanripo.org/text/{data($kid)}/">KR</a>}</span> 
+            else ()}
            </li>
     }
     </ul>
