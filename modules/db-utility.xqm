@@ -44,6 +44,28 @@ function dbu:ensure-collection($path as xs:string, $permissions as map(*)) as xs
 };
 
 (:~
+ : Create collection and resource therein if they do not exist. 
+ : Both will have the permission passed as the last parameter.
+ : If the resource does not exist, it is created and filled with the content of the third parameter
+ : 
+ : @param $collection-path
+ : @param $resource-name
+ : @param $default item() Default contents of the resource if it has to be created
+ : @param $permissions map(xs:string, xs:string) with "owner", "group", "mode"
+ :)
+
+declare
+function dbu:ensure-resource($collection-path as xs:string, $resource-name as xs:string, $default as item(), $permissions as map(*)) as xs:string {
+    let $collection := dbu:ensure-collection($collection-path, $permissions)
+    return
+    if (xmldb:get-child-resources($collection) = $resource-name) then
+        concat($collection, "/", $resource-name)
+    else
+        let $rst := xmldb:store($collection, $resource-name, $default)
+        return dbu:set-permissions($rst, $permissions)
+};
+
+(:~
  : set owner, group and mode for a collection or resource to package defaults
  : will throw an error, if the current user does not have the appropriate rights
  :
@@ -91,3 +113,4 @@ function dbu:create-collection ($collection as xs:string, $next as xs:string, $p
         xmldb:create-collection($collection, $next)
         => dbu:set-permissions($permissions)
 };
+

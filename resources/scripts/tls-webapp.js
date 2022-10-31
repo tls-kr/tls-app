@@ -2221,6 +2221,64 @@ function add_text(kid, cbid){
   });
     
 };
+// display dialog for text permission editing
+function display_edit_text_permissions_dialog(){
+  const queryString = window.location.search;
+  $.ajax({
+    type : "GET",
+    dataType : "html",  
+    url : "api/responder.xql" + queryString + "&func=dialogs:edit-text-permissions-dialog",
+    success : function(resp){
+      $('#remoteDialog').html(resp);
+      $('#edit-text-permissions-dialog').modal('show');
+    }
+  });
+};
+
+function add_editing_permissions(textid) {
+  const selecton = document.getElementById("edit-text-permissions-dialog-add-users-select").selectedOptions;
+
+  if (selecton.length != 1) {
+    alert("Please select a user!");
+    return;
+  }
+
+  const userid = selecton[0].value;
+
+  $.ajax({
+    type: "GET",
+    dataType: "html",
+    url: "api/responder.xql" + "?func=add-text-editing-permission&userid=" + userid + "&textid=" + textid,
+    success: function(resp) {
+      toastr.info("Permission added for user " + userid, "HXWD says:");
+      // Reload dialog
+      $('#edit-text-permissions-dialog').modal('hide');
+      display_edit_text_permissions_dialog();
+    },
+    error: function(resp) {
+      console.log(resp);
+      toastr.error("Error occured when trying to add permission", "HXWD says:");
+    }
+  });
+}
+
+function remove_editing_permissions(textid, userid) {
+  $.ajax({
+    type: "GET",
+    dataType: "html",
+    url: "api/responder.xql" + "?func=remove-text-editing-permission&userid=" + userid + "&textid=" + textid,
+    success: function(resp) {
+      toastr.info("Permission revoked for user " + userid, "HXWD says:");
+      // Reload dialog
+      $('#edit-text-permissions-dialog').modal('hide');
+      display_edit_text_permissions_dialog();
+    },
+    error: function(resp) {
+      console.log(resp);
+      toastr.error("Error occured when trying to revoke permission", "HXWD says:");
+    }
+  });
+}
 
 window.onbeforeunload = function() {
     return dirty ? "If you leave this page you will lose your unsaved changes." : null;

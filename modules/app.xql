@@ -1361,7 +1361,7 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
     </div>
     </div>
     </div>
-        <div class="col-sm-0">{tlslib:swl-form-dialog('concept')}</div>
+        <div class="col-sm-0">{tlslib:swl-form-dialog('concept', $model)}</div>
         <div class="col-sm-1">{wd:quick-search-form('concept')}</div>
     </div>
     )
@@ -1458,7 +1458,7 @@ return
                         (tlslib:navbar-doc(),
                         tlslib:navbar-link())}
                         {if (not($testuser)) then tlslib:navbar-bookmarks() else ()}
-                        {if (contains(sm:id()//sm:group, "tls-editor")) then tlslib:navbar-review($context) else ()}
+                        {if (tlslib:should-display-navbar-review($context, $model)) then tlslib:navbar-review($context) else ()}
                         </ul>
                     <ul class="navbar-nav">
                     <li class="nav-item">
