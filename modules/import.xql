@@ -288,7 +288,7 @@ let $ds := $doc//tei:body//tei:seg
 , $dupl-ids := for $s in $ds 
                let $c := count($ds[@xml:id=$s/@xml:id])
                where $c > 1
-               return (update replace $s/@xml:id with $s/@xml:id || ".1", 1)  
+               return (update replace $s/@xml:id with $s/@xml:id || ".1",  $s/@xml:id || ".1")  
 return <dedup>{$dupl-ids}</dedup>
 };
 
@@ -300,15 +300,20 @@ let $ds := $doc//tei:body//tei:seg
 , $els := for $e in distinct-values(for $d in $doc//tei:body//node() return local-name($d)) 
            order by $e 
            return $e
+, $segl := for $s in $ds
+           let $l := string-length(string-join($s/text()))
+           return $l           
 , $chars := string-join($ds) => normalize-space()
 , $ccnt := for $c in distinct-values(string-to-codepoints($chars))
+           let $cv := codepoints-to-string($c)
            order by $c
-           return <char n="{$c}">{codepoints-to-string($c)}</char>
+           return <char n="{$c}" cnt="{try {count(analyze-string($chars, $cv)//fn:match)} catch * {-1}}">{$cv}</char>
  , $dedup:= if($segs = $seg-ids + $seg-noid) then () else imp:de-duplicate-ids($doc)           
 , $rep := <report id="{$doc/@xml:id}" date="{util:system-dateTime()}">
 <title>{$doc//tei:titleStmt/tei:title/text()}</title>
 {$dedup}
 <r status="{if($segs = $seg-ids + $seg-noid) then "OK" else "Error"}">Segs:  {$segs, $seg-ids, $seg-noid}</r>
+<r>Seg length: {max($segl), min($segl)}</r>
 <r>Para: {count($doc//tei:body//tei:p)}</r>
 <r>Punc: {count($doc//tei:body//tei:c)}</r>
 <r>Elements: {$els}</r>

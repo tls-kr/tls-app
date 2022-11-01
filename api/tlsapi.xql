@@ -1515,8 +1515,8 @@ let $hits :=
 , $start := xs:int($map?start)
 , $count := xs:int($map?count)
 , $total := count($hits)
-, $prevp := if ($start = 1) then "" else 'do_quick_search('||$start||' - '||$count||', '||$count ||', '||$map?search-type||', "'||$map?mode||'")'
-, $nextp := if ($total < $start + $count) then "" else 'do_quick_search('||$start||' + '||$count||', '||$count ||', '||$map?search-type||', "'||$map?mode||'")'
+, $prevp := if ($start = 1) then "" else 'do_quick_search('||$start||' - '||$count||', '||$count ||', '||$map?search-type||', "'||$map?mode||', '||$map?target||'")'
+, $nextp := if ($total < $start + $count) then "" else 'do_quick_search('||$start||' + '||$count||', '||$count ||', '||$map?search-type||', "'||$map?mode||', '||$map?target||'")'
 , $qs := tokenize($map?query, "\s")
 , $q1 := substring($qs[1], 1, 1)
 
@@ -1525,20 +1525,20 @@ if ($map?target = 'wikidata') then $hits
 else
 <div><p><span class="font-weight-bold">{$start}</span> to <span class="font-weight-bold">{min(($start + $count -1, $total))}</span> of <span class="font-weight-bold">{$total}</span> <span class="font-weight-bold"> p</span> with <span class="font-weight-bold">{count($disp)}</span> hits  {if ($map?search-type eq "5") then "in "||$title else "in all texts" }. {
 if ($map?search-type eq "5") then 
-   (<button class="btn badge badge-light" onclick="do_quick_search(1, 25, 1, 'date')">Search in all texts (by textdate)</button>,
-   <button class="btn badge badge-light" onclick="do_quick_search(1, 25, 1, 'rating')">Search in all texts (<span class="bold" style="color:red;">★</span> texts first)</button>) else 
-   <button class="btn  badge badge-light" onclick="do_quick_search(1, 25, 5,'{$map?mode}')">Search in {$title} only</button>}
+   (<button class="btn badge badge-light" onclick="do_quick_search(1, 25, 1, 'date', 'texts')">Search in all texts (by textdate)</button>,
+   <button class="btn badge badge-light" onclick="do_quick_search(1, 25, 1, 'rating', 'texts')">Search in all texts (<span class="bold" style="color:red;">★</span> texts first)</button>) else 
+   <button class="btn  badge badge-light" onclick="do_quick_search(1, 25, 5,'{$map?mode}', 'texts')">Search in {$title} only</button>}
  {if ($map?search-type eq "1") then
     if ($map?mode eq "rating") then 
-    <button class="btn badge badge-light" onclick="do_quick_search(1, 25, {$map?search-type}, 'date')">Sort by textdate</button> else 
-    <button class="btn  badge badge-light" onclick="do_quick_search(1, 25, {$map?search-type}, 'rating')">Sort <span class="bold" style="color:red;">★</span> texts first</button>
+    <button class="btn badge badge-light" onclick="do_quick_search(1, 25, {$map?search-type}, 'date', 'texts')">Sort by textdate</button> else 
+    <button class="btn  badge badge-light" onclick="do_quick_search(1, 25, {$map?search-type}, 'rating', 'texts')">Sort <span class="bold" style="color:red;">★</span> texts first</button>
 else ()
 }</p>
 {
 for $h at $n in $disp
     let $loc := $h/@xml:id,
     $cseg := collection($config:tls-texts-root)//tei:seg[@xml:id=$loc],
-    $head :=  $cseg/ancestor::tei:div[1]/tei:head[1]/text() ,
+    $head :=  $cseg/ancestor::tei:div[1]/tei:head[1]//text(),    
     $title := $cseg/ancestor::tei:TEI//tei:titleStmt/tei:title/text(),
     $tr := collection($config:tls-translation-root)//tei:seg[@corresp="#"||$loc]
     ,$m1 := substring(($h/exist:match)[1]/text(), 1, 1)
