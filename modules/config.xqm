@@ -56,6 +56,8 @@ declare variable $config:tls-manifests :=
 
 declare variable $config:seg-split-tokens := '[，。：．；？﹖！，』」/、]';
 
+declare variable $config:kanji-numberlike-tokens := '[〇一二三四五六七八九十百千萬億兆上中下]';
+
 (: the underscore is in reality a space, for the purpose at hand has to be escaped :) 
 declare variable $config:concept-name-chars := "['_,-/3ABCDEFGHIJKLMNOPQRSTUVWXYZx:]";
 declare variable $config:pinyin-chars := "[abcdefghijklmnopqrstuwxyzàáèéìíòóùúüāēěīōūǎǐǒǔǘǚǜ̀́]";

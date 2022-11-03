@@ -1,8 +1,12 @@
-
 xquery version "3.1";
+(:~
+: This module provides for import of foreign xml into the database
+: 2022-11-03
+: @author Christian Wittern  cwittern@yahoo.com
+: @version 1.0
+:)
 
 module namespace imp="http://hxwd.org/xml-import"; 
-
 
 declare namespace tei="http://www.tei-c.org/ns/1.0";
 declare namespace  cb="http://www.cbeta.org/ns/1.0";
@@ -13,6 +17,21 @@ import module namespace xed="http://hxwd.org/xml-edit" at "xml-edit.xql";
 import module namespace http="http://expath.org/ns/http-client";
 
 declare variable $imp:ignore-elements := ("body", "docNumber", "juan", "jhead", "byline" ,"mulu") ;
+
+declare variable $imp:kanji-groups := <groups>
+    <group name="ExtA" lower="㐀" upper="䷿" lower-dec="13312" upper-dec="19967"/>
+    <group name="BMP" lower="一" upper="鿿" lower-dec="19968" upper-dec="40959"/>
+    <group name="ExtraA" lower="豈" upper="﫿" lower-dec="63744" upper-dec="64255"/>
+    <group name="ExtraB" lower="︰" upper="﹏" lower-dec="65072" upper-dec="65103"/>
+    <group name="ExtB" lower="𠀀" upper="𪛟" lower-dec="131072" upper-dec="173791"/>
+    <group name="ExtC" lower="𪜀" upper="𫜿" lower-dec="173824" upper-dec="177983"/>
+    <group name="ExtD" lower="𫝀" upper="𫠟" lower-dec="177984" upper-dec="178207"/>
+    <group name="ExtE" lower="𫠠" upper="𯟿" lower-dec="178208" upper-dec="194559"/>
+    <group name="ExtF" lower="" upper="" lower-dec="57344" upper-dec="63743"/>
+    <group name="PuaCBETA" lower="󰀀" upper="󿿽" lower-dec="983040" upper-dec="1048573"/>
+    <group name="PuaKRP" lower="􀀀" upper="􏿽" lower-dec="1048576" upper-dec="1114109"/>
+</groups>;
+
 
 (: (
 xmldb:create-collection("/db/apps/tls-texts", "KR"),
@@ -86,65 +105,15 @@ let $pstr := string-join(imp:prepare-element($node))
 return $segs
 };
 
-declare function imp:move-notes-out($node as node()){
-if ($node/tei:note) then 
-let $nodes := $node/node()
-, $id := $node/@xml:id
-, $note-i := (0,  for $s in $node/tei:note
-     return
-     index-of($nodes, $s))
-  (: these are the extra text() nodes after the last note :)
-, $extra := $nodes[position() = $note-i[last()] + 1 to count($nodes)]
-, $res := (
-  for $i at $pos in $note-i 
-   let $s1 := $nodes[position () = $i+1 to $note-i[$pos + 1] - 1]
-   (: $s2 is the note node, which is used to separate the preceding and following text() into separate segs :)
-   , $s2 := $nodes[$note-i[$pos + 1]]
-   return
-    (if ($s1) then 
-    element {QName(namespace-uri($node), "seg")} {
-     $node/@* except $node/@xml:id ,
-     attribute xml:id {$id || "." || $pos * 2 -1},  $s1} else (),
-    if ($s2) then 
-    element {QName(namespace-uri($node), "seg")} {
-     $node/@* except ($node/@xml:id, $node/@type) ,
-     attribute type {"comm"},
-     attribute subtype {"nested"},
-     attribute xml:id {$id || "." || $pos * 2 },  $s2/node()} else () 
-    ),
-    (: this is coming after the loop :)
-    if ($extra (:and imp:not-empty($extra):)) then  
-    element {QName(namespace-uri($node), "seg")} {
-     $node/@* except $node/@xml:id ,
-     attribute xml:id {$id || "." || count($note-i) * 2 -1},  $extra} else ()     
-    )
-return $res
-else $node
-};
-
-(: remove short notes and replace with () notation :)
-declare function imp:process-inline-notes($seg as node(), $limit as xs:int ){
-element {QName(namespace-uri($seg), local-name($seg))} {
-    $seg/@*  ,
-for $n in $seg/node()
- let $c := $n => string-join('') => string-length()
- , $nn := local-name($n)
- return
-  if ($c < $limit and $nn = 'note') then 
-  (<c n="("/>, $n/text() => string-join('') => normalize-space() => replace(' ', '') => replace('/', ''), <c n=")"/>)
-  else $n
-}  
-};
-
 
 (: invoke imp:move-notes-out() and save and log the results etc :)
 declare function imp:process-seg($seg as node()){
-let $s1 := imp:process-inline-notes($seg, 8)
-, $s2 := imp:move-notes-out($s1) 
+let $s1 := xed:process-inline-notes($seg, 8)
+, $s2 := xed:move-notes-out($s1, $s1/@xml:id) 
 , $l := imp:clean-string-length($seg)
 , $l1 := imp:clean-string-length($s1)
 , $l2 := imp:clean-string-length($s2) 
-return if ($l = $l2) then xed:save-nodes($seg, $s2) else "Could not process node: " || $l || "," || $l1 || "," || $l2 || ": " || $seg/@xml:id
+return if ($l = $l2) then xed:save-nodes($seg, $s2) else "Error! Could not process node: " || $l || "," || $l1 || "," || $l2 || ": " || $seg/@xml:id
 };
 
 declare function imp:do-note-processing($doc as node()){
@@ -253,7 +222,7 @@ declare function imp:prepare-krp($nodes as node()*){
       let $as := analyze-string($node, "　+")
       for $n in $as/node() return
         if (local-name($n)='match') then 
-         element {QName(namespace-uri($node), "space")} { 
+         element {QName(xs:anyURI("http://www.tei-c.org/ns/1.0"), "space")} { 
          attribute n {$n},
          attribute quantity {string-length($n)}}
         else $n/text()
@@ -304,10 +273,19 @@ let $ds := $doc//tei:body//tei:seg
            let $l := string-length(string-join($s/text()))
            return $l           
 , $chars := string-join($ds) => normalize-space()
-, $ccnt := for $c in distinct-values(string-to-codepoints($chars))
+, $ccnt := for $c in string-to-codepoints($chars)
            let $cv := codepoints-to-string($c)
-           order by $c
-           return <char n="{$c}" cnt="{try {count(analyze-string($chars, $cv)//fn:match)} catch * {-1}}">{$cv}</char>
+           , $kg := $imp:kanji-groups//group[$c[1] >= xs:int(@lower-dec) and $c[1] <= xs:int(@upper-dec)]/@name
+           group by $cv
+           order by $c[1]
+           return <char g="{$kg[1]}" n="{$c[1]}" cnt="{count($c)}">{$cv}</char>
+(: , $cg := for $c in $ccnt 
+          let $k := xs:int(($c/@n)[1])
+          group by $g := $imp:kanji-groups//group[$k >= xs:int(@lower-dec) and $k <= xs:int(@upper-dec)]
+          return <group name="{$g/@name}">
+          {for $ck in $c return <k k="{$k}">{$ck}</k>} 
+          </group>:)
+          
  , $dedup:= if($segs = $seg-ids + $seg-noid) then () else imp:de-duplicate-ids($doc)           
 , $rep := <report id="{$doc/@xml:id}" date="{util:system-dateTime()}">
 <title>{$doc//tei:titleStmt/tei:title/text()}</title>
@@ -320,7 +298,7 @@ let $ds := $doc//tei:body//tei:seg
 <r>Characters: {string-length($chars)}, {count($ccnt)} </r>
 <r>{$ccnt}</r>
 </report>
-return (xmldb:store("/db/apps/tls-texts/rep2", concat($doc/@xml:id, ".xml"), $rep), $doc/@xml:id) 
+return (xmldb:store("/db/apps/tls-texts/rep3", concat($doc/@xml:id, ".xml"), $rep), $doc/@xml:id) 
 };
 
 declare function imp:stub($node as node()){

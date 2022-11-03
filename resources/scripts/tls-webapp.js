@@ -1860,7 +1860,7 @@ function save_qitem(qitem,context,id,label){
          toastr.info(qitem+" has been saved.", "漢學文典 says:");
          $('#wd-search-results').html(resp);
          $('#wd-detail').html("");
-         $('#swl-form' ).hide(); 
+         $('#wd-form' ).hide(); 
         }
     )
     
