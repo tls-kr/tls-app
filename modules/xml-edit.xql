@@ -12,6 +12,7 @@ import module namespace config="http://hxwd.org/config" at "config.xqm";
 
 import module namespace krx="http://hxwd.org/krx-utils" at "krx-utils.xql";
 import module namespace tlslib="http://hxwd.org/lib" at "tlslib.xql";
+import module namespace dbu="http://exist-db.org/xquery/utility/db" at "db-utility.xqm";
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
@@ -196,9 +197,70 @@ declare function xed:save-nodes($seg as node(), $segs as node()*){
 };
 
 (: the following is mainly for dealing with imported texts, maybe move to import module? :) 
+(: call xed:process-inline-notes() before to deal with short notes :)
+declare function xed:move-notes-out($node as node(), $id as xs:string){
+if ($node/tei:note) then 
+let $nodes :=  for $n in $node/node() return if (local-name($n) = 'xx') then () else $n
+, $note-i := (0,  for $s in $node/tei:note
+     return
+     index-of($nodes, $s))
+  (: these are the extra text() nodes after the last note :)
+, $extra := $nodes[position() = $note-i[last()] + 1 to count($nodes)]
+, $extra-len := string-length(string-join($extra))
+, $res := (
+  for $i at $pos in $note-i 
+   let $s1 := $nodes[position () = $i+1 to $note-i[$pos + 1] - 1]
+    , $cs1 := xed:cleanstring($s1) => string-length()
+   (: $s2 is the note node, which is used to separate the preceding and following text() into separate segs :)
+   , $s2 := $nodes[$note-i[$pos + 1]]
+   return
+    (if ($cs1 > 0) then 
+    element {QName(namespace-uri($node), "seg")} {
+     $node/@* except ($node/@xml:id , $node/@len, $node/@uuid, $node/@lno, $node/@indent),
+     attribute state {"locked"},
+     attribute xml:id {$id || "." || $pos * 2 -1},  $s1} else (),
+    if ($s2) then 
+    element {QName(namespace-uri($node), "seg")} {
+     $node/@* except ($node/@xml:id , $node/@type, $node/@len, $node/@uuid, $node/@lno, $node/@indent),
+     attribute state {"locked"},
+     attribute type {"comm"},
+     attribute subtype {"nested"},
+     attribute xml:id {$id || "." || $pos * 2 }, 
+     if ($cs1 = 0 and $s1 = $node/tei:lb) then $s1 else (),
+     for $n in $s2/node() return 
+       if (string-length(local-name($n)) > 0) then $n else replace($n, "/", ""), 
+     if ($extra-len = 0 and $extra = $node/tei:pb) then $extra else ()} else () 
+    ),
+    (: this is coming after the loop :)
+    if ($extra-len > 0) then  
+    element {QName(namespace-uri($node), "seg")} {
+     $node/@* except ($node/@xml:id , $node/@len, $node/@uuid, $node/@lno, $node/@indent),
+     attribute state {"locked"},
+     attribute xml:id {$id || "." || count($note-i) * 2 -1},  $extra} else ()     
+    )
+return $res
+else $node
+};
+
+(: remove short notes and replace with () notation :)
+declare function xed:process-inline-notes($seg as node(), $limit as xs:int ){
+element {QName(namespace-uri($seg), local-name($seg))} {
+    $seg/@*  ,
+for $n in $seg/node()
+ let $c := $n => string-join('') => string-length()
+ , $nn := local-name($n)
+ return
+  if ($c < $limit and $nn = 'note') then 
+  (<c n="("/>, $n/text() => string-join('') => normalize-space() => replace(' ', '') => replace('/', ''), <c n=")"/>)
+  else $n
+}  
+};
+
 
 declare function xed:line2lb($line as node()){
-$line/node()
+for $n in $line/node()
+return
+if (local-name($n) = 'xx') then () else $n
 };
 
 declare function xed:set-state ($node as node(), $state as xs:string){
@@ -210,13 +272,6 @@ return
     update insert attribute state {$state} into $tei
 };
 
-(: remove short notes and replace with () notation :)
-(: this exist in import.xql, but needs to be generalized, operate on <note> element :)
-declare function xed:process-inline-notes($node as node(), $limit as xs:int ){
-()
-};
-
-
 (: replace ideographic space characters with space elements :)
 (: TODO probably reimplement as recursion with one save operation will be more efficient :)
 declare function xed:space-to-element($node as node()){
@@ -226,7 +281,7 @@ let $res := for $s in $tei//tei:text//text()[contains(., "　")]
     , $r := for $n in $as/node()
     return
         if (local-name($n)='match') then 
-         element {QName(namespace-uri($s), "space")} { 
+         element {QName(xs:anyURI("http://www.tei-c.org/ns/1.0"), "space")} { 
          attribute n {$n},
          attribute quantity {string-length($n)}}
         else $n/text()
@@ -253,15 +308,226 @@ return
  return (if ($p) then update replace $p with $p || $nc else update replace $f with $nc || $f , update delete $g)
 };
 
+(: not used?! :)
+declare function xed:process-p2line($nodes as node()*){
+   for $node in $nodes
+   return
+    typeswitch ($node)
+    case element(tei:p) return element {QName(namespace-uri($node), local-name($node))} 
+                 { $node/@* , 
+(:                 if ($node/tei:lb) then:)
+                 for $l in $node//tei:lb return xed:lb2line($l)
+                 (:else $node:)}
+    case element(*) return element {QName(namespace-uri($node), local-name($node))} {
+                 $node/@* , 
+                 xed:process-p2line($node)}    
+    default return $node
+}; 
 
+declare function xed:line-temp-doc($doc as node()){
+let $d-uri := tokenize(document-uri(root($doc)), "/")[last()]
+, $src-coll := util:collection-name($doc)
+, $trg-coll := dbu:ensure-collection($config:tls-texts-root||"/tmp")
+, $rem := try {xmldb:remove($trg-coll, $d-uri) } catch * {()}
+, $tmp-uri :=  xmldb:copy-resource($src-coll, $d-uri, $trg-coll, $d-uri)
+, $tdoc := doc($tmp-uri)
+, $linedoc := for $p in $tdoc//tei:p[tei:lb] 
+            let $np := element {QName(namespace-uri($p), local-name($p))} {
+                 $p/@* , 
+                 for $l in $p/tei:lb
+                 return xed:lb2line($l)}
+             return update replace $p with $np
+return $tmp-uri
+};
 
+declare function xed:cleanstring($str as xs:string*){
+$str => string-join() => normalize-space() => replace(' ', '')
+};
+
+declare function xed:str-len($str as xs:string*){
+$str => xed:cleanstring() => string-length()
+}; 
 
 declare function xed:lb2line($lb as node()){
 let $nlb := $lb/following-sibling::tei:lb[1]
+, $lbc := count($lb/preceding::tei:lb) + 1
 , $line := $lb/following-sibling::node() intersect $nlb/preceding-sibling::node()
+, $sp :=  $lb/following-sibling::tei:space intersect $nlb/preceding-sibling::tei:space
+, $indent := if (true()) then data($sp[1]/@quantity) else ()
+, $len := $line => xed:str-len() + sum( for $s in $sp return xs:int($s/@quantity)) 
 return  
-    element {QName(namespace-uri($lb),"line")} {$lb, $line} 
+    element {QName(namespace-uri($lb),"line")} {
+    if ($indent > 0) then attribute indent {$indent} else (),
+    attribute len {$len},
+    attribute lno {$lbc}, 
+    attribute uuid {util:uuid()},
+    (: indexing to the line requires unique string values in the sequence :)
+    element {QName(namespace-uri($lb), "xx")} {$lbc},
+    $lb, $line} 
 };
+
+(: tries to determine heuristically if the line has a special function.  This could be 
+  - header of a subsection where we want to split a div in paragraphs
+     - begins with three spaces (different from surrounding lines)
+     - ends with 序, 跋 or other such indicators
+  - fw or byline
+  - commentary
+  - para-ending-line
+:) 
+declare function xed:is-special-line($line as node(), $len as xs:int) as xs:string?{
+if ($line/@indent = "3" or ends-with($line, "序") or matches($line, "^[\s?\d?]+?提要"))
+ then "head"
+else if (matches($line, "^[\s?\d?]+?欽定四庫全書") or matches($line, "卷"||$config:kanji-numberlike-tokens||"$") ) 
+ then "fw"
+else if ($line/@len > 0 and $line/@len < $len) 
+ then "maybe-end-p" 
+else ()
+};
+
+(: find the most frequently seen line length :)
+declare function xed:common-line-len($div as node()*){
+let $ls := for $l in $div//tei:line 
+   let $n := xs:int($l/@len)
+   group by $g := $n
+   order by count($n) descending
+   return $g
+return $ls[1]
+};
+
+(: find the most commonly used edition :)
+declare function xed:common-edition($div as node()*){
+let $ls := for $l in $div//tei:pb 
+   let $ed := data($l/@ed)
+   group by $g := $ed
+   order by count($ed) descending
+   return $g
+return $ls[1]
+};
+
+(: the first phase of the conversion has put all the content of a juan (file) in a div with one p
+here we digest this and create subdivisions etc. where necessary
+:)
+declare function xed:post-process-div($div as node(), $no as xs:int){
+ for $p in $div/tei:p
+  let $idprefix := tokenize(($p//tei:pb/@xml:id)[1], '-')[1]
+  let $lines := $p/tei:line
+  , $ll := xed:common-line-len($div)
+  , $all-index :=   
+    ((:<r type="head" index="1"/>,:) for $l in $lines
+     let $t := xed:is-special-line($l, $ll)
+      where string-length($t) > 0
+      return <r type="{$t}" index="{index-of($lines, $l)}" lno="{$l/@lno}">{data($l/@uuid)}</r>
+      , <r type="head" index="{count($lines)}">last-head-{count($lines)}</r> )
+  , $h-index := filter ($all-index, function ($n) {$n/@type='head'})
+  where count($lines) > 0
+  return 
+ for $v at $pos in ($h-index)
+  let $type := data($v/@type)
+    , $i := xs:int($v/@index)
+    , $next-i := xs:int($h-index[$pos + 1]/@index)
+  where $pos < count($h-index)
+  return
+     element {QName(namespace-uri($p),"div")}
+     {attribute {"n"} { "d" || $no || $pos}
+     , attribute {"type"} {"gen"}
+     , attribute {"xml:id"} {$idprefix || "-d" || $pos}
+     , xed:process-fw-lines($lines, $all-index, $h-index, $v)
+      , element {QName(namespace-uri($p),"head")} 
+         {$lines[$i]}
+      , xed:process-maybe-p-lines($lines, $all-index, $h-index, $v)
+     }
+};
+
+(: when processing the head, we look for fw lines of the same div, that need to be inserted before the head:)
+declare function xed:process-fw-lines($lines, $all-index, $h-index, $v){
+ let $vi := xs:int($v/@index)
+ let $prev-head-is := for $h in $h-index 
+           let $i := xs:int($h/@index)
+           order by $i ascending
+           where $i < $vi 
+           return $h
+  , $prev-head-i := if ($prev-head-is) then xs:int(subsequence($prev-head-is, 1, 1)/@index)  else 0
+  ,$fw-is := filter ($all-index, function ($n) {$n/@type = "fw" and xs:int($n/@index) >= $prev-head-i and xs:int($n/@index) <= $vi})
+    return for $f in $fw-is
+       let $fi := xs:int($f/@index)
+       return element {QName(namespace-uri($lines[$fi]),"fw")} {$lines[$fi]}
+};
+
+declare function xed:process-maybe-p-lines($lines, $all-index, $h-index, $v){
+ let $vi := xs:int($v/@index)
+ let $next-head-is := for $h in $h-index 
+           let $i := xs:int($h/@index)
+           order by $i ascending
+           where $i > $vi 
+           return $h
+  , $next-head-i := if ($next-head-is) then xs:int(subsequence($next-head-is, 1, 1)/@index)  else count($lines)
+  ,$mp-is := filter ($all-index, function ($n) {$n/@type = "maybe-end-p" and xs:int($n/@index) >= $vi and xs:int($n/@index) <= $next-head-i})
+   return (:<o>{ $all-index[position() = 1 to 10], :)
+     if (count($mp-is) > 0) then 
+       for $mp at $pos in $mp-is
+       let $end := xs:int($mp/@index)
+       , $start := if ($pos = 1) then $vi + 1 else xs:int($mp-is[$pos - 1]/@index) + 1
+       , $len := $end - $start +1
+       return (
+        element {QName(namespace-uri($lines[1]),"p")} (:{subsequence ($lines, $vi + 1, $mi - $vi - 1)}:)
+         {if ($len = 1) then $lines[$start] else subsequence($lines, $start, $len)}
+         (: here we need to care for the lines between the p-end and the next heading 
+         TODO check if they are fw ! :)
+       , if ($pos = count($mp-is) and $next-head-i - $end -1 > 0 ) then (
+        element {QName(namespace-uri($lines[1]),"p")} 
+         {attribute {"type"} {"maybe-not-p"},
+         subsequence($lines, $end + 1, $next-head-i - $end -1)}) else ())
+     else 
+       (: No maybe-p-end lines, so we take all in one p  :)
+        let $start := $vi + 1
+        , $end := $next-head-i
+        , $len := $end - $start + 1
+        return
+        element {QName(namespace-uri($lines[1]),"p")} 
+        {subsequence($lines, $start, $len)}
+       (:}</o>:)
+};
+
+declare function xed:line2seg($nodes as node()*, $idprefix as xs:string){
+for $node in $nodes
+let  $p2 := "-" || $node/ancestor::tei:div[@type='gen']/@n
+return 
+  typeswitch($node)
+  case element (tei:line) return 
+    let $nnode := xed:process-inline-notes($node, 8)
+    let $pcnt := count($node/preceding::tei:p[./ancestor::tei:div[2] = $node/ancestor::tei:div[2]]) + 1
+    let $lcnt := count($node/preceding::tei:line[./ancestor::tei:div[1] = $node/ancestor::tei:div[1]]) + 1
+    let $prefix :=  if (matches($idprefix, "-")) then $idprefix else  $idprefix || $p2 || local-name($node/parent::tei:*) 
+    return
+    if ($nnode/tei:note) then xed:move-notes-out($nnode, $prefix || ".s" || $lcnt) else
+      element {QName(namespace-uri($node), "seg")}
+      {attribute {"xml:id"} {$prefix || ".s" || $lcnt}
+      , attribute state {"locked"}
+      ,for $n in $nnode/node() return if (local-name($n) = 'xx') then () else $n
+      }
+  case element (tei:p) return 
+      let $pcnt := count($node/preceding::tei:p[./ancestor::tei:div[1] = $node/ancestor::tei:div[1]]) + 1
+      return
+      element {QName(namespace-uri($node), local-name($node))}
+      {$node/@* except $node/@xml:id,
+      attribute {"xml:id"} {$idprefix|| $p2 || "p" || $pcnt}
+      , for $n in $node/node() return xed:line2seg($n, $idprefix || $p2 || "p" || $pcnt)}
+  case element(*) return
+      element {QName(namespace-uri($node), local-name($node))}
+      {$node/@* ,
+      xed:line2seg($node/node(), $idprefix)}
+  case text() return $node
+  default return $node
+};
+
+declare function xed:do-phase2-processing($doc as node()){
+for $d at $x in $doc//tei:body/tei:div
+ let $idprefix := tokenize(($d//tei:pb/@xml:id)[1], '-')[1]
+ let $nd1 := xed:post-process-div($d, $x)
+ let $nd2 := xed:line2seg($nd1, $idprefix)
+return xed:save-nodes($d, $nd2)
+};
+
 
 declare function xed:remove-extra-lbs($lbs as node()*){
 let $root := root($lbs[1])

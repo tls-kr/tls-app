@@ -1618,6 +1618,7 @@ function app:footer($node as node()*, $model as map(*)){
                 <p>Developed at the <strong>Center for Informatics in East-Asian Studies, Institute for Research in Humanities, Kyoto University</strong>, with support from the 
                 <strong>Dean for Research, Department of East Asian Studies</strong>, and
                 <strong>Program in East Asian Studies, Princeton University</strong>.</p>    
+                <p>Development supported by the <strong>sin-aps</strong> research group at <strong>Friedrich-Alexander-Universität Erlangen Nürnberg</strong>, with financial support from the <strong>Alexander von Humboldt Foundation</strong>.  </p>
                 <p>Hosted by <strong>Princeton University, Department of East Asian Studies</strong>, in cooperation with <strong>Ruhr University Bochum, Center for the Study of Traditional Chinese Cultures </strong>.  </p>
                 <p>Support from 
                     <strong>Heidelberg University - Cluster of Excellence - Asia and Europe in a Global Context</strong>
