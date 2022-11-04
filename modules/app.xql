@@ -902,7 +902,7 @@ function app:char($node as node()*, $model as map(*), $char as xs:string?, $id a
       doc(concat($config:tls-data-root, "/core/taxchar.xml"))//tei:div[tei:head[. = $char]]
     let $char := if (string-length($char)> 0) then $char else ($n//tei:head)[1]/text()
     , $h := string-join(distinct-values($n/tei:head/text()), ' / ')
-      
+    , $char-id := tokenize($n/@xml:id)[1]  
     return
     <div class="card">
     <div class="card-header">
@@ -942,7 +942,7 @@ function app:char($node as node()*, $model as map(*), $char as xs:string?, $id a
     else ()}
     
     
-    <div class="card-text" id="{if ($e) then 'chartree' else 'notree'}" tei-id="{$n/@xml:id}" tei-head="{if (exists($n/tei:head)) then $h else $char}">
+    <div class="card-text" id="{if ($e) then 'chartree' else 'notree'}" tei-id="{$char-id}" tei-head="{if (exists($n/tei:head)) then $h else $char}">
      {if ($n) then (for $l in $n/tei:list return tlslib:proc-char($l, $edit), 
         for $l in tlslib:char-tax-newconcepts($char)//tei:list return tlslib:proc-char($l, $edit) )
      else tlslib:char-tax-stub($char)}
@@ -1977,7 +1977,7 @@ declare
 function app:bibliography($node as node()*, $model as map(*), $uuid as xs:string){
     <div class="card">
     <div class="card-header">
-    <h4 class="card-title"><a class="btn" href="browse.html?type=biblio">Bibliography</a> <button class="btn badge badge-primary ml-2" type="button" onclick="edit_bib('{$node/@xml:id}')">Edit this reference</button></h4>
+    <h4 class="card-title"><a class="btn" href="browse.html?type=biblio">Bibliography</a> <button class="btn badge badge-primary ml-2" type="button" onclick="edit_bib('{$uuid}')">Edit this reference</button></h4>
     </div>
     <div class="card-text">{
     bib:display-mods($uuid)
