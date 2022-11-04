@@ -322,7 +322,9 @@ typeswitch ($node)
         return tlslib:proc-char($n, $edit)
     }</li>
     else
-    <li class="jstree-open" tei-type="{$node/@type}" tei-corresp="{$node/@corresp}">{for $n in $node/node()
+    <li class="jstree-open" tei-type="{$node/@type}" tei-corresp="{$node/@corresp}">
+    <span class="char-{$node/@type}">{$node/text()}</span>
+    {for $n in $node/child::*
         return
             tlslib:proc-char($n, $edit)
     }</li>

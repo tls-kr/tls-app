@@ -221,6 +221,10 @@
     filter: invert(89%) sepia(2%) saturate(1135%) hue-rotate(10deg) brightness(90%) contrast(100%);
 }
 
+.char-pron {
+  background-color: #f3faf0;
+}
+
 .protypical-1 {
   background-color: #6C757D
 }

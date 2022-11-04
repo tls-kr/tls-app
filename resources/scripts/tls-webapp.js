@@ -319,7 +319,7 @@ function save_swl_line(sense_id, line_id, pos){
   },
   error : function(resp){
     console.log(resp)
-    alert(resp);
+    toastr.error("An unknown error happened on the system."+resp, "漢學文典 says:");
   }
   });       
 };
@@ -457,7 +457,7 @@ function save_newsw(){
   error : function(resp){
   // resp is an object, find out what to display!
     console.log(resp)
-    alert(resp);
+    toastr.error("An unknown error happened on the system.", "漢學文典 says:");
   }
   });
  
@@ -513,8 +513,8 @@ function save_to_concept(){
 //    alert(resp.sense_id);
   },
   error : function(resp){
-  console.log(resp)
-    alert("PROBLEM"+resp);
+    console.log(resp)
+    toastr.error("An unknown error happened on the system."+resp, "漢學文典 says:");
   }
   });
  }
@@ -964,7 +964,7 @@ $('.rating').on('rating:clear', function(event, value, caption) {
   },
   error : function(resp){
     console.log(resp)
-    alert(resp);
+    toastr.error("An unknown error happened on the system.", "漢學文典 says:");
   }
  });
 });
@@ -980,7 +980,7 @@ $('.starRating').on('click', function(event, value, caption) {
   },
   error : function(resp){
     console.log(resp)
-    alert(resp);
+    toastr.error("An unknown error happened on the system.", "漢學文典 says:");
   }
  });
 });
@@ -2053,6 +2053,11 @@ function save_textdate(textid){
 };
 
 // add new reference to bibliography
+function edit_bib(uid){
+    alert("Not yet implemented ");
+};
+
+// add new reference to bibliography
 function add_ref(textid){
     alert("Not yet implemented "+textid);
 };
@@ -2170,17 +2175,20 @@ function save_punc(line_id, next){
   dataType : "html",
   url : url,
   success : function(resp){
-  // if cont = 'true', than the return value is the new segment id
-  $('#punc-dialog').modal('hide');
-  if (next.length > 1){
+    if (resp.startsWith("Error")) {
+         toastr.error(resp, "漢學文典 says:");
+    }
+      // if cont = 'true', than the return value is the new segment id
+    $('#punc-dialog').modal('hide');
+    if (next.length > 1){
       display_punc_dialog(next)
-  } else {
+    } else {
       window.location.reload(true)
-  }
+    }
   },
   error : function(resp){
     console.log(resp)
-    alert(resp);
+    toastr.error("An unknown error happened on the system.", "漢學文典 says:");
   }
   });      
 };
@@ -2192,11 +2200,15 @@ function text_request(kid){
   dataType : "html",
   url : "api/responder.xql?func=text-request&kid="+kid,
   success : function(resp){
-    toastr.info("Request received. Please leave a few days for processing", "漢學文典 says:");
+     if (resp.startsWith('Error')) {
+     toastr.error(resp, "HXWD says:");
+     } else {
+     toastr.info("Request received. Please leave a few days for processing", "漢學文典 says:");
+    }
   },
   error : function(resp){
     console.log(resp)
-    alert(resp);
+    toastr.error("An unknown error happened on the system.", "漢學文典 says:");
   }
   });
 };
@@ -2216,7 +2228,7 @@ function add_text(kid, cbid){
   },
   error : function(resp){
     console.log(resp)
-    alert(resp);
+    toastr.error("An unknown error happened on the system.", "漢學文典 says:");
   }
   });
     

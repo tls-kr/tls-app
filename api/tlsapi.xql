@@ -1683,16 +1683,17 @@ let $user := sm:id()//sm:real/sm:username/text()
 , $doc := doc($config:tls-data-root||"/core/taxchar.xml")
 , $data := $map?body
 , $xml := tlslib:char-tax-html2xml($data/div)
-, $id := data(tokenize($data/div/@tei-id))[1]
-, $node := $doc//tei:div[@xml:id=$id[1]]
-, $updnode := $doc//tei:div[@xml:id=$id[1]]
+, $id := $data/div/@tei-id
+, $node := $doc//tei:div[@xml:id=$id]
+, $updnode := $doc//tei:div[@xml:id=$id]
 , $excess := 
-    if (count($id) > 1) then for $i in subsequence($id, 2) return
-      let $delnode := $doc//tei:div[@xml:id=$i]
-      return
-      update delete $delnode 
+    if (count(tokenize($id)) > 1) then 
+     let $new-id := tokenize($id)[1]
+     return
+      update replace $updnode/@xml:id with $new-id 
     else ()
 return
+(: if (count(tokenize($id)) > 1) then "Error: Problem in character taxonomy file.  Can not save." else:)
 (
 if ($node) then (
  update insert attribute modified {current-dateTime()} into $node,
