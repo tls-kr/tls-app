@@ -196,7 +196,14 @@ let $krt := doc($config:tls-add-titles)
    , $h := imp:update-metadata($doc, $kid, $krt//work[@krid=$kid]/title/text())
    , $bd := $doc//tei:text/tei:body
    , $res := update replace $bd with imp:recursive-update-ns($bd, "http://www.tei-c.org/ns/1.0", $pref) return () ) 
-  else (imp:do-prepare-krp($doc))
+  else (
+   (: here we deal with the KR texts :)
+   let $phase1 := imp:do-prepare-krp($doc)
+   , $phase2 := xed:line-doc($doc)
+   , $remove-line := xed:do-phase2-processing($doc)
+   return 
+   $remove-line
+   )
 return $kid
 };
 

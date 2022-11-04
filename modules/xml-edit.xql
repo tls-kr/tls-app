@@ -324,10 +324,20 @@ declare function xed:process-p2line($nodes as node()*){
     default return $node
 }; 
 
+declare function xed:line-doc($doc as node()){
+let $linedoc := for $p in $doc//tei:p[tei:lb] 
+            let $np := element {QName(namespace-uri($p), local-name($p))} {
+                 $p/@* , 
+                 for $l in $p/tei:lb
+                 return xed:lb2line($l)}
+             return update replace $p with $np
+return ()
+};
+
 declare function xed:line-temp-doc($doc as node()){
 let $d-uri := tokenize(document-uri(root($doc)), "/")[last()]
 , $src-coll := util:collection-name($doc)
-, $trg-coll := dbu:ensure-collection($config:tls-texts-root||"/tmp")
+, $trg-coll := dbu:ensure-collection("/tmp")
 , $rem := try {xmldb:remove($trg-coll, $d-uri) } catch * {()}
 , $tmp-uri :=  xmldb:copy-resource($src-coll, $d-uri, $trg-coll, $d-uri)
 , $tdoc := doc($tmp-uri)
@@ -374,10 +384,15 @@ return
   - commentary
   - para-ending-line
 :) 
-declare function xed:is-special-line($line as node(), $len as xs:int) as xs:string?{
-if ($line/@indent = "3" or ends-with($line, "序") or matches($line, "^[\s?\d?]+?提要"))
+declare function xed:is-special-line($line as node(), $len as xs:int, $title as xs:string) as xs:string?{
+if ($line/@indent = "3" or ends-with($line, "序") 
+      or matches($line, "^[\s?\d?]+?提要")
+      or matches($line, "^[\s?\d?]+?"||$title)
+      )
  then "head"
-else if (matches($line, "^[\s?\d?]+?欽定四庫全書") or matches($line, "卷"||$config:kanji-numberlike-tokens||"$") ) 
+else if (matches($line, "^[\s?\d?]+?欽定四庫全書") 
+      or matches($line, "卷"||$config:kanji-numberlike-tokens||"$")  
+      ) 
  then "fw"
 else if ($line/@len > 0 and $line/@len < $len) 
  then "maybe-end-p" 
@@ -410,11 +425,13 @@ here we digest this and create subdivisions etc. where necessary
 declare function xed:post-process-div($div as node(), $no as xs:int){
  for $p in $div/tei:p
   let $idprefix := tokenize(($p//tei:pb/@xml:id)[1], '-')[1]
+  , $title := $div/ancestor::tei:TEI//tei:titleStmt/tei:title/text() => string-join()
   let $lines := $p/tei:line
   , $ll := xed:common-line-len($div)
+  , $maybe-comment := count($p/tei:line[@indent="1"])
   , $all-index :=   
     ((:<r type="head" index="1"/>,:) for $l in $lines
-     let $t := xed:is-special-line($l, $ll)
+     let $t := xed:is-special-line($l, $ll, $title)
       where string-length($t) > 0
       return <r type="{$t}" index="{index-of($lines, $l)}" lno="{$l/@lno}">{data($l/@uuid)}</r>
       , <r type="head" index="{count($lines)}">last-head-{count($lines)}</r> )
@@ -431,6 +448,7 @@ declare function xed:post-process-div($div as node(), $no as xs:int){
      {attribute {"n"} { "d" || $no || $pos}
      , attribute {"type"} {"gen"}
      , attribute {"xml:id"} {$idprefix || "-d" || $pos}
+     , <o>{$maybe-comment, count($lines), $all-index}</o>
      , xed:process-fw-lines($lines, $all-index, $h-index, $v)
       , element {QName(namespace-uri($p),"head")} 
          {$lines[$i]}

@@ -26,6 +26,11 @@ declare function local:string-to-ncr($s as xs:string) as xs:string{
  , "")
 };
 
+declare function local:cleanstring($str as xs:string*){
+$str => string-join() => normalize-space() => replace(' ', '')
+};
+
+
 (:~ 
 : Helper functions
 :)
@@ -465,7 +470,7 @@ declare function tlslib:proc-seg($node as node()){
   case element (tei:lb)  return ()
   case element (exist:match) return <mark>{$node/text()}</mark>
   case element (tei:anchor) return 
-    let $t := if (starts-with($node/@xml:id, "nkr_note_mod")) then $node/ancestor::tei:TEI//tei:note[@target = "#"|| $node/@xml:id]/text() else ()
+    let $t := if (starts-with($node/@xml:id, "nkr_note_mod")) then local:cleanstring($node/ancestor::tei:TEI//tei:note[@target = "#"|| $node/@xml:id]//text()) else ()
     return if ($t) then <span title="{$t}" class="text-muted"><img class="icon note-anchor"  src="{$config:circle}"/></span> else ()
   case element(tei:seg) return (if (string-length($node/@n) > 0) then data($node/@n)||"　" else (), for $n in $node/node() return tlslib:proc-seg($n))
   case attribute(*) return () 
