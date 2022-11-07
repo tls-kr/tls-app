@@ -10,6 +10,7 @@ module namespace imp="http://hxwd.org/xml-import";
 
 declare namespace tei="http://www.tei-c.org/ns/1.0";
 declare namespace  cb="http://www.cbeta.org/ns/1.0";
+declare namespace h="http://www.w3.org/1999/xhtml";
 
 import module namespace config="http://hxwd.org/config" at "config.xqm"; 
 import module namespace tlslib="http://hxwd.org/lib" at "tlslib.xql";
@@ -169,6 +170,13 @@ let $doc := (if (starts-with($cbid, "KR")) then imp:dl-krp-text($cbid) else imp:
 return $uri
 };
 
+(: updates to the header in files imported from CBETA 
+TODO: also update the creation date, e.g. from 
+https://raw.githubusercontent.com/mbingenheimer/cbetaCorpusSorted/main/chinese-chinese/-00-listC-C.md
+and 
+https://raw.githubusercontent.com/mbingenheimer/cbetaCorpusSorted/main/indian-chinese/listI-C.md
+use these lists for dates and text type , e.g. translated or original
+:)
 declare function imp:update-metadata($doc as node(), $kid as xs:string, $title as xs:string){
 let $cbid := $doc/tei:TEI/@xml:id
 , $idno := update insert attribute xml:id {$cbid} into $doc//tei:idno[@type="CBETA"]
@@ -257,6 +265,18 @@ let $res :=
                                 <http:header name="Connection" value="close"/>
                               </http:request>)
 return $res[2]
+};
+
+declare function imp:dl-sat-text($useid as xs:string){
+let $sat-base := "https://21dzk.l.u-tokyo.ac.jp/SAT2018/satdb2018pre.php?mode=detail&amp;mode4=&amp;nonum=&amp;kaeri=&amp;ob=1&amp;mode2=2&amp;useid="
+, $res := 
+            http:send-request(<http:request http-version="1.1" href="{xs:anyURI($sat-base||$kid)}" method="get">
+                                <http:header name="Connection" value="close"/>
+                              </http:request>)
+, $last-line := ($res[2]//h:span[@class="ln" and position() = last()]/text() 
+   => normalize-space() => replace(':', '') => substring(2) => tokenize("\.")) => string-join(",")                   
+(: save the fragment and continue with last-line as useid until the last-line does not change anymore :)
+return ()
 };
 
 declare function imp:de-duplicate-ids($doc as node()){

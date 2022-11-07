@@ -1704,6 +1704,9 @@ let $user := sm:id()//sm:real/sm:username/text()
    order by $m descending
    return $d1
 return
+(: the link for github issues that need discussion
+https://api.github.com/repos/tls-kr/tls-app/issues?labels=need+discussion
+:)
 (<p>
             <span class="text-danger">This website is under development. {if ($user = "guest") then () else <a class="font-weight-bold" href="https://join.slack.com/t/tls-7al8577/shared_invite/zt-1h6hfirdt-8EdFCAxsQalvCIdIs3OK6w">Click here to access the feedback channel</a>}</span>
         </p>,
