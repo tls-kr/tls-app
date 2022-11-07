@@ -387,11 +387,11 @@ return
 declare function xed:is-special-line($line as node(), $len as xs:int, $title as xs:string) as xs:string?{
 if ($line/@indent = "3" or ends-with($line, "序") 
       or matches($line, "^[\s?\d?]+?提要")
-      or matches($line, "^[\s?\d?]+?"||$title)
       )
  then "head"
 else if (matches($line, "^[\s?\d?]+?欽定四庫全書") 
       or matches($line, "卷"||$config:kanji-numberlike-tokens||"$")  
+      or matches($line, "^[\s?\d?]+?"||$title)
       ) 
  then "fw"
 else if ($line/@len > 0 and $line/@len < $len) 
@@ -437,28 +437,59 @@ declare function xed:post-process-div($div as node(), $no as xs:int){
       , <r type="head" index="{count($lines)}">last-head-{count($lines)}</r> )
   , $h-index := filter ($all-index, function ($n) {$n/@type='head'})
   where count($lines) > 0
-  return 
- for $v at $pos in ($h-index)
-  let $type := data($v/@type)
+  return
+ if (count($h-index) > 1) then 
+  for $v at $pos in ($h-index)
+   let $type := data($v/@type)
     , $i := xs:int($v/@index)
     , $next-i := xs:int($h-index[$pos + 1]/@index)
-  where $pos < count($h-index)
+   where $pos < count($h-index)
   return
      element {QName(namespace-uri($p),"div")}
      {attribute {"n"} { "d" || $no || $pos}
      , attribute {"type"} {"gen"}
      , attribute {"xml:id"} {$idprefix || "-d" || $pos}
-     , <o>{$maybe-comment, count($lines), $all-index}</o>
+(:     , <o>{$maybe-comment, count($lines), $all-index}</o>:)
      , xed:process-fw-lines($lines, $all-index, $h-index, $v)
       , element {QName(namespace-uri($p),"head")} 
          {$lines[$i]}
       , xed:process-maybe-p-lines($lines, $all-index, $h-index, $v)
      }
+ else 
+  (: if there are no header lines, we output the whole juan in one go :)
+  let $pos := 1
+  , $v := ()
+  , $do-comments := $maybe-comment div count($lines) > 0.5
+  return
+     element {QName(namespace-uri($p),"div")}
+     {attribute {"n"} { "d" || $no || $pos}
+     , attribute {"type"} {"orig"}
+     , attribute {"xml:id"} {$idprefix || "-d" || $pos}
+(:     , <o>{$do-comments, $all-index}</o>:)
+     , xed:process-all-lines($lines, $all-index)
+     }
+  
+};
+
+(: this is called for texts that have no header lines.  :)
+declare function xed:process-all-lines($lines, $all-index){
+let $fw-is := filter ($all-index, function ($n) {$n/@type = "fw"})
+for $f at $pos in $fw-is
+  let $fi := xs:int($f/@index)
+  , $next-fi := if ($fw-is[$pos + 1]) then xs:int($fw-is[$pos + 1]/@index) else count($lines)
+  , $start := $fi + 1 
+  , $len := $next-fi - $start   
+  return (element {QName(namespace-uri($lines[$fi]),"fw")} {$lines[$fi]},
+  if ($len > 1) then 
+    element {QName(namespace-uri($lines[$fi]), "p")}
+    {if ($len = 1) then $lines[$start] else subsequence($lines, $start, $len)}
+  else () 
+  )
 };
 
 (: when processing the head, we look for fw lines of the same div, that need to be inserted before the head:)
 declare function xed:process-fw-lines($lines, $all-index, $h-index, $v){
- let $vi := xs:int($v/@index)
+ let $vi := if ($v) then xs:int($v/@index) else 9999 (: maybe I should calculate the first non-fw line here? :)
  let $prev-head-is := for $h in $h-index 
            let $i := xs:int($h/@index)
            order by $i ascending
@@ -520,6 +551,9 @@ return
     if ($nnode/tei:note) then xed:move-notes-out($nnode, $prefix || ".s" || $lcnt) else
       element {QName(namespace-uri($node), "seg")}
       {attribute {"xml:id"} {$prefix || ".s" || $lcnt}
+      , if (local-name($node/parent::*) = 'p' and $node/@indent = "1") then 
+          attribute type {"comm"}
+        else ()
       , attribute state {"locked"}
       ,for $n in $nnode/node() return if (local-name($n) = 'xx') then () else $n
       }
@@ -552,7 +586,7 @@ let $root := root($lbs[1])
 let $res :=
   for $lb in $lbs
     let $line := xed:lb2line($lb)
-  , $lt := $line//text() => string-join('') => normalize-space() => replace(' ', '')  
+  , $lt := $line//text() => string-join('') => normalize-space() => replace('^\d+', '') => replace(' ', '')  
   return if ($line/tei:pb and string-length($lt)=0) then (update delete $lb, 1)  else ()
 return if (sum($res) > 0) then xed:remove-extra-lbs($root//tei:lb) else 0
 };
