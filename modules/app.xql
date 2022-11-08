@@ -773,9 +773,10 @@ declare function app:textlist(){
     $user := sm:id()//sm:real/sm:username/text(),
     $ratings := doc( $config:tls-user-root || $user || "/ratings.xml")//text,
     $starredcount := count($ratings)
+    , $krptexts := collection($config:tls-texts-root||"/KR")//tei:TEI/@xml:id
     return
     <div>
-    <h1>Available texts: <span class="badge badge-pill badge-light">{$count + $chantcount}</span></h1>
+    <h1>Available texts: <span class="badge badge-pill badge-light">{$count + $chantcount + count($krptexts)}</span></h1>
     <ul class="nav nav-tabs" id="textTab" role="tablist">
     <li class="nav-item"> <a class="nav-link" id="coretext-tab" role="tab" 
     href="#coretexts" data-toggle="tab">Core Texts
@@ -786,6 +787,9 @@ declare function app:textlist(){
     <li class="nav-item"> <a class="nav-link {if (sm:is-authenticated()) then () else "disabled"}" id="starredtext-tab" role="tab" 
     href="#starredtexts" data-toggle="tab">Starred Texts
     <span class="badge badge-pill badge-light">{$starredcount}</span></a></li>
+    <li class="nav-item"> <a class="nav-link" id="krptext-tab" role="tab" 
+    href="#krptexts" data-toggle="tab" title="Recently added texts">New Texts
+    <span class="badge badge-pill badge-light">{count($krptexts)}</span></a></li>
     </ul>    
     <div class="tab-content" id="textsContent">    
     <div class="tab-pane" id="coretexts" role="tabpanel">    
@@ -882,7 +886,30 @@ declare function app:textlist(){
     }
     </ul>
     </div>
-    
+
+    <div class="tab-pane" id="krptexts" role="tabpanel">    
+    <ul>{for $text in $krptexts
+        let $bu := substring($text, 1, 4)
+        group by $bu
+        order by $bu
+        return
+    <li class="list-group-item">{doc($config:tls-add-titles)//work[@krid=$bu]/title/text()} <small class="text-muted ml-2">{$bu}</small>
+    <ul>{for $t in $text 
+        let $title := tlslib:get-title($t)
+        order by $t 
+    return
+    <li><a href="textview.html?location={$t}">{$title}
+     { if (sm:is-authenticated()) then
+    <input id="input-{$t}" name="input-name" type="number" class="rating"
+    min="1" max="10" step="2" data-theme="krajee-svg" data-size="xs" value="{if ($ratings[@id=$t]) then $ratings[@id=$t]/@rating else 0}"/>
+     else () }    
+    </a></li>}
+    </ul></li>
+    }
+    </ul>
+    </div>
+
+
     </div>
     </div>
 };

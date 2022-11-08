@@ -16,8 +16,11 @@ import module namespace config="http://hxwd.org/config" at "config.xqm";
 import module namespace tlslib="http://hxwd.org/lib" at "tlslib.xql";
 import module namespace xed="http://hxwd.org/xml-edit" at "xml-edit.xql";
 import module namespace http="http://expath.org/ns/http-client";
+import module namespace dbu="http://exist-db.org/xquery/utility/db" at "db-utility.xqm";
+import module namespace log="http://hxwd.org/log" at "log.xql";
 
 declare variable $imp:ignore-elements := ("body", "docNumber", "juan", "jhead", "byline" ,"mulu") ;
+declare variable $imp:log := $config:tls-log-collection || "/import";
 
 declare variable $imp:kanji-groups := <groups>
     <group name="ExtA" lower="㐀" upper="䷿" lower-dec="13312" upper-dec="19967"/>
@@ -267,16 +270,32 @@ let $res :=
 return $res[2]
 };
 
-declare function imp:dl-sat-text($useid as xs:string){
+
+declare function imp:prepare-sat-import($useid as xs:string, $kid as xs:string){
+let $tempcoll := dbu:ensure-collection("/db/tmp/" || $kid)
+, $log := log:info($imp:log, "start import KR " || $kid || "from: " || $useid )
+, $dl := imp:dl-sat-text($useid, $tempcoll)
+
+return
+ log:info($imp:log, "start import KR " || $kid || "from: " || $useid )
+
+
+};
+
+declare function imp:dl-sat-text($useid as xs:string, $tempcoll as xs:string){
 let $sat-base := "https://21dzk.l.u-tokyo.ac.jp/SAT2018/satdb2018pre.php?mode=detail&amp;mode4=&amp;nonum=&amp;kaeri=&amp;ob=1&amp;mode2=2&amp;useid="
 , $res := 
-            http:send-request(<http:request http-version="1.1" href="{xs:anyURI($sat-base||$kid)}" method="get">
+            http:send-request(<http:request http-version="1.1" href="{xs:anyURI($sat-base||$useid)}" method="get">
+                                <http:header name="Referer" value="https://21dzk.l.u-tokyo.ac.jp/SAT2018/master30.php"/>
                                 <http:header name="Connection" value="close"/>
                               </http:request>)
 , $last-line := ($res[2]//h:span[@class="ln" and position() = last()]/text() 
-   => normalize-space() => replace(':', '') => substring(2) => tokenize("\.")) => string-join(",")                   
-(: save the fragment and continue with last-line as useid until the last-line does not change anymore :)
-return ()
+   => normalize-space() => replace(':', '') => substring(2) => tokenize("\.")) 
+, $fn := string-join($last-line, "_")   
+, $store := xmldb:store($tempcoll, $fn||".xml", $res[2])
+, $nid := $last-line => string-join(",")
+, $log := log:info($imp:log, "getting " || $nid )
+return if ($nid != $useid) then imp:dl-sat-text($nid, $tempcoll) else "Done"
 };
 
 declare function imp:de-duplicate-ids($doc as node()){
