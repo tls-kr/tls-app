@@ -621,6 +621,7 @@ declare function tlslib:has-edit-permission($text-id as xs:string) as xs:boolean
   if (sm:id()//sm:group = ("tls-editor", "tls-admin")) then
     true()
   else
+   if (sm:id()//sm:real/sm:username/text() = "guest") then false () else 
     let $permissions := doc("/db/users/tls-admin/permissions.xml")
     return $text-id and 
         sm:id()//sm:group = "tls-punc" and 
