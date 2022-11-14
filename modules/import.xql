@@ -136,6 +136,26 @@ declare function imp:remove-attr-ns($node as node()*){
     attribute {local-name($n)} {$n}
 };
 
+
+declare function imp:rec-adjust-pb($nodes as node()* , $ns as xs:string, $pref as xs:string){
+ for $node in $nodes return
+ typeswitch($node)
+ case element (tei:pb) return
+            let $s := $node/@xml:id => tokenize("\.")
+            return
+            element {QName($ns, local-name($node))} {
+             $node/@* except $node/@xml:id
+             ,attribute {"facs"} {substring($s[1],2)}
+             ,attribute {"xml:id"} {$pref || substring($s[1],2) || "-" || string-join($s[position()>1], ".")}
+             }
+ case element (*) return 
+            element {QName($ns, local-name($node))} {
+             $node/@*, 
+             imp:rec-adjust-pb($node/node(), $ns, $pref) }            
+ default return $node
+};
+
+
 declare function imp:recursive-update-ns($nodes as node()*, $ns as xs:string, $pref as xs:string){
  for $node in $nodes return
  typeswitch($node)
@@ -156,7 +176,6 @@ declare function imp:recursive-update-ns($nodes as node()*, $ns as xs:string, $p
              element {QName($ns, local-name($node))} { $node/@* , imp:add-cb-seg($node, $pref)}
  case element (cb:jhead) return        
              element {QName($ns, "fw")} { $node/@* , imp:add-cb-seg($node, $pref)}
-
  case element (*) return element {QName($ns, local-name($node))} {
              imp:remove-attr-ns($node/@*) , 
              imp:recursive-update-ns($node/node(), $ns, $pref) }            
@@ -205,8 +224,8 @@ let $krt := doc($config:tls-add-titles)
   (: this is for the CBETA texts :)
  , $upd := if (starts-with($kid, "KR6")) then (let $pref := $kid || "_CBETA_" 
    , $h := imp:update-metadata($doc, $kid, $krt//work[@krid=$kid]/title/text())
-   , $bd := $doc//tei:text/tei:body
-   , $res := update replace $bd with imp:recursive-update-ns($bd, "http://www.tei-c.org/ns/1.0", $pref) return () ) 
+   , $bd :=  imp:rec-adjust-pb($doc//tei:text/tei:body, "http://www.tei-c.org/ns/1.0", $pref) 
+   , $res := update replace $doc//tei:text/tei:body with imp:recursive-update-ns($bd, "http://www.tei-c.org/ns/1.0", $pref) return () ) 
   else (
    (: here we deal with the KR texts :)
    let $phase1 := imp:do-prepare-krp($doc)
@@ -271,33 +290,6 @@ return $res[2]
 };
 
 
-declare function imp:prepare-sat-import($useid as xs:string, $kid as xs:string){
-let $tempcoll := dbu:ensure-collection("/db/tmp/" || $kid)
-, $log := log:info($imp:log, "start import KR " || $kid || "from: " || $useid )
-, $dl := imp:dl-sat-text($useid, $tempcoll)
-
-return
- log:info($imp:log, "start import KR " || $kid || "from: " || $useid )
-
-
-};
-
-declare function imp:dl-sat-text($useid as xs:string, $tempcoll as xs:string){
-let $sat-base := "https://21dzk.l.u-tokyo.ac.jp/SAT2018/satdb2018pre.php?mode=detail&amp;mode4=&amp;nonum=&amp;kaeri=&amp;ob=1&amp;mode2=2&amp;useid="
-, $res := 
-            http:send-request(<http:request http-version="1.1" href="{xs:anyURI($sat-base||$useid)}" method="get">
-                                <http:header name="Referer" value="https://21dzk.l.u-tokyo.ac.jp/SAT2018/master30.php"/>
-                                <http:header name="Connection" value="close"/>
-                              </http:request>)
-, $last-line := ($res[2]//h:span[@class="ln" and position() = last()]/text() 
-   => normalize-space() => replace(':', '') => substring(2) => tokenize("\.")) 
-, $fn := string-join($last-line, "_")   
-, $store := xmldb:store($tempcoll, $fn||".xml", $res[2])
-, $nid := $last-line => string-join(",")
-, $log := log:info($imp:log, "getting " || $nid )
-return if ($nid != $useid) then imp:dl-sat-text($nid, $tempcoll) else "Done"
-};
-
 declare function imp:de-duplicate-ids($doc as node()){
 let $ds := $doc//tei:body//tei:seg
 , $dupl-ids := for $s in $ds 
@@ -309,6 +301,7 @@ return <dedup>{$dupl-ids}</dedup>
 
 declare function imp:check-document($doc as node()){
 let $ds := $doc//tei:body//tei:seg
+, $vardb := doc($config:tls-twjp-vardb)
 , $segs := count($ds)
 , $seg-ids := count(distinct-values($ds/@xml:id))
 , $seg-noid := count($ds[not(@xml:id)])
@@ -322,9 +315,11 @@ let $ds := $doc//tei:body//tei:seg
 , $ccnt := for $c in string-to-codepoints($chars)
            let $cv := codepoints-to-string($c)
            , $kg := $imp:kanji-groups//group[$c[1] >= xs:int(@lower-dec) and $c[1] <= xs:int(@upper-dec)]/@name
+           , $vt := $vardb//c[.=$cv[1]]
+           , $type := if ($vt/@subtype) then $vt/@subtype else if ($vt/@type) then $vt/@type else "nor"
            group by $cv
            order by $c[1]
-           return <char g="{$kg[1]}" n="{$c[1]}" cnt="{count($c)}">{$cv}</char>
+           return <char g="{$kg[1]}" n="{$c[1]}" cnt="{count($c)}" type="{$type[1]}">{$cv}</char>
 (: , $cg := for $c in $ccnt 
           let $k := xs:int(($c/@n)[1])
           group by $g := $imp:kanji-groups//group[$k >= xs:int(@lower-dec) and $k <= xs:int(@upper-dec)]

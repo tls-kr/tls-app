@@ -102,20 +102,19 @@ function get_tr_for_page(slot, myid){
 //  var location = window.location.search;
   var location = $('#chunkcol-left').children('div').eq(0).children('div').eq(0).attr('id');
   var foll = $('#chunkcol-left').children('div').length / 2
-  $.ajax({
-  type : "GET",
-  dataType : "html",
-  url : "api/get_tr_for_page.xql?location="+location+"&prec=0&foll="+foll+"&slot="+slot+"&content-id="+myid, 
-  success : function(resp){
-   var obj = JSON.parse(resp);
-   for (var prop in obj) {
-    line_id = prop.split(".").join("\\.");
-    $(line_id).html(obj[prop]);
-   };
-  reload_selector(slot, myid);   
-  }
+   $.ajax({
+   type : "GET",
+   dataType : "html",
+   url : "api/get_tr_for_page.xql?location="+location+"&prec=0&foll="+foll+"&slot="+slot+"&content-id="+myid, 
+   success : function(resp){
+    var obj = JSON.parse(resp);
+    for (var prop in obj) {
+     line_id = prop.split(".").join("\\.");
+     $(line_id).html(obj[prop]);
+    }; 
+    reload_selector(slot, myid);   
+   }
   });
-    
 };
 // called from tranlation dropdown in toprow
 // slot is slot1 or slot2, 
@@ -1657,8 +1656,9 @@ function save_rdl(word, lineid, line){
     toastr.info("Observation location " + rd + " saved.", "HXWD says:");
   },
   error : function(resp){
-  console.log(resp);
-    alert("PROBLEM: "+resp.statusText + "\n " + resp.responseText);
+    toastr.error("Could not save observation.\n" + resp.responseText , "HXWD says:");
+    console.log(resp);
+ //   alert("PROBLEM: "+resp.statusText + "\n " + resp.responseText);
   }
   });    
     
