@@ -9,7 +9,7 @@ xquery version "3.1";
 
 declare namespace ace="http://hxwd.org/ace";
 import module namespace sm="http://exist-db.org/xquery/securitymanager";
-import module namespace dbbutil="http://exist-db.org/xquery/dbutil";
+import module namespace dbutil="http://exist-db.org/xquery/dbutil";
 
 declare variable $ace:editor := sm:group-exists('tls-editor') or sm:create-group('tls-editor', 'Editors for TLS');
 (: user restrictions: tls-text/chant :)

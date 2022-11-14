@@ -30,6 +30,10 @@ declare function local:cleanstring($str as xs:string*){
 $str => string-join() => normalize-space() => replace(' ', '')
 };
 
+(: find the file that was called to display the current page, without .html extension :)
+declare function tlslib:html-file(){
+(request:get-uri() => tokenize("/"))[last()] => replace("\.html", "")
+};
 
 (:~ 
 : Helper functions

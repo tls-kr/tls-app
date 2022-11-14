@@ -105,6 +105,11 @@ switch($section)
  )
 };
 
+declare function app:jstree-script($node as node(), $model as map(*)){
+if (tlslib:html-file() = "char") then 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/jstree.min.js"/>
+else ()
+};
 (:~
 : 2020-02-26: this is not used anymore.  can go.
 :)
