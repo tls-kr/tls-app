@@ -2260,7 +2260,7 @@ function add_editing_permissions(textid) {
   $.ajax({
     type: "GET",
     dataType: "html",
-    url: "api/responder.xql" + "?func=add-text-editing-permission&userid=" + userid + "&textid=" + textid,
+    url: "modules/admin/text-editing-permissions.xql" + "?action=add&userid=" + userid + "&textid=" + textid,
     success: function(resp) {
       toastr.info("Permission added for user " + userid, "HXWD says:");
       // Reload dialog
@@ -2278,7 +2278,7 @@ function remove_editing_permissions(textid, userid) {
   $.ajax({
     type: "GET",
     dataType: "html",
-    url: "api/responder.xql" + "?func=remove-text-editing-permission&userid=" + userid + "&textid=" + textid,
+    url: "modules/admin/text-editing-permissions.xql" + "?action=remove&userid=" + userid + "&textid=" + textid,
     success: function(resp) {
       toastr.info("Permission revoked for user " + userid, "HXWD says:");
       // Reload dialog
