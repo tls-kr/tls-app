@@ -106,7 +106,7 @@ switch($section)
 };
 
 declare function app:jstree-script($node as node(), $model as map(*)){
-if (tlslib:html-file() = "char") then 
+if (tlslib:html-file() = ("char", "word")) then 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/jstree.min.js"/>
 else ()
 };
@@ -150,6 +150,7 @@ function app:browse($node as node()*, $model as map(*), $type as xs:string?, $fi
     return
     if ($type = "word") then app:browse-word($type, $filterString)
     else if ($type = "taxchar") then app:browse-char($type, $filterString)
+    else if ($type = "taxword") then app:browse-word($type, $filterString)
     else if ($type = "biblio") then bib:browse-biblio($type, $filterString, $mode)
     else if (("concept", "syn-func", "sem-feat", "rhet-dev") = $type) then    
     let $hits :=  app:do-browse($type, $filterString)      
@@ -227,13 +228,15 @@ function app:browse($node as node()*, $model as map(*), $type as xs:string?, $fi
  : currently (2020-02-26) this has been removed from the menu.  Needs rethinking
 :)
 declare function app:browse-word($type as xs:string?, $filter as xs:string?)
-{
-    let $typeString := if (string-length($type) > 0) then $type else "word"    
-    for $hit at $c in collection($config:tls-data-root)//tei:entry[@type=$type]
-     let $head := $hit/tei:orth/text()
-     order by $head
-     where $c < 100
-     return $hit
+{<div><h4>Words by decreasing number of concepts</h4><small>1</small>
+   { for $hit at $pos in collection($config:tls-data-root||"/core")//tei:div[@type=$type]
+     let $head := $hit/tei:head
+     ,$id := $hit/@xml:id
+    return 
+    (<a class="ml-2" href="word.html?char={$head[1]}" title="Found in {count($hit//tei:item)} CONCEPTS">{$head}</a>,
+    if ($pos mod 30 = 0) then (<br/>,<small>{$pos}</small>) else () )
+   }
+</div>    
 };
 
 (:~
@@ -941,7 +944,7 @@ function app:char($node as node()*, $model as map(*), $char as xs:string?, $id a
     <h4 class="card-title">{if ($n) then <span>Taxonomy of meanings for {$h}:　　</span> else 
     <span>The character {$char} has not been analyzed yet.　　</span>,
     if ($e) then 
-       <span><button id="save-taxchar-button" type="button" class="btn btn-primary" onclick="save_taxchar()">Save taxonomy</button>　　<a class="btn btn-secondary" href="char.html?char={$char}">Leave edit mode</a></span> 
+       <span><button id="save-taxchar-button" type="button" class="btn btn-primary" onclick="save_taxchar('taxchar')">Save taxonomy</button>　　<a class="btn btn-secondary" href="char.html?char={$char}">Leave edit mode</a></span> 
     else 
        if ("tls-editor" = $usergroups) then
        <a class="btn btn-secondary" href="char.html?char={$char}&amp;edit=true">Edit taxonomy</a>
@@ -976,8 +979,8 @@ function app:char($node as node()*, $model as map(*), $char as xs:string?, $id a
     
     <div class="card-text" id="{if ($e) then 'chartree' else 'notree'}" tei-id="{$char-id}" tei-head="{if (exists($n/tei:head)) then $h else $char}">
      {if ($n) then (for $l in $n/tei:list return tlslib:proc-char($l, $edit), 
-        for $l in tlslib:char-tax-newconcepts($char)//tei:list return tlslib:proc-char($l, $edit) )
-     else tlslib:char-tax-stub($char)}
+        for $l in tlslib:char-tax-newconcepts($char, "taxchar")//tei:list return tlslib:proc-char($l, $edit) )
+     else tlslib:char-tax-stub($char, "taxchar")}
     </div>
     <div class="card-footer">
     <ul class="pagination">
@@ -1000,6 +1003,86 @@ function app:char($node as node()*, $model as map(*), $char as xs:string?, $id a
     </div>
 )};   
 
+(: taxword display :)
+declare 
+    %templates:wrap
+function app:word($node as node()*, $model as map(*), $char as xs:string?, $id as xs:string?, $edit as xs:string?)
+{
+    (session:create(),
+    let $usergroups := sm:id()//sm:group/text()
+    let $key := replace($id, '#', '')
+    let $e := string-length($edit) > 0
+    let $n := if (string-length($id) > 0) then
+      doc(concat($config:tls-data-root, "/core/taxword.xml"))//tei:div[@xml:id = $id]
+    else
+      doc(concat($config:tls-data-root, "/core/taxword.xml"))//tei:div[tei:head[. = $char]]
+    let $char := if (string-length($char)> 0) then $char else ($n//tei:head)[1]/text()
+    , $h := string-join(distinct-values($n/tei:head/text()), ' / ')
+    , $char-id := tokenize($n/@xml:id)[1]  
+    return
+    <div class="card">
+    <div class="card-header">
+    <h4 class="card-title">{if ($n) then <span>Taxonomy of meanings for {$h}:　　</span> else 
+    <span>The word {$char} has not been analyzed yet.　　</span>,
+    if ($e) then 
+       <span><button id="save-taxchar-button" type="button" class="btn btn-primary" onclick="save_taxchar('taxword')">Save taxonomy</button>　　<a class="btn btn-secondary" href="word.html?char={$char}">Leave edit mode</a></span> 
+    else 
+       if ("tls-editor" = $usergroups) then
+       <a class="btn btn-secondary" href="word.html?char={$char}&amp;edit=true">Edit taxonomy</a>
+       else ()
+    }</h4>
+    </div>
+    
+    {if ($e) then 
+    <div class="card" id="help-content">
+    <div class="card-header" id="help-head">
+      <h5 class="mb-0">
+        <button class="btn" data-toggle="collapse" data-target="#help" >
+          Hints for editing the word taxonomy
+        </button>
+      </h5>
+      </div>
+      <div id="help" class="collapse" data-parent="#help-content">
+      <ul>
+      <li>Lines can be moved around with the mouse.</li>
+      <li>Lines of the highest level indicate the reading for this part of the hierarchy.</li>
+      <li><b>Save before leaving the page!</b></li>
+      <li>Start editing the label by right-clicking on it. </li>
+      <li>When editing the label, please leave the name of the concept unchanged at the very end of the label.</li>
+      <li>Text <b>after</b> the name of the concept will <b>not</b> be saved.</li>
+      <li>"Delete" will delete a subtree.  Move lines you want to keep to other subtrees before deleting the upper level item(s).</li>
+      <li>There might be some lines at the bottom with new concepts that have been added since the last editing of this character.</li>
+      </ul>
+      </div>
+    </div>
+    else ()}
+    
+    
+    <div class="card-text" id="{if ($e) then 'chartree' else 'notree'}" tei-id="{$char-id}" tei-head="{if (exists($n/tei:head)) then $h else $char}">
+     {if ($n) then (for $l in $n/tei:list return tlslib:proc-char($l, $edit), 
+        for $l in tlslib:char-tax-newconcepts($char, "taxword")//tei:list return tlslib:proc-char($l, $edit) )
+     else tlslib:char-tax-stub($char, "taxword")}
+    </div>
+    <div class="card-footer">
+    <ul class="pagination">
+    {for $c in $n/preceding::tei:div[position()< 6]
+    return
+    <li class="page-item"><a class="page-link" href="word.html?id={$c/@xml:id}">{$c/tei:head/text()}</a></li>
+    }    
+    <li class="page-item disabled"><a class="page-link">&#171;</a></li>
+    <li class="page-item disabled"><a class="page-link">{$h}</a></li>
+    <li class="page-item disabled"><a class="page-link">&#187;</a></li>
+    {for $c in $n/following::tei:div[position()< 6]
+    return
+    if ($e) then
+    <li class="page-item"><a class="page-link" href="word.html?id={$c/@xml:id}&amp;edit=true">{$c/tei:head/text()}</a></li>
+    else
+    <li class="page-item"><a class="page-link" href="word.html?id={$c/@xml:id}">{$c/tei:head/text()}</a></li>
+    }
+    </ul>
+    </div>
+    </div>
+)};   
    
 (: rhetdev display :)
 declare 
@@ -1475,9 +1558,7 @@ return
                             <div class="dropdown-menu" aria-labelledby="navbarDropdown">
                                 <a class="dropdown-item" href="browse.html?type=concept">Concepts</a>
                                 <a class="dropdown-item" href="browse.html?type=taxchar">Characters</a>
-                                <!--
-                                <a class="dropdown-item" href="browse.html?type=word">Words</a>
-                                -->
+                                <a class="dropdown-item" href="browse.html?type=taxword">Words</a>
                                 <a class="dropdown-item" href="browse.html?type=syn-func">Syntactic functions</a>
                                 <a class="dropdown-item" href="browse.html?type=sem-feat">Semantic features</a>
                                 <a class="dropdown-item" href="browse.html?type=rhet-dev">Rhetorical devices</a>

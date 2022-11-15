@@ -2110,7 +2110,7 @@ function toggle_alt_labels(){
  * 
 */
 
-function save_taxchar(){
+function save_taxchar(type){
   // save the tree in #chartree
 // alert("Not yet implemented")  
   var data = $("#chartree").prop('outerHTML');
@@ -2119,7 +2119,7 @@ function save_taxchar(){
   type : "POST",
   dataType : "html",
   contentType: 'application/xml',
-  url : "api/responder.xql?func=save-taxchar",
+  url : "api/responder.xql?func=save-taxchar&type="+type,
   data: data,
   success : function(resp){
     if (resp.startsWith("Could not")) {
