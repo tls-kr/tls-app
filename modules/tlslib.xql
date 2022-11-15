@@ -2807,8 +2807,11 @@ $f
 };
 
 (: create tax stub for char :)
-declare function tlslib:char-tax-stub($char as xs:string){
-let $doc := doc($config:tls-data-root||"/core/taxchar.xml")
+declare function tlslib:char-tax-stub($char as xs:string, $type as xs:string){
+let $doc := if ($type = 'taxchar') then 
+   doc($config:tls-data-root||"/core/taxchar.xml")
+   else 
+   doc($config:tls-data-root||"/core/taxword.xml")   
 , $res:= tlslib:getwords($char, map{})
 , $pmap := map:merge(
   for $k in map:keys($res)
@@ -2820,7 +2823,7 @@ let $doc := doc($config:tls-data-root||"/core/taxchar.xml")
    return map:get($pmap, $k))
 
 , $stub :=
-<div xml:id="uuid-{util:uuid()}" type="taxchar" xmlns="http://www.tei-c.org/ns/1.0">
+<div xml:id="uuid-{util:uuid()}" type="{$type}" xmlns="http://www.tei-c.org/ns/1.0">
 <head>{$char}</head>
 {
 for $g in $gy
@@ -2854,10 +2857,14 @@ tlslib:proc-char($l, "true")
 };
 
 (: get concepts not yet defined in taxchar :)
-declare function tlslib:char-tax-newconcepts($char){
- let $cdoc := doc($config:tls-data-root || "/core/taxchar.xml")
+declare function tlslib:char-tax-newconcepts($char as xs:string, $type as xs:string){
+ let $cdoc := if ($type = "taxchar") then  
+   doc($config:tls-data-root || "/core/taxchar.xml")
+   else
+   doc($config:tls-data-root || "/core/taxword.xml")
+   
  , $chead :=  $cdoc//tei:head[. = $char]
- , $cdiv := $chead/ancestor::tei:div[@type='taxchar']
+ , $cdiv := $chead/ancestor::tei:div[@type=$type]
  , $emap := tlslib:getwords($char, map{})
  , $cseq := for $r in $cdiv//tei:ref
    let $id := substring($r/@target, 2)
@@ -2867,7 +2874,7 @@ declare function tlslib:char-tax-newconcepts($char){
    where not ($k = $cseq)
    return map:entry($r, map:get($emap, $r)))
  return 
- <div type="taxchar-add"  xmlns="http://www.tei-c.org/ns/1.0">
+ <div type="{$type}-add"  xmlns="http://www.tei-c.org/ns/1.0">
  <head>{$char}</head>
  <list>{
  for $r in  map:keys($em1)
@@ -2886,7 +2893,7 @@ return ($as[position() < last()]/text() || " ",
  <ref xmlns="http://www.tei-c.org/ns/1.0" target="#{tlslib:get-concept-id($concept)}">{$concept => replace("_", " ")}</ref>)
 };
 (: the pinyin handling is broken, we dont go down this rabbit hole :)
-declare function tlslib:char-tax-html2xml-py($node as node()){
+declare function tlslib:char-tax-html2xml-py($node as node(), $type as xs:string){
 let $user := sm:id()//sm:real/sm:username/text()
 return
 typeswitch ($node)
@@ -2898,21 +2905,21 @@ typeswitch ($node)
        if ($type = 'pron') then 
         (: @corresp is the link to the guangyun file, currently available only for new taxchar structures :)
         if (string-length($node/@tei-corresp) > 0) then 
-            <item xmlns="http://www.tei-c.org/ns/1.0" type="pron" corresp="{$node/@tei-corresp}">{for $n in $node/node() return tlslib:char-tax-html2xml($n)}</item>
+            <item xmlns="http://www.tei-c.org/ns/1.0" type="pron" corresp="{$node/@tei-corresp}">{for $n in $node/node() return tlslib:char-tax-html2xml($n, $type)}</item>
         else
-            <item xmlns="http://www.tei-c.org/ns/1.0" type="pron">{for $n in $node/node() return tlslib:char-tax-html2xml($n)}</item>
+            <item xmlns="http://www.tei-c.org/ns/1.0" type="pron">{for $n in $node/node() return tlslib:char-tax-html2xml($n, $type)}</item>
       else
       <item xmlns="http://www.tei-c.org/ns/1.0">
-       { for $n in $node/node() return tlslib:char-tax-html2xml($n)}</item>
-  case element(ul) return <list xmlns="http://www.tei-c.org/ns/1.0">{$node/text(), for $n in $node/node() return tlslib:char-tax-html2xml($n)}</list>
+       { for $n in $node/node() return tlslib:char-tax-html2xml($n, $type)}</item>
+  case element(ul) return <list xmlns="http://www.tei-c.org/ns/1.0">{$node/text(), for $n in $node/node() return tlslib:char-tax-html2xml($n, $type)}</list>
   case element(div) return 
      let $id := if (string-length($node/@tei-id) > 0) then $node/@tei-id else "uuid" || util:uuid()
      return
      <div type="taxchar" xml:id="{$id}" resp="{$user}" modified="{current-dateTime()}" xmlns="http://www.tei-c.org/ns/1.0" >
        {for $h in tokenize($node/@tei-head, '/') return <head xmlns="http://www.tei-c.org/ns/1.0">{normalize-space($h)}</head>}
-       {for $n in $node/node() return tlslib:char-tax-html2xml($n)}
+       {for $n in $node/node() return tlslib:char-tax-html2xml($n, $type)}
      </div>
-  case element(i) return for $n in $node/node() return tlslib:char-tax-html2xml($n)
+  case element(i) return for $n in $node/node() return tlslib:char-tax-html2xml($n, $type)
   case element(a) return 
     let $str := string-join($node) => replace("@py:", "")
     return
@@ -2924,7 +2931,7 @@ typeswitch ($node)
 };
 
 
-declare function tlslib:char-tax-html2xml($node as node()){
+declare function tlslib:char-tax-html2xml($node as node(), $ctype as xs:string){
 let $user := sm:id()//sm:real/sm:username/text()
 return
 typeswitch ($node)
@@ -2934,21 +2941,21 @@ typeswitch ($node)
        if ($type = 'pron') then 
         (: @corresp is the link to the guangyun file, currently available only for new taxchar structures :)
         if (string-length($node/@tei-corresp) > 0) then 
-            <item xmlns="http://www.tei-c.org/ns/1.0" type="pron" corresp="{$node/@tei-corresp}">{for $n in $node/node() return tlslib:char-tax-html2xml($n)}</item>
+            <item xmlns="http://www.tei-c.org/ns/1.0" type="pron" corresp="{$node/@tei-corresp}">{for $n in $node/node() return tlslib:char-tax-html2xml($n, $ctype)}</item>
         else
-            <item xmlns="http://www.tei-c.org/ns/1.0" type="pron">{for $n in $node/node() return tlslib:char-tax-html2xml($n)}</item>
+            <item xmlns="http://www.tei-c.org/ns/1.0" type="pron">{for $n in $node/node() return tlslib:char-tax-html2xml($n, $ctype)}</item>
       else
       <item xmlns="http://www.tei-c.org/ns/1.0">
-       { for $n in $node/node() return tlslib:char-tax-html2xml($n)}</item>
-  case element(ul) return <list xmlns="http://www.tei-c.org/ns/1.0">{$node/text(), for $n in $node/node() return tlslib:char-tax-html2xml($n)}</list>
+       { for $n in $node/node() return tlslib:char-tax-html2xml($n, $ctype)}</item>
+  case element(ul) return <list xmlns="http://www.tei-c.org/ns/1.0">{$node/text(), for $n in $node/node() return tlslib:char-tax-html2xml($n, $ctype)}</list>
   case element(div) return 
      let $id := if (string-length($node/@tei-id) > 0) then $node/@tei-id else "uuid" || util:uuid()
      return
-     <div type="taxchar" xml:id="{$id}" resp="{$user}" modified="{current-dateTime()}" xmlns="http://www.tei-c.org/ns/1.0" >
+     <div type="{$ctype}" xml:id="{$id}" resp="{$user}" modified="{current-dateTime()}" xmlns="http://www.tei-c.org/ns/1.0" >
        {for $h in tokenize($node/@tei-head, '/') return <head xmlns="http://www.tei-c.org/ns/1.0">{normalize-space($h)}</head>}
-       {for $n in $node/node() return tlslib:char-tax-html2xml($n)}
+       {for $n in $node/node() return tlslib:char-tax-html2xml($n, $ctype)}
      </div>
-  case element(i) return for $n in $node/node() return tlslib:char-tax-html2xml($n)
+  case element(i) return for $n in $node/node() return tlslib:char-tax-html2xml($n, $ctype)
   case element(a) return 
     let $str := string-join($node) 
     return
