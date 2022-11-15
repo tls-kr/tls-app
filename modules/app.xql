@@ -745,12 +745,14 @@ function app:textview($node as node()*, $model as map(*), $location as xs:string
             let $date := xs:dateTime($v/@modified),
             $target := substring($v/tei:ref/@target, 2)
             order by $date descending
-            where starts-with($target, $location)
+            where starts-with($target, $location) 
             return $target)[1]
          return
-         if ($visit) then 
-         collection($config:tls-texts-root)//tei:seg[@xml:id=$visit]  else 
-         (collection($config:tls-texts-root)//tei:TEI[@xml:id=$location]//tei:body)[1]
+         if ($visit) then
+          let $rst := collection($config:tls-texts-root)//tei:seg[@xml:id=$visit]
+          return if ($rst) then $rst else collection($config:tls-texts-root)//tei:TEI[@xml:id=$location]//tei:body
+         else 
+          (collection($config:tls-texts-root)//tei:TEI[@xml:id=$location]//tei:body)[1]
 
       let $targetseg := if (local-name($firstdiv) = "seg") then $firstdiv else 
       if ($firstdiv//tei:seg) then ($firstdiv//tei:seg)[1] else  ($firstdiv/following::tei:seg)[1] 
