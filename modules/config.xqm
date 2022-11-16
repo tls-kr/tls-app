@@ -105,6 +105,59 @@ declare variable $config:languages := map{
 "ja-ku" : "Japanese Kundoku"
 };
 
+declare variable $config:search-map := map{
+"1" : "texts",
+"2" : "dictionary",
+"3" : "translations",
+"4" : "fields",
+"5" : "one text only",
+"6" : "lines with translation",
+"7" : "titles",
+"8" : "tabulated",
+"9" : "advanced search",
+"10": "bibliography"
+};
+
+declare variable $config:lmap := map{
+"zh" : "Modern Chinese",
+"och" : "Old Chinese",
+"syn-func" : "Syntactic Functions",
+"syn-func1" : "Syntactic Function",
+"sem-feat" : "Semantic Features",
+"sem-feat1" : "Semantic Feature",
+"word" : "Words",
+"char" : "Chars",
+"taxchar" : "Taxonomy of meanings for character",
+"concept" : "Concepts",
+"definition" : "Definition",
+"notes" : "Criteria and general notes",
+"old-chinese-criteria" : "Old Chinese Criteria",
+"modern-chinese-criteria" : "Modern Chinese Criteria",
+"taxonymy" : "Hyponym",
+"antonymy" : "Antonym",
+"hypernymy" : "Hypernym",
+"see" : "See also",
+"source-references" : "Bibliography",
+"warring-states-currency" : "Warring States Currency",
+"register" : "Register",
+"words" : "Words",
+"none" : "Texts or Translation",
+"old-chinese-contrasts" : "Old Chinese Contrasts",
+"pointers" : "Ontology",
+"huang-jingui" : "黄金貴：古漢語同義詞辨釋詞典",
+"KR1" : "經部",
+"KR2" : "史部",
+"KR3" : "子部",
+"KR4" : "集部",
+"KR5" : "道部",
+"KR6" : "佛部",
+"CH1" : "先秦兩漢",
+"CH2" : "魏晉南北朝",
+"CH7" : "類書",
+"CH8" : "竹簡帛書"
+};
+
+
 declare variable $config:circle := "resources/icons/open-iconic-master/svg/media-record.svg";
 
 (: translation attribution :)

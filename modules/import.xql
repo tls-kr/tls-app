@@ -37,10 +37,6 @@ declare variable $imp:kanji-groups := <groups>
 </groups>;
 
 
-(: (
-xmldb:create-collection("/db/apps/tls-texts", "KR"),
-xmldb:create-collection("/db/apps/tls-texts/KR", "KR6"),
-xmldb:create-collection("/db/apps/tls-texts/KR/KR6", "KR6d")) :)
 
 declare function imp:maybe-make-collections($coll as xs:string){
 let $tokens := tokenize($coll, "/")

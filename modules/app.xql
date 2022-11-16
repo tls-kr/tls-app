@@ -17,6 +17,10 @@ declare namespace ucd = "http://www.unicode.org/ns/2003/ucd/1.0";
 declare namespace mf = "http://kanripo.org/ns/KRX/Manifest/1.0";
 
 import module namespace templates="http://exist-db.org/xquery/templates" ;
+(: 2022-11-16: update to new template library, also including lib, but not yet used :)
+(:import module namespace templates="http://exist-db.org/xquery/html-templating";:)
+import module namespace lib="http://exist-db.org/xquery/html-templating/lib";
+
 import module namespace config="http://hxwd.org/config" at "config.xqm";
 import module namespace kwic="http://exist-db.org/xquery/kwic"
     at "resource:org/exist/xquery/lib/kwic.xql";
@@ -24,58 +28,13 @@ import module namespace tlslib="http://hxwd.org/lib" at "tlslib.xql";
 import module namespace krx="http://hxwd.org/krx-utils" at "krx-utils.xql";
 import module namespace bib="http://hxwd.org/biblio" at "biblio.xql";
 import module namespace wd="http://hxwd.org/wikidata" at "wikidata.xql"; 
+import module namespace ly="http://hxwd.org/layout" at "layout.xql"; 
+import module namespace log="http://hxwd.org/log" at "log.xql";
+import module namespace src="http://hxwd.org/search" at "search.xql";
+
+declare variable $app:log := $config:tls-log-collection || "/app";
 
 declare variable $app:SESSION := "tls:results";
-declare variable $app:tmap := map{
-"1" : "texts",
-"2" : "dictionary",
-"3" : "translations",
-"4" : "fields",
-"5" : "one text only",
-"6" : "lines with translation",
-"7" : "titles",
-"8" : "tabulated",
-"9" : "advanced search",
-"10": "bibliography"
-};
-declare variable $app:lmap := map{
-"zh" : "Modern Chinese",
-"och" : "Old Chinese",
-"syn-func" : "Syntactic Functions",
-"syn-func1" : "Syntactic Function",
-"sem-feat" : "Semantic Features",
-"sem-feat1" : "Semantic Feature",
-"word" : "Words",
-"char" : "Chars",
-"taxchar" : "Taxonomy of meanings for character",
-"concept" : "Concepts",
-"definition" : "Definition",
-"notes" : "Criteria and general notes",
-"old-chinese-criteria" : "Old Chinese Criteria",
-"modern-chinese-criteria" : "Modern Chinese Criteria",
-"taxonymy" : "Hyponym",
-"antonymy" : "Antonym",
-"hypernymy" : "Hypernym",
-"see" : "See also",
-"source-references" : "Bibliography",
-"warring-states-currency" : "Warring States Currency",
-"register" : "Register",
-"words" : "Words",
-"none" : "Texts or Translation",
-"old-chinese-contrasts" : "Old Chinese Contrasts",
-"pointers" : "Ontology",
-"huang-jingui" : "黄金貴：古漢語同義詞辨釋詞典",
-"KR1" : "經部",
-"KR2" : "史部",
-"KR3" : "子部",
-"KR4" : "集部",
-"KR5" : "道部",
-"KR6" : "佛部",
-"CH1" : "先秦兩漢",
-"CH2" : "魏晉南北朝",
-"CH7" : "類書",
-"CH8" : "竹簡帛書"
-};
 
 (: start here :)
 (:~
@@ -159,7 +118,7 @@ function app:browse($node as node()*, $model as map(*), $type as xs:string?, $fi
    <div class="card">
     <div class="card-header" id="{$type}-card">
       <div class="row mb-0">
-      <span class="col-3"><h4>{map:get($app:lmap, $type)}</h4></span>&#160;
+      <span class="col-3"><h4>{map:get($config:lmap, $type)}</h4></span>&#160;
       <span class="col-3">
       <input class="form-control" id="myInput" type="text" placeholder="Type to filter..."/>
       </span>
@@ -211,7 +170,7 @@ function app:browse($node as node()*, $model as map(*), $type as xs:string?, $fi
         case  "concept" return <a href="concept.html?uuid={$id}">{$n}</a>
         case  "syllables" return <a href="syllables.html?uuid={$id}">{$n}</a>
         case  "rhet-dev" return <a href="rhet-dev.html?uuid={$id}">{$n}</a>
-        default return (tlslib:format-button("delete_sf('"||$id||"', '"||$type||"')", "Delete this " || lower-case($app:lmap($type||"1")) || ".", "open-iconic-master/svg/x.svg", "", "", "tls-editor"),
+        default return (tlslib:format-button("delete_sf('"||$id||"', '"||$type||"')", "Delete this " || lower-case($config:lmap($type||"1")) || ".", "open-iconic-master/svg/x.svg", "", "", "tls-editor"),
         <a id="{$id}-abbr" onclick="show_use_of('{$type}', '{$id}')">{$n}</a>)
     }</td>
     <td><p id="{$id}-{if ($type = 'sem-feat') then 'sm' else if ($type = 'syn-func') then 'sf' else 'rd'}" class="sf" contenteditable="{$edit}">
@@ -279,403 +238,6 @@ declare function app:do-browse($type as xs:string?, $filter as xs:string?)
 
 
 
-(: search related functions :)
-(:~
-: This is called from search.html
-: @param  $query  This is the querystring from the search dialog
-: @param  $search-type The type of search: 1=text, 2=dictionary 3=translation
-:)
-declare 
-    %templates:wrap
-function app:query($node as node()*, $model as map(*), $query as xs:string?, $mode as xs:string?, $search-type as xs:string?, $textid as xs:string?)
-{
-    session:create(),
-    let $hits := 
-     if ($search-type = ("1", "5", "6", "8")) then
-      if (contains($query, ";" )) then 
-       tlslib:multi-query($query, $mode, $search-type, $textid) 
-      else
-       tlslib:ngram-query($query, $mode, $search-type, $textid) 
-      else if ($search-type = "2") then 
-      (: searching for kanji in dictionary, eg. the words in concepts :)
-      tlslib:dic-query($query, $mode)
-      else if ($search-type = "3") then 
-      (: searching for word in translations :)
-      tlslib:tr-query($query, $mode)
-      else if ($search-type = "7") then 
-      (: searching for word in titles :)
-      tlslib:title-query($query, $mode)
-      else if ($search-type = "4") then 
-      app:do-query($query, $mode)
-      else if ($search-type = "9") then 
-      tlslib:advanced-search($query, $mode)
-      else if ($search-type = "10") then 
-      bib:biblio-search($query, $mode, $textid)
-      else "Unknown search type"
-    let $store := session:set-attribute($app:SESSION, $hits)
-    return
-    map:merge((
-       map:entry("hits", $hits), map:entry("query", $query)))
-};
-
-declare function app:do-query($queryStr as xs:string?, $mode as xs:string?)
-{
-    let $dataroot := ($config:tls-data-root, $config:tls-texts-root, $config:tls-user-root, $config:tls-translation-root),
-    $query := app:create-query(lower-case($queryStr), $mode),
-    $hits := for $h in collection($dataroot)//tei:div[ft:query(., $query)]
-            where $h/@type != "swl" return $h,
-    $types := map:merge(for $hit in $hits
-        let $type := if ($hit/@type) then data($hit/@type) else "none"
-        group by $type
-        return map:entry($type, $hit)),
-    $store := session:set-attribute($app:SESSION || ".types", $types)
-    for $hit in $hits
-    order by ft:score($hit) descending
-    return $hit
-};
-
-
-
-declare
-    %templates:wrap
-function app:from-session($node as node()*, $model as map(*)) {
-    map:entry("hits", session:get-attribute($app:SESSION))
-};
-
-
-
-declare function app:create-query($queryStr as xs:string?, $mode as xs:string?)
-{
-<query>
-    {
-    if ($mode eq 'any') then 
-        for $term in tokenize($queryStr, '\s')
-        return
-        <term occur="should">{$term}</term>
-    else if ($mode eq 'all') then
-        for $term in tokenize($queryStr, '\s')
-        return
-        <term occur="must">{$term}</term>
-    else if ($mode eq 'phrase') then
-        <phrase>{$queryStr}</phrase>
-    else 
-        <near>{$queryStr}</near>
-    }
-</query>
-};
-
-(:~
- : This is also called from search.html, nested within app:query. 
- : Paged result display is achieved here.
- : Search type 5 is "limit search to text id"
- : Search type 6 is "Search only in text lines with translation"
- : 7 is title search
- : 8 is search results tabulated by text id
-:)
-
-declare 
-%templates:default("start", 1)
-%templates:default("type", "")  (: type is only relevant for advanced search starting from the search landing page for non-Kanji generell search :)
-%templates:default("mode", "")   (: for text display sort by date or rating :)
-%templates:default("search-type", "1")
-%templates:default("textid", "")
-
-function app:show-hits($node as node()*, $model as map(*), $start as xs:int, $type as xs:string, $mode as xs:string, $search-type as xs:string, $textid as xs:string?){   
-let $query := map:get($model, "query")
-    ,$iskanji := tlslib:iskanji($query) 
-    ,$title := if (string-length($textid) > 0) then collection($config:tls-texts-root)//tei:TEI[@xml:id=$textid]//tei:titleStmt/tei:title/text() else ()
-    (: no of results to display :)
-    ,$resno := 50
-    ,$map := session:get-attribute($app:SESSION || ".types")
-    ,$user := sm:id()//sm:real/sm:username/text()
-    ,$qs := tokenize($query, "\s")
-    ,$q1 := substring($qs[1], 1, 1)
-    ,$rat := "Go to the menu -> Browse -> Texts to rate your favorite texts."
-    ,$qc := for $c in string-to-codepoints($query) 
-       where $c > 255
-       return  codepoints-to-string($c)
-    return
-    if ($search-type = "9") then 
-    tlslib:advanced-search($query, $mode)
-    else if ($search-type = "10") then 
-    bib:biblio-search($query, $mode, $textid)
-    else
-
-    <div><h1>Searching in {map:get($app:tmap, $search-type)} for <mark>{$query}</mark>
-    {if (string-length($type) > 0) then 
-    <span>in {map:get($app:lmap, $type)}</span>
-    else ()}</h1>
-    {
-    if ($search-type = "7") then 
-    <div><h2>Existing texts in TLS:</h2>
-
-    <ul>{
-    for $h in map:get($model, "hits")
-    let $loc := $h/ancestor::tei:TEI/@xml:id
-    return
-    <li><a href="textview.html?location={$loc}">{data($loc) || " " || data($h)}</a> 
-    {wd:display-qitems(data($loc),'title',data($h))}
-</li>
-    }
-    </ul>
-    <h2>Texts in the Kanseki Repository:</h2>
-    <ul>{
-       for $w in 
-       if (matches($query, "^[A-Z]"))  then  
-          if (starts-with($query, "KR")) then 
-            doc($config:tls-add-titles)//work[contains(@krid, $query)]
-          else 
-            doc($config:tls-add-titles)//work[altid[contains(., $query)]]
-        else 
-          doc($config:tls-add-titles)//work[title[contains(., $query)]]
-      let $h :=  $w/title
-      , $kid := data($w/@krid)
-      , $tls := $w/@tls-added
-      , $req := if ($w/@request) then <span id="{$kid}-req">　Requests: {count(tokenize($w/@request, ','))}</span> else ()
-      , $but := <button type="button" class="btn btn-primary btn-sm" onclick="text_request('{$kid}')">Request for TLS</button>
-      , $av := not($w/note) 
-      order by $kid
-      where string-length($kid) > 5
-      return if ($tls) then 
-           <li><a href="textview.html?location={$kid}">{data($kid) || " " || data($h)}</a> 
-           {wd:display-qitems(data($kid),'title',data($h))}
-           </li>
-            else
-          <li>{if ($av) then $but else ()}　{$kid || " " || $h/text() || " "} <span class="text-muted"><small>{ string-join($w/altid, " / ")}</small></span>  {$req} 
-           {wd:display-qitems(data($kid),'title',data($h))}
-           {if ($av) then 
-             <span class="ml-2">{
-              <a class="btn badge badge-light" target="kanripo" title="View {data($h)} in Kanseki Repository (External link)" style="background-color:paleturquoise" href="https://www.kanripo.org/text/{data($kid)}/">KR</a>}</span> 
-            else ()}
-           </li>
-    }
-    </ul>
-    </div>
-        
-    else
-    if ($search-type = "8") then 
-    <div><p>Found {count($model("hits"))} matches, shown by text.<br/>
-    {tlslib:search-top-menu($search-type, $query, 0, "", 0, $textid, $qc, count($model("hits")), $mode)}
-    </p><ul>{
-    for $h in map:get($model, "hits")
-    let $loc := $h/ancestor::tei:TEI/@xml:id
-    , $tit := $h/ancestor::tei:TEI//tei:titleStmt/tei:title/text()
-    , $hcnt := count($h)
-    group by $loc
-    order by sum($hcnt) descending
-    return
-    <li><a href="search.html?query={$query}&amp;start=1&amp;search-type=5&amp;textid={$loc}&amp;mode={$mode}">{data($loc[1])}　{$tit[1]} </a>　{sum($hcnt)} match(es)</li>
-    }
-    </ul></div>
-    else
-    (: not search in fields :)
-    if (not($search-type="4")) then
-    let $txtmatchcount := count(for $h in map:get($model, "hits") let $x := $h/@xml:id where starts-with($x, $textid) return $h)
-    , $trmatch := count(for $h in map:get($model, "hits") 
-    let $x := "#" || $h/@xml:id
-    return collection($config:tls-translation-root)//tei:seg[@corresp=$x])
-    return
-    (: insert option to limit to textid here? tell the user how many matches etc. :)
-    (
-    <h4>Found {count($model("hits"))} matches {if (not($search-type="2")) then <span>, showing {$start} to {min((count($model("hits")), $start + $resno -1))}</span> else ()}</h4>,
-    if ($search-type = ("1", "5", "6")) then 
-    <p>
-    {if ($start = 1) then      
-    tlslib:search-top-menu($search-type, $query, $txtmatchcount, $title, $trmatch, $textid, $qc, count($model("hits")), $mode) else ()
-}
-    { if ($user = "guest") then () else
-    if ($mode = "rating") then 
-    (
-    "&#160;Sorting by text rating. ", <a class="btn badge badge-light" href="search.html?query={$query}&amp;start=1&amp;search-type={$search-type}&amp;mode=date">Click here to sort by text date instead. </a> 
-    )
-     else
-    (
-    "&#160;Sorting by text date. ", <a class="btn badge badge-light" href="search.html?query={$query}&amp;start=1&amp;search-type={$search-type}&amp;mode=rating" title="{$rat}">Click here to sort your favorite texts first. </a> 
-    )
-    (: end of if $search-type = "1" :)
-    }
-    </p> else ()
-    )
-    else
-    (: this is search-type = "4", in fields :)
-    <h4>Found {if (string-length($type) > 0) then (count(map:get($map, $type)),<span>; 
-    displaying matches {$start} to {min((count(map:get($map, $type)), xs:int($start) + $resno))}</span>)
-    else (count($model("hits")), <span> matches</span>)} </h4>}    
-    
-    { (: search in dictionary :)
-    if ($search-type = "2") then 
-    <div>
-    <p>{if ($start = 1) then tlslib:linkheader($qc) else ()}</p>
-    <ul>
-    {for $h at $c in map:get($model, "hits")
-    return $h
-    }
-    </ul>
-    </div>    
-    else 
-    if ($search-type = ("7", "8")) then () else
-    (: this is all for text / translation search :) 
-    if ($search-type=("1", "3", "5", "6")) then
-    <div>
-    <table class="table">
-    {for $hx at $c in subsequence(map:get($model, "hits"), $start, $resno)
-      for $h in if ($search-type="3") then $hx else util:expand($hx)//exist:match/ancestor::tei:seg
-      let $loc := if ($search-type="3") then substring($h/@corresp,2) else $h/@xml:id,
-      $m1 := substring(($h/exist:match)[1]/text(), 1, 1),
-      $cseg := collection($config:tls-texts-root)//tei:seg[@xml:id=$loc],
-      $head :=  $cseg/ancestor::tei:div[1]/tei:head[1]//text() ,
-      $title := $cseg/ancestor::tei:TEI//tei:titleStmt/tei:title/text(),
-(:     at some point use this to select the translation the user prefers
-      $tr := tlslib:get-translations($model?textid),
-      $slot1-id := tlslib:get-content-id($model?textid, 'slot1', $tr),:)
-      $tr := collection($config:tls-translation-root)//tei:seg[@corresp="#"||$h/@xml:id]
-      where if ($search-type="3") then $m1 = $m1 else $m1 = $q1
-    return
-      <tr>
-        <td>{$c + $start -1}</td>
-        <td><a href="textview.html?location={$loc}&amp;query={$query}">{$title, " / ", $head}</a>
-        </td>
-        {if ($search-type = "3") then  
-        (<td>{$cseg}</td>,<td>{$h}</td>) else
-        <td>{ 
-        for $sh in $h/preceding-sibling::tei:seg[position()<4] return tlslib:proc-seg($sh),
-        tlslib:proc-seg($h),
-        (: this is a hack, it will probably show the most recent translation if there are more, but we want to make this predictable... :)
-        for $sh in $h/following-sibling::tei:seg[position()<4] return tlslib:proc-seg($sh)}
-        {if (exists($tr)) then (<br/>,"..." , $tr[last()] , "...") else ()
-        }</td>
-        }
-        </tr>
-    }
-    </table>
-    <nav aria-label="Page navigation">
-  <ul class="pagination">
-    <li class="page-item"><a class="page-link {if ($start = 1) then "disabled" else ()}" href="search.html?query={$query}&amp;start={$start - $resno}&amp;textid={$textid}&amp;search-type={$search-type}{if (string-length($mode) > 0) then concat("&amp;mode=", $mode) else ()}">&#171;</a></li>
-    <li class="page-item"><a class="page-link" href="search.html?query={$query}&amp;start={$start + $resno}&amp;textid={$textid}&amp;search-type={$search-type}{if (string-length($mode)>0) then concat("&amp;mode=", $mode) else ()}">&#187;</a></li>
-  </ul>
-</nav>
-    </div>
-    else if (string-length($type) > 0) then 
-     <div>{
-      app:get-more($type, xs:int($start), $resno)}
-    <nav aria-label="Page navigation">
-      <ul class="pagination">
-        <li class="page-item"><a class="page-link {if (xs:int($start) = 1) then "disabled" else ()}" href="search.html?query={$query}&amp;search-type={$search-type}&amp;type={$type}&amp;start={$start - $resno}">&#171;</a></li>
-        <li class="page-item"><a class="page-link" href="search.html?query={$query}&amp;search-type={$search-type}&amp;type={$type}&amp;start={$start + $resno}">&#187;</a></li>
-      </ul>
-     </nav>
-     </div>
-    else
-    <div>
-    <ul>{
-      for $t in map:keys($map)
-     order by $t
-      return <li><a href="#{data($t)}-link" title="{data($t)}">{map:get($app:lmap, $t)}</a>, {count(map:get($map, $t))}</li>}</ul>
-    {for $t in map:keys($map)
-      let $hitcount := count(map:get($map, $t))
-     order by $t
-     return
-     <div id="{data($t)}-link"><h4>{map:get($app:lmap, $t)} <span class="badge badge-light">{$hitcount}</span></h4>
-     <ul>{      app:get-more($t, 1, 3) }
-     </ul>
-     { if ($hitcount > 3) then 
-     <a href="search.html?query={$query}&amp;search-type={$search-type}&amp;type={$t}&amp;start=1">Show more...</a>
-     else ()}
-     </div>
-     }
-    </div>
-    }
-    <div class="col-sm-0">{wd:quick-search-form('title')}</div>
-    </div>
-};    
-
-(:~ 
-:)
-declare %private function app:get-more($t as xs:string, $start as xs:int, $count as xs:int){
-    let $map := session:get-attribute($app:SESSION || ".types")
-     for $h in subsequence(map:get($map, $t), $start, $count)
-(:      let $kwic := kwic:summarize($h, <config width="40"/>, app:filter#2),:)
-    let $expanded := util:expand($h, "add-exist-id=all")
-    return
-    (: if there is more than one match, they could be expanded here. Maybe make this optional? 
-    for the time being, disabled, thus expanding only one match:)
-    for $match in subsequence($expanded//exist:match, 1, 1)
-(:    let $kwic := kwic:summarize($hit, <config width="40"/>, app:filter#2):)
-     let $kwic := app:get-kwic($match, <config width="40"/>, <a></a>),
-      $root := $h/ancestor-or-self::tei:div[@type="concept" or @type="taxchar" or @type="syn-func" or @type="sem-feat"],
-      $uplink := if ($root) then $root/@xml:id else (),
-      $head := $root/tei:head/text()
-      (: $h is a div element, so this does not seem to work... :)
-     return
-         <li>{if ($root) 
-         then <strong>
-         {
-         if ($t = "syn-func" or $t = "sem-feat") then
-         <a href="browse.html?type={$t}&amp;id=#{$uplink}" title="{substring-after(document-uri(root($h)), $config:tls-data-root)}"
-         >{$head}</a>
-         else if ($t = "taxchar") then
-         <a href="char.html?id={$uplink}" title="{substring-after(document-uri(root($h)), $config:tls-data-root)}"
-         >{$head}</a>
-         else 
-         <a href="concept.html?uuid={$uplink}#{$t}" title="{substring-after(document-uri(root($h)), $config:tls-data-root)}"
-         >{$head}</a>
-         }</strong> 
-         else <strong>{substring-after(document-uri(root($h)), $config:tls-data-root)}#{$t}</strong>}
-         {$kwic}</li>
-};
-
-
-declare %private function app:get-kwic($node as element(), $config as element(config), $link) {
-  <tr>
-    <td class="previous">...{$node/preceding::text()[fn:position() < 10]}</td>
-    <td class="hi"><mark>
-    {
-      if ($link) then
-        <a href="{$config/@link}">{$node/text()}</a>
-      else
-        $node/text()
-    }
-    </mark></td>
-    <td class="following">{$node/following::text()[fn:position() < 10]}...</td>
-  </tr>
-};
-
-
-declare 
-%templates:default("start", 1)
-function app:show-hits-short($node as node()*, $model as map(*),$start as xs:int)
-{   <div>
-    {for $hit at $p in subsequence($model("hits"), $start, 10)
-(:    let $kwic := kwic:summarize($hit, <config width="40"/>, app:filter#2):)
-    let $kwic := app:get-kwic($hit, <config width="40"/>, <a></a>)
-    return
-    <div class="tls-concept" xmlns="http://www.w3.org/1999/xhtml">
-      <h3>{$hit/ancestor::tei:head/text()}</h3>
-      <span class="number">{$start + $p - 1}</span>
-      <span>{data($hit/@type)}</span>
-      { $kwic }
-    </div>
-    }</div>
-};    
-
-
-
-declare %private function app:filter($node as node(), $mode as xs:string?) as text()?
-{
-    if ($mode eq 'before') then 
-    text {concat($node, ' ') }
-    else 
-    text {concat(' ', $node) }
-};
-
-(: temporarily added the search code here to see if the search is working at all
- this should just be count($model("hits"))
-:)
-declare
-    %templates:wrap
-function app:hit-count($node as node()*, $model as map(*), $query as xs:string?) {
-   count($model("hits"))
-};
 
 (: textview related functions :)
 
@@ -761,6 +323,7 @@ function app:textview($node as node()*, $model as map(*), $location as xs:string
     )
 };
 
+
 declare function app:textlist(){
 (: this is also quite expensive, need to cache... :)
     let $titles := map:merge(for $t in collection(concat($config:tls-texts-root, '/tls'))//tei:titleStmt/tei:title
@@ -807,7 +370,7 @@ declare function app:textlist(){
     return 
     <li class="nav-item">
     <a class="nav-link" id="{$b}-tab" role="tab" 
-    href="#{$b}" data-toggle="tab">{map:get($app:lmap, $b)}
+    href="#{$b}" data-toggle="tab">{map:get($config:lmap, $b)}
     <span class="badge badge-pill badge-light">{map:get($bc, $b)}</span></a></li>
     }
     </ul>
@@ -849,7 +412,7 @@ declare function app:textlist(){
     return 
     <li class="nav-item">
     <a class="nav-link" id="{$b}-more-tab" role="tab" 
-    href="#{$b}" data-toggle="tab">{map:get($app:lmap, $b)}
+    href="#{$b}" data-toggle="tab">{map:get($config:lmap, $b)}
     <span class="badge badge-pill badge-light">{count($c)}</span></a></li>
     }
     </ul>
@@ -1103,7 +666,7 @@ function app:rhetdev($node as node()*, $model as map(*), $uuid as xs:string?, $o
     <div class="card col-sm-12" style="max-width: 1000px;background-color:honeydew;">
     <div class="card-body" >
     <h4 class="card-title">{$rd/tei:head/text()}&#160;&#160;{for $t in $tr return 
-      <span class="badge badge-light" title="{map:get($app:lmap, $t/@xml:lang)}">{$t/text()}</span>} 
+      <span class="badge badge-light" title="{map:get($config:lmap, $t/@xml:lang)}">{$t/text()}</span>} 
       </h4>
     <div class="card-text" id="rd-test" >{for $p in $rd/tei:div[@type="definition"]//tei:p/text() return <p>{$p}</p>}</div>
     <div id="rhetdev-content" class="accordion">
@@ -1113,7 +676,7 @@ function app:rhetdev($node as node()*, $model as map(*), $uuid as xs:string?, $o
     <div class="card-header" id="pointers-head">
       <h5 class="mb-0 mt-2">
         <button class="btn" data-toggle="collapse" data-target="#pointers" >
-         {$app:lmap?pointers} of {$rd/tei:head/text()}
+         {$config:lmap?pointers} of {$rd/tei:head/text()}
         </button>
       </h5>
       </div>
@@ -1122,7 +685,7 @@ function app:rhetdev($node as node()*, $model as map(*), $uuid as xs:string?, $o
      order by $p/@type
      return
      (<h5 class="ml-2">
-     {map:get($app:lmap, data($p/@type))}
+     {map:get($config:lmap, data($p/@type))}
      {tlslib:capitalize-first(data($p/@type/text()))}</h5>,
      (: we assume that clicking here implies an interest in the ontology, so we load in open state:)
      <ul>
@@ -1145,7 +708,7 @@ function app:rhetdev($node as node()*, $model as map(*), $uuid as xs:string?, $o
      {for $p in $rd//tei:div[@type="pointers"]//tei:list[@type = "taxonymy"]
      return
      (<h5 class="ml-2">
-     {map:get($app:lmap, data($p/@type))}
+     {map:get($config:lmap, data($p/@type))}
      {tlslib:capitalize-first(data($p/@type/text()))}</h5>,
      <ul>{
      for $r in $p//tei:ref 
@@ -1253,7 +816,7 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
     <div class="card col-sm-12" style="max-width: 1000px;">
     <div class="card-body">
     <h4 class="card-title"><span id="{$key}-la" class="sf" contenteditable="{$edit}">{$c/tei:head/text()}</span>&#160;&#160;{for $t in $tr return 
-      <span class="badge badge-light" title="{map:get($app:lmap, $t/@xml:lang)}">{$t/text()}</span>} 
+      <span class="badge badge-light" title="{map:get($config:lmap, $t/@xml:lang)}">{$t/text()}</span>} 
       {if  ("tls-admin" = sm:get-user-groups($user)) then 
       <a target="_blank" class="float-right badge badge-pill badge-light" href="{
       concat($config:exide-url, "?open=", document-uri(root($c)))}">Edit concept</a>
@@ -1279,7 +842,7 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
     <div class="card-header" id="pointers-head">
       <h5 class="mb-0 mt-2">
         <button class="btn" data-toggle="collapse" data-target="#pointers" >
-         {$app:lmap?pointers} of {$c/tei:head/text()}
+         {$config:lmap?pointers} of {$c/tei:head/text()}
         </button>
       </h5>
       </div>
@@ -1288,7 +851,7 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
      order by $p/@type
      return
      (<h5 class="ml-2">
-     {map:get($app:lmap, data($p/@type))}
+     {map:get($config:lmap, data($p/@type))}
      {tlslib:capitalize-first(data($p/@type/text()))}</h5>,
      (: we assume that clicking here implies an interest in the ontology, so we load in open state:)
      <ul>
@@ -1310,7 +873,7 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
      {for $p in $c//tei:div[@type="pointers"]//tei:list[@type = "taxonymy"]
      return
      (<h5 class="ml-2">
-     {map:get($app:lmap, data($p/@type))}
+     {map:get($config:lmap, data($p/@type))}
      {tlslib:capitalize-first(data($p/@type/text()))}</h5>,
      <ul>{
      for $r in $p//tei:ref 
@@ -1337,14 +900,14 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
     <div class="card-header" id="notes-head">
       <h5 class="mb-0 mt-2">
         <button class="btn" data-toggle="collapse" data-target="#notes" >
-          {$app:lmap?notes} ({string-length(string-join($c//tei:div[@type="notes"]//tei:div, ''))} characters)
+          {$config:lmap?notes} ({string-length(string-join($c//tei:div[@type="notes"]//tei:div, ''))} characters)
         </button>
       </h5>
       </div>
      <div id="notes" class="collapse" data-parent="#concept-content">
      {for $d in $c//tei:div[@type="notes"]//tei:div
      return
-     (<h5 class="ml-2 mt-2">{map:get($app:lmap, data($d/@type))}</h5>,
+     (<h5 class="ml-2 mt-2">{map:get($config:lmap, data($d/@type))}</h5>,
      <div lang="en-GB" contenteditable="{$edit}" style="white-space: pre-wrap;" class="nedit" id="{$d/@type}_{$key}-nt">{for $p in $d//tei:p return
      ($p/text(), <br/>,<br/>)
      }     
@@ -1569,7 +1132,7 @@ return
                                 <a class="dropdown-item" href="browse.html?type=biblio">Bibliography</a>
                             </div>                            
                         </li>
-                        {if ($context = "textview") then
+                        {if ($context = ("textview", "lineview")) then
                         tlslib:tv-header($node, $model)
                         else
                         (tlslib:navbar-doc(),
@@ -1584,14 +1147,14 @@ return
                     <input type="hidden" name="textid" value="{map:get($model, 'textid')}"/>
                         <input id="query-inp" name="query" class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search" value="{if (string-length($query) > 0) then $query else ()}"/> in 
         <select class="form-control input-sm" name="search-type">
-          <option selected="true" value="{if ($context = "textview") then '5' else '1'}">{$app:tmap?1}</option>
-          <option value="7">{$app:tmap?7}</option>
-          <option value="2">{$app:tmap?2}</option>
-          <option value="3">{$app:tmap?3}</option>
-          <option value="4">{$app:tmap?4}</option>
-          <option value="10">{$app:tmap?10}</option>
+          <option selected="true" value="{if ($context = "textview") then '5' else '1'}">{$config:search-map?1}</option>
+          <option value="7">{$config:search-map?7}</option>
+          <option value="2">{$config:search-map?2}</option>
+          <option value="3">{$config:search-map?3}</option>
+          <option value="4">{$config:search-map?4}</option>
+          <option value="10">{$config:search-map?10}</option>
           <!--
-          <option value="9">{$app:tmap?9}</option>
+          <option value="9">{$config:search-map?9}</option>
           -->
 <!--          <option value="4">Three</option> -->
         </select>
@@ -2145,4 +1708,58 @@ declare function app:obs($node as node(), $model as map(*)){
     </div>
 )
 };
+
+(: lineview, replacement for textview :)
+declare 
+    %templates:wrap
+    %templates:default("prec", 15)
+    %templates:default("foll", 15)     
+    %templates:default("first", "false")     
+function app:lineview($node as node()*, $model as map(*), $location as xs:string?, $mode as xs:string?, $prec as xs:int?, $foll as xs:int?, $first as xs:string)
+{
+    let $dataroot := $config:tls-data-root
+    , $message := (for $k in map:keys($model) return $k) => string-join(",")
+    , $l := log:info($app:log, "Loading; $model keys: " || $message)
+    return
+    (session:create(),
+    if (string-length($location) > 0) then
+     if (contains($location, '_')) then
+      let $textid := tokenize($location, '_')[1]
+      let $firstseg := collection($config:tls-texts-root)//tei:seg[@xml:id=$location]
+      return
+        try {ly:setup-grid(map:merge(($model, map{"targetseg" : $firstseg, "prec" : 0, "foll" : $prec + $foll })))} catch * {
+        let $m := "An error occurred, can't display text. Code:" || count($firstseg) || " (firstseg); location:  " || $location 
+        return (log:error($app:log, $m), $m)}
+     else
+      if (not($mode = 'visit') and collection($config:tls-manifests)//mf:manifest[@xml:id=$location]) then 
+      krx:show-manifest(collection($config:tls-manifests)//mf:manifest[@xml:id=$location]) 
+      else
+      let $firstdiv := if ($first = 'true') then 
+      (collection($config:tls-texts-root)//tei:TEI[@xml:id=$location]//tei:body/tei:div)[1]
+            else
+        let $user := sm:id()//sm:real/sm:username/text(),
+         $visit := (for $v in collection($config:tls-user-root || "/" || $user)//tei:list[@type="visits"]/tei:item
+            let $date := xs:dateTime($v/@modified),
+            $target := substring($v/tei:ref/@target, 2)
+            order by $date descending
+            where starts-with($target, $location)
+            return $target)[1]
+         return
+         if ($visit) then 
+         collection($config:tls-texts-root)//tei:seg[@xml:id=$visit]  else 
+         (collection($config:tls-texts-root)//tei:TEI[@xml:id=$location]//tei:body)[1]
+
+      let $targetseg := if (local-name($firstdiv) = "seg") then $firstdiv else 
+      if ($firstdiv//tei:seg) then ($firstdiv//tei:seg)[1] else  ($firstdiv/following::tei:seg)[1] 
+      return
+         try {ly:setup-grid(map:merge(($model, map{"targetseg" : $targetseg, "prec" : 0, "foll" : $prec + $foll })))} catch * {
+         let $m := "An error occurred, can't display text. Code:" || count($targetseg) || " (targetseg); location:  " || $location 
+         return (log:error($app:log, $m), $m)}
+    else 
+    app:textlist()
+    )
+};
+
+
+
 (:: xx :)

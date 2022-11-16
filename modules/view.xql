@@ -13,6 +13,7 @@ import module namespace templates="http://exist-db.org/xquery/templates" ;
  :)
 import module namespace config="http://hxwd.org/config" at "config.xqm";
 import module namespace app="http://hxwd.org/app" at "app.xql";
+import module namespace src="http://hxwd.org/search" at "search.xql";
 
 declare namespace output = "http://www.w3.org/2010/xslt-xquery-serialization";
 

@@ -8,14 +8,17 @@ $(function() {
     // this is for the taxchar editing
     try { 
     // it seems this does not work... but the uncaught error does not seem to matter...
-    $('#chartree').jstree({
+    // a few weeks later... this works!!
+    if ( $( "#chartree" ).length ) {
+     $('#chartree').jstree({
      "core" : {
        // so that create works
        "check_callback" :  true 
-     },
-    "plugins" : ["dnd", "contextmenu" ]
-  }
+       },
+     "plugins" : ["dnd", "contextmenu" ]
+     }
     );
+    }
 } finally {}    
 });            
 
