@@ -384,17 +384,19 @@ return
   - commentary
   - para-ending-line
 :) 
-declare function xed:is-special-line($line as node(), $len as xs:int, $title as xs:string) as xs:string?{
-if ($line/@indent = "3" or ends-with($line, "序") 
-      or matches($line, "^[\s?\d?]+?提要")
+declare function xed:is-special-line($map as map(*)) as xs:string?{
+let $h-indent := if ($map?h-indent) then $map?h-indent else 3
+return
+if ($map?line/@indent = $h-indent or ends-with($map?line, "序") 
+      or matches($map?line, "^[\s?\d?]+?提要")
       )
  then "head"
-else if (matches($line, "^[\s?\d?]+?欽定四庫全書") 
-      or matches($line, "卷"||$config:kanji-numberlike-tokens||"$")  
-      or matches($line, "^[\s?\d?]+?"||$title)
+else if (matches($map?line, "^[\s?\d?]+?欽定四庫全書") 
+      or matches($map?line, "卷"||$config:kanji-numberlike-tokens||"$")  
+      or matches($map?line, "^[\s?\d?]+?"||$map?title)
       ) 
  then "fw"
-else if ($line/@len > 0 and $line/@len < $len) 
+else if ($map?line/@len > 0 and $map?line/@len < $map?len) 
  then "maybe-end-p" 
 else ()
 };
@@ -431,14 +433,17 @@ declare function xed:post-process-div($div as node(), $no as xs:int){
   , $maybe-comment := count($p/tei:line[@indent="1"])
   , $all-index :=   
     ((:<r type="head" index="1"/>,:) for $l in $lines
-     let $t := xed:is-special-line($l, $ll, $title)
+     let $t := xed:is-special-line(map{"line" : $l, "len" : $ll, "title" : $title, "h-indent" : 2})
       where string-length($t) > 0
       return <r type="{$t}" index="{index-of($lines, $l)}" lno="{$l/@lno}">{data($l/@uuid)}</r>
       , <r type="head" index="{count($lines)}">last-head-{count($lines)}</r> )
   , $h-index := filter ($all-index, function ($n) {$n/@type='head'})
   where count($lines) > 0
   return
- if (count($h-index) > 1) then 
+ if (count($h-index) > 1 
+  (: we want to avoid the toc with many header lines :)
+  and  (count($h-index) div count($lines) < 0.4)
+ ) then 
   for $v at $pos in ($h-index)
    let $type := data($v/@type)
     , $i := xs:int($v/@index)
@@ -449,7 +454,7 @@ declare function xed:post-process-div($div as node(), $no as xs:int){
      {attribute {"n"} { "d" || $no || $pos}
      , attribute {"type"} {"gen"}
      , attribute {"xml:id"} {$idprefix || "-d" || $pos}
-(:     , <o>{$maybe-comment, count($lines), $all-index}</o>:)
+(:     , <o>{(count($h-index) div count($lines))}</o>:)
      , xed:process-fw-lines($lines, $all-index, $h-index, $v)
       , element {QName(namespace-uri($p),"head")} 
          {$lines[$i]}

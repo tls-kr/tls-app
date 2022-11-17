@@ -1862,139 +1862,6 @@ else
 };
 
 
-
-(: query in dictionary :)
-declare function tlslib:dic-query($queryStr as xs:string?, $mode as xs:string?)
-{
-tlslib:get-sw($queryStr, "dic", "core")
-};
-
-(: query in translation :)
-declare function tlslib:tr-query($queryStr as xs:string?, $mode as xs:string?)
-{
-  let $user := sm:id()//sm:real/sm:username/text()
-  let $dataroot := ($config:tls-translation-root, $config:tls-user-root || $user || "/translations")
-  let $w := collection($dataroot)//tei:seg[contains(. , $queryStr)]
-  for $a in $w
-  return $a
-};
-
-(: paragraph based query :)
-(:declare function tlslib:ngram-p-query($queryStr as xs:string?, $mode as xs:string?, $search-type as xs:string?, $stextid as xs:string?)
-{tlslib:do-ngram-query($queryStr, $mode, $search-type, $stextid, "tei:p")};:)
-
-(: query in texts :)
-(:declare function tlslib:ngram-query($queryStr as xs:string?, $mode as xs:string?, $search-type as xs:string?, $stextid as xs:string?)
-{tlslib:do-ngram-query($queryStr, $mode, $search-type, $stextid, "tei:seg")};:)
-
-declare function tlslib:ngram-query($queryStr as xs:string?, $mode as xs:string?, $search-type as xs:string?, $stextid as xs:string?)
-{
-    let $dataroot := ($config:tls-data-root, $config:tls-texts-root, $config:tls-user-root)
-    let $qs := tokenize($queryStr, "\s"),
-    $user := sm:id()//sm:real/sm:username/text(),
-    $ratings := doc($config:tls-user-root || $user || "/ratings.xml")//text,
-    $dates := if (exists(doc("/db/users/" || $user || "/textdates.xml")//date)) then 
-      doc("/db/users/" || $user || "/textdates.xml")//data else 
-      doc($config:tls-texts-root || "/tls/textdates.xml")//data,
-    (: HACK: if no login, use date mode for sorting :)
-    $mode := if ($user = "guest") then "date" else $mode,
-    $matches := if  (count($qs) > 1) then 
-      (collection($dataroot)//tei:p[ngram:wildcard-contains(., $qs[1]) and ngram:wildcard-contains(., $qs[2])] |
-       collection($dataroot)//tei:lg[ngram:wildcard-contains(., $qs[1]) and ngram:wildcard-contains(., $qs[2])])
-      else
-      (: 2022-02-24 for one char searches, go only in tls texts; this needs more discussion... :)
-      if ($search-type = "5") then 
-      (collection($dataroot)//tei:TEI[@xml:id=$stextid]//tei:p[ngram:wildcard-contains(., $qs[1])] |
-      collection($dataroot)//tei:TEI[@xml:id=$stextid]//tei:lg[ngram:wildcard-contains(., $qs[1])])
-      else
-      if (string-length($qs[1]) < 2) then
-      (collection($config:tls-texts-root || "/tls")//tei:p[ngram:wildcard-contains(., $qs[1])],
-      collection($config:tls-texts-root || "/tls")//tei:lg[ngram:wildcard-contains(., $qs[1])])
-      else
-      (collection($dataroot)//tei:p[ngram:wildcard-contains(., $qs[1])] | 
-      collection($dataroot)//tei:lg[ngram:wildcard-contains(., $qs[1])])
-    for $hit in $matches
-      let $textid := substring-before(tokenize(document-uri(root($hit)), "/")[last()], ".xml"),
-      (: for the CHANT text no text date data exist, so we use this flag to cheat a bit :)
-      $flag := substring($textid, 1, 3),
-      $filter := if ($search-type = "5") then $stextid = $textid else 
-       if ($search-type = "6") then 
-        let $x := "#" || $hit/@xml:id
-        return collection($config:tls-translation-root)//tei:seg[@corresp=$x]
-      else true(),
-      $r := 
-      if ($mode = "rating") then 
-        (: the order by is ascending because of the dates, so here we inverse the rating :)
-        if ($ratings[@id=$textid]) then - xs:int($ratings[@id=$textid]/@rating) else 0
-      else
-        switch ($flag)
-         case "CH1" return 0
-         case "CH2" return 300
-         case "CH7" return 700
-         case "CH8" return -200
-         default return
-         if (string-length($dates[@corresp="#" || $textid]/@notafter) > 0) then tlslib:getdate($dates[@corresp="#" || $textid]) else 0
-(:    let $id := $hit/ancestor::tei:TEI/@xml:id :)     
-    order by $r ascending
-    where $filter
-    return $hit 
-};
-(: query for multiple terms :)
-declare function tlslib:multi-query1($queryStr as xs:string?, $mode as xs:string?, $search-type as xs:string?, $stextid as xs:string?)
-{
-tlslib:ngram-query($queryStr, $mode, $search-type, $stextid)
-};
-
-(: 
-:)
-
-declare function tlslib:multi-query($queryStr as xs:string?, $mode as xs:string?, $search-type as xs:string?, $stextid as xs:string?)
-{
-    let $dataroot := ($config:tls-data-root, $config:tls-texts-root, $config:tls-user-root)
-    let $qs := tokenize($queryStr, ";"),
-    $user := sm:id()//sm:real/sm:username/text(),
-    $ratings := doc($config:tls-user-root || $user || "/ratings.xml")//text,
-    $dates := if (exists(doc("/db/users/" || $user || "/textdates.xml")//date)) then 
-      doc("/db/users/" || $user || "/textdates.xml")//data else 
-      doc($config:tls-texts-root || "/tls/textdates.xml")//data,
-    (: HACK: if no login, use date mode for sorting :)
-    $mode := if ($user = "guest") then "date" else $mode,
-    $matches := if  (count($qs) > 1) then 
-      collection($dataroot)//tei:p[ngram:wildcard-contains(., $qs[1]) and ngram:wildcard-contains(., $qs[2])]
-      else
-      collection($dataroot)//tei:p[ngram:wildcard-contains(., $qs[1])]
-    for $hit in $matches
-      let $textid := substring-before(tokenize(document-uri(root($hit)), "/")[last()], ".xml"),
-      (: for the CHANT text no text date data exist, so we use this flag to cheat a bit :)
-      $flag := substring($textid, 1, 3),
-      $filter := if ($search-type = "5") then $stextid = $textid else 
-       if ($search-type = "6") then 
-        let $x := "#" || $hit/@xml:id
-        return collection($config:tls-translation-root)//tei:seg[@corresp=$x]
-      else true(),
-      $sx := for $s in $hit//tei:seg
-            return
-            if (matches($s, $qs[1]) or matches($s, $qs[2])) then
-                $s else (),
-
-      $r := 
-      if ($mode = "rating") then 
-        (: the order by is ascending because of the dates, so here we inverse the rating :)
-        if ($ratings[@id=$textid]) then - xs:int($ratings[@id=$textid]/@rating) else 0
-      else
-        switch ($flag)
-         case "CH1" return 0
-         case "CH2" return 300
-         case "CH7" return 700
-         case "CH8" return -200
-         default return
-         if (string-length($dates[@corresp="#" || $textid]/@notafter) > 0) then tlslib:getdate($dates[@corresp="#" || $textid]) else 0
-(:    let $id := $hit/ancestor::tei:TEI/@xml:id :)     
-    order by $r ascending
-    where $filter
-    return $sx
-};
-
 (: get related texts: look at Manifest.xml :)
 
 declare function tlslib:get-related($map as map(*)){
@@ -2027,11 +1894,6 @@ let $dataroot := ($config:tls-translation-root, $config:tls-user-root)
   return $firstseg
 };
 
-declare function tlslib:title-query($query, $mode){
-let $dataroot := ($config:tls-texts-root, $config:tls-user-root)
-for $t in collection($dataroot)//tei:titleStmt/tei:title[contains(., $query)]
-return $t
-};
 
 (: $gyonly controls wether we offer to override GY.  Most probably false.. :)
 
@@ -2616,7 +2478,7 @@ return
          <div class="row">
            <div class="col-sm-1"/>
            <div class="col-sm-2">{ if (sm:is-authenticated()) then <span class="font-weight-bold float-right" title="Click on one of the stars to rate the text and add to the ★ menu.">Rating:</span> else ()}</div>
-           <div classe="col-sm-5">{ if (sm:is-authenticated()) then
+           <div class="col-sm-5">{ if (sm:is-authenticated()) then
            <input id="input-{$textid}" name="input-name" type="number" class="rating"
     min="1" max="10" step="2" data-theme="krajee-svg" data-size="xs" value="{tlslib:get-rating($textid)}"/> else ()}</div> 
         </div>
@@ -2643,12 +2505,6 @@ return
       </div>
 };
 
-
-
-declare function tlslib:advanced-search($query, $mode){
-<div><h3>Advanced Search</h3>
-</div>
-};
 
 declare function tlslib:segid2sequence($start as xs:string, $end as xs:string){
    let  $targetseg := collection($config:tls-texts-root)//tei:seg[@xml:id=$start]

@@ -1,9 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <div xmlns="http://www.w3.org/1999/xhtml" data-template="templates:surround" data-template-with="templates/page.html" data-template-at="content">
+    <div class="row">
+    <div class="col-md-1">　　　</div>
     <div class="col-md-9">
-        <div id="results" data-template="app:query">
-            <div data-template="app:show-hits"/>
+        <div id="results" data-template="src:query">
+            <h1 data-template="src:show-hits-h1"/>
+            <h4 data-template="src:show-hits-h4"/>
+            
+            <div data-template="src:show-hits"/>
         </div>
-        
+    </div>    
     </div>
 </div>

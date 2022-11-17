@@ -21,6 +21,7 @@ import module namespace krx="http://hxwd.org/krx-utils" at "../modules/krx-utils
 import module namespace xed="http://hxwd.org/xml-edit" at "../modules/xml-edit.xql";
 import module namespace imp="http://hxwd.org/xml-import" at "../modules/import.xql"; 
 import module namespace wd="http://hxwd.org/wikidata" at "../modules/wikidata.xql"; 
+import module namespace src="http://hxwd.org/search" at "../modules/search.xql";
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
@@ -1501,10 +1502,7 @@ else ()
 declare function tlsapi:quick-search($map as map(*)){
 let $hits := 
       if ($map?target = 'texts') then
-         if (contains($map?query, ";" )) then 
-             tlslib:multi-query($map?query, $map?mode, $map?search-type, $map?textid) 
-         else
-             tlslib:ngram-query($map?query, $map?mode, $map?search-type, $map?textid)
+            src:ngram-query($map?query, $map?mode, $map?search-type, $map?textid)
       else if ($map?target = 'wikidata') then 
             wd:search($map)
       else ()
