@@ -19,7 +19,7 @@ declare namespace mf = "http://kanripo.org/ns/KRX/Manifest/1.0";
 import module namespace templates="http://exist-db.org/xquery/templates" ;
 (: 2022-11-16: update to new template library, also including lib, but not yet used :)
 (:import module namespace templates="http://exist-db.org/xquery/html-templating";:)
-import module namespace lib="http://exist-db.org/xquery/html-templating/lib";
+(:import module namespace lib="http://exist-db.org/xquery/html-templating/lib";:)
 
 import module namespace config="http://hxwd.org/config" at "config.xqm";
 import module namespace kwic="http://exist-db.org/xquery/kwic"
@@ -47,6 +47,25 @@ function app:logo($node as node(), $model as map(*)) {
         <img class="app-logo img-fluid" src="resources/images/{$config:get-config//repo:logo/text() }" title="{$config:app-title}"/>
     else ()
 };
+
+(:~
+: This displays the title, both for regular pages (page.html) and textview pages (tv-page.html)
+:)
+declare
+    %templates:wrap
+function app:page-title($node as node()*, $model as map(*))
+{ (: the html file accessed, without the extension :) 
+ let $ts := 
+ if ($model("textid")) then 
+   $model("textid") || " : " || $model("title")
+ else if ($model("concept")) then
+   "Concept: " || $model("concept")
+ else "漢學文典"
+
+(:,$context := substring-before(tokenize(request:get-uri(), "/")[last()], ".html"):)
+return concat ("TLS - ", $ts)
+};
+
 
 (:~
 : Display the documentation. This is called from documentation.html
@@ -1305,24 +1324,6 @@ function app:footer($node as node()*, $model as map(*)){
             </div>
 };
 
-(:~
-: This displays the title, both for regular pages (page.html) and textview pages (tv-page.html)
-
-:)
-declare
-    %templates:wrap
-function app:page-title($node as node()*, $model as map(*))
-{ (: the html file accessed, without the extension :) 
- let $ts := 
- if ($model("textid")) then 
-   $model("textid") || " : " || $model("title")
- else if ($model("concept")) then
-   "Concept: " || $model("concept")
- else "漢學文典"
-
-(:,$context := substring-before(tokenize(request:get-uri(), "/")[last()], ".html"):)
-return concat ("TLS - ", $ts)
-};
 
 declare function app:theme($node as node()*, $model as map(*)){
 let $user := sm:id()//sm:real/sm:username/text()

@@ -74,8 +74,7 @@ function src:query($node as node()*, $model as map(*), $query as xs:string?, $mo
      default return "Unknown search type"
     let $store := session:set-attribute($src:SESSION, $hits)
     return
-    map:merge((
-       map:entry("hits", $hits), map:entry("query", $query)))
+    map{"hits" : $hits, "query" : $query, "mode" : $mode, "search-type" : $search-type, "textid" : $textid, "resno" : 50}
 };
 
 declare function src:do-query($queryStr as xs:string?, $mode as xs:string?)
@@ -253,8 +252,29 @@ declare function src:create-query($queryStr as xs:string?, $mode as xs:string?)
 </query>
 };
 
+declare
+%templates:default("type", "")  (: type is only relevant for advanced search starting from the search landing page for non-Kanji generell search :)
+function src:show-hits-h1($node as node()*, $map as map(*),  $type as xs:string){
+let $st :=  if (string-length($type) > 0) then map:get($config:search-map, $map?search-type) || "/" || map:get($config:lmap, $type) else map:get($config:search-map, $map?search-type)
+return
+<h1>Searching in <strong>{$st}</strong> for <mark>{$map?query}</mark></h1>
+};
+
+declare
+%templates:default("start", 1)
+%templates:default("type", "")  (: type is only relevant for advanced search starting from the search landing page for non-Kanji generell search :)
+function src:show-hits-h4($node as node()*, $model as map(*), $start as xs:int, $type as xs:string){
+let $query := $model?query
+  , $map := session:get-attribute($src:SESSION || ".types")
+  , $cnt := if (string-length($type) > 0) then count(map:get($map, $type)) else count($model?hits)
+return
+<h4>Found {$cnt} {if ($cnt = 1) then " match" else " matches"},  <span>showing {$start} to {min(($cnt, $start + $model?resno -1))}</span></h4>
+
+};
+
+
 (:~
- : This is also called from search.html, nested within app:query. 
+ : This is also called from search.html, nested within src:query. 
  : Paged result display is achieved here.
  : Search type 5 is "limit search to text id"
  : Search type 6 is "Search only in text lines with translation"
@@ -271,11 +291,11 @@ declare
 %templates:default("textid", "")
 function src:show-hits($node as node()*, $model as map(*), $start as xs:int, $type as xs:string, $mode as xs:string, $search-type as xs:string, $textid as xs:string?)
 {
-let $query := map:get($model, "query")
+let $query := $model?query
     ,$iskanji := tlslib:iskanji($query) 
     ,$title := if (string-length($textid) > 0) then collection($config:tls-texts-root)//tei:TEI[@xml:id=$textid]//tei:titleStmt/tei:title/text() else ()
     (: no of results to display :)
-    ,$resno := 50
+    ,$resno := $model?resno
     ,$map := session:get-attribute($src:SESSION || ".types")
     ,$user := sm:id()//sm:real/sm:username/text()
     ,$qs := tokenize($query, "[\s;]")
@@ -284,13 +304,7 @@ let $query := map:get($model, "query")
     ,$qc := for $c in string-to-codepoints($query) 
        where $c > 255
        return  codepoints-to-string($c)
-    ,$h1 := <h1>Searching in {map:get($config:search-map, $search-type)} for <mark>{$query}</mark>
-    {if (string-length($type) > 0) then 
-    <span>in {map:get($config:lmap, $type)}</span>
-    else ()}</h1>
     return
-    <div>{$h1}
-    {
     switch ($search-type)
     case $src:search-advanced return
        src:advanced-search($query, $mode)
@@ -306,8 +320,7 @@ let $query := map:get($model, "query")
     case $src:search-one-text
     case $src:search-trans
     case $src:search-tr-lines return
-     let $h4 := <h4>Found {count($model?hits)} matches,  <span>showing {$start} to {min((count($model?hits), $start + $resno -1))}</span></h4>
-     , $txtmatchcount := count(for $h in $model?hits let $x := $h/@xml:id where starts-with($x, $textid) return $h)
+     let $txtmatchcount := count(for $h in $model?hits let $x := $h/@xml:id where starts-with($x, $textid) return $h)
      , $trmatch := count(for $h in $model?hits let $x := "#" || $h/@xml:id
                    return collection($config:tls-translation-root)//tei:seg[@corresp=$x])
     , $p :=     <p>
@@ -325,18 +338,13 @@ let $query := map:get($model, "query")
   </ul>
 </nav>
      return 
-     src:show-text-results(map{"h4": $h4, "p" : $p, "nav": $nav, "hits": $model?hits, "start" : $start, "resno" : $resno, "q1" : $q1, "query": $query, "search-type" : $search-type })
+     src:show-text-results(map{"p" : $p, "nav": $nav, "hits": $model?hits, "start" : $start, "resno" : $resno, "q1" : $q1, "query": $query, "search-type" : $search-type })
     case $src:search-field return
-     let $h4:=    <h4>Found {if (string-length($type) > 0) then (count(map:get($map, $type)),<span>; 
-    displaying matches {$start} to {min((count(map:get($map, $type)), xs:int($start) + $resno))}</span>)
-    else (count($model("hits")), <span> matches</span>)} </h4>
-     return
-     src:show-field-results(map{"h4" : $h4, "hits": $model?hits, "map":$map, "query" : $query, "search-type" : $search-type, "type" : $type, "start" : $start, "resno" : $resno})
+     src:show-field-results(map{"hits": $model?hits, "map":$map, "query" : $query, "search-type" : $search-type, "type" : $type, "start" : $start, "resno" : $resno})
     case $src:search-dic return
      src:show-dic-results(map:merge(($model, map:entry("start",$start), map:entry("qc", $qc))))
     default return "Unknown search type",
     <div class="col-sm-0">{wd:quick-search-form('title')}</div>
-    }</div>
 };
 
 (:      
@@ -354,8 +362,6 @@ declare function src:show-dic-results($map as map(*)){
 };
 
 declare function src:show-field-results($map as map(*)){
-    (: this is search-type = "4", in fields :)
-     $map?h4,    
     if (string-length($map?type) > 0) then 
 <div>{
       src:get-more($map?type, xs:int($map?start), $map?resno)}
@@ -390,7 +396,7 @@ declare function src:show-field-results($map as map(*)){
 
 
 declare function src:show-text-results($map as map(*)){
-    <div>{$map?h4, $map?p}
+    <div>{$map?p}
     <table class="table">
     {for $hx at $c in subsequence($map?hits, $map?start, $map?resno)
       for $h in if ($map?search-type=$src:search-trans) then $hx else util:expand($hx)//exist:match/ancestor::tei:seg
