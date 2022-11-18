@@ -504,6 +504,18 @@ declare function app:textlist(){
     </div>
 };
 
+declare 
+    %templates:wrap
+function app:char-hist($node as node()*, $model as map(*), $char as xs:string?, $id as xs:string?, $edit as xs:string?)
+{
+    <div class="card-text" id="{if ($e) then 'chartree' else 'notree'}" tei-id="{$char-id}" tei-head="{if (exists($n/tei:head)) then $h else $char}">
+     {if ($n) then (for $l in $n/tei:list return tlslib:proc-char($l, $edit), 
+        for $l in tlslib:char-tax-newconcepts($char, "taxchar")//tei:list return tlslib:proc-char($l, $edit) )
+     else tlslib:char-tax-stub($char, "taxchar")}
+    </div>
+
+};
+
 (: taxchar display :)
 declare 
     %templates:wrap
@@ -1761,6 +1773,7 @@ function app:lineview($node as node()*, $model as map(*), $location as xs:string
     )
 };
 
-
+declare function app:signup($node as node()*, $model as map(*)) {
+};
 
 (:: xx :)
