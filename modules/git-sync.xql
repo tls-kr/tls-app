@@ -19,9 +19,15 @@ declare variable $repo-name := $git-config//repo-name/text();
                               
 declare variable $git-log := $config:tls-log-collection || "/git";
 
+let $exempt := ("/db/apps/tls-app/modules/view.xql", "/db/apps/tls-app/controller.xql")
 let $data := request:get-data()
 let $file-data := ghx:execute-webhook($data, $exist-collection, $repo-name, "master",  $gitSecret, $gitKey)
 
+return 
 
+for $f in $file-data 
+let $perm :=  if ($f = $exempt) then () else ( sm:chown(xs:anyURI($f), "tls"),
+    sm:chgrp(xs:anyURI($f), "tls-user"),
+    sm:chmod(xs:anyURI($f), "rw-rw-r--") )
 
-return for $f in $file-data return log:info($git-log, $f)
+return log:info($git-log, $f)
