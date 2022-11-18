@@ -21,6 +21,8 @@ declare variable $local:HTTP_NOT_FOUND := xs:integer(404);
 declare variable $local:HTTP_METHOD_NOT_ALLOWED := xs:integer(405);
 declare variable $local:HTTP_INTERNAL_SERVER_ERROR := xs:integer(500);
 
+declare variable $local:isget := request:get-method() = ("GET","get");
+
 declare function local:user-allowed() {
     (
         request:get-attribute($config:login-domain || ".user") and
@@ -38,6 +40,14 @@ declare function local:query-execution-allowed() {
     sm:is-dba((request:get-attribute("org.exist.login.user"),request:get-attribute("xquery.user"), 'nobody')[1])
 };
 
+util:log("debug", map {
+    "$exist:path": $exist:path,
+    "$exist:resource": $exist:resource,
+    "$exist:controller": $exist:controller,
+    "$exist:prefix": $exist:prefix,
+    "$exist:root": $exist:root,
+    "$local:isget": $local:isget
+}),
 
 if ($exist:path eq '') then
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
@@ -132,3 +142,17 @@ else
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
         <cache-control cache="yes"/>
     </dispatch>
+
+(: This is for the open api, but not ready yet... 
+
+else
+    <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+        <forward url="{$exist:controller}/modules/api.xql">
+            <set-header name="Access-Control-Allow-Origin" value="*"/>
+            <set-header name="Access-Control-Allow-Credentials" value="true"/>
+            <set-header name="Access-Control-Allow-Methods" value="GET, POST, DELETE, PUT, PATCH, OPTIONS"/>
+            <set-header name="Access-Control-Allow-Headers" value="Accept, Content-Type, Authorization, X-Start"/>
+            <set-header name="Cache-Control" value="no-cache"/>
+        </forward>
+    </dispatch>
+:)

@@ -31,11 +31,12 @@ let $config := map {
  : below does see them.
  :)
 let $lookup := function($functionName as xs:string, $arity as xs:int) {
-    try {
+        function-lookup(xs:QName($functionName), $arity)
+(:    try {
         function-lookup(xs:QName($functionName), $arity)
     } catch * {
         ()
-    }
+    }:)
 }
 (:
  : The HTML is passed in the request from the controller.
