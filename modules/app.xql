@@ -310,38 +310,40 @@ function app:textview($node as node()*, $model as map(*), $location as xs:string
     (session:create(),
     if (string-length($location) > 0) then
      if (contains($location, '_')) then
-      let $textid := tokenize($location, '_')[1]
-      let $firstseg := collection($config:tls-texts-root)//tei:seg[@xml:id=$location]
-      return
-        try {tlslib:display-chunk($firstseg, $model, $prec, $foll)} catch * {"An error occurred, can't display text. Code:" || count($firstseg) || " (firstseg)" }
+       let $textid := tokenize($location, '_')[1]
+       let $firstseg := collection($config:tls-texts-root)//tei:seg[@xml:id=$location]
+       return
+         try {tlslib:display-chunk($firstseg, $model, $prec, $foll)} catch * {"An error occurred, can't display text. Code:" || count($firstseg) || " (firstseg)" }
      else
       if (not($mode = 'visit') and collection($config:tls-manifests)//mf:manifest[@xml:id=$location]) then 
       krx:show-manifest(collection($config:tls-manifests)//mf:manifest[@xml:id=$location]) 
-      else
-      let $firstdiv := if ($first = 'true') then 
-      (collection($config:tls-texts-root)//tei:TEI[@xml:id=$location]//tei:body/tei:div)[1]
-            else
-        let $user := sm:id()//sm:real/sm:username/text(),
-         $visit := (for $v in collection($config:tls-user-root || "/" || $user)//tei:list[@type="visits"]/tei:item
-            let $date := xs:dateTime($v/@modified),
-            $target := substring($v/tei:ref/@target, 2)
-            order by $date descending
-            where starts-with($target, $location)
-            return $target)[1]
-         return
-         if ($visit) then 
-            let $rst := collection($config:tls-texts-root)//tei:seg[@xml:id=$visit]
-            return if ($rst) then $rst else 
+     else
+      let $firstdiv := 
+         if ($first = 'true') then 
+            (collection($config:tls-texts-root)//tei:TEI[@xml:id=$location]//tei:body/tei:div)[1]
+         else
+            let $user := sm:id()//sm:real/sm:username/text()
+            , $visit := (for $v in collection($config:tls-user-root || "/" || $user)//tei:list[@type="visits"]/tei:item
+               let $date := xs:dateTime($v/@modified)
+               ,$target := substring($v/tei:ref/@target, 2)
+               order by $date descending
+               where starts-with($target, $location)
+               return $target)[1]
+            return
+            if ($visit) then 
+             let $rst := collection($config:tls-texts-root)//tei:seg[@xml:id=$visit]
+             return if ($rst) then $rst else 
+              (collection($config:tls-texts-root)//tei:TEI[@xml:id=$location]//tei:body)[1]
+            else          
              (collection($config:tls-texts-root)//tei:TEI[@xml:id=$location]//tei:body)[1]
-         else          
-         (collection($config:tls-texts-root)//tei:TEI[@xml:id=$location]//tei:body)[1]
-
+    
       let $targetseg := if (local-name($firstdiv) = "seg") then $firstdiv else 
       if ($firstdiv//tei:seg) then ($firstdiv//tei:seg)[1] else  ($firstdiv/following::tei:seg)[1] 
       return
         try {tlslib:display-chunk($targetseg, $model, 0, $prec + $foll)} catch * {"An error occurred, can't display text. Code:" || count($targetseg) || " (targetseg)"}
     else 
     app:textlist()
+    
     )
 };
 
