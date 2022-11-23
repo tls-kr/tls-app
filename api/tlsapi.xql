@@ -1132,8 +1132,8 @@ return
 :)
 declare function tlsapi:save-zh($map as map(*)){
 let $user := sm:id()//sm:real/sm:username/text()
-,$txtid := tokenize($id, "_")[1]
 ,$id := $map?id
+,$txtid := tokenize($id, "_")[1]
 ,$zh-to-save := $map?line
 ,$node := collection($config:tls-texts-root)//tei:seg[@xml:id=$id]
 ,$seg := <seg xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$id}" resp="#{$user}" modified="{current-dateTime()}">{$zh-to-save}</seg>

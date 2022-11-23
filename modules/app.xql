@@ -53,7 +53,7 @@ function app:logo($node as node(), $model as map(*)) {
 :)
 declare
     %templates:wrap
-function app:page-title($node as node()*, $model as map(*))
+function app:page-title($node as node()*, $model as map(*)) as xs:string
 { (: the html file accessed, without the extension :) 
  let $ts := 
  if ($model("textid")) then 
@@ -63,7 +63,7 @@ function app:page-title($node as node()*, $model as map(*))
  else "漢學文典"
 
 (:,$context := substring-before(tokenize(request:get-uri(), "/")[last()], ".html"):)
-return concat ("TLS - ", $ts)
+return "TLS - " || $ts
 };
 
 
@@ -330,7 +330,10 @@ function app:textview($node as node()*, $model as map(*), $location as xs:string
             return $target)[1]
          return
          if ($visit) then 
-         collection($config:tls-texts-root)//tei:seg[@xml:id=$visit]  else 
+            let $rst := collection($config:tls-texts-root)//tei:seg[@xml:id=$visit]
+            return if ($rst) then $rst else 
+             (collection($config:tls-texts-root)//tei:TEI[@xml:id=$location]//tei:body)[1]
+         else          
          (collection($config:tls-texts-root)//tei:TEI[@xml:id=$location]//tei:body)[1]
 
       let $targetseg := if (local-name($firstdiv) = "seg") then $firstdiv else 
@@ -1322,7 +1325,7 @@ declare
 function app:footer($node as node()*, $model as map(*)){
             <div class="container">
                 <span id="copyright"/>
-                    <p>Copyright TLS Project 2022  <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY SA</a> (except translations)</p>
+                    <p>Copyright TLS Project 2022, licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/" title="Creative Commons Attribution-ShareAlike 4.0 International License">CC BY SA</a> license (except some translations)</p>
                 <p>Developed at the <strong>Center for Informatics in East-Asian Studies, Institute for Research in Humanities, Kyoto University</strong>, with support from the 
                 <strong>Dean for Research, Department of East Asian Studies</strong>, and
                 <strong>Program in East Asian Studies, Princeton University</strong>.</p>    
