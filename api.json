@@ -16,6 +16,14 @@
 			"name": "path",
 			"description": "Route has special characters or parameters in path"
 		},
+        {
+			"name": "view",
+			"description": "View documents via an HTML template"
+		},
+        {
+			"name": "api",
+			"description": "AJAX requests"
+		},
 		{
 			"name": "query",
 			"description": "Route specifies query parameters"
@@ -177,7 +185,210 @@
                 "security": [{ "cookieAuth": [] }]
             }
         },
-        "/api/parameters": {
+"/index.html": {
+			"get": {
+				"summary": "Retrieve index page",
+				"description": "Retrieve an HTML page expanded through eXist templating. This is used to load the top-level HTML pages, e.g. `index.html`.",
+				"tags": ["view"],
+				"operationId": "av:html",
+				"x-error-handler": "av:handle-error",
+				"responses": {
+					"200": {
+						"description": "HTML of the page",
+						"content": {
+							"text/html": {
+								"schema": {
+									"type": "string"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "The document was not found",
+						"content": {
+							"text/html": {
+								"schema": {
+									"type": "string"
+								}
+							}
+						}
+					}
+				}
+	           }			
+},
+"/{file}.html": {
+			"get": {
+				"summary": "Retrieve HTML page",
+				"description": "Retrieve an HTML page expanded through eXist templating. This is used to load the top-level HTML pages, e.g. `index.html`.",
+				"tags": ["view"],
+				"operationId": "av:html",
+				"x-error-handler": "av:handle-error",
+				"parameters": [
+					{
+						"name": "file",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"name": "prec",
+						"in": "query",
+						"description": "Numper of preceding segments.",
+						"schema": {
+							"type": "string",
+							"default": "2"
+						}
+					},
+					{
+						"name": "foll",
+						"in": "query",
+						"description": "Numper of following segments.",
+						"schema": {
+							"type": "string",
+							"default": "30"
+						}
+					},
+					{
+						"name": "first",
+						"in": "query",
+						"description": "Show the first segment.",
+						"schema": {
+							"type": "string",
+							"default": "false"
+						}
+					},
+					{
+						"name": "bychar",
+						"in": "query",
+						"description": "For concept.",
+						"schema": {
+							"type": "integer",
+							"default": 0
+						}
+					},
+					{
+						"name": "char",
+						"in": "query",
+						"description": "Character to show.",
+						"schema": {
+							"type": "string"
+					     }
+					},
+					{
+						"name": "uuid",
+						"in": "query",
+						"description": "ID of the entity to show.",
+						"schema": {
+							"type": "string"
+					     }
+					},
+					{
+						"name": "query",
+						"in": "query",
+						"description": "Search term",
+						"schema": {
+							"type": "string"
+					     }
+					},
+					{
+						"name": "issue",
+						"in": "query",
+						"description": "Type of issue in reviews.",
+						"schema": {
+							"type": "string"
+					     }
+					},
+					{
+						"name": "type",
+						"in": "query",
+						"description": "Type of search.",
+						"schema": {
+							"type": "string"
+					     }
+					},
+					{
+						"name": "search-type",
+						"in": "query",
+						"description": "Type of search.",
+						"schema": {
+							"type": "string",
+							"default": "1"
+					     }
+					},
+					{
+						"name": "mode",
+						"in": "query",
+						"description": "Sort mode for the search results.",
+						"schema": {
+							"type": "string",
+							"enum": ["date", "rating"]
+					     }
+					},
+					{
+						"name": "textid",
+						"in": "query",
+						"description": "Internal ID of the text.",
+						"schema": {
+							"type": "string"
+					     },
+					     "example" : "KR5c0123"
+					},
+					{
+						"name": "start",
+						"in": "query",
+						"description": "First item to display in the search results.",
+						"schema": {
+							"type": "string",
+							"default": "1"
+					     }
+					},
+					{
+						"name": "resno",
+						"in": "query",
+						"description": "Number of items to display in the search results.",
+						"schema": {
+							"type": "string",
+							"default": "50"
+					     }
+					},
+					{
+						"name": "view",
+						"in": "query",
+						"schema": {
+							"type": "string",
+							"enum": ["page", "div", "single"]
+						},
+						"example": "div",
+						"description": "The view type used by the main view which displays the document, e.g. 'page' or 'div'. This has an influence on the generated links, which need to differ when linking to a page rather than a section."
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "HTML of the page",
+						"content": {
+							"text/html": {
+								"schema": {
+									"type": "string"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "The document was not found",
+						"content": {
+							"text/html": {
+								"schema": {
+									"type": "string"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/api/parameters": {
             "get": {
                 "description": "Parameters in URL and header (GET)",
                 "summary": "Test parameters of varying types passed in URL and header",
