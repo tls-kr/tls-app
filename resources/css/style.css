@@ -1,4 +1,17 @@
 /* Application styles could go here */
+
+@font-face {
+  font-family: "SWXZ-PUA";
+  src: url('../fonts/swxz-pua.woff') format('woff');
+}
+
+@font-face {
+  font-family: "BNUSWXZ";
+  src: url('../fonts/bnuswxz.woff') format('woff');
+}
+
+
+
 @media (min-width: 767px) {
   #header {
 /*    background: #f3f3f3 url(../images/tls-tls.png) top right no-repeat;*/
@@ -186,6 +199,19 @@
  background-color: rgba(128,128,128, 0.95);   
   */
 }
+
+.swxz-pua {
+  font-size: 1rem;
+  font-weight: 200;
+  font-family: "SWXZ-PUA", Calibri, Tahoma, sans-serif;
+}
+
+.swxz {
+  font-size: 2rem;
+  font-weight: 300;
+  font-family: "BNUSWXZ", Calibri, Tahoma, sans-serif;
+}
+
 
 .tei-fw {
  background-color: rgba(80,120,128, 0.25);       
