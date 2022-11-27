@@ -9,6 +9,8 @@ declare namespace tei= "http://www.tei-c.org/ns/1.0";
 
 declare variable $wd:wikidata-api := "https://www.wikidata.org/w/api.php?format=xml&amp;action=query&amp;list=search&amp;srlimit=100&amp;srprop=titlesnippet%7Csnippet&amp;uselang=zh&amp;srsearch=";
 
+(: get data for entities with https://www.wikidata.org/w/api.php?action=help&modules=wbgetentities :)
+
 declare variable $wd:qtypes := map{
   "Q7725634" : "Literary Work",
   "Q5" : "Human",

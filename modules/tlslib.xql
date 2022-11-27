@@ -118,7 +118,7 @@ let $h := "0123456789ABCDEF"
   (tlslib:num2hex($num idiv 16),
   tlslib:num2hex($num mod 16))
   else if ($num < 16) then
-   substring($h, $num + 1, 1)
+   "0" || substring($h, $num + 1, 1)
   else ()
   return
   string-join($s, "")
@@ -470,7 +470,16 @@ declare function tlslib:proc-seg($node as node()){
  case element(tei:note) return ()
 (:     <small>{$node/text()}</small>:)
   case element (tei:l) return ()
-  case element (tei:c) return data($node/@n)
+  case element (tei:c) return 
+  if ($node/@type = "shifted") then 
+    <span class="swxz">{data($node/@n)}</span>
+    else
+    data($node/@n)
+  case element (tei:g) return 
+  if ($node/@type = "SWXZ-PUA") then 
+    <span class="swxz-pua">{$node/text()}</span>
+    else
+    $node/text()
   case element (tei:lb)  return ()
   case element (exist:match) return <mark>{$node/text()}</mark>
   case element (tei:anchor) return 
@@ -626,6 +635,7 @@ declare function tlslib:has-edit-permission($text-id as xs:string) as xs:boolean
     true()
   else
    if (sm:id()//sm:real/sm:username/text() = "guest") then false () else 
+   if (sm:id()//sm:group = ("test")) then false() else 
     let $permissions := doc("/db/users/tls-admin/permissions.xml")
     return $text-id and 
         sm:id()//sm:group = "tls-punc" and 
@@ -1229,6 +1239,8 @@ return
 if($locked and $textid and tlslib:has-edit-permission($textid)) then 
   tlslib:format-button("display_punc_dialog('" || data($seg/@xml:id) || "')", "Add punctuation to this text segment", "octicons/svg/lock.svg", "", "", ("tls-editor", "tls-punc")) 
 else ()
+(: either within or without the segment, for the moment place it within :)
+(:, if ($seg/tei:c[@type='shifted']) then <span class="swxz">{data($seg/tei:c[@type='shifted']/@n)}</span> else ():)
 }<div class="{
 if ($seg/@type='comm') then 'tls-comm ' else 
 if($locked) then 'locked ' else () }{
