@@ -1063,6 +1063,7 @@ $zi := string-join($node/tei:form/tei:orth/text(), "/")
 , $exemplum := if ($node/tls:metadata/@rating) then xs:int($node/tls:metadata/@rating) else 0
 , $bg := if ($exemplum > 0) then "protypical-"||$exemplum else "bg-light"
 , $marktext := if ($exemplum = 0) then "Mark this attribution as prototypical" else "Currently marked as prototypical "||$exemplum ||". Increase up to 3 then reset."
+, $resp := doc($config:tls-data-root || "/vault/members.xml")//tei:person[@xml:id=$creator-id]//tei:persName/text()
 (:$pos := concat($sf, if ($sm) then (" ", $sm) else "")
 :)
 return
@@ -1070,18 +1071,7 @@ if ($type = "row") then
 if ($anntype eq "nswl") then
 <div class="row {$bg} {$anntype}">
 {if (not($context = 'review')) then 
-<div class="col-sm-1"><span class="{$anntype}-col">●</span>
-<!--
-      <span id="input-{$rid}" class="starRating">
-        <input id="{$rid}-rating3" type="radio" name="rating" value="3" checked="true"/>
-        <label for="{$rid}-rating3">3</label>
-        <input id="{$rid}-rating2" type="radio" name="rating" value="2"/>
-        <label for="{$rid}-rating2" >2</label>
-        <input class="starRatingOn" id="{$rid}-rating1" type="radio" name="rating" value="1"/>
-        <label for="{$rid}-rating1" class="starRatingOn">1</label>
-      </span>
--->      
-</div>
+<div class="col-sm-1"><span class="{$anntype}-col">●</span></div>
 else ()}
 <div class="col-sm-2"><span class="zh">{$czi}</span> ({$cpy})
 {if  ("tls-admin.x" = sm:get-user-groups($user)) then (data(($node//tls:srcline/@pos)[1]),
@@ -1098,39 +1088,12 @@ else ()}
 {$def}
 {
 if ("tls-editor"=sm:get-user-groups($user) and $node/@xml:id) then 
-(: for the time being removing the button, don't really know what I would want to edit here:-)
- <button type="button" class="btn" onclick="edit_swl('{$node/@xml:id}')" style="width:10px;height:20px;" 
- title="Edit Attribution">
- <img class="icon" onclick="edit_swl('{$node/@xml:id}')" style="width:10px;height:13px;top:0;align:top" src="resources/icons/open-iconic-master/svg/pencil.svg"/>
- </button> 
- :)
 (
- (:   tlslib:format-button("delete_swl('swl', '" || data($node/@xml:id) || "')", "Request deletion of SWL for "||$zi, "open-iconic-master/svg/x.svg", "small", "close", "tls-editor"),:)
  (: for reviews, we display the buttons in tlslib:show-att-display, so we do not need them here :)
   if (not($context='review')) then
    (
-(:   <input id="input-{$node/@xml:id}" style="display:inline;" name="input-name" type="number" class="rating" 
-    min="0" max="3" step="1" data-theme="krajee-svg" data-size="xs" value="3"/>,  :)
-
-(:      <span id="input-{$rid}" class="starRating">
-        <input id="{$rid}-rating3" type="radio" name="rating" value="3" checked="true"/>
-        <label for="{$rid}-rating3">3</label>
-        <input id="{$rid}-rating2" type="radio" name="rating" value="2"/>
-        <label for="{$rid}-rating2">2</label>
-        <input id="{$rid}-rating1" type="radio" name="rating" value="1"/>
-        <label for="{$rid}-rating1">1</label>
-      </span>,
-      
-      <span id="input-{$rid}" class="starRating pull-right">
-        <label for="{$rid}-rating3" class="icon" style="width:12px;height:15px;top:0;align:bottom"></label>
-        <label for="{$rid}-rating2" class="icon"  style="width:12px;height:15px;top:0;align:bottom"></label>
-        <label for="{$rid}-rating1" class="icon"  style="width:12px;height:15px;top:0;align:bottom"></label>
-      </span>    
-      
-      :)
-
-
-
+   (: not as button, but because of the title string :)
+   tlslib:format-button("null()", "Resp: " || $resp , "open-iconic-master/svg/person.svg", "small", "close", "tls-user"),
    (: for my own swls: delete, otherwise approve :)
    if (($user = $creator-id) or contains($usergroups, "tls-editor" )) then 
     tlslib:format-button("delete_swl('swl', '" || data($node/@xml:id) || "')", "Immediately delete this SWL for "||$zi[1], "open-iconic-master/svg/x.svg", "small", "close", "tls-editor")
@@ -1376,6 +1339,9 @@ $target := substring(data($a/tls:text/tls:srcline/@target), 2),
 $loc := try {xs:int((tokenize($target, "_")[3] => tokenize("-"))[1])} catch * {0}
 , $exemplum := if ($a/tls:metadata/@rating) then xs:int($a/tls:metadata/@rating) else 0
 , $bg := if ($exemplum > 0) then "protypical-"||$exemplum else "bg-light"
+, $creator-id := substring($a/tls:metadata/@resp, 2)
+, $resp := doc($config:tls-data-root || "/vault/members.xml")//tei:person[@xml:id=$creator-id]//tei:persName/text()
+
 return
 <div class="row {$bg} table-striped">
 <div class="col-sm-2"><a href="textview.html?location={$target}" class="font-weight-bold">{$src, $loc}</a></div>
@@ -1383,6 +1349,8 @@ return
 <div class="col-sm-7"><span>{$tr/text()}</span>
 {if ((sm:has-access(document-uri(fn:root($a)), "w") and $a/@xml:id) and not(contains(sm:id()//sm:group, 'tls-test'))) then 
 (
+   tlslib:format-button("null()", "Resp: " || $resp , "open-iconic-master/svg/person.svg", "small", "close", "tls-user"),
+
 (:tlslib:format-button("review_swl_dialog('" || data($a/@xml:id) || "')", "Review this attribution", "octicons/svg/unverified.svg", "small", "close", "tls-editor"),:)
 tlslib:format-button("incr_rating('swl', '" || data($a/@xml:id) || "')", "Mark this attribution as prototypical", "open-iconic-master/svg/star.svg", "small", "close", "tls-editor"),
 tlslib:format-button("delete_swl('swl', '" || data($a/@xml:id) || "')", "Delete this attribution", "open-iconic-master/svg/x.svg", "small", "close", "tls-editor"),
