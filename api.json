@@ -516,6 +516,34 @@
                 }
             }
         },
+        "/api/member/{ben}/recent": {
+            "get": {
+                "summary": "Recent activity",
+                "operationId": "api:date",
+                "tags": ["view"],
+                "parameters": [
+                    {
+                        "name": "ben",
+                        "in": "path",
+                        "schema":{
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200":{
+                        "description": "JSON dump of request",
+                        "content": {
+                            "application/json": {
+                                "schema":{
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/dates": {
             "get": {
                 "summary": "Dates in querystring",

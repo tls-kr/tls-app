@@ -20,6 +20,28 @@ import module namespace tlslib="http://hxwd.org/lib" at "tlslib.xql";
 import module namespace http="http://expath.org/ns/http-client";
 import module namespace mail="http://exist-db.org/xquery/mail";
 
+(: the javascript required for recaptcha v3, cf https://developers.google.com/recaptcha/docs/v3 :) 
+
+declare function sgn:javascript($node as node(), $model as map(*)){
+<script src="https://www.google.com/recaptcha/api.js"></script>
+};
+
+(: 
+ <script>
+   function onSubmit(token) {
+     document.getElementById("demo-form").submit();
+   }
+ </script>
+
+----
+<button class="g-recaptcha" 
+        data-sitekey="reCAPTCHA_site_key" 
+        data-callback='onSubmit' 
+        data-action='submit'>Submit</button>
+
+
+:)
+
 declare function sgn:make-token(){
 (: in your database for validation purposes, you need to store: <user-id> -> (<timestamp>, <shared-secret>) :)
 let $secure-salt := util:hash("your-secret-salt", "sha-256")
