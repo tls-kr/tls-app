@@ -1,0 +1,192 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "version": "1.1.0",
+        "title": "Custom Authorization API",
+        "description": "Example how to use exist-JWT with roaster"
+    },
+    "servers": [
+        {
+            "url": "/exist/apps/roasted",
+            "description": "Relative URL using the current host and port"
+        }
+    ],
+    "tags": [
+		{
+			"name": "restricted",
+			"description": "You need to be authenticated"
+		},
+		{
+			"name": "public",
+			"description": "Anyone can access this route"
+		},
+        {
+            "name": "without-security-scheme",
+            "description": "Do not read user info"
+        }
+	],
+    "security": [
+        {
+            "JWTAuth": []
+        }
+    ],
+    "components": {
+        "securitySchemes": {
+            "JWTAuth": {
+                "type": "apiKey",
+                "in": "header",
+                "name": "X-Auth-Token"
+            }
+        }
+    },
+    "paths": {
+        "/jwt/test/is-dba": {
+            "get": {
+                "summary": "test token authorization",
+                "operationId": "rutil:debug",
+                "x-constraints": {
+                    "groups": ["dba"]
+                },
+                "tags": ["restricted"],
+                "responses": {
+                    "200": {
+                        "description": "Access Token valid",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json":{
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json":{
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "XQuery error",
+                        "content": {
+                            "application/json":{
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/jwt/token": {
+            "post": {
+                "security": [],
+                "summary": "Issue a JWT access token",
+                "operationId": "jwt-auth:issue-token",
+                "tags": ["without-security-scheme"],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "username": {
+                                        "type": "string"
+                                    },
+                                    "password": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Issue New Access Token",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json":{
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json":{
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "XQuery error",
+                        "content": {
+                            "application/json":{
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/jwt/public/{path}":{
+            "get": {
+                "summary": "Public route example",
+                "operationId": "rutil:debug",
+                "tags": ["public"],
+                "parameters": [
+                    {
+                        "required": true,
+                        "name": "path",
+                        "in": "path",
+                        "schema":{
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200":{
+                        "description": "JSON dump of request",
+                        "content": {
+                            "application/json": {
+                                "schema":{
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

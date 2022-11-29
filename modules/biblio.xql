@@ -16,6 +16,8 @@ declare namespace tls="http://hxwd.org/ns/1.0";
 import module namespace config="http://hxwd.org/config" at "config.xqm";
 import module namespace tlslib="http://hxwd.org/lib" at "tlslib.xql";
 import module namespace templates="http://exist-db.org/xquery/templates" ;
+import module namespace http="http://expath.org/ns/http-client";
+import module namespace dbu="http://exist-db.org/xquery/utility/db" at "db-utility.xqm";
 
 declare variable $bib:l2c := map{
   "Chinese" : "chi",
@@ -43,6 +45,48 @@ declare variable $bib:c2l := map{
  "mul" : "Multiple" 
 };
 
+(:~ 
+: import entries from zotero 
+:)
+
+declare variable $bib:zot-base-url := "https://api.zotero.org/users/";
+
+declare function bib:get-zotero-item($item as xs:string){
+let $user := sm:id()//sm:real/sm:username/text()
+, $user-doc := doc('/db/users/'||$user||'/access-config.xml')
+, $zot-config := if($user-doc) then $user-doc else <response status="fail"><message>Load config.xml file please.</message></response>
+, $zot-user-key := (: if($bib:zot-config//private-key-variable != '') then 
+                                        if (environment-variable($git-config//private-key-variable/text()) != '') 
+                                        then environment-variable($git-config//private-key-variable/text() ) else :)
+                                      $zot-config//zotToken/text()
+
+let $path := $zot-config//zotApiUser/text() || "/items/" || $item || "?v=3&amp;format=mods&amp;key=" || $zot-user-key 
+let $res :=  
+            http:send-request(<http:request http-version="1.1" href="{xs:anyURI($bib:zot-base-url||$path)}" method="get">
+                                <http:header name="Connection" value="close"/>
+                              </http:request>)                              
+return  
+bib:save-mods($res[2])
+};
+(:                                 <http:header name="Authentication" value="Bearer {$zot-user-key}"/> :)
+declare function bib:add-zotero-entry($request as map(*)){
+
+};
+
+declare function bib:save-mods($mods as node()){
+let $id := "uuid-" || util:uuid() 
+, $coll := dbu:ensure-collection($config:tls-data-root || "/bibliography/" || substring($id, 6, 1))
+, $uri := xmldb:store($coll, $id || ".xml", <mods xmlns="http://www.loc.gov/mods/v3" ID="{$id}">{$mods//mods:mods/child::*}</mods>)
+, $fix := bib:fix-mods(doc($uri))
+return
+ (
+    sm:chmod(xs:anyURI($uri), "rwxrwxr--"),
+(:    sm:chown(xs:anyURI($uri), "tls"),:)
+    sm:chgrp(xs:anyURI($uri), "tls-user"),
+    $uri
+ )
+
+};
 
 (:~ 
 : Browse the bibliography
@@ -189,17 +233,17 @@ return
 <div class="row">
 <div class="col-sm-2"/>
 <div class="col-sm-2"><span class="font-weight-bold float-right">Details</span></div>
-<div class="col-sm-5">(place){$m//mods:place/mods:placeTerm/text()}: (publisher){$m//mods:publisher/text()}, {$m//mods:dateIssued/text()}</div>
+<div class="col-sm-5">(place){$m//mods:place/mods:placeTerm/text()}: (publisher){$m//mods:publisher/text()}, {$m//mods:dateIssued/text(),$m//mods:copyrightDate/text()}</div>
 </div>
 <div class="row">
 <div class="col-sm-2"/>
 <div class="col-sm-2"><span class="font-weight-bold float-right">Identifier</span></div>
-<div class="col-sm-5">{$m/mods:note[@type="bibliographic-reference"]/text()}</div>
+<div class="col-sm-5">{$m/mods:note[@type="bibliographic-reference"]/text(), $m/mods:identifier[@type="isbn"]}</div>
 </div>
 <div class="row">
 <div class="col-sm-2"/>
 <div class="col-sm-2"><span class="font-weight-bold float-right">Topics</span></div>
-<div class="col-sm-5">{for $t in tokenize($m/mods:note[@type='topics'], ';') return <a  class="badge badge-pill badge-light" href="browse.html?type=biblio&amp;filter={$t}&amp;mode=topic">{$t}</a>}</div>
+<div class="col-sm-5">{for $t in $m//mods:topic return <a  class="badge badge-pill badge-light" href="browse.html?type=biblio&amp;filter={$t}&amp;mode=topic">{$t}</a>}</div>
 </div>
 <div class="row">
 <div class="col-sm-2"/>
@@ -248,7 +292,7 @@ declare function bib:display-author($n as node()*){
   return
    ($np
    ,if ($np[@script=$s] and not($np/@lang = ("chi", "jpn"))) then ", " else " ",
-   $np/preceding-sibling::mods:namePart[@type='given' and @script=$s] || " ") } </span>
+   $np/preceding-sibling::mods:namePart[@type='given' and @script=$s]||$np/following-sibling::mods:namePart[@type='given' and @script=$s] || " ") } </span>
 };
 
 
@@ -305,21 +349,29 @@ for $t in $m//mods:title
     update insert attribute script { $val }into  $ti
 
 ,for $t in $m//mods:namePart
- let $val := if ($bib:l2c($t/@lang)) then $bib:l2c($t/@lang) else ()
+ let $val := if ($t/@lang and $bib:l2c($t/@lang)) then $bib:l2c($t/@lang) else ()
  , $ti := $t
  return
  if ($val) then
     update replace $ti/@lang with $val
  else ()
-    
-,for $n in $m//mods:note[@type='topics']
+
+,if ($m//mods:subject/mods:topic) then
+  for $t in $m//mods:topic
+  let $se := <topic xmlns="http://www.loc.gov/mods/v3" xmlns:tls="http://hxwd.org/ns/1.0" tls:sort="{lower-case(normalize-space($t))}">{normalize-space($t)}</topic>
+  return 
+  update replace $t with $se
+ 
+ else
+
+ for $n in $m//mods:note[@type='topics']
   let $s := for $t in tokenize($n, ";")
        let $se := <topic xmlns="http://www.loc.gov/mods/v3" xmlns:tls="http://hxwd.org/ns/1.0" tls:sort="{lower-case(normalize-space($t))}">{normalize-space($t)}</topic>
       return
       update insert <subject xmlns="http://www.loc.gov/mods/v3" xmlns:tls="http://hxwd.org/ns/1.0">{$se}</subject> into $m
   return
   update delete $n
-, update insert <note  xmlns="http://www.loc.gov/mods/v3" type="ref-usage">{$usage}</note> into $m  
+, update insert <note  xmlns="http://www.loc.gov/mods/v3" type="ref-usage">{$usage}</note> into $m/mods:mods  
  )   
 return "OK"
 };

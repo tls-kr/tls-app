@@ -14,6 +14,7 @@ import module namespace errors="http://e-editiones.org/roaster/errors";
 
 import module namespace app="http://hxwd.org/app" at "app.xql";
 import module namespace av="http://hxwd.org/api/view" at "api-view.xql";
+import module namespace tlsapi="http://hxwd.org/tlsapi" at "../api/tlsapi.xql";
 
 (:~
  : list of definition files to use

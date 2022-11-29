@@ -300,6 +300,16 @@ declare function config:get-configuration() as element(configuration) {
     doc(concat($config:app-root, "/access-config.xml"))/config
 };
 
+(:~~
+ : A list of regular expressions to check which external hosts are
+ : allowed to access this TEI Publisher instance. The check is done
+ : against the Origin header sent by the browser.
+ :)
+declare variable $config:origin-whitelist := (
+    "(?:https?://localhost:.*|https?://127.0.0.1:.*)"
+);
+
+
 (:~
  : Get collection data
  : @param $collection match collection name in repo-config.xml 

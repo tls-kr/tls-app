@@ -10,6 +10,7 @@ declare variable $exist:prefix external;
 declare variable $exist:root external;
 
 declare variable $logout := request:get-parameter("logout", ());
+declare variable $allowOrigin := local:allowOriginDynamic(request:get-header("Origin"));
 
 declare variable $local:HTTP_OK := xs:integer(200);
 declare variable $local:HTTP_CREATED := xs:integer(201);
@@ -22,6 +23,25 @@ declare variable $local:HTTP_METHOD_NOT_ALLOWED := xs:integer(405);
 declare variable $local:HTTP_INTERNAL_SERVER_ERROR := xs:integer(500);
 
 declare variable $local:isget := request:get-method() = ("GET","get");
+
+declare function local:allowOriginDynamic($origin as xs:string?) {
+    let $origin := replace($origin, "^(\w+://[^/]+).*$", "$1")
+    return
+        if (local:checkOriginWhitelist($config:origin-whitelist, $origin)) then
+            $origin
+        else
+            "*"
+};
+
+declare function local:checkOriginWhitelist($regexes, $origin) {
+    if (empty($regexes)) then
+        false()
+    else if (matches($origin, head($regexes))) then
+        true()
+    else
+        local:checkOriginWhitelist(tail($regexes), $origin)
+};
+
 
 declare function local:user-allowed() {
     (
@@ -59,7 +79,22 @@ else if ($exist:path eq "/") then
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
         <redirect url="index.html"/>
     </dispatch>
-    
+
+(: static HTML page for API documentation should be served directly to make sure it is always accessible :)
+else if ($exist:path eq '/api.html') then
+    <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+        <forward url="{$exist:controller}/api.html"/>
+    </dispatch>
+else if ($exist:path eq '/api.json') then
+    <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+        <forward url="{$exist:controller}/api.json"/>
+    </dispatch>
+else if ($exist:path eq '/api-jwt.json') then
+    <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+        <forward url="{$exist:controller}/api-jwt.json"/>
+    </dispatch>
+
+
 else if (ends-with($exist:resource, ".xql")) then (
         (: log the user in again! :)
         login:set-user($config:login-domain, (), false()),
@@ -114,6 +149,29 @@ else if (contains($exist:path, "/$app-root/")) then
             </forward>
         </dispatch>        
 
+(: static resources from the resources, transform, templates, odd or modules subirectories are directly returned :)
+else if (matches($exist:path, "^.*/(resources|transform|templates)/.*$")
+    or matches($exist:path, "^.*/odd/.*\.css$")
+    or matches($exist:path, "^.*/modules/.*\.json$")) then
+    let $dir := replace($exist:path, "^.*/(resources|transform|modules|templates|odd)/.*$", "$1")
+    return
+        <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+            <forward url="{$exist:controller}/{$dir}/{substring-after($exist:path, '/' || $dir || '/')}">
+            {
+                if ($dir = "transform") then
+                    <set-header name="Cache-Control" value="no-cache"/>
+                else if (contains($exist:path, "/resources/fonts/")) then
+                    <set-header name="Cache-Control" value="max-age=31536000"/>
+                else (
+                    <set-header name="Access-Control-Allow-Origin" value="{$allowOrigin}"/>,
+                    if ($allowOrigin = "*") then () else <set-header name="Access-Control-Allow-Credentials" value="true"/>
+                )
+            }
+            </forward>
+        </dispatch>
+
+
+
 (: Resource paths starting with $nav-base are resolved relative to app :)
 (:else if (contains($exist:path, "/$nav-base/")) then
         <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
@@ -137,16 +195,17 @@ else if (contains($exist:path, "/$shared/")) then
             <set-header name="Cache-Control" value="max-age=3600, must-revalidate"/>
         </forward>
     </dispatch>
-else
+else 
     (: everything else is passed through :)
+    
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
         <cache-control cache="yes"/>
     </dispatch>
 
-(: This is for the open api, but not ready yet... 
+(: This is for the open api, but not ready yet...  :)
 
-else
-    <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+
+(:    <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
         <forward url="{$exist:controller}/modules/api.xql">
             <set-header name="Access-Control-Allow-Origin" value="*"/>
             <set-header name="Access-Control-Allow-Credentials" value="true"/>
