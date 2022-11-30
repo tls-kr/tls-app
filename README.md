@@ -10,9 +10,11 @@ Editors:
 
 ## Requirements
 *   [exist-db](http://exist-db.org/exist/apps/homepage/index.html) version: `3.6.1` or greater
-*   [tls-data](https://github.com/tls-kr/tls-data) version: `0.8.0`
-*   [tls-texts](https://github.com/tls-kr/tls-texts) version: `0.7.0`
+*   [tls-data] version: `0.8.0`
+*   [tls-texts] version: `0.7.0`
 *   [ant](http://ant.apache.org) version: `1.10.5` \(for building from source\)
+
+Note:  The data repositories are currently private.  We plan to make them public in due time.
 
 ## Building and Installation
 1.  Download, fork or clone this GitHub repository, e.g:
