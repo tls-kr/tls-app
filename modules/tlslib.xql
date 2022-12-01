@@ -1073,7 +1073,7 @@ if ($anntype eq "nswl") then
 {if (not($context = 'review')) then 
 <div class="col-sm-1"><span class="{$anntype}-col">●</span></div>
 else ()}
-<div class="col-sm-2"><span class="zh">{$czi}</span> ({$cpy})
+<div class="col-sm-2"><span class="zh chn-font">{$czi}</span> ({$cpy})
 {if  ("tls-admin.x" = sm:get-user-groups($user)) then (data(($node//tls:srcline/@pos)[1]),
  <a href="{
       concat($config:exide-url, "?open=", document-uri(root($node)))}">eXide</a>)
@@ -1207,7 +1207,7 @@ else ()
 }<div class="{
 if ($seg/@type='comm') then 'tls-comm ' else 
 if($locked) then 'locked ' else () }{
-if ($ann='false') then 'col-sm-4' else 'col-sm-2'} zh {$alpheios-class} {$markup-class}" lang="{$lang}" id="{$seg/@xml:id}" data-tei="{ util:node-id($seg) }">{
+if ($ann='false') then 'col-sm-4' else 'col-sm-2'} zh chn-font {$alpheios-class} {$markup-class}" lang="{$lang}" id="{$seg/@xml:id}" data-tei="{ util:node-id($seg) }">{
 tlslib:proc-seg($seg)
 }{(:if (exists($seg/tei:anchor/@xml:id)) then <span title="{normalize-space(string-join($seg/ancestor::tei:div//tei:note[tei:ptr/@target='#'||$seg/tei:anchor/@xml:id]/text()))}" >●</span> else ():) ()}</div>　
 <div class="col-sm-5 tr" title="{$resp1}" lang="en-GB" tabindex="{$options('pos')+500}" id="{$seg/@xml:id}-tr" contenteditable="{if (not($testuser) and not($locked)) then 'true' else 'false'}">{typeswitch ($slot1) 

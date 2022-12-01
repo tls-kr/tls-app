@@ -52,14 +52,14 @@ declare function dialogs:add-rd-dialog($options as map(*)){
             <div class="modal-body">
                 <h6 class="font-weight-bold">Begin:  
                 <!-- <span id="concept-line-id-span" class="ml-2">{$options?line-id}</span>&#160; -->
-                <span id="concept-line-text-span" class="ml-2">{$options?line}</span></h6>
+                <span id="concept-line-text-span" class="chn-font ml-2">{$options?line}</span></h6>
                 
                 
             <div class="form-row">
               <div id="select-end-group" class="form-group col-md-4">
                 <label for="select-end" class="font-weight-bold">Select end of assignment (
                 <button class="btn badge badge-primary" type="button" onclick="get_more_lines('{$options?line-id}')" title="Press here to add more lines">＞</button>):</label>
-                 <select class="form-control" id="select-end">
+                 <select class="form-control chn-font" id="select-end">
                    <option value="{$options?line-id}">{$options?line}</option>
                   {for $s in tlslib:next-n-segs($options?line-id, 20)
                     return
@@ -287,11 +287,11 @@ return
                     <label for="input-char"><strong>Characters</strong> <br/><small class="text-muted">If you alter the characters, please press <button class="btn badge badge-primary ml-2" type="button" onclick="get_guangyun()">
                         廣韻
                     </button> to update the readings. </small></label>
-                    <input id="input-char" class="form-control" value="{$para?char}"/>                   
+                    <input id="input-char" class="form-control chn-font" value="{$para?char}"/>                   
                 </div>
 
             <p class="text-muted"><small>{if (string-length($para?pinyin) > 0 and string-length($para?wid) > 0) then <span>Currently {$para?pinyin} is assigned. </span> else (), <span>Please select a pronounciation or enter a new one:</span>}</small></p>
-                <div class="form-group" id="guangyun-group">               
+                <div class="form-group chn-font" id="guangyun-group">               
                 {tlslib:get-guangyun($para?char, 'xx', false())}
                 </div>
                 <small class="text-muted">Sources/Notes and Glosses are only used for readings not from 廣韻</small>
@@ -513,11 +513,11 @@ declare function dialogs:punc-dialog($map as map(*)){
             </div>
             <div class="modal-body">
             <h6 class="font-weight-bold">Previous segment</h6>
-            <div class="card-text"><small class="text-muted">{$pseg//text()}</small></div>
+            <div class="card-text chn-font"><small class="text-muted">{$pseg//text()}</small></div>
             <div class="form row">
             <div class="text-muted text-right mt-2 col-md-3">　</div>
             <div class="mt-2 col-md-2"><span class="text-muted">Splitting characters:</span> </div>
-            <div class="mt-2 col-md-4"><span class="text-muted">{$config:seg-split-tokens}</span></div>
+            <div class="mt-2 col-md-4"><span class="text-muted chn-font">{$config:seg-split-tokens}</span></div>
             </div>
             <div class="form row">
             <div class="font-weight-bold mt-2 col-md-3">Current text segment</div>
@@ -532,10 +532,10 @@ declare function dialogs:punc-dialog($map as map(*)){
                    } 
                  </select>                 </div>
                  </div>     
-            <div class="card-text" contenteditable="true" id="current-seg">{tlslib:proc-seg-for-edit($seg)  => string-join('') => normalize-space() => replace(' ', '')}</div>
+            <div class="card-text chn-font" contenteditable="true" id="current-seg">{tlslib:proc-seg-for-edit($seg)  => string-join('') => normalize-space() => replace(' ', '')}</div>
             <div class="form row"><div class="mt-2 col-md-12"><small>IMPORTANT: <span class="font-weight-bold">'$'</span> characters represent important information not shown here, please do not remove!</small></div></div>
             <h6 class="font-weight-bold">Following segment</h6>
-            <div class="card-text"><small class="text-muted">{$nseg//text()}</small></div>
+            <div class="card-text chn-font"><small class="text-muted">{$nseg//text()}</small></div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
