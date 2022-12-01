@@ -20,6 +20,11 @@
   src: url('../fonts/bnuswxz.woff') format('woff');
 }
 
+/*  Information about Chinese fonts on various platforms is gleaned from http://xahlee.info/js/html_chinese_font.html */
+
+.chn-font {
+  font-family: 'Microsoft YaHei', 'SimSun', 'Songti TC' , 'WenQuanYi', 'Noto Sans TC', sans;    
+}
 
 
 @media (min-width: 767px) {
@@ -222,9 +227,6 @@
   font-family: "BNUSWXZ", Calibri, Tahoma, sans-serif;
 }
 
-.zho {
-  font-family: 'Noto Sans TC', sans;    
-}
 
 .tei-fw {
  background-color: rgba(80,120,128, 0.25);       
