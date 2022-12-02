@@ -257,7 +257,7 @@ declare
 function src:show-hits-h1($node as node()*, $map as map(*),  $type as xs:string){
 let $st :=  if (string-length($type) > 0) then map:get($config:search-map, $map?search-type) || "/" || map:get($config:lmap, $type) else map:get($config:search-map, $map?search-type)
 return
-<h1>Searching in <strong>{$st}</strong> for <mark>{$map?query}</mark></h1>
+<h1>Searching in <strong>{$st}</strong> for <mark class="chn-font">{$map?query}</mark></h1>
 };
 
 declare
@@ -412,12 +412,12 @@ declare function src:show-text-results($map as map(*)){
       where if ($map?search-type=$src:search-trans) then $m1 = $m1 else $m1 = $map?q1
     return
       <tr>
-        <td>{$c + $map?start -1}</td>
+        <td class="chn-font">{$c + $map?start -1}</td>
         <td><a href="textview.html?location={$loc}&amp;query={$map?query}">{$title, " / ", $head}</a>
         </td>
         {if ($map?search-type = $src:search-trans) then  
         (<td>{$cseg}</td>,<td>{$h}</td>) else
-        <td>{ 
+        <td class="chn-font">{ 
         for $sh in $h/preceding-sibling::tei:seg[position()<4] return tlslib:proc-seg($sh),
         tlslib:proc-seg($h),
         (: this is a hack, it will probably show the most recent translation if there are more, but we want to make this predictable... :)
@@ -533,8 +533,8 @@ declare %private function src:get-more($t as xs:string, $start as xs:int, $count
 
 declare function src:get-kwic($node as element(), $config as element(config), $link) {
   <tr>
-    <td class="previous">...{$node/preceding::text()[fn:position() < 10]}</td>
-    <td class="hi"><mark>
+    <td class="previous chn-font">...{$node/preceding::text()[fn:position() < 10]}</td>
+    <td class="hi chn-font"><mark>
     {
       if ($link) then
         <a href="{$config/@link}">{$node/text()}</a>
@@ -542,7 +542,7 @@ declare function src:get-kwic($node as element(), $config as element(config), $l
         $node/text()
     }
     </mark></td>
-    <td class="following">{$node/following::text()[fn:position() < 10]}...</td>
+    <td class="following chn-font">{$node/following::text()[fn:position() < 10]}...</td>
   </tr>
 };
 

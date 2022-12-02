@@ -1182,7 +1182,7 @@ return
                     
                     <form action="search.html" class="form-inline my-2 my-lg-0" method="get">
                     <input type="hidden" name="textid" value="{map:get($model, 'textid')}"/>
-                        <input id="query-inp" name="query" class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search" value="{if (string-length($query) > 0) then $query else ()}"/> in 
+                        <input id="query-inp" name="query" class="form-control mr-sm-2 chn-font" type="search" placeholder="Search" aria-label="Search" value="{if (string-length($query) > 0) then $query else ()}"/> in 
         <select class="form-control input-sm" name="search-type">
           <option selected="true" value="{if ($context = "textview") then '5' else '1'}">{$config:search-map?1}</option>
           <option value="7">{$config:search-map?7}</option>
