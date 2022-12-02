@@ -965,7 +965,7 @@ declare function tlslib:swl-form-dialog($context as xs:string, $model as map(*))
 <div id="swl-form" class="card ann-dialog overflow-auto">
 {if ($context = 'textview') then
  <div class="card-body">
-    <h5 class="card-title"><span id="new-att-title">{if (sm:is-authenticated()) then "New Attribution:" else "Existing SW for " }<strong class="ml-2"><span id="swl-query-span">Word or char to annotate</span>:</strong></span>
+    <h5 class="card-title"><span id="new-att-title">{if (sm:is-authenticated()) then "New Attribution:" else "Existing SW for " }<strong class="ml-2 chn-font"><span id="swl-query-span">Word or char to annotate</span>:</strong></span>
 <span id="domain-lookup-mark">
     <span class="badge badge-info ml-2" onclick="wikidata_search()" title="Click here for a quick search in WikiData"> WD </span>
     <span>　　Lookup domain:<select id="domain-select" onChange="update_swlist()"><option value="core">Core</option>{for $d in xmldb:get-child-collections($config:tls-data-root||'/domain') return <option value="{$d}">{tlslib:capitalize-first($d)}</option>}</select></span>
@@ -1005,7 +1005,7 @@ declare function tlslib:swl-form-dialog($context as xs:string, $model as map(*))
     </div>    
 else 
  <div class="card-body">
-    <h5 class="card-title"><span id="new-att-title">Existing SW for <strong class="ml-2"><span id="swl-query-span"></span></strong></span>
+    <h5 class="card-title"><span id="new-att-title">Existing SW for <strong class="ml-2"><span class="chn-font" id="swl-query-span"></span></strong></span>
      <button type="button" class="close" onclick="hide_new_att()" aria-label="Close" title="Close">
      <img class="icon" src="resources/icons/open-iconic-master/svg/circle-x.svg"/>  
      </button></h5>
@@ -1748,7 +1748,7 @@ $syn := $wx/ancestor::tei:div[@xml:id = $id]//tei:div[@type="old-chinese-criteri
 $py := for $pp in $wx/ancestor::tei:entry/tei:form[tei:orth[.=$zi]]/tei:pron[@xml:lang="zh-Latn-x-pinyin"] return normalize-space($pp),
 $esc := replace($concept[1], "'", "\\'")
 return
-<li class="mb-3">
+<li class="mb-3 chn-font">
 {if ($zi) then
 (: todo : check for permissions :)
 (<strong>
@@ -2320,10 +2320,10 @@ declare function tlslib:format-phonetic($gy as node()){
 };
 
 declare function tlslib:linkheader($qc) {
-("Taxonomy of meanings: ", for $c in $qc return  <a class="btn badge badge-light" title="Show taxonomy of meanings for {$c}" href="char.html?char={$c}">{$c}</a>,
+("Taxonomy of meanings: ", for $c in $qc return  <a class="btn badge badge-light chn-font" title="Show taxonomy of meanings for {$c}" href="char.html?char={$c}">{$c}</a>,
          " Phonetic profile: ",
      for $c in $qc return  
-     <a class="btn badge badge-light" style="background-color:palegreen" title="Show phonetic profile for {$c}" href="syllables.html?char={$c}">{$c}</a>,
+     <a class="btn badge badge-light chn-font" style="background-color:palegreen" title="Show phonetic profile for {$c}" href="syllables.html?char={$c}">{$c}</a>,
 (:     <span>{" 國學大師: ", 
      for $c in $qc return
      tlslib:guoxuedashi($c)
@@ -2333,23 +2333,23 @@ declare function tlslib:linkheader($qc) {
      (:    var url = "http://www.kaom.net/z_hmy_zidian88.php?word={string-join($qc, '')}&mode=word&bianti=no&page=no"
  :)
      <span>{" 詞典: ",
-     <a class="btn badge badge-light" target="dict" title="Search {$qc} in HY dictionary (External link)" style="background-color:paleturquoise" href="http://www.kaom.net/z_hmy_zidian88.php?word={string-join($qc, '')}&amp;mode=word&amp;bianti=no&amp;page=no">{$qc}</a>
+     <a class="btn badge badge-light chn-font" target="dict" title="Search {$qc} in HY dictionary (External link)" style="background-color:paleturquoise" href="http://www.kaom.net/z_hmy_zidian88.php?word={string-join($qc, '')}&amp;mode=word&amp;bianti=no&amp;page=no">{$qc}</a>
      }　</span>
      
      ,
      <span>{" 漢リポ: ",
-     <a class="btn badge badge-light" target="kanripo" title="Search {$qc} in Kanseki Repository (External link)" style="background-color:paleturquoise" href="http://www.kanripo.org/search?query={string-join($qc, '')}">{$qc}</a>
+     <a class="btn badge badge-light chn-font" target="kanripo" title="Search {$qc} in Kanseki Repository (External link)" style="background-color:paleturquoise" href="http://www.kanripo.org/search?query={string-join($qc, '')}">{$qc}</a>
      }</span>
 )
 };
 
 declare function tlslib:guoxuedashi($c as xs:string){
-<a class="btn badge badge-light" target="GXDS" title="Search {$c} in 國學大師字典 (External link)" style="background-color:paleturquoise" href="http://www.guoxuedashi.com/so.php?sokeytm={$c}&amp;ka=100">{$c}</a>
+<a class="btn badge badge-light chn-font" target="GXDS" title="Search {$c} in 國學大師字典 (External link)" style="background-color:paleturquoise" href="http://www.guoxuedashi.com/so.php?sokeytm={$c}&amp;ka=100">{$c}</a>
 };
 
 declare function tlslib:guguolin($qc){
     for $c at $pos in $qc return
-<form class="btn badge badge-light"  name="guguolin" target="dict" action="http://www.kaom.net/z_hmy_zidian8.php" method="post" title="訓詁工具書查詢 {$c} (External link)" >
+<form class="btn badge badge-light chn-font"  name="guguolin" target="dict" action="http://www.kaom.net/z_hmy_zidian8.php" method="post" title="訓詁工具書查詢 {$c} (External link)" >
   {if ($pos = 1) then "字書：" else ()}
   <input type="hidden" name="word" id="word" value="{$c}="/>
   <input type="hidden" name="mode" id="mode" value="word" />
