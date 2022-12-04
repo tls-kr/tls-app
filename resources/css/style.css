@@ -16,6 +16,11 @@
 }
 
 @font-face {
+  font-family: "SWXZ-UNI";
+  src: url('../fonts/sw.woff') format('woff');
+}
+
+@font-face {
   font-family: "BNUSWXZ";
   src: url('../fonts/bnuswxz.woff') format('woff');
 }
@@ -219,6 +224,12 @@
   font-size: 1rem;
   font-weight: 200;
   font-family: "SWXZ-PUA", Calibri, Tahoma, sans-serif;
+}
+
+.swxz-uni {
+  font-size: 2rem;
+  font-weight: 300;
+  font-family: "SWXZ-UNI", Calibri, Tahoma, sans-serif;
 }
 
 .swxz {
