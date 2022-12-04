@@ -1163,7 +1163,7 @@ return
                                 <a class="dropdown-item" href="browse.html?type=sem-feat">Semantic features</a>
                                 <a class="dropdown-item" href="browse.html?type=rhet-dev">Rhetorical devices</a>
                                 <a class="dropdown-item" href="observations.html">Observations</a>
-                                <div class="dropdown-divider"/>
+                                <!--<div class="dropdown-divider"/>-->
                                 <!-- will need to make another menu level here for the bookmarks -->
                                 <a class="dropdown-item" href="textlist.html">Texts</a>
                                 <a class="dropdown-item" href="browse.html?type=biblio">Bibliography</a>

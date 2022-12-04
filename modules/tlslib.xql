@@ -474,12 +474,21 @@ declare function tlslib:proc-seg($node as node()){
   if ($node/@type = "shifted") then 
     <span class="swxz">{data($node/@n)}</span>
     else
+  if ($node/@type = "swxz-uni") then 
+    <span class="swxz-uni">{data($node/@n)}</span>
+    else
     data($node/@n)
   case element (tei:g) return 
-  if ($node/@type = "SWXZ-PUA") then 
-    <span class="swxz-pua">{$node/text()}</span>
-    else
-    $node/text()
+   if ($node/@type = "SWXZ-PUA") then 
+     <span class="swxz-pua">{$node/text()}</span>
+     else
+   if ($node/@type = "shifted") then 
+     <span class="swxz">{data($node/@n)}</span>
+     else
+   if ($node/@type = "swxz-uni") then 
+     <span class="swxz-uni">{data($node/@n)}</span>
+   else
+     $node/text()
   case element (tei:lb)  return ()
   case element (exist:match) return <mark>{$node/text()}</mark>
   case element (tei:anchor) return 
