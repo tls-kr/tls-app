@@ -2270,8 +2270,8 @@ return
   else
   <div class="col-sm-3"><span id="gloss-{$pos}" title="Click here to analyze text" onclick="analyze_text('{$kid}')">Analyze this text</span></div>
   }
-  <div class="col-sm-3"><a href="{
-      concat($config:exide-url, "?open=", $config:tls-texts-root || "/KR/", substring($kid, 1, 3) || "/" || substring($kid, 1, 4) || "/"  || $kid || ".xml")}"
+  <div class="col-sm-3"><a target="eXide" href="{
+      concat ($config:exide-url, "?open=", $config:tls-texts-root || "/KR/", substring($kid, 1, 3) || "/" || substring($kid, 1, 4) || "/"  || $kid || ".xml")}"
       >Open in eXide</a></div>
   </div>,
 ()
