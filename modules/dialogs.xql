@@ -549,6 +549,53 @@ declare function dialogs:punc-dialog($map as map(*)){
 </div>
 };
 
+declare function dialogs:app-dialog($map as map(*)){
+ let $seg := collection($config:tls-texts-root)//tei:seg[@xml:id=$map?uid]
+ , $pseg := $seg/preceding::tei:seg[1]
+ , $nseg := $seg/following::tei:seg[1]
+ , $type := $seg/@type
+ , $dialog-title := <h5>Edit current text segment <small class="text-muted ">{$map?uid}</small></h5> 
+ return
+ <div id="app-dialog" class="modal" tabindex="-1" role="dialog" style="display: none;">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">{$dialog-title}
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" title="Close">x</button>
+            </div>
+            <div class="modal-body">
+            <h6 class="font-weight-bold">Previous segment</h6>
+            <div class="card-text chn-font"><small class="text-muted">{$pseg//text()}</small></div>
+            <div class="form row">
+            <div class="font-weight-bold mt-2 col-md-3">Current text segment</div>
+            <div class="text-muted mt-2 col-md-2">Type:</div>
+            <div class="form-group col-md-4"><select class="form-control" id="type">
+                  {for $s in map:keys($config:seg-types)
+                    return
+                    if ($type = $s ) then 
+                    <option value="{$s}" selected="true">{map:get($config:seg-types, $s)}</option>                    
+                    else
+                    <option value="{$s}">{map:get($config:seg-types, $s)}</option>
+                   } 
+                 </select>                 </div>
+                 </div>     
+            <div class="card-text chn-font" contenteditable="true" id="current-seg">{tlslib:proc-seg-for-edit($seg)  => string-join('') => normalize-space() => replace(' ', '')}</div>
+            <div class="form row"><div class="mt-2 col-md-12"><small>IMPORTANT: <span class="font-weight-bold">'$'</span> characters represent important information not shown here, please do not remove!</small></div></div>
+            <h6 class="font-weight-bold">Following segment</h6>
+            <div class="card-text chn-font"><small class="text-muted">{$nseg//text()}</small></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="save_punc('{$map?uid}', 'no_split')">Save but don't split</button>
+                <button type="button" class="btn btn-primary" onclick="save_punc('{$map?uid}', '')">Save text and close</button>
+                <button type="button" class="btn btn-primary" onclick="save_punc('{$map?uid}', '{$nseg/@xml:id}')">Save text and continue</button>
+                <button type="button" class="btn btn-primary" onclick="save_punc('{$map?uid}', 'merge')">Merge with following segment</button>
+           </div>
+     </div>
+     </div>
+</div>
+};
+
+
 declare function dialogs:edit-text-permissions-dialog($map as map(*)) as node() {
 let $textid := tokenize($map?location, "_")[1],
     $cur-allowed-users := doc("/db/users/tls-admin/permissions.xml")//tls:text-permissions[@text-id = $textid]/tls:allow-review/@user-id
@@ -597,4 +644,25 @@ return
         </div>
     </div>
 </div>
+};
+
+
+declare function dialogs:pastebox($map as map(*)) as node(){
+<div id="pastebox" class="card ann-dialog overflow-auto">
+<div id="pastebox-content">
+  <div><h5>Pastebox</h5></div>
+  <p class="text-muted">Paste some text here and use the buttons to save the first line to the translation in Slot 1<br/>
+  <span id="current-line"></span></p>
+  <div class="btn-group mr-2  btn-group-sm" role="group" aria-label="First group">
+    <button type="button" onclick="save_pastebox_line()" class="btn btn-primary" title="This will paste the first line as translation for the current line of the text. \nCan also be triggered by Ctl-n">Cut&amp;Save</button>
+<!--    <button type="button" class="btn btn-secondary">Save&amp;Move</button>
+    <button type="button" class="btn btn-secondary">CPSM</button> -->
+    <button type="button" onclick="hide_pastebox()" class="btn btn-secondary">Close</button>
+  </div>
+
+<textarea id="input-pastebox" class="form-control" rows="20" cols="60" ></textarea>
+</div>
+</div>
+
+
 };

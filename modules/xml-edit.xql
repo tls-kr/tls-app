@@ -20,6 +20,19 @@ declare namespace tls="http://hxwd.org/ns/1.0";
 declare namespace mf="http://kanripo.org/ns/KRX/Manifest/1.0";
 declare namespace tx="http://exist-db.org/tls";
 
+declare variable $xed:encodingDesc :=       
+<encodingDesc xmlns="http://www.tei-c.org/ns/1.0">
+       <tagsDecl>
+           <namespace name="http://www.tei-c.org/ns/1.0">
+                  <tagUsage gi="app">
+                      <listWit>
+                      </listWit>
+                  </tagUsage>
+           </namespace>
+       </tagsDecl>
+       <variantEncoding location="external" method="double-end-point"/>
+</encodingDesc>;
+
 (:~
   Split parent of xml node at the node n
   n will be the first node of the second element, the first element contains all the preceding siblings

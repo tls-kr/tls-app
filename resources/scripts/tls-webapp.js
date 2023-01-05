@@ -1,9 +1,16 @@
 var dirty = false;
 var cancelmove = false;
+var currentline = "";
+var current_id = "";
 $(function() {
     console.log( "ready!" );
     set_keyup ();
     get_swls();
+    set_currentline("mark")
+    var pbx = window.localStorage.getItem('display-pastebox');
+    if (pbx) {
+        display_pastebox(pbx);
+    }
     $("#blue-eye").attr("title", "Press here to show annotations.");
     // this is for the taxchar editing
     try { 
@@ -39,6 +46,20 @@ x.Selector.getSelected = function() {
         t = document.selection.createRange().text;
     }
     return t;
+};
+
+function set_currentline(newid){
+if (newid === "mark"){
+    current_id = $(".mark:first > .zh").attr('id').split(".").join("\\.");
+} else {
+    current_id = newid.split(".").join("\\.")
+    cp = $("#" + current_id).parent();
+    $(".mark:first").removeClass("mark");
+    cp.addClass("mark")
+}    
+currentline = $("#" + current_id).text();
+$('#current-line').text(currentline);
+console.log("Currentid:", current_id, "Currentline: ", currentline);
 };
 
 function page_move(target){
@@ -99,6 +120,70 @@ function get_swl_for_page(){
   });
     
 };
+
+function hide_pastebox(){
+  $('#pastebox').hide();    
+  window.localStorage.removeItem('display-pastebox');  
+   $('#remoteDialog').html("");
+}
+// save the line and move to the next line
+function save_pastebox_line(){
+var lines = $('#input-pastebox').val().split('\n');//gives all lines
+    var firstLine=lines[0];
+    var remainingLines = lines.slice(1,).join('\n');
+    console.log('firstLine:',firstLine);
+    $('#'+current_id+"-tr").html(firstLine);
+    save_tr(current_id+"-tr", firstLine, currentline);
+    tab = parseInt($("#"+current_id+"-tr").attr("tabindex")) + 1;
+    console.log("Tab: ", "[tabindex='" + tab.toString() + "']")
+    nextid = $("[tabindex='" + tab.toString() + "']").attr('id').replace('-tr', '');
+    set_currentline(nextid)
+    $('#current-line').text(currentline)
+ //   console.log("Nextel: ", nextid)
+ //   console.log('remLines:',remainingLines);
+    $('#input-pastebox').val(remainingLines);
+    window.localStorage.setItem('pastebox', remainingLines);
+    
+};
+
+//display the Pastebox
+function display_pastebox(slot){
+  var dw = document.documentElement.clientWidth;
+  var dh = document.documentElement.clientHeight - 51;
+  var new_width = $("#toprow").outerWidth() - $("#toprow-1").outerWidth() - $("#toprow-2").outerWidth() + $("#chunkcol-right").outerWidth();
+  $.ajax({
+  type : "GET",
+  dataType : "html",
+  url : "api/responder.xql?func=dialogs:pastebox", 
+  success : function(resp){
+    var new_height = $("#"+slot).outerHeight();
+    var new_width = $("#"+slot).outerWidth();
+    var remainingLines = window.localStorage.getItem('pastebox');
+    window.localStorage.setItem('display-pastebox', slot)
+    //var targetline = document.getElementById( currentline.slice(-3) ).innerText;
+
+    $('#remoteDialog').html(resp);
+    $('#pastebox').width(new_width);
+    $('#pastebox').height(dh / 2);
+    $('#pastebox').css({top: dh / 2 + 49})
+//    $('#pastebox').position({my: 'bottom right'});
+    $('#current-line').text(currentline)
+    $('#input-pastebox').val(remainingLines);    
+    $('#input-pastebox').keydown(function(e) {
+       if (e.ctrlKey == true) {
+       var code = e.keyCode
+       if (e.which == 78) { // the key is ctrl-n
+          event.preventDefault();
+          save_pastebox_line()
+        }
+      }  
+    });
+    $('#pastebox').show();
+  }
+  });
+
+};
+
 // called ftom textview, toprow
 // slot is slot1 or slot2, type is 'transl' or 'comm', no is the item number in the list
 function get_tr_for_page(slot, myid){
@@ -664,6 +749,7 @@ function modify_rd_dialog(){
 $('.zh').bind('touchend', function(){
     $(this).mouseup();
 });
+
 
 // here we bind the mouseup event of all elements with the class "zh" to this
 // anonymous function, get the selected stuff from the x.Selector and proceed
@@ -1308,6 +1394,13 @@ function save_note (trid, tr){
   });    
 };
 
+$(".tr").click(function (event) {
+    var trid = $(this).attr('id');
+    var lineid = trid.replace('-tr', '').replace('-ex', '');
+    var line = document.getElementById( lineid ).innerText;
+    set_currentline(lineid)
+});
+
 
 // tr
 
@@ -1316,6 +1409,8 @@ $( ".tr" ).blur(function (event) {
 //    var lineid = trid.slice(0, -3);
     var lineid = trid.replace('-tr', '').replace('-ex', '');
     var line = document.getElementById( lineid ).innerText;
+//    currentline = trid;
+//    $('#current-line').text(line)
     var tr = $(this).text()
     var lang = $(this).attr('lang');
     console.log("blur", $(this).data('before') , "h", tr)
@@ -1451,6 +1546,7 @@ $( ".tr" ).keyup(function( event ) {
 };
 
 // this does the actual save
+// the backend actually also saves the language, which defaults to "en", param is lang
 function save_tr (trid, tr, line){
   $.ajax({
   type : "PUT",

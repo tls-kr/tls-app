@@ -171,7 +171,7 @@ declare function wd:get-qitem-file($map as map(*)){
   </text>
 </TEI>)
     return
-    (sm:chmod(xs:anyURI($res), "rw-rw-rw-"),
+    (sm:chmod(xs:anyURI($res), "rw-rw-r--"),
      sm:chgrp(xs:anyURI($res), "tls-user"),
 (:     sm:chown(xs:anyURI($res), "tls"),:)
     doc($res)

@@ -598,6 +598,7 @@ return
  <li class="nav-item dropdown">
   <a class="nav-link dropdown-toggle" href="#"  id="navbarDropdownBookmarks" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Bookmarks</a>
    <div class="dropdown-menu" aria-labelledby="navbarDropdownBookmarks">
+   <a class="dropdown-item" onclick="display_pastebox('1')" href="#" title="Pastebox is used for more efficiently pasting translations to slot 1">Display Pastebox</a>
    {if ($bm) then 
     for $b in $bm//tei:item
       let $segid := $b/tei:ref/@target,
@@ -718,7 +719,9 @@ declare function tlslib:tv-header($node as node()*, $model as map(*)){
           map:get($config:txtsource-map, $textid) 
       else 
          if (substring($model('textid'), 1, 3) = "KR6") then "CBETA" 
-         else "CHANT", 
+      else 
+         if (substring($model('textid'), 1, 4) = "KR3e") then "中醫笈成" 
+      else "CHANT", 
    $toc := if (contains(session:get-attribute-names(), $textid || "-toc")) then 
     session:get-attribute($textid || "-toc")
     else 
@@ -809,7 +812,7 @@ declare function tlslib:trsubmenu($textid as xs:string, $slot as xs:string, $tri
              ("Edition " ||  substring-after($tr($trid)[1], "::") || " (" || $trid, substring($tr($trid)[5], 1, 3) || ")")
             else
             ($tr($trid)[5], 
-            if ($tr($trid)[5] = "Comments") then () else  " by " ||  $tr($trid)[2])) 
+            if ($tr($trid)[5] = ("Comments")) then () else  " by " ||  $tr($trid)[2])) 
             else "Translation"} 
             </button>
     <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
@@ -817,6 +820,9 @@ declare function tlslib:trsubmenu($textid as xs:string, $slot as xs:string, $tri
             return 
          if ($tr($k)[5] = "Comments") then 
         <a class="dropdown-item" id="sel{$slot}-{$i}" onclick="get_tr_for_page('{$slot}', '{$k}')" href="#">{$tr($k)[5] || " " }  {$tr($k)[3]}</a>
+(:        else
+        if ($tr($k)[5] = "Pastebox") then
+        <a class="dropdown-item" id="sel{$slot}-{$i}" onclick="display_pastebox('{$slot}', '{$k}')" href="#">Pastebox</a>:)
         else
         if ($tr($k)[5] = $edtps) then 
         <a class="dropdown-item" id="sel{$slot}-{$i}" onclick="get_tr_for_page('{$slot}', '{$k}')" href="#">Edition {substring-after($tr($k)[1], "::")} ({$k}, {substring($tr($k)[5], 1, 3)} )</a>

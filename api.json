@@ -516,20 +516,19 @@
                 }
             }
         },
-        "/api/member/{ben}/recent": {
+        "/api/member/{user}/recent": {
+            "parameters": [
+               {
+               "name": "user",
+               "required": "true",
+               "in": "path"
+
+               }
+               ],
             "get": {
                 "summary": "Recent activity",
                 "operationId": "api:date",
                 "tags": ["view"],
-                "parameters": [
-                    {
-                        "name": "ben",
-                        "in": "path",
-                        "schema":{
-                            "type": "string"
-                        }
-                    }
-                ],
                 "responses": {
                     "200":{
                         "description": "JSON dump of request",

@@ -1067,8 +1067,9 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
     , $oword := collection($config:tls-data-root||"/concepts")//tei:entry[@xml:id=$oid]
     , $other := string-join($oword/tei:form/tei:orth/text() , " / ")
     , $cid := $oword/ancestor::tei:div[@type='concept']/@xml:id
+    , $concept := $oword/ancestor::tei:div[@type='concept']/tei:head/text()
     return
-    <li><span class="font-weight-bold">{$wrt}</span>: <a href="concept.html?uuid={$cid}#{$oid}">{$other}</a>{$oword/tei:def[1]}</li>
+    <li><span class="font-weight-bold">{$wrt}</span>: <a title="{$concept}" href="concept.html?uuid={$cid}#{$oid}">{$other}</a>{$oword/tei:def[1]}</li>
     }</ul></p> else ()}
     {if ($e//tei:listBibl) then 
          <div><button class="btn" data-toggle="collapse" data-target="#bib-{$entry-id}">Show references</button><ul id="bib-{$entry-id}" class="collapse" data-toggle="collapse">
