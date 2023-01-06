@@ -1172,6 +1172,18 @@ else
   "You do not have permission to edit this text."
 };
 
+(: this is called with the currently last seg :)
+declare function tlsapi:morelines($map as map(*)){
+  let $targetseg := collection($config:tls-texts-root)//tei:seg[@xml:id=$map?lineid]
+  , $dseg := $targetseg/following::tei:seg[position()< 31]
+  , $model := map{"textid" : tokenize($map?lineid, "_")[1]}
+  ,  $tr := tlslib:get-translations($model?textid)
+  ,  $slot1-id := tlslib:get-content-id($model?textid, 'slot1', $tr)
+  ,  $slot2-id := tlslib:get-content-id($model?textid, 'slot2', $tr)
+return
+tlslib:chunkcol-left($dseg, $model, $tr, $slot1-id, $slot2-id, $map?lineid, xs:int($map?cnt))
+};
+
 (:~
  : Save the translation (or comment)
  : 3/11: Get the file from the correct slot!

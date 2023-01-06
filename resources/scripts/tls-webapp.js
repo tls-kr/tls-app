@@ -5,12 +5,12 @@ var current_id = "";
 $(function() {
     console.log( "ready!" );
     set_keyup ();
-    get_swls();
     set_currentline("mark")
     var pbx = window.localStorage.getItem('display-pastebox');
     if (pbx) {
         display_pastebox(pbx);
     }
+    get_swls();
     $("#blue-eye").attr("title", "Press here to show annotations.");
     // this is for the taxchar editing
     try { 
@@ -133,17 +133,19 @@ var lines = $('#input-pastebox').val().split('\n');//gives all lines
     var remainingLines = lines.slice(1,).join('\n');
     console.log('firstLine:',firstLine);
     $('#'+current_id+"-tr").html(firstLine);
-    save_tr(current_id+"-tr", firstLine, currentline);
+    thisid = current_id.replace("\\", "")
+    save_tr(thisid+"-tr", firstLine, currentline);
     tab = parseInt($("#"+current_id+"-tr").attr("tabindex")) + 1;
     console.log("Tab: ", "[tabindex='" + tab.toString() + "']")
-    nextid = $("[tabindex='" + tab.toString() + "']").attr('id').replace('-tr', '');
-    set_currentline(nextid)
-    $('#current-line').text(currentline)
- //   console.log("Nextel: ", nextid)
- //   console.log('remLines:',remainingLines);
     $('#input-pastebox').val(remainingLines);
     window.localStorage.setItem('pastebox', remainingLines);
-    
+    try { 
+        nextid = $("[tabindex='" + tab.toString() + "']").attr('id').replace('-tr', '');
+        set_currentline(nextid)
+        $('#current-line').text(currentline)
+    } catch (err){
+        more_display_lines(current_id, tab );
+    }    
 };
 
 //display the Pastebox
@@ -181,8 +183,31 @@ function display_pastebox(slot){
     $('#pastebox').show();
   }
   });
-
 };
+
+//get more lines, once we are at the end of the page
+function more_display_lines(lineid, tab){
+  cnt = tab - 501
+  np = tab + 29
+  thisid = lineid.replace("\\", "")
+  $.ajax({
+  type : "GET",
+  dataType : "html",
+  url : "api/responder.xql?lineid="+thisid+"&cnt="+cnt+"&func=morelines", 
+  success : function(resp){
+      $("#"+lineid+"-swl").parent().after(resp)
+      set_keyup ()
+      nextid = $("[tabindex='" + tab.toString() + "']").attr('id').replace('-tr', '');
+      set_currentline(nextid)
+      $('#current-line').text(currentline)
+      npid = $("[tabindex='" + np.toString() + "']").attr('id').replace('-tr', '')
+      $('#nextpagebutton').on('click', function()
+        {page_move(npid+'&amp;prec=1&amp;foll=29');}
+        )
+  }
+  });
+    
+}
 
 // called ftom textview, toprow
 // slot is slot1 or slot2, type is 'transl' or 'comm', no is the item number in the list
@@ -1394,15 +1419,21 @@ function save_note (trid, tr){
   });    
 };
 
+
+
+// tr
+
+
+
+
+// for the translations (class "tr"), we save on keyup, so we check for our event
+function set_keyup (){
 $(".tr").click(function (event) {
     var trid = $(this).attr('id');
     var lineid = trid.replace('-tr', '').replace('-ex', '');
     var line = document.getElementById( lineid ).innerText;
     set_currentline(lineid)
 });
-
-
-// tr
 
 $( ".tr" ).blur(function (event) {
     var trid = $(this).attr('id');
@@ -1433,9 +1464,6 @@ $( ".tr" ).blur(function (event) {
 });
 
 
-
-// for the translations (class "tr"), we save on keyup, so we check for our event
-function set_keyup (){
 $( ".tr" ).keyup(function( event ) {
 }).keydown(function( event ) {
     var trid = $(this).attr('id');

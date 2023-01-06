@@ -867,6 +867,14 @@ return
 $targetseg/following::tei:seg[fn:position() < $n]
 };
 
+declare function tlslib:chunkcol-left($dseg, $model, $tr, $slot1-id, $slot2-id, $loc, $cnt){
+      for $d at $pos in $dseg 
+      return tlslib:display-seg($d, map:merge(($model, $tr, 
+      map{'slot1': $slot1-id, 'slot2': $slot2-id, 
+          'loc' : $loc, 
+          'pos' : $pos + $cnt, "ann" : "xfalse.x"})))
+};
+
 (:~
 : display a chunk of text, surrounding the $targetsec
 : @param $targetseg  a tei:seg element
@@ -875,12 +883,11 @@ $targetseg/following::tei:seg[fn:position() < $n]
 display $prec and $foll preceding and following segments of a given seg :)
 
 declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $prec as xs:int?, $foll as xs:int?){
-
       let $fseg := if ($foll > 0) then $targetseg/following::tei:seg[fn:position() < $foll] 
         else (),
       $pseg := if ($prec > 0) then $targetseg/preceding::tei:seg[fn:position() < $prec] 
-        else (),
-      $d := $targetseg/ancestor::tei:div[1],
+        else ()
+      let $d := $targetseg/ancestor::tei:div[1],
       $state := if ($d/ancestor::tei:TEI/@state) then $d/ancestor::tei:TEI/@state else "yellow" ,
       $pb := $targetseg/preceding::tei:pb[1] ,
       $head := if ($d/tei:head[1]/tei:seg) then ( $d/tei:head[1]/tei:seg)/text() 
@@ -933,11 +940,9 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
         </div>
         </div>
       </div>
-      <div id="chunkcol-left" class="col-sm-12">{for $d at $pos in $dseg 
-      return tlslib:display-seg($d, map:merge(($model, $tr, 
-      map{'slot1': $slot1-id, 'slot2': $slot2-id, 
-          'loc' : data($targetseg/@xml:id), 
-          'pos' : $pos, "ann" : "xfalse.x"})))}</div>
+      <div id="chunkcol-left" class="col-sm-12">
+      {tlslib:chunkcol-left($dseg, $model, $tr, $slot1-id, $slot2-id, data($targetseg/@xml:id), 0)}
+      </div>
       <div id="chunkcol-right" class="col-sm-0">
       {tlslib:swl-form-dialog('textview', $model)}
     </div>
@@ -945,7 +950,6 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
       <div class="row">
       <div class="col-sm-2">
       {if ($dseg) then  
-      (: currently the 0 is hardcoded -- do we need to make this customizable? :)
        <button type="button" class="btn" onclick="page_move('{tokenize($dseg/@xml:id, "_")[1]}&amp;first=true')" title="Go to the first page"><span style="color: blue">First</span></button>
        else ()}
        </div>
@@ -957,7 +961,7 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
        <div class="col-sm-2">
        {
        if ($dseg[last()]/following::tei:seg[1]/@xml:id) then
-       <button type="button" class="btn" onclick="page_move('{$dseg[last()]/following::tei:seg[1]/@xml:id}&amp;prec=2&amp;foll={$foll+$prec -2}')" title="Go to the next page"><span style="color: blue">Next</span></button>
+       <button id="nextpagebutton" type="button" class="btn" onclick="page_move('{$dseg[last()]/following::tei:seg[1]/@xml:id}&amp;prec=2&amp;foll={$foll+$prec -2}')" title="Go to the next page"><span style="color: blue">Next</span></button>
        else ()}
        </div> 
        <div class="col-sm-2">
