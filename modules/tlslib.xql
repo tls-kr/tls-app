@@ -598,6 +598,7 @@ return
  <li class="nav-item dropdown">
   <a class="nav-link dropdown-toggle" href="#"  id="navbarDropdownBookmarks" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Bookmarks</a>
    <div class="dropdown-menu" aria-labelledby="navbarDropdownBookmarks">
+   <a class="dropdown-item" onclick="display_pastebox('1')" href="#" title="Pastebox is used for more efficiently pasting translations to slot 1">Display Pastebox</a>
    {if ($bm) then 
     for $b in $bm//tei:item
       let $segid := $b/tei:ref/@target,
@@ -718,7 +719,9 @@ declare function tlslib:tv-header($node as node()*, $model as map(*)){
           map:get($config:txtsource-map, $textid) 
       else 
          if (substring($model('textid'), 1, 3) = "KR6") then "CBETA" 
-         else "CHANT", 
+      else 
+         if (substring($model('textid'), 1, 4) = "KR3e") then "中醫笈成" 
+      else "CHANT", 
    $toc := if (contains(session:get-attribute-names(), $textid || "-toc")) then 
     session:get-attribute($textid || "-toc")
     else 
@@ -809,7 +812,7 @@ declare function tlslib:trsubmenu($textid as xs:string, $slot as xs:string, $tri
              ("Edition " ||  substring-after($tr($trid)[1], "::") || " (" || $trid, substring($tr($trid)[5], 1, 3) || ")")
             else
             ($tr($trid)[5], 
-            if ($tr($trid)[5] = "Comments") then () else  " by " ||  $tr($trid)[2])) 
+            if ($tr($trid)[5] = ("Comments")) then () else  " by " ||  $tr($trid)[2])) 
             else "Translation"} 
             </button>
     <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
@@ -817,6 +820,9 @@ declare function tlslib:trsubmenu($textid as xs:string, $slot as xs:string, $tri
             return 
          if ($tr($k)[5] = "Comments") then 
         <a class="dropdown-item" id="sel{$slot}-{$i}" onclick="get_tr_for_page('{$slot}', '{$k}')" href="#">{$tr($k)[5] || " " }  {$tr($k)[3]}</a>
+(:        else
+        if ($tr($k)[5] = "Pastebox") then
+        <a class="dropdown-item" id="sel{$slot}-{$i}" onclick="display_pastebox('{$slot}', '{$k}')" href="#">Pastebox</a>:)
         else
         if ($tr($k)[5] = $edtps) then 
         <a class="dropdown-item" id="sel{$slot}-{$i}" onclick="get_tr_for_page('{$slot}', '{$k}')" href="#">Edition {substring-after($tr($k)[1], "::")} ({$k}, {substring($tr($k)[5], 1, 3)} )</a>
@@ -861,6 +867,14 @@ return
 $targetseg/following::tei:seg[fn:position() < $n]
 };
 
+declare function tlslib:chunkcol-left($dseg, $model, $tr, $slot1-id, $slot2-id, $loc, $cnt){
+      for $d at $pos in $dseg 
+      return tlslib:display-seg($d, map:merge(($model, $tr, 
+      map{'slot1': $slot1-id, 'slot2': $slot2-id, 
+          'loc' : $loc, 
+          'pos' : $pos + $cnt, "ann" : "xfalse.x"})))
+};
+
 (:~
 : display a chunk of text, surrounding the $targetsec
 : @param $targetseg  a tei:seg element
@@ -869,12 +883,11 @@ $targetseg/following::tei:seg[fn:position() < $n]
 display $prec and $foll preceding and following segments of a given seg :)
 
 declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $prec as xs:int?, $foll as xs:int?){
-
       let $fseg := if ($foll > 0) then $targetseg/following::tei:seg[fn:position() < $foll] 
         else (),
       $pseg := if ($prec > 0) then $targetseg/preceding::tei:seg[fn:position() < $prec] 
-        else (),
-      $d := $targetseg/ancestor::tei:div[1],
+        else ()
+      let $d := $targetseg/ancestor::tei:div[1],
       $state := if ($d/ancestor::tei:TEI/@state) then $d/ancestor::tei:TEI/@state else "yellow" ,
       $pb := $targetseg/preceding::tei:pb[1] ,
       $head := if ($d/tei:head[1]/tei:seg) then ( $d/tei:head[1]/tei:seg)/text() 
@@ -927,11 +940,9 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
         </div>
         </div>
       </div>
-      <div id="chunkcol-left" class="col-sm-12">{for $d at $pos in $dseg 
-      return tlslib:display-seg($d, map:merge(($model, $tr, 
-      map{'slot1': $slot1-id, 'slot2': $slot2-id, 
-          'loc' : data($targetseg/@xml:id), 
-          'pos' : $pos, "ann" : "xfalse.x"})))}</div>
+      <div id="chunkcol-left" class="col-sm-12">
+      {tlslib:chunkcol-left($dseg, $model, $tr, $slot1-id, $slot2-id, data($targetseg/@xml:id), 0)}
+      </div>
       <div id="chunkcol-right" class="col-sm-0">
       {tlslib:swl-form-dialog('textview', $model)}
     </div>
@@ -939,7 +950,6 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
       <div class="row">
       <div class="col-sm-2">
       {if ($dseg) then  
-      (: currently the 0 is hardcoded -- do we need to make this customizable? :)
        <button type="button" class="btn" onclick="page_move('{tokenize($dseg/@xml:id, "_")[1]}&amp;first=true')" title="Go to the first page"><span style="color: blue">First</span></button>
        else ()}
        </div>
@@ -951,7 +961,7 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
        <div class="col-sm-2">
        {
        if ($dseg[last()]/following::tei:seg[1]/@xml:id) then
-       <button type="button" class="btn" onclick="page_move('{$dseg[last()]/following::tei:seg[1]/@xml:id}&amp;prec=2&amp;foll={$foll+$prec -2}')" title="Go to the next page"><span style="color: blue">Next</span></button>
+       <button id="nextpagebutton" type="button" class="btn" onclick="page_move('{$dseg[last()]/following::tei:seg[1]/@xml:id}&amp;prec=2&amp;foll={$foll+$prec -2}')" title="Go to the next page"><span style="color: blue">Next</span></button>
        else ()}
        </div> 
        <div class="col-sm-2">

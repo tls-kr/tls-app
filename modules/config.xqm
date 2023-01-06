@@ -49,7 +49,9 @@ declare variable $config:tls-log-collection := "/db/users/tls-admin/logs";
 declare variable $config:tls-add-titles := $config:tls-texts-root || "/krp-titles.xml";
 declare variable $config:tls-twjp-vardb := $config:tls-data-root || "/external/twjp-vardb.xml";
 declare variable $config:tls-uni-vardb  := $config:tls-data-root || "/external/univardb.xml";
-declare variable $config:exide-url :=  concat(request:get-scheme(), "://", request:get-server-name(), ':8443', "/exist/apps/eXide/index.html");
+declare variable $config:exide-url :=  concat(request:get-scheme(), "://", 
+                            if (request:get-server-name()='localhost') then 'hxwd.org' else request:get-server-name(), 
+                            ':8443', "/exist/apps/eXide/index.html");
 declare variable $config:tls-manifests := 
   let (:$user := sm:id()//sm:real/sm:username/text()
   , $approot := substring-before($config:app-root, data($config:expath-descriptor/@abbrev))

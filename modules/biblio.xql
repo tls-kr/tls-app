@@ -66,11 +66,26 @@ let $res :=
                                 <http:header name="Connection" value="close"/>
                               </http:request>)                              
 return  
-bib:save-mods($res[2])
+$res[2]
+(:bib:save-mods($res[2]):)
 };
 (:                                 <http:header name="Authentication" value="Bearer {$zot-user-key}"/> :)
-declare function bib:add-zotero-entry($request as map(*)){
 
+(: this is the bookmarklet
+
+javascript: (function() {var url = window.location.search;var uri = "https://hwxd.org/api/responder.xql?func=bib:add-zotero-entry&path="+path;xhr = new XMLHttpRequest();xhr.open("POST", encodeURI(uri));xhr.send();}());
+
+javascript: (function() {var path = window.location.pathname;var uri = "https://hxwd.org/api/responder.xql?func=bib:add-zotero-entry&path="+path;xhr = new XMLHttpRequest();xhr.open("GET", encodeURI(uri));xhr.send();}());
+javascript:location.href = 'https://krx.hwxd.org:8443/api/responder.xql?func=bib:add-zotero-entry&path='+ encodeURIComponent(location.pathname)
+:)
+
+(:add the item requested through the bookmarklet to the bibliography :)
+
+declare function bib:add-zotero-entry($request as map(*)){
+let $bib := bib:get-zotero-item(tokenize($request?path, "/")[position()=last()-1])
+return
+(bib:save-mods($bib),
+response:redirect-to(xs:anyURI("https://www.zotero.org"||$request?path)))
 };
 
 declare function bib:save-mods($mods as node()){
@@ -355,6 +370,12 @@ for $t in $m//mods:title
  if ($val) then
     update replace $ti/@lang with $val
  else ()
+, if (contains($m//mods:note, "mlzsync")) then
+  let $t := $m//mods:note[contains(., "mlzsync")]
+  , $r := bib:process-jurism-map($t)
+  return ()
+  ()
+else ()
 
 ,if ($m//mods:subject/mods:topic) then
   for $t in $m//mods:topic
@@ -363,7 +384,6 @@ for $t in $m//mods:title
   update replace $t with $se
  
  else
-
  for $n in $m//mods:note[@type='topics']
   let $s := for $t in tokenize($n, ";")
        let $se := <topic xmlns="http://www.loc.gov/mods/v3" xmlns:tls="http://hxwd.org/ns/1.0" tls:sort="{lower-case(normalize-space($t))}">{normalize-space($t)}</topic>
@@ -374,4 +394,35 @@ for $t in $m//mods:title
 , update insert <note  xmlns="http://www.loc.gov/mods/v3" type="ref-usage">{$usage}</note> into $m/mods:mods  
  )   
 return "OK"
+};
+
+
+  (: $map is a map of the multilingual fields, like 
+  {
+  "multicreators" : {
+    "0" : {
+      "_key" : {
+        "ja-Latn-alalc97" : {
+          "firstName" : "Atsushi",
+          "lastName" : "Ibuki"
+        }
+      },
+      "main" : "ja"
+    }
+  }
+}
+  we now need to go through the bib record and update the items.  // the above is for $item := "UMIR7FX8", 「戒律」から「清規」へ--北宗の禪律一致とその克服としての清規の誕生 (戒律と倫理)
+  :)
+
+
+declare function bib:process-jurism-map($t as node()){
+let $map := parse-json(substring(substring-after(substring-before($t, tokenize($t, "\}")[last()]), "mlzsync"), 7))
+, $mods := $t/ancestor::mods:mods
+return 
+for $k in map:keys($map)
+ return
+ switch($k)
+ case "multicreators" return ()
+ 
+ default return ()
 };
