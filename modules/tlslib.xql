@@ -396,7 +396,11 @@ declare function tlslib:format-button($onclick as xs:string, $title as xs:string
  else 
  <button type="button" class="btn {$class}" onclick="{$onclick}"
  title="{$title}">
+ {if (ends-with($icon, ".svg")) then 
  <img class="icon"  src="resources/icons/{$icon}"/>
+ else 
+<span>{$icon}</span>
+ }
  </button>
  else ()
 };
@@ -461,23 +465,25 @@ if ($s > 0) then if ($s > 1) then <span> {$s} seconds </span> else <span> {$s} s
 };
 
 (:~
-: recurse through the supplied node (a te:seg) and return only the top level text()
+: recurse through the supplied node (a tei:seg) and return only the top level text()
 : 2020-02-20: created this element because KR2m0054 has <note> elements in translation. 
 : @param $node a tei:seg node, typically
 :)
-declare function tlslib:proc-seg($node as node()){
+declare function tlslib:proc-seg($node as node(), $options as map(*)){
  typeswitch ($node)
  case element(tei:note) return ()
 (:     <small>{$node/text()}</small>:)
   case element (tei:l) return ()
   case element (tei:c) return 
-  if ($node/@type = "shifted") then 
-    <span class="swxz">{data($node/@n)}</span>
-    else
-  if ($node/@type = "swxz-uni") then 
-    <span class="swxz-uni">{data($node/@n)}</span>
-    else
-    data($node/@n)
+  if ($options?punc) then
+   if ($node/@type = "shifted") then 
+     <span class="swxz">{data($node/@n)}</span>
+     else
+   if ($node/@type = "swxz-uni") then 
+     <span class="swxz-uni">{data($node/@n)}</span>
+     else
+     data($node/@n)
+   else ()
   case element (tei:g) return 
    if ($node/@type = "SWXZ-PUA") then 
      <span class="swxz-pua">{$node/text()}</span>
@@ -494,7 +500,7 @@ declare function tlslib:proc-seg($node as node()){
   case element (tei:anchor) return 
     let $t := if (starts-with($node/@xml:id, "nkr_note_mod")) then local:cleanstring($node/ancestor::tei:TEI//tei:note[@target = "#"|| $node/@xml:id]//text()) else ()
     return if ($t) then <span title="{$t}" class="text-muted"><img class="icon note-anchor"  src="{$config:circle}"/></span> else ()
-  case element(tei:seg) return (if (string-length($node/@n) > 0) then data($node/@n)||"　" else (), for $n in $node/node() return tlslib:proc-seg($n))
+  case element(tei:seg) return (if (string-length($node/@n) > 0) then data($node/@n)||"　" else (), for $n in $node/node() return tlslib:proc-seg($n, $options))
   case attribute(*) return () 
  default return $node    
 };
@@ -1006,7 +1012,8 @@ declare function tlslib:swl-form-dialog($context as xs:string, $model as map(*))
       tlslib:format-button("display_punc_dialog('x-get-line-id')", "Edit properties of this text segment", "octicons/svg/lock.svg", "", "close", ("tls-editor", "tls-punc"))
      else ()}</h6>
     <h6 class="text-muted">Line: <span id="swl-line-text-span" class="ml-2 chn-font">Text of line</span>
-    {tlslib:format-button-common("add_rd_here()","Add observation (regarding a text segment) starting on this line", "octicons/svg/comment.svg")}</h6>
+    {tlslib:format-button-common("add_rd_here()","Add observation (regarding a text segment) starting on this line", "octicons/svg/comment.svg")}
+     {tlslib:format-button-common("add_parallel()","Add word relations starting on this line", "對")}</h6>
     <div class="card-text">
        
         <p> { if (sm:is-authenticated() and not(contains(sm:id()//sm:group, 'tls-test'))) then <span id="new-att-detail">
@@ -1040,7 +1047,7 @@ else
 
 
 declare function tlslib:get-sense-def($uuid as xs:string){
-let $cnode := collection("/db/apps/tls-data")//tei:sense[@xml:id=$uuid]
+let $cnode := collection($config:tls-data-root)//tei:sense[@xml:id=$uuid]
 ,$def := $cnode/tei:def[1]/text()
 return $def
 };
@@ -1227,7 +1234,7 @@ else ()
 if ($seg/@type='comm') then 'tls-comm ' else 
 if($locked) then 'locked ' else () }{
 if ($ann='false') then 'col-sm-4' else 'col-sm-2'} zh chn-font {$alpheios-class} {$markup-class}" lang="{$lang}" id="{$seg/@xml:id}" data-tei="{ util:node-id($seg) }">{
-tlslib:proc-seg($seg)
+tlslib:proc-seg($seg, map{"punc" : true()})
 }{(:if (exists($seg/tei:anchor/@xml:id)) then <span title="{normalize-space(string-join($seg/ancestor::tei:div//tei:note[tei:ptr/@target='#'||$seg/tei:anchor/@xml:id]/text()))}" >●</span> else ():) ()}</div>　
 <div class="col-sm-5 tr" title="{$resp1}" lang="en-GB" tabindex="{$options('pos')+500}" id="{$seg/@xml:id}-tr" contenteditable="{if (not($testuser) and not($locked)) then 'true' else 'false'}">{typeswitch ($slot1) 
 case element(tei:TEI) return  $slot1//tei:seg[@corresp="#"||$seg/@xml:id]/text()
@@ -2837,4 +2844,50 @@ declare function tlslib:generate-new-line-id($base-id as xs:string, $index as xs
 (: Just like the above function, with $level set to 0 as a default. :)
 declare function tlslib:generate-new-line-id($base-id as xs:string, $index as xs:int) as xs:string {
     tlslib:generate-new-line-id($base-id, $index, 0)
+};
+
+
+declare function tlslib:word-rel-table($map as map(*)){
+let $rels := collection($config:tls-data-root)//tei:TEI[@xml:id="word-relations"]//tei:body/tei:div[@xml:id=$map?reltype]
+return
+(
+ <div class="row">
+ <div class="col-md-2">
+ Text
+ </div>
+ <div class="col-md-2">
+ Left Word
+ </div>
+ <div class="col-md-2">
+ Right Word
+ </div>
+ </div>, 
+for $r in $rels//tei:list
+ let $lw := $r/tei:item[1]
+ , $lc := collection($config:tls-data-root)//tei:entry[@xml:id=substring($lw/@corresp, 2)]/ancestor::tei:div[@type='concept']
+ , $lid := $lc/@xml:id
+ , $rw := $r/tei:item[2]
+ , $rc := collection($config:tls-data-root)//tei:entry[@xml:id=substring($rw/@corresp, 2)]/ancestor::tei:div[@type='concept']
+ , $rid := $rc/@xml:id
+ , $txt := data($r/tei:item[1]/@txt)
+ , $srt :=  switch($map?mode)  
+            case 'rw' return $rw
+            case 'txt' return $txt
+            case 'rc' return $rc/tei:head/text()
+            case 'lc' return $lc/tei:head/text()
+            default return $lw
+ order by $srt 
+ return 
+ <div class="row">
+ <div class="col-md-2">
+ {$txt}
+ </div>
+ <div class="col-md-2">
+ <a href="concept.html?uuid={$lid}{$lw/@corresp}">{$lw}/{$lc/tei:head/text()}</a>
+ </div>
+ <div class="col-md-2">
+ <a href="concept.html?uuid={$rid}{$rw/@corresp}">{$rw}/{$rc/tei:head/text()}</a>
+ </div>
+ </div>
+ )
 };

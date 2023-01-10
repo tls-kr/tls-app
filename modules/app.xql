@@ -130,6 +130,7 @@ function app:browse($node as node()*, $model as map(*), $type as xs:string?, $fi
     else if ($type = "taxchar") then app:browse-char($type, $filterString)
     else if ($type = "taxword") then app:browse-word($type, $filterString)
     else if ($type = "biblio") then bib:browse-biblio($type, $filterString, $mode)
+    else if ($type = "word-rel-type") then app:browse-word-rel($type, $filterString)
     else if (("concept", "syn-func", "sem-feat", "rhet-dev") = $type) then    
     let $hits :=  app:do-browse($type, $filterString)      
     let $store := session:set-attribute("tls-browse", $hits)
@@ -201,6 +202,41 @@ function app:browse($node as node()*, $model as map(*), $type as xs:string?, $fi
   (: unknown type :)
   else ()  
 };
+
+declare function app:browse-word-rel($type as xs:string?, $filter as xs:string?){
+let $reltypes := collection($config:tls-data-root)//tei:TEI[@xml:id="word-relations"]//tei:body/tei:div[@type='word-rel-type']
+, $rt := for $r in $reltypes 
+        let $h := $r/tei:head/text()
+        order by $h 
+        return $r
+return
+<div><h4><span  class="font-weight-bold ml-2">Word relation type: </span>
+                 <span><select id="rel-type" onChange="modify_rel_display()">
+                 {for $l at $pos in $rt 
+                  let $h := $l/tei:head/text()
+                  , $cnt := count($l//tei:div[@type="word-rel-ref"]/tei:list)
+                return 
+                 if ($h = 'Conv') then
+                 <option value="{data($l/@xml:id)}" selected="true">{$h} ({$cnt})</option>
+                 else
+                 <option value="{data($l/@xml:id)}">{$h} ({$cnt})</option>}
+                 </select></span>  
+                 <span  class="font-weight-bold ml-2"> Sort by:　</span>
+                 <span><select id="rel-type-sort" onChange="modify_rel_display()">
+                 <option value="lw">Left word</option>
+                 <option value="rw">Right word</option>
+                 <option value="lc">Left concept</option>
+                 <option value="rc">Right concept</option>
+                 <option value="txt">Text</option>
+                 </select></span>    
+   </h4>
+   <p>　</p>
+   <div id="rel-table">
+   {tlslib:word-rel-table(map{"reltype":$rt[4]/@xml:id, "mode":"lw"})}
+   </div>
+</div>    
+};
+
 
 (:~
  : currently (2020-02-26) this has been removed from the menu.  Needs rethinking
@@ -1172,6 +1208,7 @@ return
                                 <a class="dropdown-item" href="browse.html?type=taxword">Words</a>
                                 <a class="dropdown-item" href="browse.html?type=syn-func">Syntactic functions</a>
                                 <a class="dropdown-item" href="browse.html?type=sem-feat">Semantic features</a>
+                                <a class="dropdown-item" href="browse.html?type=word-rel-type">Word relations</a>
                                 <a class="dropdown-item" href="browse.html?type=rhet-dev">Rhetorical devices</a>
                                 <a class="dropdown-item" href="observations.html">Observations</a>
                                 <!--<div class="dropdown-divider"/>-->
@@ -1199,6 +1236,7 @@ return
           <option value="7">{$config:search-map?7}</option>
           <option value="2">{$config:search-map?2}</option>
           <option value="3">{$config:search-map?3}</option>
+        <!--<option value="11">{$config:search-map?11}</option> -->
           <option value="4">{$config:search-map?4}</option>
           <option value="10">{$config:search-map?10}</option>
           <!--

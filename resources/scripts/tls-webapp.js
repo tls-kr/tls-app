@@ -753,6 +753,20 @@ function do_save_mark(mark){
     console.log("Selected mark:", mark);   
 };
 
+function modify_rel_display(){
+    var reltype = $('#rel-type').val()
+    var mode = $('#rel-type-sort').val()
+      $.ajax({
+      type : "GET",
+      dataType : "html",
+      url : "api/responder.xql?func=tlslib:word-rel-table&reltype="+reltype+"&mode="+mode, 
+      success : function(resp){
+      $('#rel-table').html(resp);
+      }
+      })
+      $('#rel-table').html("Retrieving data, please wait...")
+};
+
 function modify_rd_dialog(){
     var obstype = $('#block-type').val()
     var obslabel = $('#block-type option:selected').text();
@@ -1744,6 +1758,24 @@ function bookmark_this_line(){
   }
   });
 };
+
+
+function add_parallel(){
+  var word = $("#swl-query-span").text();
+  var line_id= $( "#swl-line-id-span" ).text();  
+  var line = $( "#swl-line-text-span" ).text();
+     $.ajax({
+     type : "GET",
+     dataType : "html",  
+     url : "api/responder.xql?func=dialogs:add-parallel&word="+word+"&line-id="+line_id+"&line="+line, 
+     success : function(resp){
+     $('#remoteDialog').html(resp);
+     //initialize_autocomplete_rd();
+     $('#add-parallel-dialog').modal('show');
+   }
+  });
+};
+
 
 // stub for comment  2020-02-23, called from app:swl-form-dialog
 // use this for RD instead 2021-09-21, called from tlslib:swl-form-dialog
