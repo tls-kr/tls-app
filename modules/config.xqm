@@ -117,7 +117,8 @@ declare variable $config:search-map := map{
 "7" : "titles",
 "8" : "tabulated",
 "9" : "advanced search",
-"10": "bibliography"
+"10": "bibliography",
+"11" : "research notes"
 };
 
 declare variable $config:lmap := map{

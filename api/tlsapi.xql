@@ -1559,10 +1559,10 @@ return
 <div class="col-md-1">{xs:int($map?start)+$n - 1}</div>
 <div class="col-md-3"><a href="textview.html?location={$loc}&amp;query={$map?query}">{$title, " / ", $head}</a></div>
 <div class="col-md-8">{ 
-for $sh in $h/preceding-sibling::tei:seg[position()<4] return tlslib:proc-seg($sh),
-        tlslib:proc-seg($h),
+for $sh in $h/preceding-sibling::tei:seg[position()<4] return tlslib:proc-seg($sh, map{"punc" : true()}),
+        tlslib:proc-seg($h, map{"punc" : true()}),
         (: this is a hack, it will probably show the most recent translation if there are more, but we want to make this predictable... :)
-        for $sh in $h/following-sibling::tei:seg[position()<4] return tlslib:proc-seg($sh),
+        for $sh in $h/following-sibling::tei:seg[position()<4] return tlslib:proc-seg($sh, map{"punc" : true()}),
         if ($tr) then (<br/>, $tr) else ()}</div>
 </div>
 }

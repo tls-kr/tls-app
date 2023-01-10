@@ -663,6 +663,136 @@ declare function dialogs:pastebox($map as map(*)) as node(){
 <textarea id="input-pastebox" class="form-control" rows="20" cols="60" ></textarea>
 </div>
 </div>
-
-
 };
+
+declare function dialogs:add-parallel($options as map(*)){
+ let $reltypes := collection($config:tls-data-root)//tei:TEI[@xml:id="word-relations"]//tei:body/tei:div[@type='word-rel-type']
+ ,$line := tlslib:proc-seg(collection($config:tls-texts-root)//tei:seg[@xml:id=$options?line-id], map{"punc" : false()})
+ ,$next := tlslib:next-n-segs($options?line-id, 6)
+ ,$nc := string-to-codepoints(tlslib:proc-seg($next[1], map{"punc" : false()}))
+ return
+ <div id="add-parallel-dialog" class="modal" tabindex="-1" role="dialog" style="display: none;">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header"><h5>Add word relations</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" title="Close">x</button>
+            </div>
+            <div class="modal-body">
+            <div class="form-row">
+             <div class="form-group col-md-4">
+                 <span class="font-weight-bold">First line:</span>  
+            </div>
+             <div class="form-group col-md-4">
+                <!-- <span id="concept-line-id-span" class="ml-2">{$options?line-id}</span>&#160; -->
+                <span id="concept-line-text-span" class="chn-font ml-2">{$line}</span>
+            </div>
+            </div>    
+
+            <div class="form-row">
+             <div class="form-group col-md-4">
+                 <span class="font-weight-bold">Second line:</span>  
+             </div>
+             <div class="form-group col-md-4">
+                <!-- <span id="concept-line-id-span" class="ml-2">{$options?line-id}</span>&#160; -->
+                 <select class="form-control chn-font" id="select-end">
+                    <option value="{$options?line-id}">{$line}</option>
+                  {for $s at $pos in $next
+                    return
+                    if ($pos = 1) then
+                    <option value="{$s/@xml:id}" selected="true">{tlslib:proc-seg($s, map{"punc" : false()})}</option>
+                    else
+                    <option value="{$s/@xml:id}">{tlslib:proc-seg($s, map{"punc" : false()})}</option>
+                   } 
+                 </select>                 
+             </div>
+             <div class="form-group col-md-2">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Update</button>
+             </div>            
+             </div>    
+
+            <div class="form-row">
+             <div class="form-group col-md-8">
+             </div> 
+            </div>
+            <div class="form-row">
+             <div class="form-group col-md-2">
+                 <span class="font-weight-bold">Left word</span>  
+             </div>
+             <div class="form-group col-md-4">
+                 <span class="font-weight-bold">Relation</span>  
+             </div>
+             <div class="form-group col-md-2">
+                 <span class="font-weight-bold">Right word</span>  
+             </div>
+             <div class="form-group col-md-2">
+                 <span class="font-weight-bold">Note</span>  
+             </div>
+           </div>
+          {for $c at $pos in string-to-codepoints($line) 
+          return
+            <div class="form-row">
+             <div class="form-group col-md-2">
+                 <span id="{$options?line-id}-{$pos}" class="font-weight-normal">{codepoints-to-string($c)}</span>  
+             </div>
+             <div class="form-group col-md-4">
+                <span class="font-weight-normal">
+                 <span><select id="rel-type-{$pos}" >
+                 <option value="none">None</option>
+                 {for $l in $reltypes 
+                let $h := $l/tei:head/text()
+                order by $h
+                return 
+                 <option value="{data($l/@xml:id)}">{$h}</option>}
+                 <option value="new">New relation</option>
+                 </select></span></span>  
+             </div>
+             <div class="form-group col-md-2">
+                <span>
+                <select id="right-word-{$pos}">
+                {for $p at $j in $next
+                return
+                 if ($j = $pos) then
+                 <option value="rw-{$pos}-{$j}" selected="true">{codepoints-to-string($nc[$j])}</option>
+                 else
+                 <option value="rw-{$pos}-{$j}">{codepoints-to-string($nc[$j])}</option>
+                 }
+                </select>
+                </span>
+           <!--      <span id="{$next[1]/@xml:id}-{$pos}"class="font-weight-normal">{codepoints-to-string($nc[$pos])}</span>  -->
+             </div>
+             <div class="form-group col-md-2">
+             <input id="note-rel-{$pos}" class="form-control" required="true" value=""/>
+             </div>
+           </div>
+          
+          }
+ 
+            <div class="form-row">
+              <div id="input-note-group" class="col-md-10">
+                    <label for="input-note" class="font-weight-bold">Note:</label>
+                    <textarea id="input-note" class="form-control"></textarea>                   
+              </div>
+              
+            </div>    
+
+            <div class="form-row">
+              <div id="rhetdev" class="form-group ui-widget col-md-4 obs-block">
+                 <label for="select-rhetdev" class="font-weight-bold">Name of <span id="block-name">Rhetorical Device</span>: </label>
+                 <input id="select-rhetdev" class="form-control" required="true" value="PARALLELISM"/>
+                 <span id="rhetdev-id-span" style="display:none;"></span>
+              </div>
+            </div>
+           </div>
+        <!-- footer -->
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="save_rdl('{$options?word}', '{$options?line-id}', '{$options?line}')">Save</button>
+           </div>
+        <!-- footer end -->
+       </div>
+     </div>
+ </div>
+};
+
+
+
