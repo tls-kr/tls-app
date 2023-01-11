@@ -2864,17 +2864,17 @@ return
  </div>, 
 for $r in $rels//tei:list
  let $lw := $r/tei:item[1]
- , $lc := collection($config:tls-data-root)//tei:entry[@xml:id=substring($lw/@corresp, 2)]/ancestor::tei:div[@type='concept']
- , $lid := $lc/@xml:id
+ , $lc := data($lw/@concept)
+ , $lid := data($lw/@concept-id)
  , $rw := $r/tei:item[2]
- , $rc := collection($config:tls-data-root)//tei:entry[@xml:id=substring($rw/@corresp, 2)]/ancestor::tei:div[@type='concept']
- , $rid := $rc/@xml:id
+ , $rc := data($rw/@concept)
+ , $rid := data($rw/@concept-id)
  , $txt := data($r/tei:item[1]/@txt)
  , $srt :=  switch($map?mode)  
             case 'rw' return $rw
             case 'txt' return $txt
-            case 'rc' return $rc/tei:head/text()
-            case 'lc' return $lc/tei:head/text()
+            case 'rc' return $rc
+            case 'lc' return $lc
             default return $lw
  order by $srt 
  return 
@@ -2883,10 +2883,10 @@ for $r in $rels//tei:list
  {$txt}
  </div>
  <div class="col-md-2">
- <a href="concept.html?uuid={$lid}{$lw/@corresp}">{$lw}/{$lc/tei:head/text()}</a>
+ <a href="concept.html?uuid={$lid}{$lw/@corresp}">{$lw}/{$lc}</a>
  </div>
  <div class="col-md-2">
- <a href="concept.html?uuid={$rid}{$rw/@corresp}">{$rw}/{$rc/tei:head/text()}</a>
+ <a href="concept.html?uuid={$rid}{$rw/@corresp}">{$rw}/{$rc}</a>
  </div>
  </div>
  )
