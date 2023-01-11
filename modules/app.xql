@@ -213,7 +213,7 @@ return
 <div><h4><span  class="font-weight-bold ml-2">Word relation type: </span>
                  <span><select id="rel-type" onChange="modify_rel_display()">
                  {for $l at $pos in $rt 
-                  let $h := $l/tei:head/text()
+                  let $h := normalize-space($l/tei:head/text())
                   , $cnt := count($l//tei:div[@type="word-rel-ref"]/tei:list)
                 return 
                  if ($h = 'Conv') then
