@@ -2861,7 +2861,7 @@ return
  Right Word
  </div>
  <div class="col-md-2">
- Text
+ Text / Ref
  </div>
  </div>, 
 for $r in subsequence($rels//tei:list, $start, $cnt)
@@ -2875,6 +2875,7 @@ for $r in subsequence($rels//tei:list, $start, $cnt)
  , $ll := try {<span>{substring(data($lw/@textline), 1, xs:int($lw/@offset) - 1)}<b>{substring(data($lw/@textline), xs:int($lw/@offset), xs:int($lw/@range))}</b>{substring(data($lw/@textline), xs:int($lw/@offset) + xs:int($lw/@range))}</span> } catch * {<span>{data($lw/@textline)}</span>}
  , $rl := try {<span>{substring(data($rw/@textline), 1, xs:int($rw/@offset) - 1)}<b>{substring(data($rw/@textline), xs:int($rw/@offset), xs:int($rw/@range))}</b>{substring(data($rw/@textline), xs:int($rw/@offset) + xs:int($rw/@range))}</span> } catch * {<span>{data($rw/@textline)}</span>}
  , $lnk := if (string-length($lw/@line-id) > 0) then ($lw/@line-id)[1] else if (string-length($rw/@line-id) > 0) then ($rw/@line-id)[1] else ()
+ , $bib := $r/parent::tei:div/following-sibling::tei:div[@type='source-references']//tei:bibl
  , $srt :=  switch($map?mode)  
             case 'rw' return $rw
             case 'txt' return $txt
@@ -2891,10 +2892,17 @@ for $r in subsequence($rels//tei:list, $start, $cnt)
  <a href="concept.html?uuid={$rid}{$rw/@corresp}">{$rw}/{$rc}</a>
  </div>
  <div class="col-md-4">
- {$ll} / {$rl} ( {if (string-length($lnk) > 0) then 
+ {
+if (string-length($ll) > 0) then 
+ ($ll, " / ", $rl ,  "(", if (string-length($lnk) > 0) then 
  <a href="textview.html?location={$lnk}">{$txt}{xs:int(tokenize(tokenize($lnk, "_")[3], "-")[1])}</a>
  else
- $txt})
+ $txt , ")") 
+else 
+ (<a href="bibliography.html?uuid={substring(($bib//tei:ref/@target)[1],2)}">{$bib//tei:title/text()}</a>, 
+ $bib
+ )
+ }
  </div>
  </div>
  )
