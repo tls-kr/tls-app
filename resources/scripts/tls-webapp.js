@@ -2,15 +2,9 @@ var dirty = false;
 var cancelmove = false;
 var currentline = "";
 var current_id = "";
+
 $(function() {
     console.log( "ready!" );
-    set_keyup ();
-    set_currentline("mark")
-    var pbx = window.localStorage.getItem('display-pastebox');
-    if (pbx) {
-        display_pastebox(pbx);
-    }
-    get_swls();
     $("#blue-eye").attr("title", "Press here to show annotations.");
     // this is for the taxchar editing
     try { 
@@ -27,6 +21,13 @@ $(function() {
     );
     }
 } finally {}    
+    set_keyup ();
+    set_currentline("mark")
+    var pbx = window.localStorage.getItem('display-pastebox');
+    if (pbx) {
+        display_pastebox(pbx);
+    }
+    get_swls();
 });            
 
 
