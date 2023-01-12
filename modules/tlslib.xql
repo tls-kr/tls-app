@@ -2852,7 +2852,10 @@ let $rels := collection($config:tls-data-root)//tei:TEI[@xml:id="word-relations"
 , $start := if ($map?start) then $map?start else 1
 , $cnt := if ($map?cnt) then $map?cnt else 2000
 return
-(
+(<div>
+<p><span class="font-weight-bold ml-2">About word relations:</span><span class="ml-2">{$rels[1]/ancestor::tei:TEI//tei:front/tei:p/text()}</span></p></div>,
+<h3><span class="font-weight-bold ml-2">{$rels/tei:head/text()}:</span><span class="ml-2">{$rels[1]/tei:div[@type="word-rels"]/tei:p/text()}</span></h3>
+,
  <div class="row">
  <div class="col-md-2">
  Left Word
