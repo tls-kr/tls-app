@@ -130,7 +130,7 @@ function app:browse($node as node()*, $model as map(*), $type as xs:string?, $fi
     else if ($type = "taxchar") then app:browse-char($type, $filterString)
     else if ($type = "taxword") then app:browse-word($type, $filterString)
     else if ($type = "biblio") then bib:browse-biblio($type, $filterString, $mode)
-    else if ($type = "word-rel-type") then app:browse-word-rel($type, $filterString)
+    else if ($type = "word-rel-type") then app:browse-word-rel($type, $filterString, $mode)
     else if (("concept", "syn-func", "sem-feat", "rhet-dev") = $type) then    
     let $hits :=  app:do-browse($type, $filterString)      
     let $store := session:set-attribute("tls-browse", $hits)
@@ -203,8 +203,9 @@ function app:browse($node as node()*, $model as map(*), $type as xs:string?, $fi
   else ()  
 };
 
-declare function app:browse-word-rel($type as xs:string?, $filter as xs:string?){
+declare function app:browse-word-rel($type as xs:string?, $filter as xs:string?, $wrt as xs:string?){
 let $reltypes := collection($config:tls-data-root)//tei:TEI[@xml:id="word-relations"]//tei:body/tei:div[@type='word-rel-type']
+, $wt := if (string-length($wrt)) then $wrt else "Conv" 
 , $rt := for $r in $reltypes 
         let $h := $r/tei:head/text()
         order by $h 
@@ -216,7 +217,7 @@ return
                   let $h := normalize-space($l/tei:head/text())
                   , $cnt := count($l//tei:div[@type="word-rel-ref"]/tei:list)
                 return 
-                 if ($h = 'Conv') then
+                 if ($h = $wt) then
                  <option value="{data($l/@xml:id)}" selected="true">{$h} ({$cnt})</option>
                  else
                  <option value="{data($l/@xml:id)}">{$h} ({$cnt})</option>}
@@ -232,7 +233,7 @@ return
    </h4>
    <p>　</p>
    <div id="rel-table">
-   {tlslib:word-rel-table(map{"reltype":$rt[4]/@xml:id, "mode":"lw"})}
+   {tlslib:word-rel-table(map{"reltype":$rt[tei:head = $wt]/@xml:id, "mode":"lw"})}
    </div>
 </div>    
 };
@@ -1105,7 +1106,7 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
     , $cid := $oword/ancestor::tei:div[@type='concept']/@xml:id
     , $concept := $oword/ancestor::tei:div[@type='concept']/tei:head/text()
     return
-    <li><span class="font-weight-bold">{$wrt}</span>: <a title="{$concept}" href="concept.html?uuid={$cid}#{$oid}">{$other}</a>{$oword/tei:def[1]}</li>
+    <li><span class="font-weight-bold"><a href="browse.html?type=word-rel-type&amp;mode={$wrt}">{$wrt}</a></span>: <a title="{$concept}" href="concept.html?uuid={$cid}#{$oid}">{$other}</a>{$oword/tei:def[1]}</li>
     }</ul></p> else ()}
     {if ($e//tei:listBibl) then 
          <div><button class="btn" data-toggle="collapse" data-target="#bib-{$entry-id}">Show references</button><ul id="bib-{$entry-id}" class="collapse" data-toggle="collapse">

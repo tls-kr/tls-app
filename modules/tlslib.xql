@@ -2849,20 +2849,22 @@ declare function tlslib:generate-new-line-id($base-id as xs:string, $index as xs
 
 declare function tlslib:word-rel-table($map as map(*)){
 let $rels := collection($config:tls-data-root)//tei:TEI[@xml:id="word-relations"]//tei:body/tei:div[@xml:id=$map?reltype]
+, $start := if ($map?start) then $map?start else 1
+, $cnt := if ($map?cnt) then $map?cnt else 2000
 return
 (
  <div class="row">
- <div class="col-md-2">
- Text
- </div>
  <div class="col-md-2">
  Left Word
  </div>
  <div class="col-md-2">
  Right Word
  </div>
+ <div class="col-md-2">
+ Text
+ </div>
  </div>, 
-for $r in $rels//tei:list
+for $r in subsequence($rels//tei:list, $start, $cnt)
  let $lw := $r/tei:item[1]
  , $lc := data($lw/@concept)
  , $lid := data($lw/@concept-id)
@@ -2870,6 +2872,9 @@ for $r in $rels//tei:list
  , $rc := data($rw/@concept)
  , $rid := data($rw/@concept-id)
  , $txt := data($r/tei:item[1]/@txt)
+ , $ll := try {<span>{substring(data($lw/@textline), 1, xs:int($lw/@offset) - 1)}<b>{substring(data($lw/@textline), xs:int($lw/@offset), xs:int($lw/@range))}</b>{substring(data($lw/@textline), xs:int($lw/@offset) + xs:int($lw/@range))}</span> } catch * {<span>{data($lw/@textline)}</span>}
+ , $rl := try {<span>{substring(data($rw/@textline), 1, xs:int($rw/@offset) - 1)}<b>{substring(data($rw/@textline), xs:int($rw/@offset), xs:int($rw/@range))}</b>{substring(data($rw/@textline), xs:int($rw/@offset) + xs:int($rw/@range))}</span> } catch * {<span>{data($rw/@textline)}</span>}
+ , $lnk := if (string-length($lw/@line-id) > 0) then ($lw/@line-id)[1] else if (string-length($rw/@line-id) > 0) then ($rw/@line-id)[1] else ()
  , $srt :=  switch($map?mode)  
             case 'rw' return $rw
             case 'txt' return $txt
@@ -2880,13 +2885,16 @@ for $r in $rels//tei:list
  return 
  <div class="row">
  <div class="col-md-2">
- {$txt}
- </div>
- <div class="col-md-2">
  <a href="concept.html?uuid={$lid}{$lw/@corresp}">{$lw}/{$lc}</a>
  </div>
  <div class="col-md-2">
  <a href="concept.html?uuid={$rid}{$rw/@corresp}">{$rw}/{$rc}</a>
+ </div>
+ <div class="col-md-4">
+ {$ll} / {$rl} ( {if (string-length($lnk) > 0) then 
+ <a href="textview.html?location={$lnk}">{$txt}{xs:int(tokenize(tokenize($lnk, "_")[3], "-")[1])}</a>
+ else
+ $txt})
  </div>
  </div>
  )
