@@ -2855,13 +2855,13 @@ return
 (
  <div class="row">
  <div class="col-md-2">
- Text
- </div>
- <div class="col-md-2">
  Left Word
  </div>
  <div class="col-md-2">
  Right Word
+ </div>
+ <div class="col-md-2">
+ Text
  </div>
  </div>, 
 for $r in subsequence($rels//tei:list, $start, $cnt)
@@ -2885,19 +2885,16 @@ for $r in subsequence($rels//tei:list, $start, $cnt)
  return 
  <div class="row">
  <div class="col-md-2">
- {if (string-length($lnk) > 0) then 
- <a href="textview.html?location={$lnk}">{$txt}{xs:int(tokenize(tokenize($lnk, "_")[3], "-")[1])}</a>
- else
- $txt}
- </div>
- <div class="col-md-2">
  <a href="concept.html?uuid={$lid}{$lw/@corresp}">{$lw}/{$lc}</a>
  </div>
  <div class="col-md-2">
  <a href="concept.html?uuid={$rid}{$rw/@corresp}">{$rw}/{$rc}</a>
  </div>
  <div class="col-md-4">
- {$ll} / {$rl}
+ {$ll} / {$rl} ( {if (string-length($lnk) > 0) then 
+ <a href="textview.html?location={$lnk}">{$txt}{xs:int(tokenize(tokenize($lnk, "_")[3], "-")[1])}</a>
+ else
+ $txt})
  </div>
  </div>
  )
