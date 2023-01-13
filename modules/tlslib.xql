@@ -2862,6 +2862,9 @@ return
 <h3><span class="font-weight-bold ml-2">{$rels/tei:head/text()}:</span><span class="ml-2">{$rels[1]/tei:div[@type="word-rels"]/tei:p/text()}</span></h3>
 ,
  <div class="row">
+ <div class="col-md-1">
+ 　
+ </div> 
  <div class="col-md-2">
  Left Word
  </div>
@@ -2874,6 +2877,7 @@ return
  </div>, 
 for $r in subsequence($rels//tei:list, $start, $cnt)
  let $lw := $r/tei:item[1]
+ , $wrid := $r/ancestor::tei:div[@type='word-rel-ref']/@xml:id
  , $lc := data($lw/@concept)
  , $lid := data($lw/@concept-id)
  , $rw := $r/tei:item[2]
@@ -2892,7 +2896,9 @@ for $r in subsequence($rels//tei:list, $start, $cnt)
             default return $lw
  order by $srt 
  return 
- <div class="row">
+ <div class="row" id="{$wrid}">
+ <div class="col-md-1">
+ {tlslib:format-button("delete_word_relation('"|| $wrid || "')", "Delete this word relation.", "open-iconic-master/svg/x.svg", "", "", "tls-editor")} </div>
  <div class="col-md-2">
  <a href="concept.html?uuid={$lid}{$lw/@corresp}">{$lw}/{$lc}</a>
  </div>

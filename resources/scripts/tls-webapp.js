@@ -120,6 +120,23 @@ function save_wr(obj){
    })
 };
 
+function delete_word_relation(wrid){
+    $.ajax({
+     type : "GET",
+     dataType : "html",  
+     url : "api/responder.xql?func=delete-word-relation&wrid="+ wrid, 
+     success : function(resp){
+     if (resp.length > 2){
+         toastr.info(resp, "HXWD says:");     
+     } else {
+         $('#'+wrid).html("");
+         toastr.info("Word relation has been deleted.", "漢學文典 says:");     
+     }
+   }
+  })  
+};
+
+
 function remove_highlight(){
  $(".highlight").removeClass("highlight");
  lw_id = "";

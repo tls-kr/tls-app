@@ -1838,9 +1838,18 @@ if ($node) then
               </list>
             </div>
             </div>
+ (: TODO: check if this word-relation already exists, if yes, add it to the div/@type=word-rel, otherwise create a new one on that level :)
  return update insert $new into $node
 (: return $new:)
 else "Error: Word relation type not found."
+};
+
+declare function tlsapi:delete-word-relation($map as map(*)){
+let $node := collection($config:tls-data-root)//tei:TEI[@xml:id="word-relations"]//tei:body//tei:div[@xml:id=$map?wrid] 
+return
+if ($node) then 
+update delete $node
+else "Error: Word relation not found."
 };
 
 
