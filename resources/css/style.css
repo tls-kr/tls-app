@@ -145,6 +145,10 @@
    z-index: 1500;
 }
 
+
+.highlight {
+    background-color: #FFFF00;
+}
 .ann-dialog {
 /*  background: white;*/
   position: fixed;

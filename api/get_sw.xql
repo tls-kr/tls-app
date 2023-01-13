@@ -11,6 +11,7 @@ import module namespace tlslib="http://hxwd.org/lib" at "../modules/tlslib.xql";
 let $word := request:get-parameter("word", "xx"),
 $context := request:get-parameter("context", "xx")
 ,$domain := request:get-parameter("domain", "core")
+,$leftword := request:get-parameter("leftword", "")
 return
 
-tlslib:get-sw($word, $context, $domain)
+tlslib:get-sw($word, $context, $domain, $leftword)

@@ -1013,14 +1013,15 @@ declare function tlslib:swl-form-dialog($context as xs:string, $model as map(*))
      else ()}</h6>
     <h6 class="text-muted">Line: <span id="swl-line-text-span" class="ml-2 chn-font">Text of line</span>
     {tlslib:format-button-common("add_rd_here()","Add observation (regarding a text segment) starting on this line", "octicons/svg/comment.svg")}
-     {tlslib:format-button-common("add_parallel()","Add word relations starting on this line", "對")}</h6>
+    </h6>
+    <!--  {tlslib:format-button-common("add_parallel()","Add word relations starting on this line", "對")} -->
     <div class="card-text">
        
         <p> { if (sm:is-authenticated() and not(contains(sm:id()//sm:group, 'tls-test'))) then <span id="new-att-detail">
         <span class="badge badge-primary">Use</span> one of the following syntactic words (SW), 
-        create a <span class="mb-2 badge badge-secondary">New SW</span> 
+        create a one of the following  
          ,add an <span class="font-weight-bold">existing</span> <span class="btn badge badge-primary ml-2" onclick="show_new_concept('existing', '')">Concept</span> to the word
-         or create a <span class="btn badge badge-primary ml-2" onclick="show_new_concept('new', '')">New Concept</span>.
+         or create a <span class="btn badge badge-primary ml-2" onclick="show_new_concept('new', '')">New Concept</span>. You can also add a word relation: First set the left word with <span class="badge badge-secondary">LW</span>.
          </span>
          else <span id="new-att-detail">You do not have permission to make attributions.</span>
          }
@@ -1707,7 +1708,7 @@ return
 };
 
 (: This displays the list of words by concept in the right hand popup pane  :)
-declare function tlslib:get-sw($word as xs:string, $context as xs:string, $domain as xs:string) as item()* {
+declare function tlslib:get-sw($word as xs:string, $context as xs:string, $domain as xs:string, $leftword as xs:string) as item()* {
 let $w-context := ($context = "dic") or contains($context, "concept")
 , $coll := if ($domain = ("core", "undefined")) then "/concepts/" else "/domain/"||$domain
 let $words-tmp := if ($w-context) then 
@@ -1785,10 +1786,14 @@ else ""}
 
 {if ($doann and sm:is-authenticated() and not(contains(sm:id()//sm:group, 'tls-test'))) then 
  if ($wid) then     
- <button class="btn badge badge-secondary ml-2" type="button" 
+      if (string-length($leftword) = 0) then
+     (<button class="btn badge badge-secondary ml-2" type="button" 
  onclick="show_newsw({{'wid':'{$wid}','py': '{string-join($py, "/")}','concept' : '{$esc}', 'concept_id' : '{$id}'}})">
            New SW
-      </button>
+      </button>,
+      <button title="Start defining a word relation by setting the left word" class="btn badge badge-secondary ml-2" type="button" onclick="set_leftword({{'wid':'{$wid}', 'concept' : '{$esc}', 'concept_id' : '{$id}'}})">LW</button>)
+      else
+      <button title="Set the right word of word relation for {$leftword}" class="btn badge badge-primary ml-2" type="button" onclick="set_rightword({{'wid':'{$wid}', 'concept' : '{$esc}', 'concept_id' : '{$id}'}})">RW</button>
 else 
 <button class="btn badge badge-secondary ml-2" type="button" 
 onclick="show_newsw({{'wid':'xx', 'py': '{string-join($py, "/")}','concept' : '{$concept}', 'concept_id' : '{$id}'}})">
