@@ -66,6 +66,7 @@ $('#current-line').text(currentline);
 console.log("Currentid:", current_id, "Currentline: ", currentline);
 };
 
+
 function set_leftword(obj){
   var tsel = window.getSelection();
   var r = [tsel.anchorOffset, tsel.focusOffset]
@@ -136,11 +137,18 @@ function delete_word_relation(wrid){
   })  
 };
 
+function reset_leftword(){
+  remove_highlight()
+  $( "#swl-form" ).hide()
+};
+
 
 function remove_highlight(){
  $(".highlight").removeClass("highlight");
  lw_id = "";
  leftword = "";
+ lwobj = {};
+ lwpos = 0;
  document.getSelection().removeAllRanges(); 
 };
 
@@ -786,7 +794,7 @@ function get_sw(sel, xid, line){
   if ((sel.length > 0) && (sel.length < 10)){
   var context = window.location.pathname;
   if (leftword.length > 0) {
-  $("#new-att-detail").html('The left word for a word relation has been defined: <br/><span class="font-weight-bold">' + leftword + '/' + lwobj.concept + '</span>. <br/>To continue, please select the right word.')    
+  $("#new-att-detail").html('The left word for a word relation has been defined: <br/><span class="font-weight-bold">' + leftword + '/' + lwobj.concept + '</span>. <br/>To continue, please select the right word, or <span title="Reset the left word" class="btn badge badge-primary ml-2" onclick="reset_leftword()">Cancel</span>')    
   } else {
   $("#new-att-detail").html('<span class="badge badge-primary">Use</span> one of the following syntactic words (SW), create a <span class="mb-2 badge badge-secondary">New SW</span>, add an <span class="font-weight-bold">existing</span> <span class="btn badge badge-primary ml-2" onclick="show_new_concept(\'existing\', \'\')">Concept</span> to the word or create a <span class="btn badge badge-primary ml-2" onclick="show_new_concept(\'new\', \'\')">New Concept</span>. You can also add a word relation: First set the left word with <span class="badge badge-secondary">LW</span>.')
   }
