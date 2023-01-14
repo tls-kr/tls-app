@@ -292,7 +292,23 @@ declare function app:do-browse($type as xs:string?, $filter as xs:string?)
 };
 
 
-
+declare 
+    %templates:wrap
+function app:getdata($node as node()*, $model as map(*))
+{
+   session:create(),
+   let $uid := request:get-parameter("uuid", "")
+   , $clabel := request:get-parameter("concept", "")
+   return
+    if (string-length($clabel) > 0) then
+    map {"concept" : $clabel}
+    else if (string-length($uid) > 0) then
+    let $clabel := (collection($config:tls-data-root || "/concepts") | collection($config:tls-data-root || "/domain"))//tei:div[@xml:id = $uid]/tei:head/text()
+    return
+    map {"concept" : $clabel}
+    else
+    map {"concept" : "unknown"}
+};
 
 (: textview related functions :)
 
@@ -1199,6 +1215,9 @@ return
                 
                 <div class="collapse navbar-collapse" id="navbarSupportedContent">
                     <ul class="navbar-nav mr-auto">
+                        {if ($context = "concept") then
+                        tlslib:navbar-concept($node, $model)
+                        else ()}
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                 Browse
@@ -1221,11 +1240,8 @@ return
                         {if ($context = ("textview", "lineview")) then
                         tlslib:tv-header($node, $model)
                         else 
-                        if ($context = "concept") then
                         (tlslib:navbar-doc(),
-                        tlslib:navbar-concept())
-                        else 
-                        tlslib:navbar-link()}
+                        tlslib:navbar-link())}
                         {if (not($testuser)) then tlslib:navbar-bookmarks() else ()}
                         {if (tlslib:should-display-navbar-review($context, $model)) then tlslib:navbar-review($context) else ()}
                         </ul>

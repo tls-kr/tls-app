@@ -558,8 +558,8 @@ return $title
 
 
 (: -- Display related functions -- :)
-declare function tlslib:navbar-concept(){
-<span class="navbar-text ml-2 font-weight-bold">{$model('title')/text()}</span> 
+declare function tlslib:navbar-concept($node as node()*, $model as map(*)){
+<span class="navbar-text ml-2 font-weight-bold">{$model?concept}</span> 
 };
 
 declare function tlslib:navbar-doc(){
