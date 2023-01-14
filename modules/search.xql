@@ -141,7 +141,7 @@ function src:hit-count($node as node()*, $model as map(*), $query as xs:string?)
 (: query in dictionary :)
 declare function src:dic-query($queryStr as xs:string?, $mode as xs:string?)
 {
-tlslib:get-sw($queryStr, "dic", "core")
+tlslib:get-sw($queryStr, "dic", "core", "")
 };
 
 (: query in translation :)

@@ -1013,14 +1013,15 @@ declare function tlslib:swl-form-dialog($context as xs:string, $model as map(*))
      else ()}</h6>
     <h6 class="text-muted">Line: <span id="swl-line-text-span" class="ml-2 chn-font">Text of line</span>
     {tlslib:format-button-common("add_rd_here()","Add observation (regarding a text segment) starting on this line", "octicons/svg/comment.svg")}
-     {tlslib:format-button-common("add_parallel()","Add word relations starting on this line", "對")}</h6>
+    </h6>
+    <!--  {tlslib:format-button-common("add_parallel()","Add word relations starting on this line", "對")} -->
     <div class="card-text">
        
         <p> { if (sm:is-authenticated() and not(contains(sm:id()//sm:group, 'tls-test'))) then <span id="new-att-detail">
         <span class="badge badge-primary">Use</span> one of the following syntactic words (SW), 
-        create a <span class="mb-2 badge badge-secondary">New SW</span> 
+        create a one of the following  
          ,add an <span class="font-weight-bold">existing</span> <span class="btn badge badge-primary ml-2" onclick="show_new_concept('existing', '')">Concept</span> to the word
-         or create a <span class="btn badge badge-primary ml-2" onclick="show_new_concept('new', '')">New Concept</span>.
+         or create a <span class="btn badge badge-primary ml-2" onclick="show_new_concept('new', '')">New Concept</span>. You can also add a word relation: First set the left word with <span class="badge badge-secondary">LW</span>.
          </span>
          else <span id="new-att-detail">You do not have permission to make attributions.</span>
          }
@@ -1707,7 +1708,7 @@ return
 };
 
 (: This displays the list of words by concept in the right hand popup pane  :)
-declare function tlslib:get-sw($word as xs:string, $context as xs:string, $domain as xs:string) as item()* {
+declare function tlslib:get-sw($word as xs:string, $context as xs:string, $domain as xs:string, $leftword as xs:string) as item()* {
 let $w-context := ($context = "dic") or contains($context, "concept")
 , $coll := if ($domain = ("core", "undefined")) then "/concepts/" else "/domain/"||$domain
 let $words-tmp := if ($w-context) then 
@@ -1785,10 +1786,14 @@ else ""}
 
 {if ($doann and sm:is-authenticated() and not(contains(sm:id()//sm:group, 'tls-test'))) then 
  if ($wid) then     
- <button class="btn badge badge-secondary ml-2" type="button" 
+      if (string-length($leftword) = 0) then
+     (<button class="btn badge badge-secondary ml-2" type="button" 
  onclick="show_newsw({{'wid':'{$wid}','py': '{string-join($py, "/")}','concept' : '{$esc}', 'concept_id' : '{$id}'}})">
            New SW
-      </button>
+      </button>,
+      <button title="Start defining a word relation by setting the left word" class="btn badge badge-secondary ml-2" type="button" onclick="set_leftword({{'wid':'{$wid}', 'concept' : '{$esc}', 'concept_id' : '{$id}'}})">LW</button>)
+      else
+      <button title="Set the right word of word relation for {$leftword}" class="btn badge badge-primary ml-2" type="button" onclick="set_rightword({{'wid':'{$wid}', 'concept' : '{$esc}', 'concept_id' : '{$id}'}})">RW</button>
 else 
 <button class="btn badge badge-secondary ml-2" type="button" 
 onclick="show_newsw({{'wid':'xx', 'py': '{string-join($py, "/")}','concept' : '{$concept}', 'concept_id' : '{$id}'}})">
@@ -2857,6 +2862,9 @@ return
 <h3><span class="font-weight-bold ml-2">{$rels/tei:head/text()}:</span><span class="ml-2">{$rels[1]/tei:div[@type="word-rels"]/tei:p/text()}</span></h3>
 ,
  <div class="row">
+ <div class="col-md-1">
+ 　
+ </div> 
  <div class="col-md-2">
  Left Word
  </div>
@@ -2864,21 +2872,19 @@ return
  Right Word
  </div>
  <div class="col-md-2">
- Text / Ref
+ 　　Text / Ref
  </div>
  </div>, 
-for $r in subsequence($rels//tei:list, $start, $cnt)
- let $lw := $r/tei:item[1]
+for $r in subsequence($rels//tei:div[@type='word-rel'], $start, $cnt)
+ let $lw := (($r//tei:list[1])/tei:item)[1]
+ , $wrid := ($r/tei:div[@type='word-rel-ref']/@xml:id)[1]
+ , $rw := (($r//tei:list[1])/tei:item)[2]
+ , $txt := data($lw/@txt)
  , $lc := data($lw/@concept)
  , $lid := data($lw/@concept-id)
- , $rw := $r/tei:item[2]
  , $rc := data($rw/@concept)
  , $rid := data($rw/@concept-id)
- , $txt := data($r/tei:item[1]/@txt)
- , $ll := try {<span>{substring(data($lw/@textline), 1, xs:int($lw/@offset) - 1)}<b>{substring(data($lw/@textline), xs:int($lw/@offset), xs:int($lw/@range))}</b>{substring(data($lw/@textline), xs:int($lw/@offset) + xs:int($lw/@range))}</span> } catch * {<span>{data($lw/@textline)}</span>}
- , $rl := try {<span>{substring(data($rw/@textline), 1, xs:int($rw/@offset) - 1)}<b>{substring(data($rw/@textline), xs:int($rw/@offset), xs:int($rw/@range))}</b>{substring(data($rw/@textline), xs:int($rw/@offset) + xs:int($rw/@range))}</span> } catch * {<span>{data($rw/@textline)}</span>}
- , $lnk := if (string-length($lw/@line-id) > 0) then ($lw/@line-id)[1] else if (string-length($rw/@line-id) > 0) then ($rw/@line-id)[1] else ()
- , $bib := $r/parent::tei:div/following-sibling::tei:div[@type='source-references']//tei:bibl
+ , $bibs := $r//tei:div[@type='source-references']//tei:bibl
  , $srt :=  switch($map?mode)  
             case 'rw' return $rw
             case 'txt' return $txt
@@ -2887,7 +2893,10 @@ for $r in subsequence($rels//tei:list, $start, $cnt)
             default return $lw
  order by $srt 
  return 
- <div class="row">
+ if (string-length($lw) > 0 or string-length($rw) > 0) then
+ <div class="row" id="{$wrid}">
+ <div class="col-md-1">
+ </div>
  <div class="col-md-2">
  <a href="concept.html?uuid={$lid}{$lw/@corresp}">{$lw}/{$lc}</a>
  </div>
@@ -2895,18 +2904,31 @@ for $r in subsequence($rels//tei:list, $start, $cnt)
  <a href="concept.html?uuid={$rid}{$rw/@corresp}">{$rw}/{$rc}</a>
  </div>
  <div class="col-md-4">
- {
+ {for $l in $r/tei:div[@type='word-rel-ref']
+  let $tid := $l/@xml:id
+  , $lwn := ($l//tei:list/tei:item)[1]
+  , $rwn := ($l//tei:list/tei:item)[2]
+ , $ll := try {<span>{substring(data($lwn/@textline), 1, xs:int($lwn/@offset) - 1)}<b>{substring(data($lwn/@textline), xs:int($lwn/@offset), xs:int($lwn/@range))}</b>{substring(data($lwn/@textline), xs:int($lwn/@offset) + xs:int($lwn/@range))}</span> } catch * {<span>{data($lwn/@textline)}</span>}
+ , $rl := try {<span>{substring(data($rwn/@textline), 1, xs:int($rwn/@offset) - 1)}<b>{substring(data($rwn/@textline), xs:int($rwn/@offset), xs:int($rwn/@range))}</b>{substring(data($rwn/@textline), xs:int($rwn/@offset) + xs:int($rwn/@range))}</span> } catch * {<span>{data($rwn/@textline)}</span>}
+ , $lnk := if (string-length($lwn/@line-id) > 0) then ($lwn/@line-id)[1] else if (string-length($rwn/@line-id) > 0) then ($rwn/@line-id)[1] else ()
+ return 
+  (tlslib:format-button("delete_word_relation('"|| $tid || "')", "Delete this word relation.", "open-iconic-master/svg/x.svg", "", "", "tls-editor"),
 if (string-length($ll) > 0) then 
- ($ll, " / ", $rl ,  "(", if (string-length($lnk) > 0) then 
- <a href="textview.html?location={$lnk}">{$txt}{xs:int(tokenize(tokenize($lnk, "_")[3], "-")[1])}</a>
- else
- $txt , ")") 
-else 
+  ($ll, " / ", $rl ,  "(", if (string-length($lnk) > 0) then 
+   <a href="textview.html?location={$lnk}">{$txt}{xs:int(tokenize(tokenize($lnk, "_")[3], "-")[1])}</a>
+   else
+   $txt , ")")
+
+else  
+ for $bib in $bibs
+ return
  (<a href="bibliography.html?uuid={substring(($bib//tei:ref/@target)[1],2)}">{$bib//tei:title/text()}</a>, 
  $bib
- )
+ ), <br/>)
  }
  </div>
  </div>
+  else
+ ()
  )
 };

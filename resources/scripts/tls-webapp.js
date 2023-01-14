@@ -2,7 +2,10 @@ var dirty = false;
 var cancelmove = false;
 var currentline = "";
 var current_id = "";
-
+var leftword = "";
+var lw_id = "";
+var lwobj = {};
+var lwpos = 0;
 $(function() {
     console.log( "ready!" );
     $("#blue-eye").attr("title", "Press here to show annotations.");
@@ -63,6 +66,92 @@ $('#current-line').text(currentline);
 console.log("Currentid:", current_id, "Currentline: ", currentline);
 };
 
+
+function set_leftword(obj){
+  var tsel = window.getSelection();
+  var r = [tsel.anchorOffset, tsel.focusOffset]
+  lwpos = Math.min.apply(Math, r) + 1;
+  var end = Math.max.apply(Math, r);
+  lw_id = tsel.anchorNode.parentNode.id.toString();
+  lwobj = obj
+  var line = tsel.anchorNode.parentNode.innerText;
+  leftword = line.substring(lwpos - 1, end)
+//  $("#"+lw_id.split(".").join("\\.")).html(line.substring(0, lwpos - 1)+ "<span class='highlight'>" + leftword + "</span>" + line.substring(end))
+  $( "#swl-form" ).hide()
+  toastr.info("Now select the right word and then set the relation type.", "漢學文典 says:");
+  
+};
+
+// the highlight throws the offset off, so I have to remove the element before getting the right word
+
+function set_rightword(obj){
+//  $(".highlight").removeClass("highlight");
+  var tsel = window.getSelection();
+  var r = [tsel.anchorOffset, tsel.focusOffset]
+  var pos = Math.min.apply(Math, r) + 1;
+  var end = Math.max.apply(Math, r);
+  var rw_id = tsel.anchorNode.parentNode.id.toString();
+  var line = tsel.anchorNode.parentNode.innerText;
+  var rightword = line.substring(pos - 1, end)
+  console.log("rw", rightword)
+  console.log("tset", tsel)
+  console.log("lwpos, rwpos", lwpos, pos)
+  $( "#swl-form" ).hide()
+  $.ajax({
+  type : "GET",
+  dataType : "html",
+  url : "api/responder.xql?func=dialogs:word-rel-dialog&lw="+leftword+"&lwlineid="+lw_id+"&lwconcept="+lwobj.concept+"&lwconceptid="+lwobj.concept_id+"&lwwid="+lwobj.wid+"&rw="+rightword+"&rwlineid="+rw_id+"&rwconcept="+obj.concept+"&rwconceptid="+obj.concept_id+"&rwwid="+obj.wid+"&rwoffset="+pos+"&lwoffset="+lwpos, 
+  success : function(resp){
+
+    $('#remoteDialog').html(resp);
+    $('#word-rel-dialog').show();
+    
+   }
+  })  
+};
+
+function save_wr(obj){
+  obj.relid = $("#rel-type").val()
+  $.get(
+   "api/responder.xql?func=save-wr", obj,
+    function(resp){
+    $('#word-rel-dialog').hide();
+    toastr.info("Relation type has been saved.", "漢學文典 says:");
+    remove_highlight();
+   })
+};
+
+function delete_word_relation(wrid){
+    $.ajax({
+     type : "GET",
+     dataType : "html",  
+     url : "api/responder.xql?func=delete-word-relation&wrid="+ wrid, 
+     success : function(resp){
+     if (resp.length > 2){
+         toastr.info(resp, "HXWD says:");     
+     } else {
+         $('#'+wrid).html("");
+         toastr.info("Word relation has been deleted.", "漢學文典 says:");     
+     }
+   }
+  })  
+};
+
+function reset_leftword(){
+  remove_highlight()
+  $( "#swl-form" ).hide()
+};
+
+
+function remove_highlight(){
+ $(".highlight").removeClass("highlight");
+ lw_id = "";
+ leftword = "";
+ lwobj = {};
+ lwpos = 0;
+ document.getSelection().removeAllRanges(); 
+};
+
 function page_move(target){
     var url = "?location="+target;
     console.log("page_move");
@@ -119,7 +208,6 @@ function get_swl_for_page(){
   $('#toprow').html(resp);
   }
   });
-    
 };
 
 function hide_pastebox(){
@@ -656,8 +744,11 @@ function get_sw(sel, xid, line){
    $('#domain-lookup-mark').show();
 
    var domain = $('#domain-select').val();
-   var pos = window.getSelection().anchorOffset;
-   console.log("selection: ", sel);
+   var tsel = window.getSelection();
+   var r = [tsel.anchorOffset, tsel.focusOffset]
+   var pos = Math.min.apply(Math, r);
+   var len = Math.max.apply(Math, r);
+   console.log("selection: ", sel, pos);
    var url = "http://www.kaom.net/z_hmy_zidian88.php?"+"word="+encodeURI(sel)+"&mode=word&bianti=no&page=no";
    // this needs to produce the form link for the lookup
 /*   字書：
@@ -702,11 +793,15 @@ function get_sw(sel, xid, line){
 // alert(uid);
   if ((sel.length > 0) && (sel.length < 10)){
   var context = window.location.pathname;
-  $("#new-att-detail").html('<span class="badge badge-primary">Use</span> one of the following syntactic words (SW), create a <span class="mb-2 badge badge-secondary">New SW</span>, add an <span class="font-weight-bold">existing</span> <span class="btn badge badge-primary ml-2" onclick="show_new_concept(\'existing\', \'\')">Concept</span> to the word or create a <span class="btn badge badge-primary ml-2" onclick="show_new_concept(\'new\', \'\')">New Concept</span>.')
+  if (leftword.length > 0) {
+  $("#new-att-detail").html('The left word for a word relation has been defined: <br/><span class="font-weight-bold">' + leftword + '/' + lwobj.concept + '</span>. <br/>To continue, please select the right word, or <span title="Reset the left word" class="btn badge badge-primary ml-2" onclick="reset_leftword()">Cancel</span>')    
+  } else {
+  $("#new-att-detail").html('<span class="badge badge-primary">Use</span> one of the following syntactic words (SW), create a <span class="mb-2 badge badge-secondary">New SW</span>, add an <span class="font-weight-bold">existing</span> <span class="btn badge badge-primary ml-2" onclick="show_new_concept(\'existing\', \'\')">Concept</span> to the word or create a <span class="btn badge badge-primary ml-2" onclick="show_new_concept(\'new\', \'\')">New Concept</span>. You can also add a word relation: First set the left word with <span class="badge badge-secondary">LW</span>.')
+  }
   $.ajax({
   type : "GET",
   dataType : "html",
-  url : "api/get_sw.xql?word=" + sel+"&context="+context+"&domain="+domain, 
+  url : "api/get_sw.xql?word=" + sel+"&context="+context+"&domain="+domain+"&leftword="+leftword, 
   success : function(resp){
   $('#swl-select').html(resp)
   }

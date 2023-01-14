@@ -761,7 +761,7 @@ declare function dialogs:add-parallel($options as map(*)){
            <!--      <span id="{$next[1]/@xml:id}-{$pos}"class="font-weight-normal">{codepoints-to-string($nc[$pos])}</span>  -->
              </div>
              <div class="form-group col-md-2">
-             <input id="note-rel-{$pos}" class="form-control" required="true" value=""/>
+             <input id="note-rel-{$pos}" class="form-control" value=""/>
              </div>
            </div>
           
@@ -794,5 +794,81 @@ declare function dialogs:add-parallel($options as map(*)){
  </div>
 };
 
+(: "api/responder.xql?func=dialogs:word-rel-dialog&lw="+leftword+"&lwlineid="+lw_id+"&lwconcept="+lwobj.concept+"&lwconceptid="+lwobj.concept_id+"&lwwid="+lwobj.wid+"&rw="+rightword+"&rwlineid="+rw_id+"&rwconcept="+obj.concept+"&rwconceptid="+obj.concept_id+"&rwwid="+obj.wid,  :)
 
+declare function dialogs:word-rel-dialog($options as map(*)){
+ let $reltypes := collection($config:tls-data-root)//tei:TEI[@xml:id="word-relations"]//tei:body/tei:div[@type='word-rel-type']
+ return
+ <div id="word-rel-dialog" class="modal" tabindex="-1" role="dialog" style="display: none;">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header"><h5>Add word relation</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" title="Close">x</button>
+            </div>
+            <div class="modal-body">
+            <div class="form-row">
+             <div class="form-group col-md-8">
+             </div> 
+            </div>
+            <div class="form-row">
+             <div class="form-group col-md-4">
+                 <span class="font-weight-bold">Left word</span>  
+             </div>
+             <div class="form-group col-md-2">
+                 <span class="font-weight-bold">Relation</span>  
+             </div>
+             <div class="form-group col-md-4">
+                 <span class="font-weight-bold">Right word</span>  
+             </div>
+             <div class="form-group col-md-2">
+                 <span class="font-weight-bold">Note</span>  
+             </div>
+           </div>
+            <div class="form-row">
+             <div class="form-group col-md-4">
+                 <span id="lwlineid" style="display:none;">{$options?lwlineid}</span>
+                 <span id="leftword" class="font-weight-normal">{$options?lw}</span>  
+                 <span id="lwconceptid" style="display:none;">{$options?lwconceptid}</span>
+                 /<span id="lwconcept" class="font-weight-normal">{$options?lwconcept}</span>  
+             </div>
+             <div class="form-group col-md-2">
+                <span class="font-weight-normal">
+                 <span><select id="rel-type" >
+                 {for $l in $reltypes 
+                let $h := $l/tei:head/text()
+                order by $h
+                return 
+                 <option value="{data($l/@xml:id)}">{$h}</option>}
+                 </select></span></span>  
+             </div>
+             <div class="form-group col-md-4">
+                 <span id="rwlineid" style="display:none;">{$options?rwlineid}</span>
+                 <span id="rightword" class="font-weight-normal">{$options?rw}</span>  
+                 <span id="rwconceptid" style="display:none;">{$options?rwconceptid}</span>
+                 /<span id="rwconcept" class="font-weight-normal">{$options?rwconcept}</span>  
+             </div>
+             <div class="form-group col-md-2">
+             <input id="note-rel" class="form-control" value=""/>
+             </div>
+           </div>
+          
+ 
+            <div class="form-row">
+              <div id="input-note-group" class="col-md-12">
+                    <label for="input-note" class="font-weight-bold">Note:</label>
+                    <textarea id="input-note" class="form-control"></textarea>                   
+              </div>             
+            </div>    
 
+           </div>
+        <!-- footer -->
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="save_wr({fn:serialize($options, map{"method" : "json"})})">Save</button>
+           </div>
+        <!-- footer end -->
+       </div>
+     </div>
+ </div>
+
+};
