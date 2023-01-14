@@ -228,7 +228,6 @@ return
                  <option value="rw">Right word</option>
                  <option value="lc">Left concept</option>
                  <option value="rc">Right concept</option>
-                 <option value="txt">Text</option>
                  </select></span>    
    </h4>
    <p>　</p>
@@ -1205,25 +1204,28 @@ return
                                 Browse
                             </a>
                             <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                                <a class="dropdown-item" href="textlist.html">Texts</a>
                                 <a class="dropdown-item" href="browse.html?type=concept">Concepts</a>
                                 <a class="dropdown-item" href="browse.html?type=taxchar">Characters</a>
                                 <a class="dropdown-item" href="browse.html?type=taxword">Words</a>
+                                <a class="dropdown-item" href="browse.html?type=word-rel-type">Word relations</a>
                                 <a class="dropdown-item" href="browse.html?type=syn-func">Syntactic functions</a>
                                 <a class="dropdown-item" href="browse.html?type=sem-feat">Semantic features</a>
-                                <a class="dropdown-item" href="browse.html?type=word-rel-type">Word relations</a>
                                 <a class="dropdown-item" href="browse.html?type=rhet-dev">Rhetorical devices</a>
                                 <a class="dropdown-item" href="observations.html">Observations</a>
                                 <!--<div class="dropdown-divider"/>-->
                                 <!-- will need to make another menu level here for the bookmarks -->
-                                <a class="dropdown-item" href="textlist.html">Texts</a>
                                 <a class="dropdown-item" href="browse.html?type=biblio">Bibliography</a>
                             </div>                            
                         </li>
                         {if ($context = ("textview", "lineview")) then
                         tlslib:tv-header($node, $model)
-                        else
+                        else 
+                        if ($context = "concept") then
                         (tlslib:navbar-doc(),
-                        tlslib:navbar-link())}
+                        tlslib:navbar-concept())
+                        else 
+                        tlslib:navbar-link()}
                         {if (not($testuser)) then tlslib:navbar-bookmarks() else ()}
                         {if (tlslib:should-display-navbar-review($context, $model)) then tlslib:navbar-review($context) else ()}
                         </ul>
