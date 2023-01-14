@@ -558,6 +558,9 @@ return $title
 
 
 (: -- Display related functions -- :)
+declare function tlslib:navbar-concept($node as node()*, $model as map(*)){
+<span class="navbar-text ml-2 font-weight-bold">{$model?concept}</span> 
+};
 
 declare function tlslib:navbar-doc(){
                         <li class="nav-item dropdown">
@@ -2908,6 +2911,7 @@ for $r in subsequence($rels//tei:div[@type='word-rel'], $start, $cnt)
   let $tid := $l/@xml:id
   , $lwn := ($l//tei:list/tei:item)[1]
   , $rwn := ($l//tei:list/tei:item)[2]
+ , $txt := data($lwn/@txt)
  , $ll := try {<span>{substring(data($lwn/@textline), 1, xs:int($lwn/@offset) - 1)}<b>{substring(data($lwn/@textline), xs:int($lwn/@offset), xs:int($lwn/@range))}</b>{substring(data($lwn/@textline), xs:int($lwn/@offset) + xs:int($lwn/@range))}</span> } catch * {<span>{data($lwn/@textline)}</span>}
  , $rl := try {<span>{substring(data($rwn/@textline), 1, xs:int($rwn/@offset) - 1)}<b>{substring(data($rwn/@textline), xs:int($rwn/@offset), xs:int($rwn/@range))}</b>{substring(data($rwn/@textline), xs:int($rwn/@offset) + xs:int($rwn/@range))}</span> } catch * {<span>{data($rwn/@textline)}</span>}
  , $lnk := if (string-length($lwn/@line-id) > 0) then ($lwn/@line-id)[1] else if (string-length($rwn/@line-id) > 0) then ($rwn/@line-id)[1] else ()

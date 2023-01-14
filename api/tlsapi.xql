@@ -1823,23 +1823,33 @@ return
 
 declare function tlsapi:save-wr($map as map(*)){
 let $node := collection($config:tls-data-root)//tei:TEI[@xml:id="word-relations"]//tei:body/tei:div[@xml:id=$map?relid]/tei:div[@type="word-rels"]
+, $d2 := $node//tei:div[@type="word-rel-ref" and .//tei:item[@corresp="#"||$map?lwwid] and .//tei:item[@corresp="#"||$map?rwwid]]/parent::tei:div 
 , $lwtextline := collection($config:tls-texts-root)//tei:seg[@xml:id=$map?lwlineid]
 , $rwtextline := collection($config:tls-texts-root)//tei:seg[@xml:id=$map?rwlineid]/text()
 , $title := $lwtextline/ancestor::tei:TEI//tei:titleStmt/tei:title/text()
 , $user := sm:id()//sm:real/sm:username/text()
 return
 if ($node) then 
- let $new := <div type="word-rel" xmlns="http://www.tei-c.org/ns/1.0" created="{current-dateTime()}" resp="#{$user}">
+ let $new := if ($d2) then 
+            <div xml:id="uuid-{util:uuid()}" type="word-rel-ref" created="{current-dateTime()}" resp="#{$user}" xmlns="http://www.tei-c.org/ns/1.0">
+              <list>
+                <item p="left-word" txt="{$title}" corresp="#{$map?lwwid}" concept="{$map?lwconcept}" concept-id="{$map?lwconceptid}" line-id="{$map?lwlineid}" textline="{$lwtextline/text()}" offset="{$map?lwoffset}" range="{string-length($map?lw)}">{$map?lw}</item>
+                <item p="right-word" txt="{$title}" corresp="#{$map?rwwid}" concept="{$map?rwconcept}" concept-id="{$map?rwconceptid}"  line-id="{$map?rwlineid}" textline="{$rwtextline}" offset="{$map?rwoffset}" range="{string-length($map?lw)}">{$map?rw}</item>
+              </list>
+            </div>
+          else 
+           <div type="word-rel" xmlns="http://www.tei-c.org/ns/1.0">
             <link target="#{$map?lwwid} #{$map?rwwid}"/>
-            <div xml:id="uuid-{util:uuid()}" type="word-rel-ref">
+            <div xml:id="uuid-{util:uuid()}" type="word-rel-ref" created="{current-dateTime()}" resp="#{$user}">
               <list>
                 <item p="left-word" txt="{$title}" corresp="#{$map?lwwid}" concept="{$map?lwconcept}" concept-id="{$map?lwconceptid}" line-id="{$map?lwlineid}" textline="{$lwtextline/text()}" offset="{$map?lwoffset}" range="{string-length($map?lw)}">{$map?lw}</item>
                 <item p="right-word" txt="{$title}" corresp="#{$map?rwwid}" concept="{$map?rwconcept}" concept-id="{$map?rwconceptid}"  line-id="{$map?rwlineid}" textline="{$rwtextline}" offset="{$map?rwoffset}" range="{string-length($map?lw)}">{$map?rw}</item>
               </list>
             </div>
             </div>
+     , $target := if ($d2) then $d2 else $node
  (: TODO: check if this word-relation already exists, if yes, add it to the div/@type=word-rel, otherwise create a new one on that level :)
- return update insert $new into $node
+ return update insert $new into $target
 (: return $new:)
 else "Error: Word relation type not found."
 };

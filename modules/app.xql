@@ -228,7 +228,6 @@ return
                  <option value="rw">Right word</option>
                  <option value="lc">Left concept</option>
                  <option value="rc">Right concept</option>
-                 <option value="txt">Text</option>
                  </select></span>    
    </h4>
    <p>　</p>
@@ -293,7 +292,23 @@ declare function app:do-browse($type as xs:string?, $filter as xs:string?)
 };
 
 
-
+declare 
+    %templates:wrap
+function app:getdata($node as node()*, $model as map(*))
+{
+   session:create(),
+   let $uid := request:get-parameter("uuid", "")
+   , $clabel := request:get-parameter("concept", "")
+   return
+    if (string-length($clabel) > 0) then
+    map {"concept" : $clabel}
+    else if (string-length($uid) > 0) then
+    let $clabel := (collection($config:tls-data-root || "/concepts") | collection($config:tls-data-root || "/domain"))//tei:div[@xml:id = $uid]/tei:head/text()
+    return
+    map {"concept" : $clabel}
+    else
+    map {"concept" : "unknown"}
+};
 
 (: textview related functions :)
 
@@ -1200,28 +1215,31 @@ return
                 
                 <div class="collapse navbar-collapse" id="navbarSupportedContent">
                     <ul class="navbar-nav mr-auto">
+                        {if ($context = "concept") then
+                        tlslib:navbar-concept($node, $model)
+                        else ()}
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                 Browse
                             </a>
                             <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                                <a class="dropdown-item" href="textlist.html">Texts</a>
                                 <a class="dropdown-item" href="browse.html?type=concept">Concepts</a>
                                 <a class="dropdown-item" href="browse.html?type=taxchar">Characters</a>
                                 <a class="dropdown-item" href="browse.html?type=taxword">Words</a>
+                                <a class="dropdown-item" href="browse.html?type=word-rel-type">Word relations</a>
                                 <a class="dropdown-item" href="browse.html?type=syn-func">Syntactic functions</a>
                                 <a class="dropdown-item" href="browse.html?type=sem-feat">Semantic features</a>
-                                <a class="dropdown-item" href="browse.html?type=word-rel-type">Word relations</a>
                                 <a class="dropdown-item" href="browse.html?type=rhet-dev">Rhetorical devices</a>
                                 <a class="dropdown-item" href="observations.html">Observations</a>
                                 <!--<div class="dropdown-divider"/>-->
                                 <!-- will need to make another menu level here for the bookmarks -->
-                                <a class="dropdown-item" href="textlist.html">Texts</a>
                                 <a class="dropdown-item" href="browse.html?type=biblio">Bibliography</a>
                             </div>                            
                         </li>
                         {if ($context = ("textview", "lineview")) then
                         tlslib:tv-header($node, $model)
-                        else
+                        else 
                         (tlslib:navbar-doc(),
                         tlslib:navbar-link())}
                         {if (not($testuser)) then tlslib:navbar-bookmarks() else ()}
