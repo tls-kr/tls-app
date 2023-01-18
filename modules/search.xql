@@ -338,7 +338,8 @@ let $query := $model?query
   </ul>
 </nav>
      return 
-     src:show-text-results(map{"p" : $p, "nav": $nav, "hits": $model?hits, "start" : $start, "resno" : $resno, "q1" : $q1, "query": $query, "search-type" : $search-type })
+     try {
+     src:show-text-results(map{"p" : $p, "nav": $nav, "hits": $model?hits, "start" : $start, "resno" : $resno, "q1" : $q1, "query": $query, "search-type" : $search-type }) } catch * {()}
     case $src:search-field return
      src:show-field-results(map{"hits": $model?hits, "map":$map, "query" : $query, "search-type" : $search-type, "type" : $type, "start" : $start, "resno" : $resno})
     case $src:search-dic return
@@ -399,9 +400,9 @@ declare function src:show-text-results($map as map(*)){
     <div>{$map?p}
     <table class="table">
     {for $hx at $c in subsequence($map?hits, $map?start, $map?resno)
-      for $h in if ($map?search-type=$src:search-trans) then $hx else util:expand($hx)//exist:match/ancestor::tei:seg
+      for $h in if ($map?search-type=$src:search-trans) then $hx else try { util:expand($hx)//exist:match/ancestor::tei:seg } catch * {"x"}
       let $loc := if ($map?search-type=$src:search-trans) then substring($h/@corresp,2) else $h/@xml:id,
-      $m1 := substring(($h/exist:match)[1]/text(), 1, 1),
+      $m1 := try { substring(($h/exist:match)[1]/text(), 1, 1) } catch * {"x"},
       $cseg := collection($config:tls-texts-root)//tei:seg[@xml:id=$loc],
       $head :=  $cseg/ancestor::tei:div[1]/tei:head[1]//text() ,
       $title := $cseg/ancestor::tei:TEI//tei:titleStmt/tei:title/text(),
@@ -417,13 +418,13 @@ declare function src:show-text-results($map as map(*)){
         </td>
         {if ($map?search-type = $src:search-trans) then  
         (<td>{$cseg}</td>,<td>{$h}</td>) else
-        <td class="chn-font">{ 
+        <td class="chn-font">{ try { 
         for $sh in $h/preceding-sibling::tei:seg[position()<4] return tlslib:proc-seg($sh,map{"punc" : true()}),
         tlslib:proc-seg($h, map{"punc" : true()}),
         (: this is a hack, it will probably show the most recent translation if there are more, but we want to make this predictable... :)
-        for $sh in $h/following-sibling::tei:seg[position()<4] return tlslib:proc-seg($sh, map{"punc" : true()})}
+        for $sh in $h/following-sibling::tei:seg[position()<4] return tlslib:proc-seg($sh, map{"punc" : true()})} catch * {()}}
         {if (exists($tr)) then (<br/>,"..." , $tr[last()] , "...") else ()
-        }</td>
+        } </td>
         }
         </tr>
     }
