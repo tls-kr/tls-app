@@ -58,9 +58,10 @@ function app:page-title($node as node()*, $model as map(*)) as xs:string
  let $ts := 
  if ($model("textid")) then 
    $model("textid") || " : " || $model("title")
- else if ($model("concept")) then
+ else if ($model?concept = "unknown") then
+   "漢學文典"
+   else
    "Concept: " || $model("concept")
- else "漢學文典"
 
 (:,$context := substring-before(tokenize(request:get-uri(), "/")[last()], ".html"):)
 return "TLS - " || $ts

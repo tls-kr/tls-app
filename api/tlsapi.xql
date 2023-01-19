@@ -1181,7 +1181,8 @@ declare function tlsapi:morelines($map as map(*)){
   ,  $slot1-id := tlslib:get-content-id($model?textid, 'slot1', $tr)
   ,  $slot2-id := tlslib:get-content-id($model?textid, 'slot2', $tr)
 return
-tlslib:chunkcol-left($dseg, $model, $tr, $slot1-id, $slot2-id, $map?lineid, xs:int($map?cnt))
+(<div class="row" id="{$map?lineid}-{$map?cnt}"></div>,
+tlslib:chunkcol-left($dseg, $model, $tr, $slot1-id, $slot2-id, $map?lineid, xs:int($map?cnt)))
 };
 
 (:~
