@@ -52,7 +52,23 @@ x.Selector.getSelected = function() {
     return t;
 };
 
+function get_text_line(tabidx){
+    var nid = "" 
+    try {
+      tid = $("[tabindex='" + tabidx.toString() + "']").attr('id').replace('-tr', '').split(".").join("\\.");
+    } catch (err) {
+      ntab = tabidx - 1
+      nid = $("[tabindex='" + ntab.toString() + "']").attr('id').replace('-tr', '').split(".").join("\\.");
+      more_display_lines(nid, tabidx );                
+      return $("#" + nid).text();
+    }
+//    console.log("tid:", tid, nid);
+    return $("#" + tid).text();
+}
+
 function set_currentline(newid){
+var nl = "";
+$('#current-line').text("");
 if (newid === "mark"){
     current_id = $(".mark:first > .zh").attr('id').split(".").join("\\.");
 } else {
@@ -60,10 +76,22 @@ if (newid === "mark"){
     cp = $("#" + current_id).parent();
     $(".mark:first").removeClass("mark");
     cp.addClass("mark")
-}    
-currentline = $("#" + current_id).text();
-$('#current-line').text(currentline);
-console.log("Currentid:", current_id, "Currentline: ", currentline);
+}   
+ tab = parseInt($("#"+current_id+"-tr").attr("tabindex")) + 1;
+ currentline = $("#" + current_id).text();
+    try {
+      tid = $("[tabindex='" + tab.toString() + "']").attr('id').replace('-tr', '').split(".").join("\\.");
+      nl = $("#" + tid).text();
+    } catch (err) {
+    }
+//    console.log("tid:", tid, nid);
+/*    $.when(get_text_line(tab)).then(function (r){
+        nl = r;
+    }, function (r){
+        nl = ""
+    })*/
+ $('#current-line').html('<span class="font-weight-bold">'+currentline+'</span>'+nl)
+ console.log("Currentid:", current_id, "Currentline: ", currentline, nl);
 };
 
 
@@ -212,29 +240,40 @@ function get_swl_for_page(){
 
 function hide_pastebox(){
   $('#pastebox').hide();    
-  window.localStorage.removeItem('display-pastebox');  
+   lines = $('#input-pastebox').val()
+   window.localStorage.setItem('pastebox', lines);
+   window.localStorage.removeItem('display-pastebox');  
    $('#remoteDialog').html("");
 }
 // save the line and move to the next line
 function save_pastebox_line(){
-var lines = $('#input-pastebox').val().split('\n');//gives all lines
+    var nl = "";
+    $('#current-line').html('');
+    var lines = $('#input-pastebox').val().split('\n');//gives all lines
     var firstLine=lines[0];
     var remainingLines = lines.slice(1,).join('\n');
-    console.log('firstLine:',firstLine);
+    // console.log('firstLine:',firstLine);
     $('#'+current_id+"-tr").html(firstLine);
     thisid = current_id.replace("\\", "")
     save_tr(thisid+"-tr", firstLine, currentline);
     tab = parseInt($("#"+current_id+"-tr").attr("tabindex")) + 1;
-    console.log("Tab: ", "[tabindex='" + tab.toString() + "']")
+    ntab = tab + 1
+    // console.log("Tab: ", "[tabindex='" + tab.toString() + "']")
     $('#input-pastebox').val(remainingLines);
     window.localStorage.setItem('pastebox', remainingLines);
-    try { 
-        nextid = $("[tabindex='" + tab.toString() + "']").attr('id').replace('-tr', '');
-        set_currentline(nextid)
-        $('#current-line').text(currentline)
-    } catch (err){
-        more_display_lines(current_id, tab );
-    }    
+    $.when(get_text_line(ntab)).then(function (r){
+       tid = $("[tabindex='" + ntab.toString() + "']").attr('id').replace('-tr', '').split(".").join("\\.");
+       nl = $("#" + tid).text();
+       set_keyup ();
+       // console.log("when:r", r, nl);
+       nextid = $("[tabindex='" + tab.toString() + "']").attr('id').replace('-tr', '');
+       set_currentline(nextid)
+       $('#current-line').html('<span class="font-weight-bold">'+currentline+'</span>'+nl);
+    }, function (r){
+        nl = ""
+    })
+//        more_display_lines(current_id, tab );        
+//        $('#current-line').text(currentline)
 };
 
 //display the Pastebox
@@ -258,7 +297,7 @@ function display_pastebox(slot){
     $('#pastebox').height(dh / 2);
     $('#pastebox').css({top: dh / 2 + 49})
 //    $('#pastebox').position({my: 'bottom right'});
-    $('#current-line').text(currentline)
+    $('#current-line').html('<span class="font-weight-bold">'+currentline+'</span>')
     $('#input-pastebox').val(remainingLines);    
     $('#input-pastebox').keydown(function(e) {
        if (e.ctrlKey == true) {
@@ -276,27 +315,48 @@ function display_pastebox(slot){
 
 //get more lines, once we are at the end of the page
 function more_display_lines(lineid, tab){
-  cnt = tab - 501
-  np = tab + 29
-  thisid = lineid.replace("\\", "")
+  cnt = tab - 501;
+  np = tab + 29;
+  thisid = lineid.replace("\\", "");
+      // avoid adding resp multiple times
+  r1 = $("#"+lineid+'-'+cnt.toString()).attr("class");
+  console.log("r1", r1, r1 != "row");
+  if (r1 != "row"){ 
   $.ajax({
   type : "GET",
   dataType : "html",
   url : "api/responder.xql?lineid="+thisid+"&cnt="+cnt+"&func=morelines", 
   success : function(resp){
-      $("#"+lineid+"-swl").parent().after(resp)
-      set_keyup ()
-      nextid = $("[tabindex='" + tab.toString() + "']").attr('id').replace('-tr', '');
-      set_currentline(nextid)
-      $('#current-line').text(currentline)
+      $("#"+lineid+"-swl").parent().after(resp);
+      console.log("LID", lineid);
+      // nextid = $("[tabindex='" + tab.toString() + "']").attr('id').replace('-tr', '');
+      // set_currentline(nextid)
+//      $('#current-line').text(currentline)
+      // $('#current-line').html('<span class="font-weight-bold">'+currentline+'</span>')
       npid = $("[tabindex='" + np.toString() + "']").attr('id').replace('-tr', '')
       $('#nextpagebutton').on('click', function()
         {page_move(npid+'&amp;prec=1&amp;foll=29');}
         )
   }
   });
-    
+        }
+  
 }
+
+/*
+      set_keyup ()
+      nextid = $("[tabindex='" + tab.toString() + "']").attr('id').replace('-tr', '');
+      set_currentline(nextid)
+//      $('#current-line').text(currentline)
+      $('#current-line').html('<span class="font-weight-bold">'+currentline+'</span>')
+      npid = $("[tabindex='" + np.toString() + "']").attr('id').replace('-tr', '')
+      $('#nextpagebutton').on('click', function()
+        {page_move(npid+'&amp;prec=1&amp;foll=29');}
+        )
+
+ * 
+ */
+
 
 // called ftom textview, toprow
 // slot is slot1 or slot2, type is 'transl' or 'comm', no is the item number in the list
