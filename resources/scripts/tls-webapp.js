@@ -168,6 +168,7 @@ function delete_word_relation(wrid){
 function reset_leftword(){
   remove_highlight()
   $( "#swl-form" ).hide()
+  $( "#word-rel-dialog" ).hide()
 };
 
 
@@ -261,6 +262,7 @@ function save_pastebox_line(){
     // console.log("Tab: ", "[tabindex='" + tab.toString() + "']")
     $('#input-pastebox').val(remainingLines);
     window.localStorage.setItem('pastebox', remainingLines);
+    // cf https://stackoverflow.com/questions/51933513/jquery-usage-of-done-then-and-when-for-making-ajax-requests-in-a-giv
     $.when(get_text_line(ntab)).then(function (r){
        tid = $("[tabindex='" + ntab.toString() + "']").attr('id').replace('-tr', '').split(".").join("\\.");
        nl = $("#" + tid).text();
@@ -796,6 +798,14 @@ $.get("http://www.kaom.net/z_hmy_zidian88.php?"+data, function (data) {
 });
 };
 
+// this sets the selected as alternate word/name for the already defined leftword / lwobj.  
+// We need to assign the pron, then save it to the concept/word in lwobj
+
+function alt_name(sel){
+    alert("Not yet implemented ");
+    
+};
+
 // display the dialog in the right side of the screen
 function get_sw(sel, xid, line){
    var dw = document.documentElement.clientWidth;
@@ -854,7 +864,7 @@ function get_sw(sel, xid, line){
   if ((sel.length > 0) && (sel.length < 10)){
   var context = window.location.pathname;
   if (leftword.length > 0) {
-  $("#new-att-detail").html('The left word for a word relation has been defined: <br/><span class="font-weight-bold">' + leftword + '/' + lwobj.concept + '</span>. <br/>To continue, please select the right word, or <span title="Reset the left word" class="btn badge badge-primary ml-2" onclick="reset_leftword()">Cancel</span>')    
+  $("#new-att-detail").html('The left word for a word relation has been defined: <br/><span class="font-weight-bold">' + leftword + '/' + lwobj.concept + '</span>. <br/>To continue, please select the right word, or <span title="Reset the left word" class="btn badge badge-primary ml-2" onclick="reset_leftword()">cancel</span>.<br/>Or you can set '+ sel +' as <span title="Alternate name or word" class="btn badge badge-primary ml-2" onclick="alt_name(\''+sel+'\')">alternate name</span> for ' + leftword + '.')    
   } else {
   $("#new-att-detail").html('<span class="badge badge-primary">Use</span> one of the following syntactic words (SW), create a <span class="mb-2 badge badge-secondary">New SW</span>, add an <span class="font-weight-bold">existing</span> <span class="btn badge badge-primary ml-2" onclick="show_new_concept(\'existing\', \'\')">Concept</span> to the word or create a <span class="btn badge badge-primary ml-2" onclick="show_new_concept(\'new\', \'\')">New Concept</span>. You can also add a word relation: First set the left word with <span class="badge badge-secondary">LW</span>.')
   }

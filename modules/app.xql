@@ -562,16 +562,49 @@ declare function app:textlist(){
     </div>
 };
 
+(: additional info on the char under display, only shown if we are not in edit mode  :) 
+
 declare 
     %templates:wrap
-function app:char-hist($node as node()*, $model as map(*), $char as xs:string?, $id as xs:string?, $edit as xs:string?)
-{    let $e := string-length($edit) > 0
-    return ()
-(:    <div class="card-text" id="{if ($e) then 'chartree' else 'notree'}" tei-id="{$char-id}" tei-head="{if (exists($n/tei:head)) then $h else $char}">
-     {if ($n) then (for $l in $n/tei:list return tlslib:proc-char($l, $edit), 
-        for $l in tlslib:char-tax-newconcepts($char, "taxchar")//tei:list return tlslib:proc-char($l, $edit) )
-     else tlslib:char-tax-stub($char, "taxchar")}
-    </div>:)
+function app:char-info($node as node()*, $model as map(*), $char as xs:string?, $id as xs:string?, $edit as xs:string?)
+{   if (string-length($edit) > 0) then () else
+    let $usergroups := sm:id()//sm:group/text()
+    let $key := replace($id, '#', '')
+    let $e := string-length($edit) > 0
+    let $n := if (string-length($id) > 0) then
+      doc(concat($config:tls-data-root, "/core/taxchar.xml"))//tei:div[@xml:id = $id]
+    else
+      doc(concat($config:tls-data-root, "/core/taxchar.xml"))//tei:div[tei:head[. = $char]]
+    let $char := if (string-length($char)> 0) then $char else ($n//tei:head)[1]/text()
+    , $h := string-join(distinct-values($n/tei:head/text()), ' / ')
+    , $char-id := tokenize($n/@xml:id)[1]  
+    , $sw := doc($config:tls-texts-root || "/KR/KR1/KR1j/KR1j0018.xml")//tei:p[ngram:wildcard-contains(., $char || ".?】")]
+    , $crit := for $p in collection($config:tls-data-root||"/concepts")//tei:div[@type="old-chinese-criteria" and contains(., ""|| $char)] return $p
+    , $word-rel := doc($config:tls-data-root || "/core/word-relations.xml")//tei:div[@type='word-rel' and .//tei:item[contains(., $char)]]
+    return
+    <div class="card">
+    <div class="card-header">
+    <h4 class="card-title">Additional information about {$char}</h4>
+    <p><a href="textview.html?location={($sw/tei:seg)[1]/@xml:id}">說文解字</a>: {$sw//text()}</p>
+    {if ($word-rel) then <p class="ml-4"><ul><span class="font-weight-bold">Word relations</span>{for $wr in $word-rel 
+    let $wrt := $wr/ancestor::tei:div[@type="word-rel-type"]/tei:head/text()
+    , $entry-id := substring(($wr//tei:item[contains(., $char)])[1]/@corresp, 2)
+    , $wrid := ($wr/@xml:id)[1]
+    , $oid := substring(($wr//tei:list/tei:item/@corresp[not(. = "#" || $entry-id)])[1], 2)
+    , $oword := collection($config:tls-data-root||"/concepts")//tei:entry[@xml:id=$oid]
+    , $other := string-join($oword/tei:form/tei:orth/text() , " / ")
+    , $cid := $oword/ancestor::tei:div[@type='concept']/@xml:id
+    , $concept := $oword/ancestor::tei:div[@type='concept']/tei:head/text()
+    return
+    <li><span class="font-weight-bold"><a href="browse.html?type=word-rel-type&amp;mode={$wrt}#{$wrid}">{$wrt}</a></span>: <a title="{$concept}" href="concept.html?uuid={$cid}#{$oid}">{$other}</a>{$oword/tei:def[1]}</li>
+    }</ul></p> else ()
+    ,if ($crit) then <p class="ml-4"><ul><span class="font-weight-bold">Criteria</span>{for $c in $crit return 
+    <li><span><a href="concept.html?uuid={$c/ancestor::tei:div[@type='concept']/@xml:id}">{$c/ancestor::tei:div[@type='concept']/tei:head/text()}</a><br/>{$c}</span></li>
+    }</ul></p> else ()
+    }
+    </div>
+    </div>
+    
 
 };
 

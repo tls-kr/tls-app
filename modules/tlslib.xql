@@ -2363,7 +2363,9 @@ declare function tlslib:linkheader($qc) {
      tlslib:guoxuedashi($c)
      }</span>,:)
      tlslib:guguolin($qc)
-     ,
+     , <span class="btn badge badge-light chn-font">Zi:</span>,
+     for $c in $qc return
+      <a class="btn badge badge-light chn-font" style="background-color:paleturquoise"  target="dict" title="Search zi.tools for {$c} (External link)" href="https://zi.tools/zi/{$c}">{$c}</a>, "　",
      (:    var url = "http://www.kaom.net/z_hmy_zidian88.php?word={string-join($qc, '')}&mode=word&bianti=no&page=no"
  :)
      <span>{" 詞典: ",
