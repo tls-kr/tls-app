@@ -1844,7 +1844,7 @@ if ($node) then
             <div xml:id="uuid-{util:uuid()}" type="word-rel-ref" created="{current-dateTime()}" resp="#{$user}">
               <list>
                 <item p="left-word" txt="{$title}" corresp="#{$map?lwwid}" concept="{$map?lwconcept}" concept-id="{$map?lwconceptid}" line-id="{$map?lwlineid}" textline="{$lwtextline/text()}" offset="{$map?lwoffset}" range="{string-length($map?lw)}">{$map?lw}</item>
-                <item p="right-word" txt="{$title}" corresp="#{$map?rwwid}" concept="{$map?rwconcept}" concept-id="{$map?rwconceptid}"  line-id="{$map?rwlineid}" textline="{$rwtextline}" offset="{$map?rwoffset}" range="{string-length($map?lw)}">{$map?rw}</item>
+                <item p="right-word" txt="{$title}" corresp="#{$map?rwwid}" concept="{$map?rwconcept}" concept-id="{$map?rwconceptid}"  line-id="{$map?rwlineid}" textline="{$rwtextline}" offset="{$map?rwoffset}" range="{string-length($map?rw)}">{$map?rw}</item>
               </list>
             </div>
             </div>

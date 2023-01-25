@@ -803,7 +803,7 @@ declare function dialogs:word-rel-dialog($options as map(*)){
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header"><h5>Add word relation</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close" title="Close">x</button>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" onclick="reset_leftword()" title="Close">x</button>
             </div>
             <div class="modal-body">
             <div class="form-row">
@@ -863,7 +863,7 @@ declare function dialogs:word-rel-dialog($options as map(*)){
            </div>
         <!-- footer -->
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-secondary" onclick="reset_leftword()" data-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-primary" onclick="save_wr({fn:serialize($options, map{"method" : "json"})})">Save</button>
            </div>
         <!-- footer end -->
