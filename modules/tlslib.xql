@@ -2856,6 +2856,31 @@ declare function tlslib:generate-new-line-id($base-id as xs:string, $index as xs
     tlslib:generate-new-line-id($base-id, $index, 0)
 };
 
+(: we get a nodeset of wr to display :)
+declare function tlslib:display-word-rel($word-rel, $char){
+<ul><span class="font-weight-bold">Word relations</span>{for $wr in $word-rel 
+    let $wrt := $wr/ancestor::tei:div[@type="word-rel-type"]/tei:head/text()
+    , $entry-id := substring(($wr//tei:item[contains(., $char)])[1]/@corresp, 2)
+    , $wrid := ($wr/tei:div[@type="word-rel-ref"]/@xml:id)[1]
+    , $count := count($wr//tei:list)
+    , $oid := substring(($wr//tei:list/tei:item/@corresp[not(. = "#" || $entry-id)])[1], 2)
+    , $oword := collection($config:tls-data-root||"/concepts")//tei:entry[@xml:id=$oid]
+    , $other := string-join($oword/tei:form/tei:orth/text() , " / ")
+    , $cid := $oword/ancestor::tei:div[@type='concept']/@xml:id
+    , $concept := $oword/ancestor::tei:div[@type='concept']/tei:head/text()
+    , $uuid := substring(util:uuid(), 1, 16)
+    return
+    <li><span class="font-weight-bold"><a href="browse.html?type=word-rel-type&amp;mode={$wrt}#{$wrid}">{$wrt}</a></span>: <a title="{$concept}" href="concept.html?uuid={$cid}#{$oid}">{$other}</a>{$oword/tei:def[1]}
+         <button class="btn badge badge-light ml-2" type="button" 
+     data-toggle="collapse" data-target="#{$wrid}-{$uuid}-resp" onclick="show_wr('{$wrid}', '{$uuid}')">
+          {if ($count > -1) then $count else ()}
+          {if ($count = 1) then " Attribution" else  " Attributions" }
+      </button>
+    <div id="{$wrid}-{$uuid}-resp" class="collapse container"></div>
+
+</li>
+    }</ul>
+};
 
 declare function tlslib:word-rel-table($map as map(*)){
 let $rels := collection($config:tls-data-root)//tei:TEI[@xml:id="word-relations"]//tei:body/tei:div[@xml:id=$map?reltype]

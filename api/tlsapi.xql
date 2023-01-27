@@ -1863,6 +1863,37 @@ update delete $node
 else "Error: Word relation not found."
 };
 
+declare function tlsapi:show-wr($map as map(*)){
+let $key := "#" || $map?uid
+,$word-rel := doc($config:tls-data-root || "/core/word-relations.xml")//tei:div[@xml:id=$map?uid]/ancestor::tei:div[@type='word-rel']
+, $wrs := $word-rel//tei:list
+return
+if (count($wrs) > 0) then
+ for $wr in $wrs  
+  let $lwn := ($wr/tei:item)[1]
+  , $rwn := ($wr/tei:item)[2]
+ , $txt := data($lwn/@txt)
+ , $ll := try {<span>{substring(data($lwn/@textline), 1, xs:int($lwn/@offset) - 1)}<b>{substring(data($lwn/@textline), xs:int($lwn/@offset), xs:int($lwn/@range))}</b>{substring(data($lwn/@textline), xs:int($lwn/@offset) + xs:int($lwn/@range))}</span> } catch * {<span>{data($lwn/@textline)}</span>}
+ , $rl := try {<span>{substring(data($rwn/@textline), 1, xs:int($rwn/@offset) - 1)}<b>{substring(data($rwn/@textline), xs:int($rwn/@offset), xs:int($rwn/@range))}</b>{substring(data($rwn/@textline), xs:int($rwn/@offset) + xs:int($rwn/@range))}</span> } catch * {<span>{data($rwn/@textline)}</span>}
+ , $lnk := if (string-length($lwn/@line-id) > 0) then ($lwn/@line-id)[1] else if (string-length($rwn/@line-id) > 0) then ($rwn/@line-id)[1] else ()
+ return 
+ if (string-length($ll) > 0) then 
+   <div class="row bg-light table-striped">
+     <div class="col-sm-3">
+       {if ($lnk) then 
+        <a href="textview.html?location={$lnk}" class="font-weight-bold">{$txt}{xs:int(tokenize(tokenize($lnk, "_")[3], "-")[1])}</a>
+        else $txt}
+    </div>
+    <div class="col-sm-7">
+        <span data-target="{$lnk}" data-toggle="popover">{$ll}</span> / <span>{$rl}</span>
+    </div>
+    
+   </div>
+ else ()  
+else 
+ <p class="font-weight-bold">No attributions found</p>
+};
+
 
 declare function tlsapi:stub($map as map(*)){
 () 

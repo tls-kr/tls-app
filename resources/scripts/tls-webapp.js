@@ -532,6 +532,19 @@ function show_att(uid){
   $('#'+uid+'-resp').html("Searching, please wait...")  
 };
 
+function show_wr(uid, extra){
+  $.ajax({
+  type : "GET",
+  dataType : "html",  
+  url : "api/responder.xql?func=show-wr&uid=" + uid, 
+  success : function(resp){
+  $('#'+uid+'-'+extra+'-resp').html(resp)
+  }
+  });
+  $('#'+uid+'-'+extra+'-resp').html("Searching, please wait...")  
+};
+
+
 // show use for sem-feat and syn-func
 function show_use_of(type, uid){
   $.ajax({
