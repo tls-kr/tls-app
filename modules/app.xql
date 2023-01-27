@@ -586,18 +586,8 @@ function app:char-info($node as node()*, $model as map(*), $char as xs:string?, 
     <div class="card-header">
     <h4 class="card-title">Additional information about {$char}</h4>
     <p><a href="textview.html?location={($sw/tei:seg)[1]/@xml:id}">說文解字</a>: {$sw//text()}</p>
-    {if ($word-rel) then <p class="ml-4"><ul><span class="font-weight-bold">Word relations</span>{for $wr in $word-rel 
-    let $wrt := $wr/ancestor::tei:div[@type="word-rel-type"]/tei:head/text()
-    , $entry-id := substring(($wr//tei:item[contains(., $char)])[1]/@corresp, 2)
-    , $wrid := ($wr/@xml:id)[1]
-    , $oid := substring(($wr//tei:list/tei:item/@corresp[not(. = "#" || $entry-id)])[1], 2)
-    , $oword := collection($config:tls-data-root||"/concepts")//tei:entry[@xml:id=$oid]
-    , $other := string-join($oword/tei:form/tei:orth/text() , " / ")
-    , $cid := $oword/ancestor::tei:div[@type='concept']/@xml:id
-    , $concept := $oword/ancestor::tei:div[@type='concept']/tei:head/text()
-    return
-    <li><span class="font-weight-bold"><a href="browse.html?type=word-rel-type&amp;mode={$wrt}#{$wrid}">{$wrt}</a></span>: <a title="{$concept}" href="concept.html?uuid={$cid}#{$oid}">{$other}</a>{$oword/tei:def[1]}</li>
-    }</ul></p> else ()
+    {if ($word-rel) then 
+    <p class="ml-4">{tlslib:display-word-rel($word-rel, $char)}</p> else ()
     ,if ($crit) then <p class="ml-4"><ul><span class="font-weight-bold">Criteria</span>{for $c in $crit return 
     <li><span><a href="concept.html?uuid={$c/ancestor::tei:div[@type='concept']/@xml:id}">{$c/ancestor::tei:div[@type='concept']/tei:head/text()}</a><br/>{$c}</span></li>
     }</ul></p> else ()
@@ -1099,7 +1089,8 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
     ,$entry-id := $e/@xml:id
     ,$pr := $e/tei:form/tei:pron
     ,$def := $e/tei:def/text()
-    ,$word-rel := doc($config:tls-data-root || "/core/word-relations.xml")//tei:item[@corresp="#"||$entry-id]/ancestor::tei:div[@type="word-rel"]
+    ,$word-rel := doc($config:tls-data-root || "/core/word-relations.xml")//tei:div[@type='word-rel' and .//tei:item[@corresp="#"||$entry-id]]
+(:    ,$word-rel := doc($config:tls-data-root || "/core/word-relations.xml")//tei:item[@corresp="#"||$entry-id]/ancestor::tei:div[@type="word-rel"]:)
     ,$wc := sum(for $sw in $e//tei:sense 
              return count($ann//tei:sense[@corresp="#" || $sw/@xml:id]))
     order by if (xs:boolean($bychar)) then $zi else $wc descending    
@@ -1147,17 +1138,10 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
     {wd:display-qitems($entry-id, 'concept', $zi)}
     </h5>
     {if ($def) then <p class="ml-4">{$def[1]}</p> else ()}
-    {if ($word-rel) then <p class="ml-4"><ul><span class="font-weight-bold">Word relations</span>{for $wr in $word-rel 
-    let $wrt := $wr/ancestor::tei:div[@type="word-rel-type"]/tei:head/text()
-    , $wrid := ($wr/tei:div[@type='word-rel-ref']/@xml:id)[1]
-    , $oid := substring(($wr//tei:list/tei:item/@corresp[not(. = "#" || $entry-id)])[1], 2)
-    , $oword := collection($config:tls-data-root||"/concepts")//tei:entry[@xml:id=$oid]
-    , $other := string-join($oword/tei:form/tei:orth/text() , " / ")
-    , $cid := $oword/ancestor::tei:div[@type='concept']/@xml:id
-    , $concept := $oword/ancestor::tei:div[@type='concept']/tei:head/text()
-    return
-    <li><span class="font-weight-bold"><a href="browse.html?type=word-rel-type&amp;mode={$wrt}#{$wrid}">{$wrt}</a></span>: <a title="{$concept}" href="concept.html?uuid={$cid}#{$oid}">{$other}</a>{$oword/tei:def[1]}</li>
-    }</ul></p> else ()}
+    {if ($word-rel) then <p class="ml-4">
+    {let $char := $e/tei:form/tei:orth[1]/text()
+    return tlslib:display-word-rel($word-rel, $char)}
+    </p> else ()}
     {if ($e//tei:listBibl) then 
          <div><button class="btn" data-toggle="collapse" data-target="#bib-{$entry-id}">Show references</button><ul id="bib-{$entry-id}" class="collapse" data-toggle="collapse">
         {for $d in $e//tei:bibl
