@@ -731,6 +731,7 @@ declare function tlslib:tv-header($node as node()*, $model as map(*)){
       else 
          if (substring($model('textid'), 1, 4) = "KR3e") then "中醫笈成" 
       else "CHANT", 
+(:   $toc := ()   :)
    $toc := if (contains(session:get-attribute-names(), $textid || "-toc")) then 
     session:get-attribute($textid || "-toc")
     else 
@@ -2925,7 +2926,7 @@ for $r in subsequence($rels//tei:div[@type='word-rel'], $start, $cnt)
  order by $srt 
  return 
  if (string-length($lw) > 0 or string-length($rw) > 0) then
- <div class="row" id="{$wrid}">
+ (<div class="row" id="{$wrid}">
  <div class="col-md-1">
  </div>
  <div class="col-md-2">
@@ -2934,7 +2935,7 @@ for $r in subsequence($rels//tei:div[@type='word-rel'], $start, $cnt)
  <div class="col-md-2">
  <a href="concept.html?uuid={$rid}{$rw/@corresp}">{$rw}/{$rc}</a>
  </div>
- <div class="col-md-4">
+ <div class="col-md-">
  {for $l in $r/tei:div[@type='word-rel-ref']
   let $tid := $l/@xml:id
   , $lwn := ($l//tei:list/tei:item)[1]
@@ -2944,13 +2945,15 @@ for $r in subsequence($rels//tei:div[@type='word-rel'], $start, $cnt)
  , $rl := try {<span>{substring(data($rwn/@textline), 1, xs:int($rwn/@offset) - 1)}<b>{substring(data($rwn/@textline), xs:int($rwn/@offset), xs:int($rwn/@range))}</b>{substring(data($rwn/@textline), xs:int($rwn/@offset) + xs:int($rwn/@range))}</span> } catch * {<span>{data($rwn/@textline)}</span>}
  , $lnk := if (string-length($lwn/@line-id) > 0) then ($lwn/@line-id)[1] else if (string-length($rwn/@line-id) > 0) then ($rwn/@line-id)[1] else ()
  return 
-  (tlslib:format-button("delete_word_relation('"|| $tid || "')", "Delete this word relation.", "open-iconic-master/svg/x.svg", "", "", "tls-editor"),
-if (string-length($ll) > 0) then 
+  (tlslib:format-button("delete_word_relation('"|| $tid || "')", "Delete this word relation.", "open-iconic-master/svg/x.svg", "", "", "tls-editor")
+,if (string-length($ll) > 0) then 
   ($ll, " / ", $rl ,  "(", if (string-length($lnk) > 0) then 
    <a href="textview.html?location={$lnk}">{$txt}{xs:int(tokenize(tokenize($lnk, "_")[3], "-")[1])}</a>
    else
-   $txt , ")")
-
+   $txt , ")"
+   , if (string-length($l/tei:p) > 0) then 
+    (<span><span class="text-muted">　Note: </span>{$l/tei:p/text()}</span>) else () 
+   )
 else  
  for $bib in $bibs
  return
@@ -2960,6 +2963,15 @@ else
  }
  </div>
  </div>
+ ,if (string-length($r/tei:p)> 0) then 
+ <div class="row" id="{$wrid}-note">
+ <div class="col-md-1">
+ </div>
+ <div class="col-md-10"><span class="text-muted">Note:　</span>{$r/tei:p/text()}</div>
+ </div>
+ else ()
+ , <hr/>
+ )
   else
  ()
  )

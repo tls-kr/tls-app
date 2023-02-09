@@ -1833,6 +1833,8 @@ return
 if ($node) then 
  let $new := if ($d2) then 
             <div xml:id="uuid-{util:uuid()}" type="word-rel-ref" created="{current-dateTime()}" resp="#{$user}" xmlns="http://www.tei-c.org/ns/1.0">
+              {if (string-length($map?note_inst) > 0) then 
+              <p type="note-inst">{$map?note_inst}</p> else ()}
               <list>
                 <item p="left-word" txt="{$title}" corresp="#{$map?lwwid}" concept="{$map?lwconcept}" concept-id="{$map?lwconceptid}" line-id="{$map?lwlineid}" textline="{$lwtextline/text()}" offset="{$map?lwoffset}" range="{string-length($map?lw)}">{$map?lw}</item>
                 <item p="right-word" txt="{$title}" corresp="#{$map?rwwid}" concept="{$map?rwconcept}" concept-id="{$map?rwconceptid}"  line-id="{$map?rwlineid}" textline="{$rwtextline}" offset="{$map?rwoffset}" range="{string-length($map?lw)}">{$map?rw}</item>
@@ -1840,8 +1842,12 @@ if ($node) then
             </div>
           else 
            <div type="word-rel" xmlns="http://www.tei-c.org/ns/1.0">
+              {if (string-length($map?note) > 0) then 
+              <p type="word-rel-note">{$map?note}</p> else ()}
             <link target="#{$map?lwwid} #{$map?rwwid}"/>
             <div xml:id="uuid-{util:uuid()}" type="word-rel-ref" created="{current-dateTime()}" resp="#{$user}">
+              {if (string-length($map?note_inst) > 0) then 
+              <p type="note-inst">{$map?note_inst}</p> else ()}
               <list>
                 <item p="left-word" txt="{$title}" corresp="#{$map?lwwid}" concept="{$map?lwconcept}" concept-id="{$map?lwconceptid}" line-id="{$map?lwlineid}" textline="{$lwtextline/text()}" offset="{$map?lwoffset}" range="{string-length($map?lw)}">{$map?lw}</item>
                 <item p="right-word" txt="{$title}" corresp="#{$map?rwwid}" concept="{$map?rwconcept}" concept-id="{$map?rwconceptid}"  line-id="{$map?rwlineid}" textline="{$rwtextline}" offset="{$map?rwoffset}" range="{string-length($map?rw)}">{$map?rw}</item>
