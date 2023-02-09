@@ -2858,10 +2858,10 @@ declare function tlslib:generate-new-line-id($base-id as xs:string, $index as xs
 };
 
 (: we get a nodeset of wr to display :)
-declare function tlslib:display-word-rel($word-rel, $char){
+declare function tlslib:display-word-rel($word-rel, $char, $cname){
 <ul><span class="font-weight-bold">Word relations</span>{for $wr in $word-rel 
     let $wrt := $wr/ancestor::tei:div[@type="word-rel-type"]/tei:head/text()
-    , $entry-id := substring(($wr//tei:item[contains(., $char)])[1]/@corresp, 2)
+    , $entry-id := substring(($wr//tei:item[. = $char])[1]/@corresp, 2)
     , $wrid := ($wr/tei:div[@type="word-rel-ref"]/@xml:id)[1]
     , $count := count($wr//tei:item[@p="left-word"]/@textline)
     , $oid := substring(($wr//tei:list/tei:item/@corresp[not(. = "#" || $entry-id)])[1], 2)
@@ -2870,8 +2870,11 @@ declare function tlslib:display-word-rel($word-rel, $char){
     , $cid := $oword/ancestor::tei:div[@type='concept']/@xml:id
     , $concept := $oword/ancestor::tei:div[@type='concept']/tei:head/text()
     , $uuid := substring(util:uuid(), 1, 16)
-    return
-    <li><span class="font-weight-bold"><a href="browse.html?type=word-rel-type&amp;mode={$wrt}#{$wrid}">{$wrt}</a></span>: <a title="{$concept}" href="concept.html?uuid={$cid}#{$oid}">{$other}</a>{$oword/tei:def[1]}
+    , $tnam := data(($wr//tei:list/tei:item[@corresp = "#" || $entry-id]/@concept)[1])
+    , $show := (string-length($entry-id) > 0) and (if (string-length($cname) > 1) then $cname = $tnam else true())
+    where $show
+    return 
+    <li><span class="font-weight-bold"><a href="browse.html?type=word-rel-type&amp;mode={$wrt}#{$wrid}">{$wrt}</a></span>: {if (string-length($cname) > 1) then () else <span>({$tnam})</span>}<a title="{$concept}" href="concept.html?uuid={$cid}#{$oid}">{$other}/{$concept}</a>{$oword/tei:def[1]}
          <button class="btn badge badge-light ml-2" type="button" 
      data-toggle="collapse" data-target="#{$wrid}-{$uuid}-resp" onclick="show_wr('{$wrid}', '{$uuid}')">
           {if ($count) then ( $count ,

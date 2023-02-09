@@ -587,7 +587,7 @@ function app:char-info($node as node()*, $model as map(*), $char as xs:string?, 
     <h4 class="card-title">Additional information about {$char}</h4>
     <p><a href="textview.html?location={($sw/tei:seg)[1]/@xml:id}">說文解字</a>: {$sw//text()}</p>
     {if ($word-rel) then 
-    <p class="ml-4">{tlslib:display-word-rel($word-rel, $char)}</p> else ()
+    <p class="ml-4">{tlslib:display-word-rel($word-rel, $char, "")}</p> else ()
     ,if ($crit) then <p class="ml-4"><ul><span class="font-weight-bold">Criteria</span>{for $c in $crit return 
     <li><span><a href="concept.html?uuid={$c/ancestor::tei:div[@type='concept']/@xml:id}">{$c/ancestor::tei:div[@type='concept']/tei:head/text()}</a><br/>{$c}</span></li>
     }</ul></p> else ()
@@ -1140,7 +1140,7 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
     {if ($def) then <p class="ml-4">{$def[1]}</p> else ()}
     {if ($word-rel) then <p class="ml-4">
     {let $char := $e/tei:form/tei:orth[1]/text()
-    return tlslib:display-word-rel($word-rel, $char)}
+    return tlslib:display-word-rel($word-rel, $char, $c/tei:head/text())}
     </p> else ()}
     {if ($e//tei:listBibl) then 
          <div><button class="btn" data-toggle="collapse" data-target="#bib-{$entry-id}">Show references</button><ul id="bib-{$entry-id}" class="collapse" data-toggle="collapse">
