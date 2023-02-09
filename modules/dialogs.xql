@@ -811,21 +811,21 @@ declare function dialogs:word-rel-dialog($options as map(*)){
              </div> 
             </div>
             <div class="form-row">
-             <div class="form-group col-md-4">
+             <div class="form-group col-md-3">
                  <span class="font-weight-bold">Left word</span>  
              </div>
              <div class="form-group col-md-2">
                  <span class="font-weight-bold">Relation</span>  
              </div>
-             <div class="form-group col-md-4">
+             <div class="form-group col-md-3">
                  <span class="font-weight-bold">Right word</span>  
              </div>
-             <div class="form-group col-md-2">
+             <div class="form-group col-md-4">
                  <span class="font-weight-bold">Note</span>  
              </div>
            </div>
             <div class="form-row">
-             <div class="form-group col-md-4">
+             <div class="form-group col-md-3">
                  <span id="lwlineid" style="display:none;">{$options?lwlineid}</span>
                  <span id="leftword" class="font-weight-normal">{$options?lw}</span>  
                  <span id="lwconceptid" style="display:none;">{$options?lwconceptid}</span>
@@ -841,21 +841,21 @@ declare function dialogs:word-rel-dialog($options as map(*)){
                  <option value="{data($l/@xml:id)}">{$h}</option>}
                  </select></span></span>  
              </div>
-             <div class="form-group col-md-4">
+             <div class="form-group col-md-3">
                  <span id="rwlineid" style="display:none;">{$options?rwlineid}</span>
                  <span id="rightword" class="font-weight-normal">{$options?rw}</span>  
                  <span id="rwconceptid" style="display:none;">{$options?rwconceptid}</span>
                  /<span id="rwconcept" class="font-weight-normal">{$options?rwconcept}</span>  
              </div>
-             <div class="form-group col-md-2">
-             <input id="note-rel" class="form-control" value=""/>
+             <div class="form-group col-md-4">
+             <textarea id="note-inst" class="form-control" value=""/>
              </div>
            </div>
           
  
             <div class="form-row">
               <div id="input-note-group" class="col-md-12">
-                    <label for="input-note" class="font-weight-bold">Note:</label>
+                    <label for="input-note" class="font-weight-bold">Note: <span class="text-muted">This note concerns this word relation for all instances. <br/>Notes concerning this specific instance should be added above.</span></label>
                     <textarea id="input-note" class="form-control"></textarea>                   
               </div>             
             </div>    

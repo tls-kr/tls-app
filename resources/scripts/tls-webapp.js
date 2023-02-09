@@ -140,6 +140,8 @@ function set_rightword(obj){
 
 function save_wr(obj){
   obj.relid = $("#rel-type").val()
+  obj.note_inst = $("#note-inst").val()
+  obj.note = $("#input-note").val()
   $.get(
    "api/responder.xql?func=save-wr", obj,
     function(resp){
