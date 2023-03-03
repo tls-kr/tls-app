@@ -28,7 +28,7 @@
     "browser-sync": "^2.27.10",
     "chai": "^4.2.0",
     "chai-xml": "^0.3.2",
-    "cypress": "^3.1.5",
+    "cypress": "^12.7.0",
     "del": "^4.0.0",
     "fs-extra": "^7.0.1",
     "gulp": "^4.0.0",
@@ -46,7 +46,7 @@
     "jshint": "^2.10.1",
     "jshint-stylish": "^2.2.1",
     "lazypipe": "^1.0.2",
-    "mocha": "^6.0.2",
+    "mocha": "^6.2.3",
     "supertest": "^3.4.2",
     "xmldoc": "^1.1.2"
   },
