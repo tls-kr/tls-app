@@ -163,11 +163,11 @@ declare function src:ngram-query($queryStr as xs:string?, $mode as xs:string?, $
     , $ratings := doc($config:tls-user-root || $user || "/ratings.xml")//text
     , $user-dates-doc := "/db/users/" || $user || "/textdates.xml"
     , $dates := 
-        if (exists(doc($user-dates-doc)//date)) then 
+        if (exists(doc($user-dates-doc)//data)) then 
          doc($user-dates-doc)//data 
         else 
-         doc($config:tls-texts-root || "/tls/textdates.xml")//data
-    (: HACK: if no login, use date mode for sorting :)
+        doc($config:tls-texts-meta  || "/textdates.xml")//data
+     (: HACK: if no login, use date mode for sorting :)
     , $mode := if ($user = "guest") then "date" else $mode
     , $pmatches := 
       if  (count($qs) > 1) then 

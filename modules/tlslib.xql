@@ -303,7 +303,7 @@ let $user := sm:id()//sm:real/sm:username/text()
    return
    map:entry($tid, ($t, $resp, if ($lg) then $lg else "en", if ($lic) then xs:int($lic) else 3, $type)),
    (: now we look for variants :)
-   for $v in collection($config:tls-texts-root || "/manifests/")//mf:edition[starts-with(@id, $textid)]
+   for $v in collection($config:tls-manifests)//mf:edition[starts-with(@id, $textid)]
    for $ed in $v/ancestor::mf:editions//mf:edition
     let $lang := data($ed/@language)
     , $edid := data($ed/@id)
@@ -1884,12 +1884,12 @@ let $line := $map?line
 ,$sid := $map?seg
 , $res := krx:collate-request($sid)
 , $edid := string-join(subsequence(tokenize($sid, "_"), 1,2), "_")
-, $mf := collection($config:tls-texts-root || "/manifests/")//mf:edition[@id=$edid]/ancestor::mf:editions
+, $mf := collection($config:tls-manifests)//mf:edition[@id=$edid]/ancestor::mf:editions
 return
 <li class="mb-3">
 {for $w in $res//witnesses 
 return
-<ul><li>{collection($config:tls-texts-root || "/manifests/")//mf:edition[@id=$w/id]/mf:description} ({$w/id})<p>
+<ul><li>{collection($config:tls-manifests)//mf:edition[@id=$w/id]/mf:description} ({$w/id})<p>
 {string-join(for $t in $w/tokens return
 (data($t/@t), data($t/@f)), '') 
 }</p>
@@ -2471,7 +2471,7 @@ let   $user := sm:id()//sm:real/sm:username/text(),
       $charcount := string-length(normalize-space($d//tei:text)),
       $dates := if (exists(doc("/db/users/" || $user || "/textdates.xml")//date)) then 
       doc("/db/users/" || $user || "/textdates.xml")//data else 
-      doc($config:tls-texts-root || "/tls/textdates.xml")//data,
+      doc($config:tls-texts-meta  || "/textdates.xml")//data,
       $date := $dates[@corresp="#" || $textid],
       $loewe := doc($config:tls-data-root||"/bibliography/loewe-ect.xml")//tei:bibl[tei:ref[@target = "#"||$textid]]
 return
@@ -2948,7 +2948,10 @@ for $r in subsequence($rels//tei:div[@type='word-rel'], $start, $cnt)
  , $rl := try {<span>{substring(data($rwn/@textline), 1, xs:int($rwn/@offset) - 1)}<b>{substring(data($rwn/@textline), xs:int($rwn/@offset), xs:int($rwn/@range))}</b>{substring(data($rwn/@textline), xs:int($rwn/@offset) + xs:int($rwn/@range))}</span> } catch * {<span>{data($rwn/@textline)}</span>}
  , $lnk := if (string-length($lwn/@line-id) > 0) then ($lwn/@line-id)[1] else if (string-length($rwn/@line-id) > 0) then ($rwn/@line-id)[1] else ()
  return 
+  (:delete :)
   (tlslib:format-button("delete_word_relation('"|| $tid || "')", "Delete this word relation.", "open-iconic-master/svg/x.svg", "", "", "tls-editor")
+,     (: move :)
+    tlslib:format-button("change_word_rel('"|| $tid || "')", "Change the type of word relation for this attribution.", "open-iconic-master/svg/move.svg", "", "", "tls-editor")  
 ,if (string-length($ll) > 0) then 
   ($ll, " / ", $rl ,  "(", if (string-length($lnk) > 0) then 
    <a href="textview.html?location={$lnk}">{$txt}{xs:int(tokenize(tokenize($lnk, "_")[3], "-")[1])}</a>

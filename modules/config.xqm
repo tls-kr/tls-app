@@ -41,12 +41,16 @@ declare variable $config:repo-descriptor := doc(concat($config:app-root, "/repo.
 declare variable $config:expath-descriptor := doc(concat($config:app-root, "/expath-pkg.xml"))/expath:package;
 
 declare variable $config:tls-data-root := substring-before($config:app-root, data($config:expath-descriptor/@abbrev)) || "tls-data";
-declare variable $config:tls-texts-root := substring-before($config:app-root, data($config:expath-descriptor/@abbrev)) || "tls-texts";
+declare variable $config:tls-texts := substring-before($config:app-root, data($config:expath-descriptor/@abbrev)) || "tls-texts";
+declare variable $config:tls-texts-root := $config:tls-texts || "/data";
+declare variable $config:tls-texts-meta := $config:tls-texts || "/meta";
+declare variable $config:tls-texts-img := $config:tls-texts || "/img";
+declare variable $config:tls-texts-var := $config:tls-texts || "/var";
 declare variable $config:tls-krx-root := substring-before($config:app-root, data($config:expath-descriptor/@abbrev)) || "tls-krx";
 declare variable $config:tls-translation-root := concat($config:tls-data-root, "/translations");
 declare variable $config:tls-user-root := "/db/users/";
 declare variable $config:tls-log-collection := "/db/users/tls-admin/logs";
-declare variable $config:tls-add-titles := $config:tls-texts-root || "/krp-titles.xml";
+declare variable $config:tls-add-titles := substring-before($config:app-root, data($config:expath-descriptor/@abbrev)) || "tls-texts/meta/krp-titles.xml";
 declare variable $config:tls-twjp-vardb := $config:tls-data-root || "/external/twjp-vardb.xml";
 declare variable $config:tls-uni-vardb  := $config:tls-data-root || "/external/univardb.xml";
 declare variable $config:exide-url :=  concat(request:get-scheme(), "://", 
@@ -56,7 +60,7 @@ declare variable $config:tls-manifests :=
   let (:$user := sm:id()//sm:real/sm:username/text()
   , $approot := substring-before($config:app-root, data($config:expath-descriptor/@abbrev))
   , :)$mf := "/manifests"
-  return ((:"/db/users/"||$user||$mf,:) $config:tls-texts-root||$mf, $config:tls-krx-root||$mf) ;
+  return ((:"/db/users/"||$user||$mf,:) $config:tls-texts||$mf, $config:tls-krx-root||$mf) ;
 
 declare variable $config:seg-split-tokens := '[，。：．；？﹖！，』」/、]';
 
