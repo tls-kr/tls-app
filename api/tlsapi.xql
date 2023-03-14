@@ -1671,7 +1671,7 @@ declare function tlsapi:save-textdate($map as map(*)){
 let $user := sm:id()//sm:real/sm:username/text()
    ,$dates := if (exists(doc("/db/users/" || $user || "/textdates.xml")//date)) then 
       doc("/db/users/" || $user || "/textdates.xml")//data else 
-      doc($config:tls-texts-root || "/tls/textdates.xml")//data
+      doc($config:tls-texts-meta  || "/textdates.xml")//data
     ,$node := $dates[@corresp="#" || $map?textid]
     ,$na := if (string-length($map?na) > 0) then $map?na else $map?nb
     ,$pr := if ($map?prose ne "　") then $map?prose else if($na eq $map?nb) then $na else $map?nb || " to " || $na
@@ -1868,6 +1868,30 @@ if ($node) then
 update delete $node
 else "Error: Word relation not found."
 };
+
+(:
+api/responder.xql?func=dialogs:word-rel-dialog&lw="+leftword+"&lwlineid="+lw_id+"&lwconcept="+lwobj.concept+"&lwconceptid="+lwobj.concept_id+"&lwwid="+lwobj.wid+"&rw="+rightword+"&rwlineid="+rw_id+"&rwconcept="+obj.concept+"&rwconceptid="+obj.concept_id+"&rwwid="+obj.wid+"&rwoffset="+pos+"&lwoffset="+lwpos, 
+:)
+(: or maybe I just ask for a new relation and go with that... :) 
+declare function tlsapi:change-word-relation($map as map(*)){
+let $node := collection($config:tls-data-root)//tei:TEI[@xml:id="word-relations"]//tei:body//tei:div[@xml:id=$map?wrid]
+, $lw := ""
+, $rw := ""
+, $options := map{
+"lw" : "",
+"lwlineid" : "",
+"lwconcept" : data($lw/@concept),
+"lwconceptid" : data($lw/@concept-id),
+"rw" : "",
+"rwlineid" : "",
+"rwconcept" : data($rw/@concept),
+"rwconceptid" : data($rw/@concept-id)
+}
+return
+dialogs:word-rel-dialog($options)
+};
+
+
 
 declare function tlsapi:show-wr($map as map(*)){
 let $key := "#" || $map?uid

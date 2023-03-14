@@ -28,9 +28,9 @@ let $sense-id := request:get-parameter("sense-id", "uuid-20c9da30-27bc-4b0a-ab0a
 ,$user := sm:id()//sm:real/sm:username/text()
 ,$ratings := doc("/db/users/" || $user || "/ratings.xml")//text
 (: not yet using the dates here, this would require refactoring in separate fun, cf app:concept :)
-,$dates := if (exists(doc("/db/users/" || $user || "/textdates.xml")//date)) then 
-      doc("/db/users/" || $user || "/textdates.xml")//date else 
-      doc($config:tls-texts-root || "/tls/textdates.xml")//date
+,$dates := if (exists(doc("/db/users/" || $user || "/textdates.xml")//data)) then 
+      doc("/db/users/" || $user || "/textdates.xml")//data else 
+      doc($config:tls-texts-meta  || "/textdates.xml")//data
 ,$ret := for $o in $orth/text()
   for $p in  collection($config:tls-texts-root)//tei:p[ngram:contains(., $o)]
     let $src := $p/ancestor::tei:TEI//tei:titleStmt/tei:title/text()
