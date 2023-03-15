@@ -138,6 +138,22 @@ function set_rightword(obj){
   })  
 };
 
+function change_word_rel(wrid){
+    $.ajax({
+     type : "GET",
+     dataType : "html",  
+     url : "api/responder.xql?func=change-word-relation&wrid="+ wrid, 
+     success : function(resp){
+     if (resp.length > 2){
+         toastr.info(resp, "HXWD says:");     
+     } else {
+         $('#'+wrid).html("");
+         toastr.info("Word relation has been moved.", "漢學文典 says:");     
+     }
+   }
+  })  
+}
+
 function save_wr(obj){
   obj.relid = $("#rel-type").val()
   obj.note_inst = $("#note-inst").val()
