@@ -152,8 +152,10 @@ else if (contains($exist:path, "/$app-root/")) then
 (: static resources from the resources, transform, templates, odd or modules subirectories are directly returned :)
 else if (matches($exist:path, "^.*/(resources|transform|templates)/.*$")
     or matches($exist:path, "^.*/odd/.*\.css$")
+    or matches($exist:path, "^.*/tls-texts/img/.*\.png$")
     or matches($exist:path, "^.*/modules/.*\.json$")) then
-    let $dir := replace($exist:path, "^.*/(resources|transform|modules|templates|odd)/.*$", "$1")
+    let $d := replace($exist:path, "^.*/(resources|transform|modules|templates|odd)/.*$", "$1"),
+    $dir := replace($d, "/tls-texts", "../tls-texts")
     return
         <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
             <forward url="{$exist:controller}/{$dir}/{substring-after($exist:path, '/' || $dir || '/')}">

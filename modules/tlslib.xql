@@ -1285,7 +1285,7 @@ return
 </div>,
 if (local-name(($seg/following-sibling::tei:*)[1]) = 'figure') then
  let $fig:= "../tls-texts/img/" || ($seg/following-sibling::tei:figure)[1]/tei:graphic/@facs
- , $tit := substring-before(tokenize(($seg/following-sibling::tei:figure)[1]/tei:graphic/@url, "File:" )[2], ".svg")
+ , $tit := ($seg/following-sibling::tei:figure)[1]/tei:graphic/@n
  return
 <div class="row">
 <span title="{$tit}"><img src="{$fig}"/></span>
