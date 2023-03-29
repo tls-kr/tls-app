@@ -14,85 +14,96 @@
                 <h2>Signup form</h2>
                 <h3>Personal information</h3>
                 <p class="text-mute">All input is required</p>
-                <div class="row">
-                  <div id="input-name-group" class="col-md-8">
-                    <label for="input-name">
+            <form action="sgn-received.html" method="post">
+                <div class="form-group row">                
+                  <div id="inputname-group" class="col-md-8">
+                    <label for="inputname">
                         <strong>Full name</strong> </label>
-                    <input id="input-name" class="form-control" value=""/>
+                    <input id="inputname" name="inputname" class="form-control" value=""/>
                   </div>
-                  <div id="input-nname-group" class="col-md-4">
-                    <label for="input-nname">
+                  <div id="inputnname-group" class="col-md-4">
+                    <label for="inputnname">
                         <strong>Requested nickname</strong> </label>
-                    <input id="input-nname" class="form-control" value=""/>
+                    <input id="inputnname" name="inputnname" class="form-control" value=""/>
                   </div>
                 </div>
-                <div class="row">
-                  <div id="input-pw1-group" class="col-md-6">
-                    <label for="input-pw1">
+                <div class="form-group row">
+                  <div id="inputpw1-group" class="col-md-6">
+                    <label for="inputpw1">
                         <strong>Password</strong> </label>
-                    <input id="input-pw1" class="form-control" value=""/>
+                    <input id="inputpw1" name="inputpw1" class="form-control" value=""/>
                   </div>
-                  <div id="input-pw2-group" class="col-md-6">
-                    <label for="input-pw2">
+                  <div id="inputpw2-group" class="col-md-6">
+                    <label for="inputpw2">
                         <strong>Repeat password</strong> </label>
-                    <input id="input-pw2" class="form-control" value=""/>
+                    <input id="inputpw2" name="inputpw2" class="form-control" value=""/>
                   </div>
                 </div>
-                <div class="row">
-                <div class="col-md-12"/>  </div>
-                <div class="row">
-                  <div id="input-mail-group" class="col-md-9">
-                    <label for="input-mail">
+                <div class="form-group row">
+                  <div id="inputmail-group" class="col-md-9">
+                    <label for="inputmail">
                         <strong>Email </strong> </label>
-                    <input id="input-mail" class="form-control" value=""/>
+                    <input id="inputmail" name="inputmail" class="form-control" value=""/>
                     <small class="text-muted">Make sure the email is spelled correctly and will receive messages from <strong>tls@hxwd.org</strong>
                         <br/>
                     </small>
                   </div>
                 </div>
+                <div class="form-group row">
                 <h3>Professional information</h3>
-                <div class="row">
-                  <div id="input-area-group" class="col-md-12">
+                  <div id="inputarea-group" class="col-md-12">
                     <small class="text-muted">Add the contrasts and antonyms for this concept:<br/>
                     </small>
-                    <label for="input-area">
+                    <label for="inputarea">
                         <strong>Research areas of interest to you</strong> </label>
-                    <textarea id="input-area" class="form-control"/>
+                    <textarea id="inputarea" name="inputarea" class="form-control"/>
                    </div>
                 </div>                 
-                <div class="row">
-                  <div id="input-inst-group" class="col-md-12">
+                <div class="form-group row">
+                  <div id="inputinst-group" class="col-md-12">
                     <small class="text-muted">Add the contrasts and antonyms for this concept:<br/>
                     </small>
-                    <label for="input-inst">
+                    <label for="inputinst">
                         <strong>Affiliated university or research institution</strong> </label>
-                    <textarea id="input-inst" class="form-control"/>
+                    <textarea id="inputinst" name="inputinst" class="form-control"/>
                    </div>
                 </div>                 
-                <div class="row">
-                  <div id="input-cont-group" class="col-md-12">
+                <div class="form-group row">
+                  <div id="inputcont-group" class="col-md-12">
                     <small class="text-muted">Add the contrasts and antonyms for this concept:<br/>
                     </small>
-                    <label for="input-cont">
+                    <label for="inputcont">
                         <strong>How would you like to contribute to the project?</strong> </label>
-                    <textarea id="input-cont" class="form-control"/>
+                    <textarea id="inputcont" name="inputcont" class="form-control"/>
                    </div>
-                </div>                 
+                </div>
+                <div class="form-group row">
                 <h3>Agreement</h3>
                 <p>All data on this site, with the exception of translations, is made available by the TLS Project under a <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY SA</a> license. This applies to all of your input as well.</p>
                 <p>As far as your translations are concerned, you retain your copyright, and are free to publish them wherever you like.  You do grant a irrevocable license to the TLS Project to display the translations in the context of the website, but not anywhere else.</p>
+                <p>                
+                    <label for="form-submit">
+                        <strong>By submitting this form, you agree to these conditions!</strong>
+                            </label>
+                        </p>
+                <br/> 
+                </div>   
                 <h2>What happens next?</h2>
                 <p>Shortly after sending this form, you should receive an automated message to verify your email address. You will have to click on a link that has been sent to you.  Only after the mail has been verified will the review process begin.  If you are accepted, you will receive an email notification and can start to use your account. </p>
-                <div class="row">
-                <div id="input-submit-group" class="col-md-12">
-                 <label for="form-submit">
-                        <strong>By submitting you agree to these conditions</strong>
-                    </label>   
-                <h:button xmlns:h="http://www.w3.org/1999/xhtml" id="form-submit" class="btn btn-outline-success my-2 my-sm-0" type="submit">Submit</h:button>
-                </div>    
+                <div class="form-group row">
+                    <p data-template="app:render"/>
+                </div>                                    
+                
+                <div class="form-group row">
+                    <div class="col-md-12">
+                <button id="form-submit" class="btn btn-outline-success my-2 my-sm-0" type="submit">Submit</button>
+                    </div>
                 </div>
+
+            </form>
             </div>        
-            <div class="col-md-2"/>            
+            <div class="col-md-2"/>
+                    
       </div>
     </div>
 </div>

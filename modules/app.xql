@@ -1867,7 +1867,21 @@ function app:lineview($node as node()*, $model as map(*), $location as xs:string
 };
 
 declare function app:signup($node as node()*, $model as map(*)) {
-map {"current-time" : current-dateTime(), "shared-secret" : "geheim", "captcha" : "12x13"}
+map {"current-time" : current-dateTime(), "shared-secret" : util:uuid(), "captcha" : "12x13"}
+};
+
+declare function app:render($node as node()*, $model as map(*)){
+let $question := map{"12x13" : "What is twelve times thirteen, written in Chinese?" }
+return
+<p>
+     <input type="hidden" name="ss" value="{$model?shared-secret}"/>
+     <input type="hidden" name="vk" value="{$model?captcha}"/>
+     <label>To make sure, only humans sign up, here is a random question:</label>
+     <br/>
+     <strong>{map:get($question, $model?captcha)}</strong>
+     <br/>
+     <input name="answer"></input>
+</p>
 };
 
 (:: xx :)
