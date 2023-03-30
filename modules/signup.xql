@@ -57,7 +57,7 @@ if ($ust = $url-safe-token) then "Success" else "Failure" else "Failure"
 };
 
 
-declare function sgn:make-token($user-id, $ss){
+declare function sgn:make-token($user-id, $ss, $inputname){
 (: in your database for validation purposes, you need to store: <user-id> -> (<timestamp>, <shared-secret>) :)
 let $secure-salt := util:hash("your-secret-salt", "sha-256")
 let $timestamp := util:system-dateTime() (: you need to store this for later validating the token:)
@@ -66,7 +66,7 @@ let $unsecure-token := $secure-salt || ":" || $user-id || ":" || $timestamp || "
 let $secure-token := util:hash($unsecure-token, "sha-256")
 let $url-safe-token := util:base64-encode($secure-token)
 let $save-secret :=  <user id="{$user-id}" time-stamp="{$timestamp}" utoken="{$unsecure-token}" ust="{$url-safe-token}"></user>
-let $send-message := sgn:send-verification-mail($user-id, $url-safe-token, $ss)
+let $send-message := sgn:send-verification-mail($user-id, $url-safe-token, $ss, $inputname)
 return
 
    $save-secret
@@ -110,7 +110,7 @@ let $newuser := <user>
  <more>
  <ss>{$ss}</ss>
  <verified status="false"/>
- <tk>{sgn:make-token($inputmail, $ss)}</tk>
+ <tk>{sgn:make-token($inputmail, $ss, $inputname)}</tk>
  </more>
 </user>
 , $ns := xmldb:store("/db/groups/tls-admin/new-users", $ss|| ".xml",$newsys)
@@ -132,12 +132,12 @@ return ()
   </account>
 :)
 
-declare function sgn:send-verification-mail($user-id, $url-safe-token, $shared-secret){
+declare function sgn:send-verification-mail($user-id, $url-safe-token, $shared-secret, $inputname){
 let $message := 
   <mail>
     <from>TLS &lt;tls@hxwd.org&gt;</from>
     <to>{$user-id}</to>
-    <cc>cwittern@gmail.com</cc>
+    <bcc>cwittern@gmail.com</bcc>
     <subject>TLS Registration</subject>
     <message>
       <xhtml>
@@ -146,9 +146,11 @@ let $message :=
                  <title>Somebody has used your email alias to register for the TLS database</title>
                </head>
                <body>
+                <h2>Dear {$inputname}</h2> 
+                 <p>Somebody has used your email alias to register for the TLS database</p>
                   <p>If you did not request an account for the tls, than please ignore this message.</p>
                   <p>If, on the other hand, you <b>did</b> apply for a user account, than please click on the following link to verify your address and confirm that you are indeed interested in collaborating on the TLS.</p>
-                  <p><a href="https://hxwd.org/verify.html?token={$url-safe-token}&amp;uid={$shared-secret}&amp;user={$user-id}">Click here to verify you account.</a></p>
+                  <p><a href="https://hxwd.org/sgn-verify.html?token={$url-safe-token}&amp;uid={$shared-secret}&amp;user={$user-id}">Click here to verify you account.</a></p>
                   <p>This link is valid for two hours, after which it will expire.</p>
                </body>
            </html>
@@ -196,7 +198,7 @@ else
 (: TODO save the application, notify reviewers.   write review function :)
 
 
-declare function sgn:verify($node as node()*, $model as map(*), $token, $shared-secret, $user-id){
+declare function sgn:verify($node as node()*, $model as map(*), $token, $uid, $user){
 (:<p>{sgn:compare-token( $token, $shared-secret, $user-id)}</p>:)
 <div>
 <p></p>
@@ -210,15 +212,73 @@ return
 };
 
 declare function sgn:review(){
-for $u in collection("/db/groups/tls-admin/new-users")//verified[@status='true']
-let $m := $u/ancestor::user
+let $reviewer := sm:id()//sm:real/sm:username/text()
 return
-<p>{$m, $u}</p>
+<div>
+<h3>Review of account requests</h3>
+<p>Please review the information and if you approve of granting access to the TLS, please click on approve. Every member of the group tls-editor has one vote.</p>
+<div class="row">
+<div class="col-md-2"> 
+<span class="font-weight-bold">Name</span>
+</div>
+<div class="col-md-2"> 
+<span class="font-weight-bold">Area of interest</span>
+</div>
+<div class="col-md-2"> 
+<span class="font-weight-bold">Affiliation</span>
+</div>
+<div class="col-md-2"> 
+<span class="font-weight-bold">Contributions</span>
+</div>
+<div class="col-md-2"> 
+<span class="font-weight-bold">Website</span>
+</div>
+<div class="col-md-2"> 
+<span class="font-weight-bold">Approve</span>
+</div>
+</div>
+{
+for $u in collection("/db/groups/tls-admin/new-users")//verified[@status='true']
+let $m := $u/parent::more/ss/text()
+, $name := $u/ancestor::user//fullName/text()
+, $doc := doc("/db/groups/tls-editor/users/" || $m || ".xml")
+return
+<div class="row" id="{$m}">
+<div class="col-md-2 "> 
+<span>{$name}</span>
+</div>
+<div class="col-md-2"> 
+<span>{$doc//area}</span>
+</div>
+<div class="col-md-2"> 
+<span>{$doc//inst}</span>
+</div>
+<div class="col-md-2"> 
+<span>{$doc//cont}</span>
+</div>
+<div class="col-md-2"> 
+<span>{$doc//url}</span>
+</div>
+<div class="col-md-2"> 
+<button type="button" class="btn btn-primary" onclick="sgn_approve('{$m}', '{$reviewer}')">Approve</button><br/>
+<span>Votes: {count(distinct-values(tokenize($doc//approved/@resp, ";")))}</span>
+</div>
+<hr/>
+</div>
+}
+</div>
 };
 
 (: this needs to be run by the admin, the user is created etc.  maybe also schedule for a cron job? :)
 (: we will need to make the user info access more restricted! :)
-declare function sgn:approve(){
+declare function sgn:approve($map as map(*)){
+let $doc := doc("/db/groups/tls-editor/users/" || $map?uuid || ".xml")
+, $appr := $doc//approved
+, $resp := if ($appr/@resp) then $appr/@resp || ";#" || $map?resp else "#" || $map?resp 
+, $u := if ($appr/@resp) then update delete $appr/@resp else () 
+, $u2 := update insert attribute resp {$resp} into $appr
+return
+"Success"
 };
 
 declare function sgn:send-mail(){
