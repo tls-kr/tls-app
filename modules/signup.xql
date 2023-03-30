@@ -57,7 +57,7 @@ if ($ust = $url-safe-token) then "Success" else "Failure" else "Failure"
 };
 
 
-declare function sgn:make-token($user-id, $ss){
+declare function sgn:make-token($user-id, $ss, $inputname){
 (: in your database for validation purposes, you need to store: <user-id> -> (<timestamp>, <shared-secret>) :)
 let $secure-salt := util:hash("your-secret-salt", "sha-256")
 let $timestamp := util:system-dateTime() (: you need to store this for later validating the token:)
@@ -66,7 +66,7 @@ let $unsecure-token := $secure-salt || ":" || $user-id || ":" || $timestamp || "
 let $secure-token := util:hash($unsecure-token, "sha-256")
 let $url-safe-token := util:base64-encode($secure-token)
 let $save-secret :=  <user id="{$user-id}" time-stamp="{$timestamp}" utoken="{$unsecure-token}" ust="{$url-safe-token}"></user>
-let $send-message := sgn:send-verification-mail($user-id, $url-safe-token, $ss)
+let $send-message := sgn:send-verification-mail($user-id, $url-safe-token, $ss, $inputname)
 return
 
    $save-secret
@@ -110,7 +110,7 @@ let $newuser := <user>
  <more>
  <ss>{$ss}</ss>
  <verified status="false"/>
- <tk>{sgn:make-token($inputmail, $ss)}</tk>
+ <tk>{sgn:make-token($inputmail, $ss, $inputname)}</tk>
  </more>
 </user>
 , $ns := xmldb:store("/db/groups/tls-admin/new-users", $ss|| ".xml",$newsys)
@@ -132,12 +132,12 @@ return ()
   </account>
 :)
 
-declare function sgn:send-verification-mail($user-id, $url-safe-token, $shared-secret){
+declare function sgn:send-verification-mail($user-id, $url-safe-token, $shared-secret, $inputname){
 let $message := 
   <mail>
     <from>TLS &lt;tls@hxwd.org&gt;</from>
     <to>{$user-id}</to>
-    <cc>cwittern@gmail.com</cc>
+    <bcc>cwittern@gmail.com</bcc>
     <subject>TLS Registration</subject>
     <message>
       <xhtml>
@@ -146,9 +146,11 @@ let $message :=
                  <title>Somebody has used your email alias to register for the TLS database</title>
                </head>
                <body>
+                <h2>Dear {$inputname}</h2> 
+                 <p>Somebody has used your email alias to register for the TLS database</p>
                   <p>If you did not request an account for the tls, than please ignore this message.</p>
                   <p>If, on the other hand, you <b>did</b> apply for a user account, than please click on the following link to verify your address and confirm that you are indeed interested in collaborating on the TLS.</p>
-                  <p><a href="https://hxwd.org/verify.html?token={$url-safe-token}&amp;uid={$shared-secret}&amp;user={$user-id}">Click here to verify you account.</a></p>
+                  <p><a href="https://hxwd.org/sgn-verify.html?token={$url-safe-token}&amp;uid={$shared-secret}&amp;user={$user-id}">Click here to verify you account.</a></p>
                   <p>This link is valid for two hours, after which it will expire.</p>
                </body>
            </html>
@@ -196,13 +198,15 @@ else
 (: TODO save the application, notify reviewers.   write review function :)
 
 
-declare function sgn:verify($node as node()*, $model as map(*), $token, $shared-secret, $user-id){
+declare function sgn:verify($node as node()*, $model as map(*), $token, $uid, $user){
 (:<p>{sgn:compare-token( $token, $shared-secret, $user-id)}</p>:)
+let $cmp := sgn:compare-token($token, $uid, $user)
+return
 <div>
 <p></p>
-<p><strong>{if (sgn:compare-token( $token, $shared-secret, $user-id) = "Success") then 
+<p><strong>{if ($cmp = "Success") then 
 let $status :=  <verified status="true"/>
-, $doc := doc("/db/groups/tls-admin/new-users/" || $shared-secret|| ".xml")
+, $doc := doc("/db/groups/tls-admin/new-users/" || $uid|| ".xml")
 , $upd := update replace $doc//verified with $status
 return
 "Verifycation of your email was successful. We will now review your application and notify you of the result.  This may take some time, so please be patient." else "Verification of your email not successful.  Please try to register again. "}</strong></p>

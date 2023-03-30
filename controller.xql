@@ -127,6 +127,7 @@ else if ($exist:resource = "login") then (
 )
 
 else if (ends-with($exist:resource, ".html")) then (
+    if (matches($exist:resource, "sgn-verify")) then () else
     login:set-user($config:login-domain, (), false()),
     (: the html page is run through view.xql to expand templates :)
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
