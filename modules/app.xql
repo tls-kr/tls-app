@@ -31,6 +31,7 @@ import module namespace wd="http://hxwd.org/wikidata" at "wikidata.xql";
 import module namespace ly="http://hxwd.org/layout" at "layout.xql"; 
 import module namespace log="http://hxwd.org/log" at "log.xql";
 import module namespace src="http://hxwd.org/search" at "search.xql";
+import module namespace sgn="http://hxwd.org/signup" at "signup.xql"; 
 
 declare variable $app:log := $config:tls-log-collection || "/app";
 
@@ -1323,6 +1324,7 @@ function app:review($node as node()*, $model as map(*), $type as xs:string, $iss
   case "gloss" return tlslib:review-gloss()
   case "special" return tlslib:review-special($issue)
   case "request" return tlslib:review-request()
+  case "user" return sgn:review()
   default return ""
 };
 
@@ -1867,7 +1869,22 @@ function app:lineview($node as node()*, $model as map(*), $location as xs:string
 };
 
 declare function app:signup($node as node()*, $model as map(*)) {
-map {"current-time" : current-dateTime(), "shared-secret" : "geheim", "captcha" : "12x13"}
+
+map {"current-time" : current-dateTime(), "shared-secret" : util:uuid(), "captcha" : "12x13"}
+};
+
+declare function app:render($node as node()*, $model as map(*)){
+let $question := map{"12x13" : "What is twelve times thirteen, written in Chinese?" }
+return
+<p>
+     <input type="hidden" name="ss" value="{$model?shared-secret}"/>
+     <input type="hidden" name="vk" value="{$model?captcha}"/>
+     <label>To make sure, only humans sign up, here is a random question:</label>
+     <br/>
+     <strong>{map:get($question, $model?captcha)}</strong>
+     <br/>
+     <input name="answer" required="required" ></input>
+</p>
 };
 
 (:: xx :)
