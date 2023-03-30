@@ -200,13 +200,11 @@ else
 
 declare function sgn:verify($node as node()*, $model as map(*), $token, $uid, $user){
 (:<p>{sgn:compare-token( $token, $shared-secret, $user-id)}</p>:)
-let $cmp := sgn:compare-token($token, $uid, $user)
-return
 <div>
 <p></p>
-<p><strong>{if ($cmp = "Success") then 
+<p><strong>{if (sgn:compare-token( $token, $shared-secret, $user-id) = "Success") then 
 let $status :=  <verified status="true"/>
-, $doc := doc("/db/groups/tls-admin/new-users/" || $uid|| ".xml")
+, $doc := doc("/db/groups/tls-admin/new-users/" || $shared-secret|| ".xml")
 , $upd := update replace $doc//verified with $status
 return
 "Verifycation of your email was successful. We will now review your application and notify you of the result.  This may take some time, so please be patient." else "Verification of your email not successful.  Please try to register again. "}</strong></p>
@@ -214,15 +212,73 @@ return
 };
 
 declare function sgn:review(){
-for $u in collection("/db/groups/tls-admin/new-users")//verified[@status='true']
-let $m := $u/ancestor::user
+let $reviewer := sm:id()//sm:real/sm:username/text()
 return
-<p>{$m, $u}</p>
+<div>
+<h3>Review of account requests</h3>
+<p>Please review the information and if you approve of granting access to the TLS, please click on approve. Every member of the group tls-editor has one vote.</p>
+<div class="row">
+<div class="col-md-2"> 
+<span class="font-weight-bold">Name</span>
+</div>
+<div class="col-md-2"> 
+<span class="font-weight-bold">Area of interest</span>
+</div>
+<div class="col-md-2"> 
+<span class="font-weight-bold">Affiliation</span>
+</div>
+<div class="col-md-2"> 
+<span class="font-weight-bold">Contributions</span>
+</div>
+<div class="col-md-2"> 
+<span class="font-weight-bold">Website</span>
+</div>
+<div class="col-md-2"> 
+<span class="font-weight-bold">Approve</span>
+</div>
+</div>
+{
+for $u in collection("/db/groups/tls-admin/new-users")//verified[@status='true']
+let $m := $u/parent::more/ss/text()
+, $name := $u/ancestor::user//fullName/text()
+, $doc := doc("/db/groups/tls-editor/users/" || $m || ".xml")
+return
+<div class="row" id="{$m}">
+<div class="col-md-2 "> 
+<span>{$name}</span>
+</div>
+<div class="col-md-2"> 
+<span>{$doc//area}</span>
+</div>
+<div class="col-md-2"> 
+<span>{$doc//inst}</span>
+</div>
+<div class="col-md-2"> 
+<span>{$doc//cont}</span>
+</div>
+<div class="col-md-2"> 
+<span>{$doc//url}</span>
+</div>
+<div class="col-md-2"> 
+<button type="button" class="btn btn-primary" onclick="sgn_approve('{$m}', '{$reviewer}')">Approve</button><br/>
+<span>Votes: {count(distinct-values(tokenize($doc//approved/@resp, ";")))}</span>
+</div>
+<hr/>
+</div>
+}
+</div>
 };
 
 (: this needs to be run by the admin, the user is created etc.  maybe also schedule for a cron job? :)
 (: we will need to make the user info access more restricted! :)
-declare function sgn:approve(){
+declare function sgn:approve($map as map(*)){
+let $doc := doc("/db/groups/tls-editor/users/" || $map?uuid || ".xml")
+, $appr := $doc//approved
+, $resp := if ($appr/@resp) then $appr/@resp || ";#" || $map?resp else "#" || $map?resp 
+, $u := if ($appr/@resp) then update delete $appr/@resp else () 
+, $u2 := update insert attribute resp {$resp} into $appr
+return
+"Success"
 };
 
 declare function sgn:send-mail(){

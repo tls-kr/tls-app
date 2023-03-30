@@ -2453,6 +2453,23 @@ function delete_bm(uuid){
     
 }
 
+// signup 
+function sgn_approve(uuid, resp){
+  $.ajax({
+  type : "GET",
+  dataType : "html",  
+  url : "api/responder.xql?func=sgn:approve&uuid=" + uuid + "&resp=" + resp , 
+  success : function(resp){
+//     $("#"+uuid).html("");
+     toastr.info("Your vote has been registered. Thank you", "HXWD says:");
+  }
+  });
+    
+}
+
+
+
+
 function toggle_alt_labels(){
   $(".altlabels").toggle();   
 };
