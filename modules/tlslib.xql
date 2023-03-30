@@ -677,7 +677,8 @@ declare function tlslib:navbar-review($context as xs:string){
      {if (sm:id()//sm:group = "tls-editor") then
         (<a class="dropdown-item" href="review.html?type=swl">Review SWLs</a>,
         <a class="dropdown-item" href="review.html?type=gloss">Add pronounciation glosses</a>,
-        <a class="dropdown-item" href="review.html?type=special">Special pages</a>)
+        <a class="dropdown-item" href="review.html?type=special">Special pages</a>,
+        <a class="dropdown-item" href="review.html?type=user">Account requests</a>)
        else
         ()
      }

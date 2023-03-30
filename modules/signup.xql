@@ -73,7 +73,7 @@ return
     
 };
 
-declare function sgn:sgn-received($node as node()*, $model as map(*), $answer , $inputname, $inputnname, $inputpw1, $inputpw2, $inputmail, $inputarea, $inputinst, $inputcont, $ss, $vk){
+declare function sgn:sgn-received($node as node()*, $model as map(*), $answer , $inputname, $inputnname, $inputpw1, $inputpw2, $inputmail, $inputarea, $inputinst, $inputcont, $inputurl, $ss, $vk){
 let $res := xs:int($answer)
 , $corr := xs:int(156)
 return
@@ -81,14 +81,24 @@ if ($res = $corr) then
 <div>
 <h1>Congratulations!</h1>
 <p>Correct answer. The first step to registration has been cleared.  You will receive a mail with a signup-link to verify your mail adress.  Please click on that link within 2 hours, or you will have to repeat the process.  If you did not receive the mail, look into your spam folder.  </p>
-{sgn:store-new-user($inputname, $inputnname, $inputpw1, $inputpw2, $inputmail, $inputarea, $inputinst, $inputcont, $ss, $vk)}
+{sgn:store-new-user($inputname, $inputnname, $inputpw1, $inputpw2, $inputmail, $inputarea, $inputinst, $inputcont, $inputurl, $ss, $vk)}
 </div>
 else 
 <p>{$answer}: Wrong answer.  Go back and try again.</p>
 };
 
-declare function sgn:store-new-user($inputname, $inputnname, $inputpw1, $inputpw2, $inputmail, $inputarea, $inputinst, $inputcont, $ss, $vk){
+declare function sgn:store-new-user($inputname, $inputnname, $inputpw1, $inputpw2, $inputmail, $inputarea, $inputinst, $inputcont, $inputurl, $ss, $vk){
 let $newuser := <user>
+ <mail>{$inputmail}</mail>
+ <area>{$inputarea}</area>
+ <inst>{$inputinst}</inst>
+ <cont>{$inputcont}</cont>
+ <url>{$inputurl}</url>
+ <more>
+ <approved n="0"/>
+ </more>
+</user>
+, $newsys := <user>
  <account>
  <name>{$inputnname}</name>
  <fullName>{$inputname}</fullName>
@@ -97,16 +107,17 @@ let $newuser := <user>
  <group name="tls-user"></group>
  <umask>022</umask>
  </account>
- <mail>{$inputmail}</mail>
- <area>{$inputarea}</area>
- <inst>{$inputinst}</inst>
- <cont>{$inputcont}</cont>
  <more>
  <ss>{$ss}</ss>
+ <verified status="false"/>
  <tk>{sgn:make-token($inputmail, $ss)}</tk>
  </more>
 </user>
-, $nu := xmldb:store("/db/groups/tls-admin/new-users", $ss|| ".xml",$newuser)
+, $ns := xmldb:store("/db/groups/tls-admin/new-users", $ss|| ".xml",$newsys)
+, $nu := xmldb:store("/db/groups/tls-editor/users", $ss|| ".xml",$newuser)
+(:, $res :=     (sm:chmod(xs:anyURI($nu), "rw-rw-rw-"),
+     sm:chgrp(xs:anyURI($nu), "tls-editor"))
+:)
 return ()
 };
 
@@ -189,13 +200,26 @@ declare function sgn:verify($node as node()*, $model as map(*), $token, $shared-
 (:<p>{sgn:compare-token( $token, $shared-secret, $user-id)}</p>:)
 <div>
 <p></p>
-<p><strong>{if (sgn:compare-token( $token, $shared-secret, $user-id) = "Success") then "Verifycation of your email was successful. We will now review your application and notify you of the result.  This may take some time, so please be patient." else "Verification of your email not successful.  Please try to register again. "}</strong></p>
+<p><strong>{if (sgn:compare-token( $token, $shared-secret, $user-id) = "Success") then 
+let $status :=  <verified status="true"/>
+, $doc := doc("/db/groups/tls-admin/new-users/" || $shared-secret|| ".xml")
+, $upd := update replace $doc//verified with $status
+return
+"Verifycation of your email was successful. We will now review your application and notify you of the result.  This may take some time, so please be patient." else "Verification of your email not successful.  Please try to register again. "}</strong></p>
 </div>
 };
 
-declare function sgn:review($node as node()*, $model as map(*), $uid ){
+declare function sgn:review(){
+for $u in collection("/db/groups/tls-admin/new-users")//verified[@status='true']
+let $m := $u/ancestor::user
+return
+<p>{$m, $u}</p>
 };
 
+(: this needs to be run by the admin, the user is created etc.  maybe also schedule for a cron job? :)
+(: we will need to make the user info access more restricted! :)
+declare function sgn:approve(){
+};
 
 declare function sgn:send-mail(){
 let $mail-handle := mail:get-mail-session
