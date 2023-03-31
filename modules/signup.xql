@@ -21,6 +21,8 @@ import module namespace http="http://expath.org/ns/http-client";
 import module namespace mail="http://exist-db.org/xquery/mail";
 import module namespace templates="http://exist-db.org/xquery/templates" ;
 
+declare variable $sgn:userhome := "/db/users";
+
 (: the javascript required for recaptcha v3, cf https://developers.google.com/recaptcha/docs/v3 :) 
 
 declare function sgn:javascript($node as node(), $model as map(*)){
@@ -131,6 +133,34 @@ return ()
     <umask>022</umask>
   </account>
 :)
+declare function sgn:send-welcome-mail($user-id, $inputname, $uname){
+let $message := 
+  <mail>
+    <from>TLS &lt;tls@hxwd.org&gt;</from>
+    <to>{$user-id}</to>
+    <bcc>cwittern@gmail.com</bcc>
+    <subject>TLS Account created</subject>
+    <message>
+      <xhtml>
+           <html>
+               <head>
+                 <title>Somebody has used your email alias to register for the TLS database</title>
+               </head>
+               <body>
+                <h2>Dear {$inputname}</h2> 
+                 <p>The account you requested for the TLS database has been approved.</p>
+                 <p>You can now log into your new account at  <a href="https://hxwd.org/">TLS database</a>, using the login name <b>{$uname}</b> and the password you previously set.</p>
+               </body>
+           </html>
+      </xhtml>
+    </message>
+  </mail>
+return
+if ( mail:send-email($message, (), ()) ) then
+  <h1>Sent Message OK :-)</h1>
+else
+  <h1>Could not Send Message :-(</h1>
+};
 
 declare function sgn:send-verification-mail($user-id, $url-safe-token, $shared-secret, $inputname){
 let $message := 
@@ -142,9 +172,6 @@ let $message :=
     <message>
       <xhtml>
            <html>
-               <head>
-                 <title>Somebody has used your email alias to register for the TLS database</title>
-               </head>
                <body>
                 <h2>Dear {$inputname}</h2> 
                  <p>Somebody has used your email alias to register for the TLS database</p>
@@ -202,9 +229,9 @@ declare function sgn:verify($node as node()*, $model as map(*), $token, $uid, $u
 (:<p>{sgn:compare-token( $token, $shared-secret, $user-id)}</p>:)
 <div>
 <p></p>
-<p><strong>{if (sgn:compare-token( $token, $shared-secret, $user-id) = "Success") then 
+<p><strong>{if (sgn:compare-token( $token, $uid, $user) = "Success") then 
 let $status :=  <verified status="true"/>
-, $doc := doc("/db/groups/tls-admin/new-users/" || $shared-secret|| ".xml")
+, $doc := doc("/db/groups/tls-admin/new-users/" || $uid|| ".xml")
 , $upd := update replace $doc//verified with $status
 return
 "Verifycation of your email was successful. We will now review your application and notify you of the result.  This may take some time, so please be patient." else "Verification of your email not successful.  Please try to register again. "}</strong></p>
@@ -279,6 +306,57 @@ let $doc := doc("/db/groups/tls-editor/users/" || $map?uuid || ".xml")
 , $u2 := update insert attribute resp {$resp} into $appr
 return
 "Success"
+};
+
+declare function sgn:check-approved(){
+let $vs := collection("/db/groups/tls-admin/new-users")//verified[@status='true']
+for $u in $vs
+let $m := $u/parent::more/ss/text()
+, $name := $u/ancestor::user//fullName/text()
+, $uname := $u/ancestor::user//name/text()
+, $doc := doc("/db/groups/tls-editor/users/" || $m || ".xml")
+, $user-id := $doc//mail/text()
+, $cnt := count(distinct-values(tokenize($doc//approved/@resp, ";")))
+let $status :=  <verified status="processed"/>
+
+return
+if ($cnt > 1) then (
+sgn:create-user($m),
+update replace $u with $status,
+sgn:send-welcome-mail($user-id, $name, $uname)
+) else ()
+};
+
+declare function sgn:create-user($uuid as xs:string){
+    let $doc := doc("/db/groups/tls-admin/new-users/" || $uuid|| ".xml")
+    let $user := $doc/user
+    let $username := $user//name/text(),
+    $fullName := $user//fullName/text(),
+    $description := $user//description/text(),
+    $password := $user//password/text(),
+    $disabled := false(),
+    $umask := xs:int($user//umask),
+    $primary-group := string($user//group/@name),
+    $groups := tokenize($user//group/text(), ","),
+    $gres := for $g in ($primary-group, $groups)
+             return sm:group-exists($g) or sm:create-group($g),
+    $home := xmldb:collection-available($sgn:userhome) or xmldb:create-collection("/db", "users"),
+    $usercoll := $sgn:userhome || "/" || $username,
+    $res := (
+        sm:user-exists($username) or            
+        sm:create-account($username, $password, $primary-group, $groups, $fullName, $description),
+        if($disabled)then
+            sm:set-account-enabled($username, false())       (: TODO add as an arg to secman:create-user function :)
+        else(),
+        sm:set-umask($username, $umask),
+        xmldb:collection-available($usercoll) or xmldb:create-collection($sgn:userhome, $username),
+        sm:chmod(xs:anyURI($usercoll), "rwxrwxr--"),
+        sm:chgrp(xs:anyURI($usercoll), "tls-user"),
+        sm:chown(xs:anyURI($usercoll), $username) 
+        )
+    return
+        $username
+
 };
 
 declare function sgn:send-mail(){
