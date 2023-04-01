@@ -53,7 +53,7 @@
   "dependencies": {
     "bootstrap": "^4.3.1",
     "bootstrap-grid": "^3.0.1",
-    "jquery": "^3.3.1",
+    "jquery": "^3.5.0",
     "popper.js": "^1.14.7",
     "toastr": "^2.1.4"
   }
