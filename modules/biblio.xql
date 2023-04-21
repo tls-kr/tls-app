@@ -463,11 +463,12 @@ declare function bib:mods2map($n as node()*){
 (: form input elements need to have a 'name' attribute for the jquery serialize() function to work  CW 2023-04-20 :)
 
 declare function bib:new-entry-dialog($map as map(*)){
- let $uuid :=  if (string-length($map?uuid) > 0) then $map?uuid else util:uuid()
+ let $uuid :=  if (string-length($map?uuid) > 0) then $map?uuid else "uuid-" || util:uuid()
    , $mods := collection($config:tls-data-root||"/bibliography")//mods:mods[@ID=$uuid]
    , $lang := if ($mods//mods:titleInfo[@script="Hant"]) then "chi" else "eng"
    , $rt := if ($mods//mods:roleTerm) then $mods//mods:roleTerm else <roleTerm xmlns="http://www.loc.gov/mods/v3"></roleTerm>
-   , $genre := $mods//mods:genre/text()
+   , $mt := if ($mods//mods:topic) then $mods//mods:topic else <topic xmlns="http://www.loc.gov/mods/v3"></topic>
+   , $genre := if (string-length($mods//mods:genre/text()) > 0) then $mods//mods:genre/text() else "book" 
    , $name := ""
    , $def := ""
    , $textid := $map?textid
@@ -498,7 +499,7 @@ declare function bib:new-entry-dialog($map as map(*)){
               </div>
               <div id="select-lang-group" class="form-group col-md-4">
                 <label for="select-lang" class="font-weight-bold">Item type: </label>
-                 <select class="form-control" name="select-genre">
+                 <select id="select-genre" class="form-control" name="select-genre" onchange="bib_genre_change()">
                   {for $l in map:keys($bib:genre)
                     order by $l
                     return
@@ -519,8 +520,8 @@ declare function bib:new-entry-dialog($map as map(*)){
               {for $rg at $pos in $rt
                let $n:= $rg/ancestor::mods:name
               return
-             <div class="form-row">
-              <div id="select-role-group" class="form-group col-md-2">
+             <div class="form-row" id="role-group-{$pos}">
+              <div class="form-group col-md-2">
                <small class="text-muted">Role</small>                 
                  <select class="form-control" name="select-role-{$pos}">
                   {for $l in map:keys($bib:roleterms)
@@ -551,10 +552,9 @@ declare function bib:new-entry-dialog($map as map(*)){
                  <input name="giv-name-hant-{$pos}" class="form-control"  value="{$n//mods:namePart[@type='given' and @script='Hant']}"></input>
               </div>
               <div  class="col-md-2">
-              {if ($pos > 1) then (<span>Remove this line</span>,<br/>) else ()}
+              {if ($pos > 1) then (<span id="rem-line-{$pos}" onclick="bib_remove_line('role-group-{$pos}')">Remove this line</span>,<br/>) else ()}
               {if (count($rt) = $pos) then 
-                (<br/>,<span>Add new line</span>) else ()}
-              {tlslib:format-button("delete_swl('swl', '" || $pos || "')", "Remove this line ", "open-iconic-master/svg/x.svg", "small", "close", "tls-user")}              
+                (<br/>,<span id="add-line-{$pos}" onclick="bib_add_new_line({$pos + 1}, 'role-group-{$pos}')">Add new line</span>) else ()}
               </div>
               <hr/>
               </div>
@@ -609,7 +609,15 @@ declare function bib:new-entry-dialog($map as map(*)){
               </div>
             </div>
             <h6  class="font-weight-bold">Topics</h6>
-            <div class="form-row">
+            <div id="topic-row" class="form-row">
+             {for $t at $pos in $mt 
+             return
+              <div class="col-md-3" id="topic-field-{$pos}">
+               <small class="text-muted"></small>                 
+                 <input name="topic-{$pos}" class="form-control" value="{$t/text()}"></input>
+              </div>
+             }
+             <div id="new-topic" class="col-md-2"><span onclick="bib_add_topic({count($mt) + 1}, 'topic-field-{count($mt)}')">Add topic</span></div>
             </div>
             <h6  class="font-weight-bold">Notes</h6>
             <div class="form-row">
@@ -635,11 +643,15 @@ let $rt := for $l in map:keys($map)
    where starts-with($l, "select-role")
    order by $l
    return $l
+, $tt := for $l in map:keys($map)
+    where starts-with($l, "topic-")
+    order by $l
+    return $l
 , $lang := $map?select-lang   
 , $user := sm:id()//sm:real/sm:username/text()
-, $genre := $map?select-genre
+, $genre := if (string-length($map?select-genre) > 0) then $map?select-genre else "book"
 , $date := $map?pub-date
-, $ref := if (string-length($map?ref-key) > 0) then $map?ref-key else $map?fam-name-latn-1 || " " || $map?giv-name-latn-1 || " " || $date
+, $ref := if (string-length($map?ref-key) > 0) then $map?ref-key else bib:make-bibref($map?fam-name-latn-1, $map?giv-name-latn-1, $date)
 let $mods := <mods xmlns="http://www.loc.gov/mods/v3" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ID="{$map?uuid}" version="3.6" xsi:schemaLocation="http://www.loc.gov/mods/v3 http://cluster-schemas.uni-hd.de/modsCluster.xsd" resp="{$user}" modified="{current-dateTime()}">
 <language>
 <languageTerm type="text">{$bib:c2l?($lang)}</languageTerm>
@@ -672,7 +684,7 @@ else ()}
 <titleInfo transliteration="chinese/ala-lc" script="Latn">
 <title>{$map?title-latn}</title>
 </titleInfo> else ()}
-{if ($genre = ("article", "book-chapter")) then 
+{if ($genre = ("article", "chapter")) then 
 <relatedItem type="host">
 <titleInfo lang="{$lang}" script="Hant">
 <title>{$map?art-hant}</title>
@@ -716,6 +728,12 @@ else
 </part>
 )
 }
+{for $t in $tt
+return
+if (string-length($map?($t)) > 0) then 
+<subject xmlns:tls="http://hxwd.org/ns/1.0"><topic tls:sort="{lower-case($map?($t))}">{$map?($t)}</topic></subject>
+else ()
+}
 <genre authority="marcgt">{$genre}</genre>
 <typeOfResource>text</typeOfResource>
 <note type="bibliographic-reference">{$ref}</note>
@@ -727,4 +745,16 @@ else ()}
 </mods>
 return
 $mods
+};
+
+declare function bib:uuid2path($uuid as xs:string) as xs:string{
+let $f := substring(substring-after($uuid, "uuid-"), 1, 1)
+return
+  $config:tls-data-root || "/bibliography/" || $f || "/" 
+};
+
+(: TODO: Avoid duplicated keys :)
+declare function bib:make-bibref($fam as xs:string, $giv as xs:string, $date as xs:string) as xs:string{
+let $refkey := $fam || " " || $giv || " " || $date
+return $refkey
 };
