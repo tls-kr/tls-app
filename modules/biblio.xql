@@ -45,6 +45,27 @@ declare variable $bib:c2l := map{
  "mul" : "Multiple" 
 };
 
+declare variable $bib:roleterms := map{
+ "aut" : "Author" ,
+ "trl" : "Translator" ,
+ "edi" : "Editor",
+ "cmp" : "Compiler"  ,
+ "com" : "Commentator" 
+};
+
+declare variable $bib:script := map{
+ "Latn" : "Latin" ,
+ "Hant" : "Traditional Chinese" ,
+ "Hans" : "Simplified Chinese"
+};
+
+declare variable $bib:genre := map{
+ "book" : "Book" ,
+ "chapter" : "Book chapter",
+ "article" : "Article" ,
+ "thesis" : "Thesis"
+};
+
 (:~ 
 : import entries from zotero 
 :)
@@ -150,6 +171,7 @@ order by $c descending
 return
 bib:biblio-short($u/ancestor::mods:mods, "title")
 }</ul> 
+, $recent := ""
 return 
 <div><h4>Browse the bibliography <button class="btn badge badge-warning ml-2" type="button" onclick="add_ref('')">Add new reference</button></h4>
 
@@ -162,6 +184,8 @@ return
     href="#bytopic" data-toggle="tab">Topics</a></li>
     <li class="nav-item"> <a class="nav-link" id="top-tab" role="tab" 
     href="#byusage" data-toggle="tab">Most referred</a></li>
+    <li class="nav-item"> <a class="nav-link" id="top-tab" role="tab" 
+    href="#byrecent" data-toggle="tab">Recently added</a></li>
     </ul>
     <div class="tab-content" id="TabContent">    
     <div class="tab-pane" id="byauthor" role="tabpanel">    
@@ -176,6 +200,10 @@ return
     <div class="tab-pane" id="byusage" role="tabpanel">    
     <h3>Works which have been most frequently referenced</h3>
     {$topusage}
+    </div>
+    <div class="tab-pane" id="byrecent" role="tabpanel">    
+    <h3>Recently added works</h3>
+    {$recent}
     </div>
     </div>
 <div>
@@ -425,4 +453,278 @@ for $k in map:keys($map)
  case "multicreators" return ()
  
  default return ()
+};
+
+
+declare function bib:mods2map($n as node()*){
+
+};
+
+(: form input elements need to have a 'name' attribute for the jquery serialize() function to work  CW 2023-04-20 :)
+
+declare function bib:new-entry-dialog($map as map(*)){
+ let $uuid :=  if (string-length($map?uuid) > 0) then $map?uuid else util:uuid()
+   , $mods := collection($config:tls-data-root||"/bibliography")//mods:mods[@ID=$uuid]
+   , $lang := if ($mods//mods:titleInfo[@script="Hant"]) then "chi" else "eng"
+   , $rt := if ($mods//mods:roleTerm) then $mods//mods:roleTerm else <roleTerm xmlns="http://www.loc.gov/mods/v3"></roleTerm>
+   , $genre := $mods//mods:genre/text()
+   , $name := ""
+   , $def := ""
+   , $textid := $map?textid
+   return
+   <div id="new-entry-dialog" class="modal" tabindex="-1" role="dialog" style="display: none;">
+    <div class="modal-dialog modal-lg" role="document">
+        <form id="new-entry-form">
+        <div class="modal-content">
+            <div class="modal-header"><h5><span>{if ($mods) then "Edit" else "Add new"}</span> bibliographic item {if (string-length($textid) > 0) then <span>for <span class="font-weight-bold">{tlslib:get-title($textid)}</span></span> else <span class="font-weight-bold">{$mods//mods:note[@type='bibliographic-reference']/text()}</span>}</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" title="Close">x</button>
+            </div>
+            <div class="modal-body">
+            <div class="form-row">
+              <div id="select-lang-group" class="form-group col-md-4">
+              <input type="hidden" name="ref-key" value="{$mods//mods:note[@type='bibliographic-reference']/text()}"/>
+              <input type="hidden" name="ref-usage" value="{$mods//mods:note[@type='ref-usage']/text()}"/>
+                <label for="select-lang" class="font-weight-bold">Language: </label>
+                 <select class="form-control" name="select-lang">
+                  {for $l in map:keys($bib:c2l)
+                    order by $l
+                    return
+                    if ($l = $lang) then
+                    <option value="{$l}" selected="true">{$bib:c2l($l)}</option>
+                    else
+                    <option value="{$l}">{$bib:c2l($l)}</option>
+                   } 
+                 </select>                 
+              </div>
+              <div id="select-lang-group" class="form-group col-md-4">
+                <label for="select-lang" class="font-weight-bold">Item type: </label>
+                 <select class="form-control" name="select-genre">
+                  {for $l in map:keys($bib:genre)
+                    order by $l
+                    return
+                    if ($genre = $l) then
+                    <option value="{$l}" selected="true">{$bib:genre($l)}</option>
+                    else
+                    <option value="{$l}">{$bib:genre($l)}</option>
+                   } 
+                 </select>
+              </div>
+             <div class="col-md-4">
+                <label for="select-lang" class="font-weight-bold">Publication date:</label>
+                 <input name="pub-date" class="form-control" required="true" value="{$mods//mods:date|$mods//mods:dateIssued}"></input>
+              </div>
+
+            </div>
+              <h6  class="font-weight-bold">Responsible persons</h6>
+              {for $rg at $pos in $rt
+               let $n:= $rg/ancestor::mods:name
+              return
+             <div class="form-row">
+              <div id="select-role-group" class="form-group col-md-2">
+               <small class="text-muted">Role</small>                 
+                 <select class="form-control" name="select-role-{$pos}">
+                  {for $l in map:keys($bib:roleterms)
+                    let $r := lower-case($bib:roleterms($l))
+                    order by $l
+                    return
+                    if ($r = $rg) then
+                    <option value="{$l}" selected="true">{$bib:roleterms($l)}</option>
+                    else
+                    <option value="{$l}">{$bib:roleterms($l)}</option>
+                   } 
+                 </select>
+              </div>
+              <div  class="col-md-2">
+                 <small class="text-muted">Family Name (transcribed)</small>
+                 <input name="fam-name-latn-{$pos}" class="form-control" value="{$n//mods:namePart[@type='family' and @script='Latn']}"></input>
+              </div>
+              <div class="col-md-2">
+                 <small class="text-muted">Given Name (transcribed)</small>
+                 <input name="giv-name-latn-{$pos}" class="form-control" value="{$n//mods:namePart[@type='given' and @script='Latn']}"></input>
+              </div>
+              <div  class="col-md-2">
+                 <small class="text-muted">Family Name (characters)</small>
+                 <input name="fam-name-hant-{$pos}" class="form-control"  value="{$n//mods:namePart[@type='family' and @script='Hant']}"></input>
+              </div>
+              <div  class="col-md-2">
+                 <small class="text-muted">Given Name (characters)</small>
+                 <input name="giv-name-hant-{$pos}" class="form-control"  value="{$n//mods:namePart[@type='given' and @script='Hant']}"></input>
+              </div>
+              <div  class="col-md-2">
+              {if ($pos > 1) then (<span>Remove this line</span>,<br/>) else ()}
+              {if (count($rt) = $pos) then 
+                (<br/>,<span>Add new line</span>) else ()}
+              {tlslib:format-button("delete_swl('swl', '" || $pos || "')", "Remove this line ", "open-iconic-master/svg/x.svg", "small", "close", "tls-user")}              
+              </div>
+              <hr/>
+              </div>
+               }
+            <h6  class="font-weight-bold">Title</h6>   
+           <div class="form-row">
+              <div id="input-resp-group" class="col-md-6">
+                 <small class="text-muted">Title (transcribed)</small>
+                 <input name="title-latn" class="form-control"  value="{$mods/mods:titleInfo[@script='Latn']/mods:title}"></input>
+              </div>
+              <div id="input-resp-group" class="col-md-6">
+                 <small class="text-muted">Title (characters)</small>
+                 <input name="title-hant" class="form-control"  value="{$mods/mods:titleInfo[@script='Hant']/mods:title}"></input>
+              </div>
+            </div>
+            <h6  class="font-weight-bold">Details</h6>
+            <div class="form-row">
+              <!-- not article -->
+              <div class="col-md-3 book" style="{if ($genre='article') then 'display:none' else ''}">
+               <small class="text-muted">Publisher (transcribed)</small>                 
+                 <input name="book-pub-latn" class="form-control" value="{$mods/mods:originInfo/mods:publisher[not(@script='Hant')]}"></input>
+              </div>
+              <div class="col-md-3 book" style="{if ($genre='article') then 'display:none' else ''}">
+               <small class="text-muted">Publisher (characters)</small>                 
+                 <input name="book-pub-hant" class="form-control"  value="{$mods/mods:originInfo/mods:publisher[@script='Hant']}"></input>
+              </div>
+              <div class="col-md-2 book" style="{if ($genre='article') then 'display:none' else ''}">
+               <small class="text-muted">Place (transcribed)</small>                 
+                 <input name="book-place-latn" class="form-control"  value="{$mods/mods:originInfo//mods:placeTerm[not(@script='Hant')]}"></input>
+              </div>
+              <div class="col-md-2 book" style="{if ($genre='article') then 'display:none' else ''}">
+               <small class="text-muted">Place (characters)</small>                 
+                 <input name="book-place-hant" class="form-control" value="{$mods/mods:originInfo//mods:placeTerm[@script='Hant']}"></input>
+              </div>
+              
+              <!-- article -->
+              <div class="col-md-3 article" style="{if (not($genre='article')) then 'display:none' else ''}">
+               <small class="text-muted">Publication (transcribed)</small>                 
+                 <input name="art-latn" class="form-control"  value="{$mods//mods:relatedItem/mods:titleInfo[@script='Latn']/mods:title}"></input>
+              </div>
+              <div class="col-md-3 article" style="{if (not($genre='article')) then 'display:none' else ''}">
+               <small class="text-muted">Publication (characters)</small>                 
+                 <input name="art-hant" class="form-control"  value="{$mods//mods:relatedItem/mods:titleInfo[@script='Hant']/mods:title}"></input>
+              </div>
+              <div class="col-md-2 article" style="{if (not($genre='article')) then 'display:none' else ''}">
+               <small class="text-muted">Volume</small>                 
+                 <input name="art-vol" class="form-control"  value="{$mods//mods:relatedItem//mods:detail[@type='volume']}"></input>
+              </div>
+              <div class="col-md-2">
+               <small class="text-muted">Pages</small>                 
+                 <input name="art-page" class="form-control" value="{$mods//mods:relatedItem/mods:extent[@unit='pages']}"></input>
+              </div>
+            </div>
+            <h6  class="font-weight-bold">Topics</h6>
+            <div class="form-row">
+            </div>
+            <h6  class="font-weight-bold">Notes</h6>
+            <div class="form-row">
+              <div id="input-notes-group" class="col-md-12">
+                    <textarea name="input-notes" class="form-control">{$mods//mods:note[@type='general']/text()}</textarea>                   
+              </div>
+            </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="save_entry('{$uuid}')">Save</button>
+           </div>
+         </div>
+         </form>
+     </div>
+     
+</div>
+
+};
+
+declare function bib:save-entry($map as map(*)){
+let $rt := for $l in map:keys($map) 
+   where starts-with($l, "select-role")
+   order by $l
+   return $l
+, $lang := $map?select-lang   
+, $user := sm:id()//sm:real/sm:username/text()
+, $genre := $map?select-genre
+, $date := $map?pub-date
+, $ref := if (string-length($map?ref-key) > 0) then $map?ref-key else $map?fam-name-latn-1 || " " || $map?giv-name-latn-1 || " " || $date
+let $mods := <mods xmlns="http://www.loc.gov/mods/v3" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ID="{$map?uuid}" version="3.6" xsi:schemaLocation="http://www.loc.gov/mods/v3 http://cluster-schemas.uni-hd.de/modsCluster.xsd" resp="{$user}" modified="{current-dateTime()}">
+<language>
+<languageTerm type="text">{$bib:c2l?($lang)}</languageTerm>
+<languageTerm type="code" authority="iso639-2b">{$lang}</languageTerm>
+</language>
+
+{for $r in $rt return
+let $pos := tokenize($r, "-")[last()]
+return
+<name type="personal">
+{if ($map?("fam-name-latn-"||$pos)) then
+<namePart type="given" lang="{$lang}" transliteration="chinese/ala-lc" script="Latn">{$map?("fam-name-latn-"||$pos)}</namePart> else ()}
+{if ($map?("giv-name-latn-"||$pos)) then
+<namePart type="family" lang="{$lang}" transliteration="chinese/ala-lc" script="Latn">{$map?("giv-name-latn-"||$pos)}</namePart> else ()}
+{if ($map?("giv-name-hant-"||$pos)) then
+<namePart type="given" lang="{$lang}" script="Hant">{$map?("giv-name-hant-"||$pos)}</namePart> else ()}
+{if ($map?("fam-name-hant-"||$pos)) then
+<namePart type="family" lang="{$lang}" script="Hant">{$map?("fam-name-hant-"||$pos)}</namePart>
+else ()}
+<role>
+<roleTerm type="text">{$bib:roleterms?($map?($r))}</roleTerm>
+</role>
+</name>
+}
+{if (string-length($map?title-hant) > 0) then
+<titleInfo lang="{$lang}" script="Hant">
+<title>{$map?title-hant}</title>
+</titleInfo> else ()}
+{if (string-length($map?title-latn) > 0) then
+<titleInfo transliteration="chinese/ala-lc" script="Latn">
+<title>{$map?title-latn}</title>
+</titleInfo> else ()}
+{if ($genre = ("article", "book-chapter")) then 
+<relatedItem type="host">
+<titleInfo lang="{$lang}" script="Hant">
+<title>{$map?art-hant}</title>
+</titleInfo>
+<titleInfo lang="{$lang}" script="Latn">
+<title>{$map?art-latn}</title>
+</titleInfo>
+<originInfo>
+<issuance>continuing</issuance>
+</originInfo>
+<part>
+<detail type="volume">
+<number>{$map?art-vol}</number>
+</detail>
+<extent unit="pages">
+<list>{$map?art-page}</list>
+</extent>
+<date encoding="w3cdtf">{$date}</date>
+        </part>
+</relatedItem>
+else 
+(
+<originInfo>
+<place>
+{if (string-length($map?book-place-hant) > 0) then
+<placeTerm lang="{$lang}" type="text" script="Hant">{$map?book-place-hant}</placeTerm> else ()}
+{if (string-length($map?book-place-latn) > 0) then
+<placeTerm lang="{$lang}" type="text" script="Latn">{$map?book-place-latn}</placeTerm> else ()}
+</place>
+{if (string-length($map?book-pub-hant) > 0) then
+<publisher lang="{$lang}" type="text" script="Latn">{$map?book-pub-hant}</publisher> else ()}
+{if (string-length($map?book-pub-latn) > 0) then
+<publisher lang="{$lang}" type="text" script="Latn">{$map?book-pub-latn}</publisher> else ()}
+<dateIssued encoding="w3cdtf">{$date}</dateIssued>
+<issuance>monographic</issuance>
+</originInfo>,
+<part>
+<extent unit="pages">
+<list>{$map?art-page}</list>
+</extent>
+</part>
+)
+}
+<genre authority="marcgt">{$genre}</genre>
+<typeOfResource>text</typeOfResource>
+<note type="bibliographic-reference">{$ref}</note>
+{if (string-length($map?input-notes) > 0) then
+<note type="general">{$map?input-notes}</note> else ()}
+{if (string-length($map?ref-usage) > 0) then 
+<note type="ref-usage">{$map?ref-usage}</note>
+else ()}
+</mods>
+return
+$mods
 };

@@ -2410,12 +2410,63 @@ function save_textdate(textid){
 
 // add new reference to bibliography
 function edit_bib(uid){
-    alert("Not yet implemented ");
+  $.ajax({
+  type : "GET",
+  dataType : "html",  
+  url : "api/responder.xql?func=bib:new-entry-dialog&uuid="+uid, 
+  success : function(resp){
+      $('#remoteDialog').html(resp);
+      $('#new-entry-dialog').modal('show');
+  },
+  error : function(resp){
+   console.log(resp)
+   alert("PROBLEM"+resp);
+  }
+
+  }); 
 };
 
-// add new reference to bibliography
+// save bib entry in the form
+function save_entry(uuid){
+  formData = $("#new-entry-form").serialize()
+  $.ajax({
+  type : "POST",
+  url : "api/responder.xql?func=bib:save-entry&uuid="+uuid,
+  data: formData,
+  success : function(resp){
+    if (resp.startsWith("Could not")) {
+    toastr.error(resp, "漢學文典 says:");
+/*    toastr.error("Could not save translation for "+line+".", "HXWD says:");        */
+    } else {
+    toastr.info("Modification saved.", "漢學文典 says:");
+    dirty = false;
+    }
+  },
+  error : function(resp){
+  console.log(resp);
+    alert("PROBLEM: "+resp.statusText + "\n " + resp.responseText);
+  }
+  });    
+  
+};
+
+// add new reference to bibliography 
+// textid might be empty
 function add_ref(textid){
-    alert("Not yet implemented "+textid);
+  $.ajax({
+  type : "GET",
+  dataType : "html",  
+  url : "api/responder.xql?func=bib:new-entry-dialog&textid="+textid, 
+  success : function(resp){
+      $('#remoteDialog').html(resp);
+      $('#new-entry-dialog').modal('show');
+  },
+  error : function(resp){
+   console.log(resp)
+   alert("PROBLEM"+resp);
+  }
+
+  }); 
 };
 
 // add new observation template
