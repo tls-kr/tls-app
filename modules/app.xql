@@ -1416,7 +1416,7 @@ declare
 function app:footer($node as node()*, $model as map(*)){
             <div class="container">
                 <span id="copyright"/>
-                    <p>Copyright TLS Project 2022, licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/" title="Creative Commons Attribution-ShareAlike 4.0 International License">CC BY SA</a> license (except some translations)</p>
+                    <p>Copyright TLS Project 2023, licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/" title="Creative Commons Attribution-ShareAlike 4.0 International License">CC BY SA</a> license (except some translations)</p>
                 <p>Developed at the <strong>Center for Informatics in East-Asian Studies, Institute for Research in Humanities, Kyoto University</strong>, with support from the 
                 <strong>Dean for Research, Department of East Asian Studies</strong>, and
                 <strong>Program in East Asian Studies, Princeton University</strong>.</p>    
