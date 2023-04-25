@@ -2453,7 +2453,7 @@ function bib_add_topic(n, lid){
 
 function bib_add_new_line(n, lid){
  m = n+1
- newline = `<div class="form-row" id="role-group-${n}"><div class="form-group col-md-2"><small class="text-muted">Role</small><select class="form-control" name="select-role-${n}">\
+ newline = `<div class="form-row" id="role-group-${n}"><div class="form-group col-md-2"><small class="text-muted">Role<br/>　</small><select class="form-control" name="select-role-${n}">\
                                 <option value="aut">Author</option>\
                                 <option value="cmp">Compiler</option>\
                                 <option value="com">Commentator</option>\
@@ -2481,6 +2481,9 @@ function save_entry(uuid){
 /*    toastr.error("Could not save translation for "+line+".", "HXWD says:");        */
     } else {
     toastr.info("Modification saved.", "漢學文典 says:");
+    $('#new-entry-dialog').modal('hide');
+    $('#remoteDialog').html('');
+    window.location = 'bibliography.html?uuid='+uuid
     dirty = false;
     }
   },
@@ -2577,6 +2580,57 @@ function toggle_alt_labels(){
 */
 
 function save_taxchar(type){
+  // save the tree in #chartree
+// alert("Not yet implemented")  
+  var data = $("#chartree").prop('outerHTML');
+//  console.log("data:"+data);
+  $.ajax({
+  type : "POST",
+  dataType : "html",
+  contentType: 'application/xml',
+  url : "api/responder.xql?func=save-taxchar&type="+type,
+  data: data,
+  success : function(resp){
+    if (resp.startsWith("Could not")) {
+    toastr.error(resp, "漢學文典 says:");
+/*    toastr.error("Could not save translation for "+line+".", "HXWD says:");        */
+    } else {
+    toastr.info("Modification saved.", "漢學文典 says:");
+    dirty = false;
+    }
+  },
+  error : function(resp){
+  console.log(resp);
+    alert("PROBLEM: "+resp.statusText + "\n " + resp.responseText);
+  }
+  });    
+};
+
+// display dialog for pb
+// fname is the name of the function in dialogs, has to be the same as the ID of the remote dialog returned by that function
+function display_named_dialog(uid, fname){
+     //what an ugly kludge... repeated again!!
+     if (uid == 'x-get-line-id') {
+        var line_id= $( "#swl-line-id-span" ).text();  
+        uid = line_id
+     }
+     pos = $("#swl-query-span" ).attr("data-pos");
+     sel = $("#swl-query-span").text();
+     line = $( "#swl-line-text-span" ).text();
+     console.log("pos:", pos, sel, line)
+     $.ajax({
+     type : "GET",
+     dataType : "html",  
+     url : "api/responder.xql?func=dialogs:"+fname+"&uid=" + uid + "&pos=" + pos + "&sel=" + sel + "&line="+line,
+     success : function(resp){
+     $('#remoteDialog').html(resp);
+     $('#'+fname).modal('show');
+   }
+  });
+    
+};
+
+function save_pb(){
   // save the tree in #chartree
 // alert("Not yet implemented")  
   var data = $("#chartree").prop('outerHTML');
