@@ -2409,11 +2409,11 @@ function save_textdate(textid){
 };
 
 // add new reference to bibliography
-function edit_bib(uid){
+function edit_bib(uid, textid){
   $.ajax({
   type : "GET",
   dataType : "html",  
-  url : "api/responder.xql?func=bib:new-entry-dialog&uuid="+uid, 
+  url : "api/responder.xql?func=bib:new-entry-dialog&uuid="+uid+"&textid="+textid, 
   success : function(resp){
       $('#remoteDialog').html(resp);
       $('#new-entry-dialog').modal('show');

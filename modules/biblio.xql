@@ -169,7 +169,7 @@ let $c := xs:int($u)
 where $c > 0
 order by $c descending
 return
-bib:biblio-short($u/ancestor::mods:mods, "title")
+bib:biblio-short($u/ancestor::mods:mods, "title", '')
 }</ul> 
 , $recent := ""
 return 
@@ -215,7 +215,7 @@ for $b in $auth
  where starts-with($b, $filterString)
  order by lower-case($b || $gn)
  return
- bib:biblio-short($b/ancestor::mods:mods, $mode)
+ bib:biblio-short($b/ancestor::mods:mods, $mode, '')
 }</div>
 
 else if ($mode eq "title") then 
@@ -224,7 +224,7 @@ for $b in $tit
  where starts-with($b, $filterString)
  order by $b
  return
- bib:biblio-short($b/ancestor::mods:mods, $mode)
+ bib:biblio-short($b/ancestor::mods:mods, $mode, '')
 }</div>
 else if ($mode eq "topic") then 
 <div>{
@@ -232,7 +232,7 @@ for $b in $top
  where starts-with($b, $filterString)
  order by $b
  return
- bib:biblio-short($b/ancestor::mods:mods, $mode)
+ bib:biblio-short($b/ancestor::mods:mods, $mode, '')
 }</div>
 else 
 ()
@@ -244,12 +244,12 @@ else ()}
 
 (: <span>{count(collection($config:tls-data-root)//tei:ref[@target="#"||$m/@ID] )}</span> :) 
 
-declare function bib:biblio-short($m as node(), $mode as xs:string) {
+declare function bib:biblio-short($m as node(), $mode as xs:string, $textid as xs:string) {
 let $user := sm:id()//sm:real/sm:username/text()
 , $usergroups := sm:get-user-groups($user)
 return
 
-<li><span class="font-weight-bold">{string-join(for $n in $m//mods:name return bib:display-author($n), '; ')}</span>　<a href="bibliography.html?uuid={$m/@ID}">{string-join($m//mods:title/text(), " ")}, {$m//mods:dateIssued/text()}　</a>   
+<li><span class="font-weight-bold">{string-join(for $n in $m//mods:name return bib:display-author($n), '; ')}</span>　<a href="bibliography.html?uuid={$m/@ID}{if (string-length($textid)>0)then '&amp;textid='||$textid else ()}">{string-join($m//mods:title/text(), " ")}, {$m//mods:dateIssued/text()}　</a>   
 <span class="badge badge-light">{$m//mods:note[@type='ref-usage']}</span>
   {if (contains($usergroups, "tls-editor" )) then 
     tlslib:format-button("delete_swl('bib', '" || data($m/@ID) || "')", "Immediately delete this reference", "open-iconic-master/svg/x.svg", "small", "close", "tls-editor")
@@ -261,6 +261,7 @@ return
 declare function bib:display-mods($uuid as xs:string){
 let $biblio := collection($config:tls-data-root || "/bibliography")
 ,$m:=$biblio//mods:mods[@ID=$uuid]
+,$r := collection($config:tls-texts)//tei:TEI//tei:witness//tei:ref[@target="#"||$uuid]
 return
 <div>
 <div class="row">
@@ -295,8 +296,13 @@ return
 </div>
 <div class="row">
 <div class="col-sm-2"/>
+<div class="col-sm-2"><span class="font-weight-bold float-right">Information basis</span></div>
+<div class="col-sm-5">{$m/mods:note[@type='information-basis']/text()}</div>
+</div>
+<div class="row">
+<div class="col-sm-2"/>
 <div class="col-sm-2"><span class="font-weight-bold float-right">Electronic Version</span></div>
-<div class="col-sm-5"><a class="btn badge badge-light" target="GXDS" style="background-color:paleturquoise" href="https://archive.org/search.php?query={string-join(for $n in $m/mods:name return ($n/mods:namePart[@type='given'])[1] || " " || ($n/mods:namePart[@type='family'])[1], ', ')}%20AND%20mediatype%3A%28texts%29 ">Find on Internet Archive</a> <button class="btn badge badge-warning" type="button" onclick="add_ref('')">Add direct link to this work</button></div>
+<div class="col-sm-5">{if (string-length($r)>0) then <a class="btn badge" href="textview.html?location={$r/ancestor::tei:TEI/@xml:id}&amp;mode=visit">TLS</a> else ()}<a class="btn badge badge-light" target="GXDS" style="background-color:paleturquoise" href="https://archive.org/search.php?query={string-join(for $n in $m/mods:name return ($n/mods:namePart[@type='given'])[1] || " " || ($n/mods:namePart[@type='family'])[1], ', ')}%20AND%20mediatype%3A%28texts%29 ">Find on Internet Archive</a> <button class="btn badge badge-warning" type="button" onclick="add_ref('')">Add direct link to this work</button></div>
 </div>
 <div class="row">
 <div class="col-sm-2"/>
@@ -351,13 +357,13 @@ let $biblio := collection($config:tls-data-root || "/bibliography")
 return
 <div><h3>Bibliography search results</h3>
 <p class="font-weight-bold">Searched for <span class="mark">{$query}</span>, found {count($qr)} entries.</p>
-<p>Please bear in mind that the search is case sensitive. It looks for entries, where the search term appears in <span class="font-weight-bold">names</span> (unfortunately, family name and first name can not be searched together), <span class="font-weight-bold">titles</span>, or <span class="font-weight-bold">notes</span>. Multiple search terms (separated by the space character) are interpreted as "OR" connected. You can also <a href="browse.html?type=biblio">browse</a> the bibliography, or <button class="btn badge badge-warning" type="button" onclick="add_ref('')">add</button> a new reference.</p>
+<p>Please bear in mind that the search is case sensitive. It looks for entries, where the search term appears in <span class="font-weight-bold">names</span> (unfortunately, family name and first name can not be searched together), <span class="font-weight-bold">titles</span>, or <span class="font-weight-bold">notes</span>. Multiple search terms (separated by the space character) are interpreted as "OR" connected. You can also <a href="browse.html?type=biblio">browse</a> the bibliography, or <button class="btn badge badge-warning" type="button" onclick="add_ref('{$textid}')">add</button> a new reference.</p>
 <ul>{
 for $q in $qr 
 let $t := lower-case(normalize-space(($q//mods:title)[1]))
 order by $t
 return
-bib:biblio-short($q, "title")
+bib:biblio-short($q, "title", $textid)
 }</ul></div>
 };
 
@@ -471,7 +477,7 @@ declare function bib:new-entry-dialog($map as map(*)){
    , $genre := if (string-length($mods//mods:genre/text()) > 0) then $mods//mods:genre/text() else "book" 
    , $name := ""
    , $def := ""
-   , $textid := $map?textid
+   , $textid := if (string-length($map?textid)>0) then $map?textid else $mods//mods:note[@type='source-reference-id']/text()
    return
    <div id="new-entry-dialog" class="modal" tabindex="-1" role="dialog" style="display: none;">
     <div class="modal-dialog modal-lg" role="document">
@@ -485,6 +491,8 @@ declare function bib:new-entry-dialog($map as map(*)){
               <div id="select-lang-group" class="form-group col-md-4">
               <input type="hidden" name="ref-key" value="{$mods//mods:note[@type='bibliographic-reference']/text()}"/>
               <input type="hidden" name="ref-usage" value="{$mods//mods:note[@type='ref-usage']/text()}"/>
+              <input type="hidden" name="inf-basis" value="{$mods//mods:note[@type='information-basis']/text()}"/>
+              <input type="hidden" name="textid" value="{$textid}"/>
                 <label for="select-lang" class="font-weight-bold">Language: </label>
                  <select class="form-control" name="select-lang">
                   {for $l in map:keys($bib:c2l)
@@ -522,7 +530,7 @@ declare function bib:new-entry-dialog($map as map(*)){
               return
              <div class="form-row" id="role-group-{$pos}">
               <div class="form-group col-md-2">
-               <small class="text-muted">Role</small>                 
+               <small class="text-muted">Role<br/>　</small>                 
                  <select class="form-control" name="select-role-{$pos}">
                   {for $l in map:keys($bib:roleterms)
                     let $r := lower-case($bib:roleterms($l))
@@ -563,11 +571,17 @@ declare function bib:new-entry-dialog($map as map(*)){
            <div class="form-row">
               <div id="input-resp-group" class="col-md-6">
                  <small class="text-muted">Title (transcribed)</small>
-                 <input name="title-latn" class="form-control"  value="{$mods/mods:titleInfo[@script='Latn']/mods:title}"></input>
+                 <input name="title-latn" class="form-control"  value="{$mods/mods:titleInfo[@script='Latn'  and @lang='chi']/mods:title}"></input>
               </div>
               <div id="input-resp-group" class="col-md-6">
                  <small class="text-muted">Title (characters)</small>
                  <input name="title-hant" class="form-control"  value="{$mods/mods:titleInfo[@script='Hant']/mods:title}"></input>
+              </div>
+           </div>     
+           <div class="form-row">
+              <div id="input-resp-group" class="col-md-6">
+                 <small class="text-muted">Title in English</small>
+                 <input name="title-eng" class="form-control"  value="{$mods/mods:titleInfo[@type='translated' and not(@lang='chi')]/mods:title}"></input>
               </div>
             </div>
             <h6  class="font-weight-bold">Details</h6>
@@ -608,6 +622,38 @@ declare function bib:new-entry-dialog($map as map(*)){
                  <input name="art-page" class="form-control" value="{$mods//mods:relatedItem/mods:extent[@unit='pages']}"></input>
               </div>
             </div>
+            {if (string-length($textid) > 0) then
+             let $xmltext := collection($config:tls-texts)//tei:TEI[@xml:id=$textid]
+            return 
+            (<h6  class="font-weight-bold">Textual source and witnesses</h6>,
+            <div id="wit-row" class="form-row">
+             {if ($xmltext//tei:sourceDesc) then 
+              <div class="col-md-4" id="src-field">
+               <small class="text-muted">Source:</small>    
+               <span >{string-join($xmltext//tei:sourceDesc//tei:title/text(), '　')}</span>
+              </div>
+             else ()}
+             {for $t at $pos in $xmltext//tei:witness 
+              let $r := $t//tei:ref[@target="#" || $uuid]
+             return
+              <div class="col-md-2" id="wit-field-{$pos}">
+               <small class="{if ($r) then 'font-weight-bold' else 'text-muted'}">Witness{$pos}:</small>    
+               <span class="{if ($r) then 'font-weight-bold' else ()}" title="{data($t/@xml:id)}">{$t/text()}</span>
+              </div>
+             }
+              <!-- <div id="new-src-div" class="col-md-4">
+               <small class="text-muted">Set this item as textual source</small>                 
+                 <input name="new-src" class="form-control" value=""></input>
+              </div> -->
+              {if (not($xmltext//tei:witness//tei:ref[@target="#" || $uuid])) then
+              <div id="new-wit-div" class="col-md-4">
+               <small class="text-muted">Add sigle for this item as witness</small>                 
+                 <input name="new-wit" class="form-control" value=""></input>
+              </div>
+              else ()
+              }
+            </div>
+            ) else ()}
             <h6  class="font-weight-bold">Topics</h6>
             <div id="topic-row" class="form-row">
              {for $t at $pos in $mt 
@@ -652,6 +698,20 @@ let $rt := for $l in map:keys($map)
 , $genre := if (string-length($map?select-genre) > 0) then $map?select-genre else "book"
 , $date := $map?pub-date
 , $ref := if (string-length($map?ref-key) > 0) then $map?ref-key else bib:make-bibref($map?fam-name-latn-1, $map?giv-name-latn-1, $date)
+, $textid := $map?textid
+, $wit := if (string-length($map?new-wit) > 0) then 
+   let $ws := collection($config:tls-texts)//tei:TEI[@xml:id=$textid]//tei:witness
+   return if ($ws//tei:ref[@target="#" || $map?uuid]) then () else
+    let $w := <witness xmlns="http://www.tei-c.org/ns/1.0" xml:id="wit-{count($ws) + 1}">{$map?new-wit}<bibl><ref target="#{$map?uuid}">{$ref}</ref></bibl></witness>
+   , $lw := tlslib:getlistwit($textid)
+    return 
+      update insert $w into $lw
+   else ()
+, $src := if(string-length($map?new-src) > 0) then
+  (: TODO set the source 
+   this would mean to replace / update the sourceDesc
+  :)
+  () else ()
 let $mods := <mods xmlns="http://www.loc.gov/mods/v3" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ID="{$map?uuid}" version="3.6" xsi:schemaLocation="http://www.loc.gov/mods/v3 http://cluster-schemas.uni-hd.de/modsCluster.xsd" resp="{$user}" modified="{current-dateTime()}">
 <language>
 <languageTerm type="text">{$bib:c2l?($lang)}</languageTerm>
@@ -663,14 +723,13 @@ let $pos := tokenize($r, "-")[last()]
 return
 <name type="personal">
 {if ($map?("fam-name-latn-"||$pos)) then
-<namePart type="given" lang="{$lang}" transliteration="chinese/ala-lc" script="Latn">{$map?("fam-name-latn-"||$pos)}</namePart> else ()}
+<namePart type="family" lang="{$lang}" transliteration="chinese/ala-lc" script="Latn">{$map?("fam-name-latn-"||$pos)}</namePart> else ()}
 {if ($map?("giv-name-latn-"||$pos)) then
-<namePart type="family" lang="{$lang}" transliteration="chinese/ala-lc" script="Latn">{$map?("giv-name-latn-"||$pos)}</namePart> else ()}
+<namePart type="given" lang="{$lang}" transliteration="chinese/ala-lc" script="Latn">{$map?("giv-name-latn-"||$pos)}</namePart> else ()}
+{if ($map?("fam-name-hant-"||$pos)) then
+<namePart type="family" lang="{$lang}" script="Hant">{$map?("fam-name-hant-"||$pos)}</namePart> else ()}
 {if ($map?("giv-name-hant-"||$pos)) then
 <namePart type="given" lang="{$lang}" script="Hant">{$map?("giv-name-hant-"||$pos)}</namePart> else ()}
-{if ($map?("fam-name-hant-"||$pos)) then
-<namePart type="family" lang="{$lang}" script="Hant">{$map?("fam-name-hant-"||$pos)}</namePart>
-else ()}
 <role>
 <roleTerm type="text">{$bib:roleterms?($map?($r))}</roleTerm>
 </role>
@@ -681,8 +740,12 @@ else ()}
 <title>{$map?title-hant}</title>
 </titleInfo> else ()}
 {if (string-length($map?title-latn) > 0) then
-<titleInfo transliteration="chinese/ala-lc" script="Latn">
+<titleInfo transliteration="chinese/ala-lc" lang="{$lang}" script="Latn">
 <title>{$map?title-latn}</title>
+</titleInfo> else ()}
+{if (string-length($map?title-eng) > 0) then
+<titleInfo lang="eng" script="Latn">
+<title>{$map?title-eng}</title>
 </titleInfo> else ()}
 {if ($genre = ("article", "chapter")) then 
 <relatedItem type="host">
@@ -708,12 +771,14 @@ else ()}
 else 
 (
 <originInfo>
-<place>
 {if (string-length($map?book-place-hant) > 0) then
-<placeTerm lang="{$lang}" type="text" script="Hant">{$map?book-place-hant}</placeTerm> else ()}
+<place>
+<placeTerm lang="{$lang}" type="text" script="Hant">{$map?book-place-hant}</placeTerm>
+</place> else ()}
 {if (string-length($map?book-place-latn) > 0) then
-<placeTerm lang="{$lang}" type="text" script="Latn">{$map?book-place-latn}</placeTerm> else ()}
-</place>
+<place>
+<placeTerm lang="{$lang}" type="text" script="Latn">{$map?book-place-latn}</placeTerm>
+</place>else ()}
 {if (string-length($map?book-pub-hant) > 0) then
 <publisher lang="{$lang}" type="text" script="Latn">{$map?book-pub-hant}</publisher> else ()}
 {if (string-length($map?book-pub-latn) > 0) then
@@ -742,7 +807,17 @@ else ()
 {if (string-length($map?ref-usage) > 0) then 
 <note type="ref-usage">{$map?ref-usage}</note>
 else ()}
+<note type="information-basis">{string-join(distinct-values(($user, tokenize($map?inf-basis, ', '))), ', ')}</note>
 </mods>
+, $oldmods := collection($config:tls-data-root||"/bibliography")//mods:mods[@ID=$map?uuid]
+, $saveold := if ($oldmods) then  
+  let $cryptfile := bib:get-mods-crypt-file()
+  , $md := (update insert attribute modified {current-dateTime()} into $oldmods,
+    update insert attribute resp {$user} into $oldmods)
+  return 
+   update insert $oldmods following $cryptfile//mods:mods[1]
+  else ()
+, $save := xmldb:store(bib:uuid2path($map?uuid), $map?uuid || ".xml", $mods)  
 return
 $mods
 };
@@ -757,4 +832,26 @@ return
 declare function bib:make-bibref($fam as xs:string, $giv as xs:string, $date as xs:string) as xs:string{
 let $refkey := $fam || " " || $giv || " " || $date
 return $refkey
+};
+
+
+declare function bib:get-mods-crypt-file(){
+  let $cm := substring(string(current-date()), 1, 7),
+  $type := "mods",
+  $doc-name := if (string-length($type) > 0 ) then $type || "-" || $cm || ".xml" else $cm || ".xml",
+  $doc-path :=  $config:tls-data-root || "/vault/crypt/" || $doc-name,
+  $doc := if (not(doc-available($doc-path))) then 
+    let $res := 
+    xmldb:store($config:tls-data-root || "/vault/crypt/" , $doc-name, 
+    <modsCollection xmlns="http://www.loc.gov/mods/v3" xml:id="del-{$type}-{$cm}-crypt"></modsCollection>
+)
+    return
+    (sm:chmod(xs:anyURI($res), "rw-rw-rw-"),
+     sm:chgrp(xs:anyURI($res), "tls-user"),
+(:     sm:chown(xs:anyURI($res), "tls"),:)
+    doc($res)
+    )
+    else
+    doc($doc-path)
+  return $doc
 };
