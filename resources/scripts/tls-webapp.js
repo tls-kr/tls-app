@@ -2409,13 +2409,106 @@ function save_textdate(textid){
 };
 
 // add new reference to bibliography
-function edit_bib(uid){
-    alert("Not yet implemented ");
+function edit_bib(uid, textid){
+  $.ajax({
+  type : "GET",
+  dataType : "html",  
+  url : "api/responder.xql?func=bib:new-entry-dialog&uuid="+uid+"&textid="+textid, 
+  success : function(resp){
+      $('#remoteDialog').html(resp);
+      $('#new-entry-dialog').modal('show');
+  },
+  error : function(resp){
+   console.log(resp)
+   alert("PROBLEM"+resp);
+  }
+
+  }); 
 };
 
-// add new reference to bibliography
+function bib_genre_change(){
+    sval = $("#select-genre").val()
+    if ((sval == "article") || (sval == "chapter")){
+       $(".article").show()
+       $(".book").hide()
+    } else {
+       $(".article").hide()
+       $(".book").show()
+    }
+}
+
+function bib_remove_line(lid){
+$("#"+lid).html('')
+};
+
+function bib_add_topic(n, lid){
+ m = n+1
+ newtopic = `<div class="col-md-3" id="topic-field-${n}">\
+               <small class="text-muted"></small>\
+               <input name="topic-${n}" class="form-control" value=""></input>\
+             </div>`
+ $("#"+lid).after(newtopic)
+ $("#new-topic").html(`<span onclick="bib_add_topic(${m}, 'topic-field-${n}')">Add topic</span>`)
+};
+
+function bib_add_new_line(n, lid){
+ m = n+1
+ newline = `<div class="form-row" id="role-group-${n}"><div class="form-group col-md-2"><small class="text-muted">Role</small><select class="form-control" name="select-role-${n}">\
+                                <option value="aut">Author</option>\
+                                <option value="cmp">Compiler</option>\
+                                <option value="com">Commentator</option>\
+                                <option value="edi">Editor</option>\
+                                <option value="trl">Translator</option></select></div>\
+                        <div class="col-md-2"><small class="text-muted">Family Name (transcribed)</small><input name="fam-name-latn-${n}" class="form-control" value=""></div>\
+                        <div class="col-md-2"><small class="text-muted">Given Name (transcribed)</small><input name="giv-name-latn-${n}" class="form-control" value=""></div>\
+                        <div class="col-md-2"><small class="text-muted">Family Name (characters)</small><input name="fam-name-hant-${n}" class="form-control" value=""></div>\
+                        <div class="col-md-2"><small class="text-muted">Given Name (characters)</small><input name="giv-name-hant-${n}" class="form-control" value=""></div>\
+                        <div class="col-md-2"><span id="rem-line-${n}" onclick="bib_remove_line('role-group-${n}')">Remove this line</span><br><span id="add-line-${n}" onclick="bib_add_new_line(${m}, 'role-group-${n}')">Add new line</span></div>\
+                        </div>`
+ $("#"+lid).after(newline)                       
+};
+
+// save bib entry in the form
+function save_entry(uuid){
+  formData = $("#new-entry-form").serialize()
+  $.ajax({
+  type : "POST",
+  url : "api/responder.xql?func=bib:save-entry&uuid="+uuid,
+  data: formData,
+  success : function(resp){
+    if (resp.startsWith("Could not")) {
+    toastr.error(resp, "漢學文典 says:");
+/*    toastr.error("Could not save translation for "+line+".", "HXWD says:");        */
+    } else {
+    toastr.info("Modification saved.", "漢學文典 says:");
+    dirty = false;
+    }
+  },
+  error : function(resp){
+  console.log(resp);
+    alert("PROBLEM: "+resp.statusText + "\n " + resp.responseText);
+  }
+  });    
+  
+};
+
+// add new reference to bibliography 
+// textid might be empty
 function add_ref(textid){
-    alert("Not yet implemented "+textid);
+  $.ajax({
+  type : "GET",
+  dataType : "html",  
+  url : "api/responder.xql?func=bib:new-entry-dialog&textid="+textid, 
+  success : function(resp){
+      $('#remoteDialog').html(resp);
+      $('#new-entry-dialog').modal('show');
+  },
+  error : function(resp){
+   console.log(resp)
+   alert("PROBLEM"+resp);
+  }
+
+  }); 
 };
 
 // add new observation template

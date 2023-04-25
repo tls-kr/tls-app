@@ -62,7 +62,10 @@ function app:page-title($node as node()*, $model as map(*)) as xs:string
  else if ($model?concept = "unknown") then
    "漢學文典"
    else
+   if (string-length($model?concept) > 0) then
    "Concept: " || $model("concept")
+   else 
+   upper-case($model?context)
 
 (:,$context := substring-before(tokenize(request:get-uri(), "/")[last()], ".html"):)
 return "TLS - " || $ts
@@ -301,15 +304,16 @@ function app:getdata($node as node()*, $model as map(*))
    session:create(),
    let $uid := request:get-parameter("uuid", "")
    , $clabel := request:get-parameter("concept", "")
+   , $context := substring-before(tokenize(request:get-uri(), "/")[last()], ".html")
    return
     if (string-length($clabel) > 0) then
-    map {"concept" : $clabel}
+    map{"concept" : $clabel, "context" : $context}
     else if (string-length($uid) > 0) then
     let $clabel := (collection($config:tls-data-root || "/concepts") | collection($config:tls-data-root || "/domain"))//tei:div[@xml:id = $uid]/tei:head/text()
     return
-    map {"concept" : $clabel}
+    map{"concept" : $clabel, "context" : $context}
     else
-    map {"concept" : "unknown"}
+    map{"concept" : "unknown", "context" : $context}
 };
 
 (: textview related functions :)
@@ -1268,16 +1272,22 @@ return
                     <li class="nav-item">
                     
                     <form action="search.html" class="form-inline my-2 my-lg-0" method="get">
-                    <input type="hidden" name="textid" value="{map:get($model, 'textid')}"/>
-                        <input id="query-inp" name="query" class="form-control mr-sm-2 chn-font" type="search" placeholder="Search" aria-label="Search" value="{if (string-length($query) > 0) then $query else ()}"/> in 
+                    <input type="hidden" name="textid" value="{request:get-parameter("textid", map:get($model, 'textid'))}"/>
+                    <input id="query-inp" name="query" class="form-control mr-sm-2 chn-font" type="search" placeholder="Search" aria-label="Search" value="{if (string-length($query) > 0) then $query else ()}"/> in 
         <select class="form-control input-sm" name="search-type">
+          {if (not($context = "bibliography")) then
           <option selected="true" value="{if ($context = "textview") then '5' else '1'}">{$config:search-map?1}</option>
+          else
+          <option value="{if ($context = "textview") then '5' else '1'}">{$config:search-map?1}</option>}
           <option value="7">{$config:search-map?7}</option>
           <option value="2">{$config:search-map?2}</option>
           <option value="3">{$config:search-map?3}</option>
         <!--<option value="11">{$config:search-map?11}</option> -->
           <option value="4">{$config:search-map?4}</option>
-          <option value="10">{$config:search-map?10}</option>
+          {if ($context = "bibliography") then
+          <option selected="true" value="10">{$config:search-map?10}</option>
+          else
+          <option value="10">{$config:search-map?10}</option>}
           <!--
           <option value="9">{$config:search-map?9}</option>
           -->
@@ -1416,7 +1426,7 @@ declare
 function app:footer($node as node()*, $model as map(*)){
             <div class="container">
                 <span id="copyright"/>
-                    <p>Copyright TLS Project 2022, licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/" title="Creative Commons Attribution-ShareAlike 4.0 International License">CC BY SA</a> license (except some translations)</p>
+                    <p>Copyright TLS Project 2023, licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/" title="Creative Commons Attribution-ShareAlike 4.0 International License">CC BY SA</a> license (except some translations)</p>
                 <p>Developed at the <strong>Center for Informatics in East-Asian Studies, Institute for Research in Humanities, Kyoto University</strong>, with support from the 
                 <strong>Dean for Research, Department of East Asian Studies</strong>, and
                 <strong>Program in East Asian Studies, Princeton University</strong>.</p>    
@@ -1761,10 +1771,11 @@ function app:syllables($node as node()*, $model as map(*), $uuid as xs:string?, 
 declare 
     %templates:wrap
     %templates:default("uuid", "")    
-function app:bibliography($node as node()*, $model as map(*), $uuid as xs:string){
+    %templates:default("textid", "")  
+function app:bibliography($node as node()*, $model as map(*), $uuid as xs:string, $textid as xs:string){
     <div class="card">
     <div class="card-header">
-    <h4 class="card-title"><a class="btn" href="browse.html?type=biblio">Bibliography</a> <button class="btn badge badge-primary ml-2" type="button" onclick="edit_bib('{$uuid}')">Edit this reference</button></h4>
+    <h4 class="card-title"><a class="btn" href="browse.html?type=biblio">Bibliography</a> <button class="btn badge badge-primary ml-2" type="button" onclick="edit_bib('{$uuid}', '{$textid}')">Edit this reference</button></h4>
     </div>
     <div class="card-text">{
     bib:display-mods($uuid)

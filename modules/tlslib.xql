@@ -16,6 +16,7 @@ import module namespace krx="http://hxwd.org/krx-utils" at "krx-utils.xql";
 import module namespace wd="http://hxwd.org/wikidata" at "wikidata.xql"; 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
+declare namespace  mods="http://www.loc.gov/mods/v3";
 
 declare namespace mf="http://kanripo.org/ns/KRX/Manifest/1.0";
 declare namespace tx="http://exist-db.org/tls";
@@ -2526,7 +2527,9 @@ return
          <div class="row">
            <div class="col-sm-1"/>
            <div class="col-sm-2"><span class="font-weight-bold float-right">References:</span></div>
-           <div class="col-sm-5"><span>{if ($loewe) then <span>{$loewe/tei:author}, in Loewe(ed), <i>Early Chinese Texts</i> (1995), p.{$loewe/tei:citedRange/text()}<br/></span> else '　'}</span>{ if (sm:is-authenticated()) then <span class="badge badge-pill badge-light"  onclick="add_ref('{$textid}')" title="Add new reference">Add reference</span> else ()}</div>    
+           <div class="col-sm-5"><span>{if ($loewe) then <span>{$loewe/tei:author}, in Loewe(ed), <i>Early Chinese Texts</i> (1995), p.{$loewe/tei:citedRange/text()}<br/></span> else '　'}</span>
+           <span>{for $r in $d//tei:witness return <span><a class="badge badge-pill badge-light" title="Show bibliography" href="bibliography.html?uuid={substring($r//tei:ref/@target, 2)}&amp;textid={$textid}"><span>{data($r/@xml:id)}:</span>{$r/text()}<br/></a></span>}</span>
+           { if (sm:is-authenticated()) then <a class="badge badge-pill badge-light"  href="search.html?query={tlslib:get-title($textid)}&amp;textid={$textid}&amp;search-type=10" title="Add new reference">Add reference to source or witness</a> else ()}</div>    
          </div>  
       </div>
 };
@@ -2990,4 +2993,16 @@ else
   else
  ()
  )
+};
+
+
+
+declare function tlslib:getlistwit($textid as xs:string){
+let $text := collection($config:tls-texts)//tei:TEI[@xml:id=$textid]
+, $lw := $text//tei:listWit
+return
+  if ($lw) then $lw else 
+    let $wl := <listWit xmlns="http://www.tei-c.org/ns/1.0"></listWit> 
+    , $uw := update insert $wl into $text//tei:sourceDesc
+  return $text//tei:listWit
 };
