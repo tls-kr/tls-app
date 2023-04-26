@@ -2631,30 +2631,24 @@ function display_named_dialog(uid, fname){
 };
 
 function save_pb(){
-  // save the tree in #chartree
-// alert("Not yet implemented")  
-  var data = $("#chartree").prop('outerHTML');
-//  console.log("data:"+data);
-  $.ajax({
-  type : "POST",
-  dataType : "html",
-  contentType: 'application/xml',
-  url : "api/responder.xql?func=save-taxchar&type="+type,
-  data: data,
-  success : function(resp){
-    if (resp.startsWith("Could not")) {
-    toastr.error(resp, "漢學文典 says:");
-/*    toastr.error("Could not save translation for "+line+".", "HXWD says:");        */
-    } else {
-    toastr.info("Modification saved.", "漢學文典 says:");
-    dirty = false;
-    }
-  },
-  error : function(resp){
-  console.log(resp);
-    alert("PROBLEM: "+resp.statusText + "\n " + resp.responseText);
-  }
-  });    
+     var line_id= $( "#swl-line-id-span" ).text();  
+     uid = line_id;
+     pos = $("#swl-query-span" ).attr("data-pos");
+     sel = $("#swl-query-span").text();
+     line = $( "#swl-line-text-span" ).text();
+     pb = $("#page-num").val();
+     wit = $("#witness option:selected").val();
+     console.log("pos:", pb, wit)
+     $.ajax({
+     type : "GET",
+     dataType : "html",  
+     url : "api/responder.xql?func=save-pb&uid=" + uid + "&pos=" + pos + "&sel=" + sel + "&line="+line+"&pb="+pb+"&wit="+wit,
+     success : function(resp){
+     toastr.info("Pagebreak saved.", "漢學文典 says:");
+     $('#remoteDialog').html();
+     $('#pb-dialog').modal('hide');
+   }
+  });
 };
 
 // display dialog for punctuation
