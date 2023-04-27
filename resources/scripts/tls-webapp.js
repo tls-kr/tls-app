@@ -2645,11 +2645,35 @@ function save_pb(){
      url : "api/responder.xql?func=save-pb&uid=" + uid + "&pos=" + pos + "&sel=" + sel + "&line="+line+"&pb="+pb+"&wit="+wit,
      success : function(resp){
      toastr.info("Pagebreak saved.", "漢學文典 says:");
-     $('#remoteDialog').html();
      $('#pb-dialog').modal('hide');
+     $('#remoteDialog').html();
    }
   });
 };
+
+function save_txc(){
+     var line_id= $( "#swl-line-id-span" ).text();  
+     uid = line_id;
+     pos = $("#swl-query-span" ).attr("data-pos");
+     sel = $("#swl-query-span").text();
+     line = $( "#swl-line-text-span" ).text();
+     // undefined at the moment.
+     lem = $("#lemma").val();
+     rdg = $("#reading").val();
+     note = $("#note").val();
+     wit = $("#witness option:selected").val();
+     $.ajax({
+     type : "GET",
+     dataType : "html",  
+     url : "api/responder.xql?func=txc:save-txc&uid=" + uid + "&pos=" + pos + "&sel=" + sel + "&line="+line+"&lem="+lem+"&wit="+wit+"&rdg="+rdg+"&note="+note,
+     success : function(resp){
+     toastr.info("Variant recorded.", "漢學文典 says:");
+     $('#edit-dialog').modal('hide');
+     $('#remoteDialog').html();
+   }
+  });
+};
+
 
 // display dialog for punctuation
 function display_punc_dialog(uid){

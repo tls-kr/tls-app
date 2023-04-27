@@ -546,6 +546,49 @@ declare function dialogs:pb-dialog($map as map(*)){
 </div>
 };
 
+declare function dialogs:edit-dialog($map as map(*)){
+ let $seg := collection($config:tls-texts-root)//tei:seg[@xml:id=$map?uid]
+ , $wl := $seg/ancestor::tei:TEI//tei:witness
+
+ return
+ <div id="edit-dialog" class="modal" tabindex="-1" role="dialog" style="display: none;">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header"><h5>Add/edit variant on line <span class="font-weight-bold">{$map?line}</span></h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" title="Close">x</button>
+            </div>
+            <div class="modal-body">
+            <div class="form row">
+            <div class="col-md-3">Lemma Text</div>
+            <div class="col-md-3">Variant Reading</div>
+            <div class="col-md-3">Witness</div>
+            </div>
+            <div class="form row">
+            <div class="col-md-3">{$map?sel}</div>
+            <div class="col-md-3"><input id="reading" class="form-control" required="true" value="{$map?sel}"/></div>
+            <div class="col-md-3"><select class="form-control" id="witness" name="witness">
+                  {for $w in $wl
+                    return
+                    <option value="{$w/@xml:id}">{$w/text()}</option>
+                   } 
+                 </select></div>
+            </div>
+            <div class="form row">
+            <div class="col-md-9"><p class="text-muted">The <b>lemma</b> carries the established text, while the <b>reading</b> has the text that is carried by the selected witness.</p></div>
+            </div>
+            <div class="form row">
+            <div class="font-weight-bold mt-2 col-md-1">Note:</div>
+            <div class="col-md-8"><textarea id="note" class="form-control"></textarea></div>
+            </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="save_txc()">Save</button>
+            </div>     
+        </div>
+    </div>
+</div>
+};
 
 declare function dialogs:punc-dialog($map as map(*)){
  let $seg := collection($config:tls-texts-root)//tei:seg[@xml:id=$map?uid]
