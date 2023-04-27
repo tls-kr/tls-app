@@ -612,6 +612,25 @@ return if (sum($res) > 0) then xed:remove-extra-lbs($root//tei:lb) else 0
 (: for KR WYG texts, there are some with paragraphs marked with 2 spaces (type B) and others with the original layout (type A). 
 We need to distinguish these types :)
 
+declare function xed:insert-node-at($node as node(), $pos as xs:integer, $insert as node()){
+  element {QName(namespace-uri($node), local-name($node))}
+      {$node/@*,
+      for $n in $node/node()
+      return
+      typeswitch($n)
+      case element(*) return $n
+      case text() return 
+      let $l := string-length(string-join($n/preceding::text() intersect $node/node()))
+      return
+      if ($l + string-length($n) >= $pos and $pos > $l) then
+      let $s := substring($n, 1, $pos - $l)
+      , $s2 := substring($n, $pos - $l + 1)
+      return ($s, $insert, $s2)
+      else $n
+      default return $n
+    }
+      
+};
 
 declare function xed:stub($map as map(*)){
 () 

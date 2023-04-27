@@ -499,7 +499,12 @@ declare function tlslib:proc-seg($node as node(), $options as map(*)){
   case element (tei:lb)  return ()
   case element (exist:match) return <mark>{$node/text()}</mark>
   case element (tei:anchor) return 
-    let $t := if (starts-with($node/@xml:id, "nkr_note_mod")) then local:cleanstring($node/ancestor::tei:TEI//tei:note[@target = "#"|| $node/@xml:id]//text()) else ()
+    let $t := if (starts-with($node/@xml:id, "nkr_note_mod")) then local:cleanstring($node/ancestor::tei:TEI//tei:note[@target = "#"|| $node/@xml:id]//text()) else
+    if ($node/@type='app' and starts-with(@xml:id, 'end-')) then 
+     let $app := $node/ancestor::tei:TEI//tei:app[@to="#"||$node/@xml:id]
+     return
+     "〔"|| $app/tei:lem/text() ||"〕："||string-join(for $r in $app/tei:rdg return $r/text() || "【" || $app/ancestor::tei:TEI//tei:witness[@xml:id=substring($r/@wit, 2)]/text() ||  "】", "，")
+    else ()
     return if ($t) then <span title="{$t}" class="text-muted"><img class="icon note-anchor"  src="{$config:circle}"/></span> else ()
   case element(tei:seg) return (if (string-length($node/@n) > 0) then data($node/@n)||"　" else (), for $n in $node/node() return tlslib:proc-seg($n, $options))
   case attribute(*) return () 
@@ -1016,7 +1021,11 @@ declare function tlslib:swl-form-dialog($context as xs:string, $model as map(*))
     {tlslib:format-button-common("bookmark_this_line()","Bookmark this location", "open-iconic-master/svg/bookmark.svg"), 
      if ($model("textid") and tlslib:has-edit-permission($model("textid"))) then 
       tlslib:format-button("display_punc_dialog('x-get-line-id')", "Edit properties of this text segment", "octicons/svg/lock.svg", "", "close", ("tls-editor", "tls-punc"))
-     else ()}</h6>
+     else (),
+      tlslib:format-button("display_named_dialog('x-get-line-id', 'pb-dialog')", "Add page break of a witness edition before selected character", "octicons/svg/milestone.svg", "", "close", ("tls-editor", "tls-punc")),
+      tlslib:format-button("display_named_dialog('x-get-line-id', 'edit-dialog')", "Add content of variant edition for selected character", "octicons/svg/note.svg", "", "close", ("tls-editor", "tls-punc"))
+      
+     }</h6>
     <h6 class="text-muted">Line: <span id="swl-line-text-span" class="ml-2 chn-font">Text of line</span>
     {tlslib:format-button-common("add_rd_here()","Add observation (regarding a text segment) starting on this line", "octicons/svg/comment.svg")}
     </h6>

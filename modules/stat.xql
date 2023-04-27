@@ -10,6 +10,7 @@ xquery version "3.1";
 
 import module namespace config="http://hxwd.org/config" at "config.xqm";
 import module namespace tlslib="http://hxwd.org/lib" at "tlslib.xql";
+import module namespace sgn="http://hxwd.org/signup" at "signup.xql";
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
@@ -166,4 +167,7 @@ return
      sm:chown(xs:anyURI($docpath), "tls"))
 };
 
-local:save-stats()
+(
+local:save-stats(),
+sgn:check-approved()
+)

@@ -2453,7 +2453,7 @@ function bib_add_topic(n, lid){
 
 function bib_add_new_line(n, lid){
  m = n+1
- newline = `<div class="form-row" id="role-group-${n}"><div class="form-group col-md-2"><small class="text-muted">Role</small><select class="form-control" name="select-role-${n}">\
+ newline = `<div class="form-row" id="role-group-${n}"><div class="form-group col-md-2"><small class="text-muted">Role<br/>　</small><select class="form-control" name="select-role-${n}">\
                                 <option value="aut">Author</option>\
                                 <option value="cmp">Compiler</option>\
                                 <option value="com">Commentator</option>\
@@ -2481,6 +2481,9 @@ function save_entry(uuid){
 /*    toastr.error("Could not save translation for "+line+".", "HXWD says:");        */
     } else {
     toastr.info("Modification saved.", "漢學文典 says:");
+    $('#new-entry-dialog').modal('hide');
+    $('#remoteDialog').html('');
+    window.location = 'bibliography.html?uuid='+uuid
     dirty = false;
     }
   },
@@ -2602,6 +2605,75 @@ function save_taxchar(type){
   }
   });    
 };
+
+// display dialog for pb
+// fname is the name of the function in dialogs, has to be the same as the ID of the remote dialog returned by that function
+function display_named_dialog(uid, fname){
+     //what an ugly kludge... repeated again!!
+     if (uid == 'x-get-line-id') {
+        var line_id= $( "#swl-line-id-span" ).text();  
+        uid = line_id
+     }
+     pos = $("#swl-query-span" ).attr("data-pos");
+     sel = $("#swl-query-span").text();
+     line = $( "#swl-line-text-span" ).text();
+     console.log("pos:", pos, sel, line)
+     $.ajax({
+     type : "GET",
+     dataType : "html",  
+     url : "api/responder.xql?func=dialogs:"+fname+"&uid=" + uid + "&pos=" + pos + "&sel=" + sel + "&line="+line,
+     success : function(resp){
+     $('#remoteDialog').html(resp);
+     $('#'+fname).modal('show');
+   }
+  });
+    
+};
+
+function save_pb(){
+     var line_id= $( "#swl-line-id-span" ).text();  
+     uid = line_id;
+     pos = $("#swl-query-span" ).attr("data-pos");
+     sel = $("#swl-query-span").text();
+     line = $( "#swl-line-text-span" ).text();
+     pb = $("#page-num").val();
+     wit = $("#witness option:selected").val();
+     console.log("pos:", pb, wit)
+     $.ajax({
+     type : "GET",
+     dataType : "html",  
+     url : "api/responder.xql?func=save-pb&uid=" + uid + "&pos=" + pos + "&sel=" + sel + "&line="+line+"&pb="+pb+"&wit="+wit,
+     success : function(resp){
+     toastr.info("Pagebreak saved.", "漢學文典 says:");
+     $('#pb-dialog').modal('hide');
+     $('#remoteDialog').html();
+   }
+  });
+};
+
+function save_txc(){
+     var line_id= $( "#swl-line-id-span" ).text();  
+     uid = line_id;
+     pos = $("#swl-query-span" ).attr("data-pos");
+     sel = $("#swl-query-span").text();
+     line = $( "#swl-line-text-span" ).text();
+     // undefined at the moment.
+     lem = $("#lemma").val();
+     rdg = $("#reading").val();
+     note = $("#note").val();
+     wit = $("#witness option:selected").val();
+     $.ajax({
+     type : "GET",
+     dataType : "html",  
+     url : "api/responder.xql?func=txc:save-txc&uid=" + uid + "&pos=" + pos + "&sel=" + sel + "&line="+line+"&lem="+lem+"&wit="+wit+"&rdg="+rdg+"&note="+note,
+     success : function(resp){
+     toastr.info("Variant recorded.", "漢學文典 says:");
+     $('#edit-dialog').modal('hide');
+     $('#remoteDialog').html();
+   }
+  });
+};
+
 
 // display dialog for punctuation
 function display_punc_dialog(uid){

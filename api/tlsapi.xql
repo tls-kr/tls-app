@@ -1924,6 +1924,13 @@ else
  <p class="font-weight-bold">No attributions found</p>
 };
 
+declare function tlsapi:save-pb($map as map(*)){
+let $seg := collection($config:tls-texts)//tei:seg[@xml:id=$map?uid]
+, $pb := <pb xmlns="http://www.tei-c.org/ns/1.0" n="{$map?pb}" ed="{$map?wit}"/>
+, $newseg := xed:insert-node-at($seg, xs:integer($map?pos), $pb)
+, $save := update replace $seg with $newseg 
+return "Success"
+};
 
 declare function tlsapi:stub($map as map(*)){
 () 
