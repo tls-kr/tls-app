@@ -602,7 +602,9 @@ declare function dialogs:edit-app-dialog($map as map(*)){
             else local:no-witness($seg/ancestor::tei:TEI/@xml:id)}
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                {if ($wl) then                
                 <button type="button" class="btn btn-primary" onclick="save_txc()">Save</button>
+                else ()}
             </div>     
         </div>
        </form>

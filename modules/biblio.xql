@@ -355,7 +355,7 @@ let $biblio := collection($config:tls-data-root || "/bibliography")
   return
   ($biblio//mods:name/mods:namePart[contains(.,$q)]/ancestor::mods:mods | $biblio//mods:title[contains(., $q)]/ancestor::mods:mods| $biblio//mods:subTitle[contains(., $q)]/ancestor::mods:mods |  $biblio//mods:note[contains(., $q)]/ancestor::mods:mods)
 return
-<div><h3>Bibliography search results</h3>
+<div><h1>Bibliography search results</h1>
 <p class="font-weight-bold">Searched for <span class="mark">{$query}</span>, found {count($qr)} entries.</p>
 <p>Please bear in mind that the search is case sensitive. It looks for entries, where the search term appears in <span class="font-weight-bold">names</span> (unfortunately, family name and first name can not be searched together), <span class="font-weight-bold">titles</span>, or <span class="font-weight-bold">notes</span>. Multiple search terms (separated by the space character) are interpreted as "OR" connected. You can also <a href="browse.html?type=biblio">browse</a> the bibliography, or <button class="btn badge badge-warning" type="button" onclick="add_ref('{$textid}')">add</button> a new reference.</p>
 <ul>{

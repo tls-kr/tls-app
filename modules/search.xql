@@ -257,6 +257,7 @@ declare
 function src:show-hits-h1($node as node()*, $map as map(*),  $type as xs:string){
 let $st :=  if (string-length($type) > 0) then map:get($config:search-map, $map?search-type) || "/" || map:get($config:lmap, $type) else map:get($config:search-map, $map?search-type)
 return
+if ($map?search-type = "10") then () else
 <h1>Searching in <strong>{$st}</strong> for <mark class="chn-font">{$map?query}</mark></h1>
 };
 
@@ -268,6 +269,8 @@ let $query := $model?query
   , $map := session:get-attribute($src:SESSION || ".types")
   , $cnt := if (string-length($type) > 0) then count(map:get($map, $type)) else count($model?hits)
 return
+(: if type = 10 do not display here :)
+if ($model?search-type = "10") then () else
 <h4>Found {$cnt} {if ($cnt = 1) then " match" else " matches"},  <span>showing {$start} to {min(($cnt, $start + $model?resno -1))}</span></h4>
 
 };
