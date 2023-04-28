@@ -499,16 +499,24 @@ declare function tlslib:proc-seg($node as node(), $options as map(*)){
   case element (tei:lb)  return ()
   case element (exist:match) return <mark>{$node/text()}</mark>
   case element (tei:anchor) return 
+    
     let $t := if (starts-with($node/@xml:id, "nkr_note_mod")) then local:cleanstring($node/ancestor::tei:TEI//tei:note[@target = "#"|| $node/@xml:id]//text()) else
-    if ($node/@type='app' and starts-with(@xml:id, 'end-')) then 
+    if ($node/@type='app' and starts-with($node/@xml:id, 'end-')) then 
      let $app := $node/ancestor::tei:TEI//tei:app[@to="#"||$node/@xml:id]
      return
-     "〔"|| $app/tei:lem/text() ||"〕："||string-join(for $r in $app/tei:rdg return $r/text() || "【" || $app/ancestor::tei:TEI//tei:witness[@xml:id=substring($r/@wit, 2)]/text() ||  "】", "，")
-    else ()
-    return if ($t) then <span title="{$t}" class="text-muted"><img class="icon note-anchor"  src="{$config:circle}"/></span> else ()
+     tlslib:format-app($app)
+    else
+    ()
+    return if ($t) then <span title="{$t}" class="text-muted"><img class="icon note-anchor" onclick="edit_app('')" src="{$config:circle}"/></span> else ()
   case element(tei:seg) return (if (string-length($node/@n) > 0) then data($node/@n)||"　" else (), for $n in $node/node() return tlslib:proc-seg($n, $options))
   case attribute(*) return () 
  default return $node    
+};
+
+(: format the app for display in the segment :)
+declare function tlslib:format-app($app as node()){
+$app//text()
+(:     "〔"|| $app/tei:lem/text() ||"〕："||string-join(for $r in $app/tei:rdg return $r/text() || "【" || $app/ancestor::tei:TEI//tei:witness[@xml:id=substring($r/@wit, 2)]/text() ||  "】", "，"):)
 };
 
 (: replace the nodes listed in $config:proc-seg-for-edit-hidden-element-names with a placeholder, c with the @n content :)
@@ -1023,7 +1031,7 @@ declare function tlslib:swl-form-dialog($context as xs:string, $model as map(*))
       tlslib:format-button("display_punc_dialog('x-get-line-id')", "Edit properties of this text segment", "octicons/svg/lock.svg", "", "close", ("tls-editor", "tls-punc"))
      else (),
       tlslib:format-button("display_named_dialog('x-get-line-id', 'pb-dialog')", "Add page break of a witness edition before selected character", "octicons/svg/milestone.svg", "", "close", ("tls-editor", "tls-punc")),
-      tlslib:format-button("display_named_dialog('x-get-line-id', 'edit-dialog')", "Add content of variant edition for selected character", "octicons/svg/note.svg", "", "close", ("tls-editor", "tls-punc"))
+      tlslib:format-button("display_named_dialog('x-get-line-id', 'edit-app-dialog')", "Add content of variant edition for selected character", "octicons/svg/note.svg", "", "close", ("tls-editor", "tls-punc"))
       
      }</h6>
     <h6 class="text-muted">Line: <span id="swl-line-text-span" class="ml-2 chn-font">Text of line</span>
@@ -2537,7 +2545,15 @@ return
            <div class="col-sm-1"/>
            <div class="col-sm-2"><span class="font-weight-bold float-right">References:</span></div>
            <div class="col-sm-5"><span>{if ($loewe) then <span>{$loewe/tei:author}, in Loewe(ed), <i>Early Chinese Texts</i> (1995), p.{$loewe/tei:citedRange/text()}<br/></span> else '　'}</span>
-           <span>{for $r in $d//tei:witness return <span><a class="badge badge-pill badge-light" title="Show bibliography" href="bibliography.html?uuid={substring($r//tei:ref/@target, 2)}&amp;textid={$textid}"><span>{data($r/@xml:id)}:</span>{$r/text()}<br/></a></span>}</span>
+           <span>{for $r in $d//tei:witness 
+           let $ref := $r//tei:ref/@target
+           return <span>{
+             if ($ref) then 
+             <a class="badge badge-pill badge-light" title="Show bibliography" href="bibliography.html?uuid={substring($r//tei:ref/@target, 2)}&amp;textid={$textid}"><span>{data($r/@xml:id)}:</span>{$r/text()}<br/></a> 
+             else 
+             <span class="badge badge-pill badge-light">{data($r/@xml:id)}:{$r/text()}<br/></span>
+             }</span>
+           }</span>
            { if (sm:is-authenticated()) then <a class="badge badge-pill badge-light"  href="search.html?query={tlslib:get-title($textid)}&amp;textid={$textid}&amp;search-type=10" title="Add new reference">Add reference to source or witness</a> else ()}</div>    
          </div>  
       </div>

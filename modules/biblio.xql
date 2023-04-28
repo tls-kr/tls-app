@@ -629,7 +629,7 @@ declare function bib:new-entry-dialog($map as map(*)){
             <div id="wit-row" class="form-row">
              {if ($xmltext//tei:sourceDesc) then 
               <div class="col-md-4" id="src-field">
-               <small class="text-muted">Source:</small>    
+               <small class="text-muted" title="The source is defined in the associated text file">Source:</small>    
                <span >{string-join($xmltext//tei:sourceDesc//tei:title/text(), '　')}</span>
               </div>
              else ()}
@@ -647,7 +647,7 @@ declare function bib:new-entry-dialog($map as map(*)){
               </div> -->
               {if (not($xmltext//tei:witness//tei:ref[@target="#" || $uuid])) then
               <div id="new-wit-div" class="col-md-4">
-               <small class="text-muted">Add sigle for this item as witness</small>                 
+               <small class="text-muted">Add sigle for this item as textual witness</small>                 
                  <input name="new-wit" class="form-control" value=""></input>
               </div>
               else ()
@@ -702,7 +702,7 @@ let $rt := for $l in map:keys($map)
 , $wit := if (string-length($map?new-wit) > 0) then 
    let $ws := collection($config:tls-texts)//tei:TEI[@xml:id=$textid]//tei:witness
    return if ($ws//tei:ref[@target="#" || $map?uuid]) then () else
-    let $w := <witness xmlns="http://www.tei-c.org/ns/1.0" xml:id="wit-{count($ws) + 1}">{$map?new-wit}<bibl><ref target="#{$map?uuid}">{$ref}</ref></bibl></witness>
+    let $w := <witness xmlns="http://www.tei-c.org/ns/1.0" xml:id="wit-{count($ws) + 1}">【{$map?new-wit}】<bibl><ref target="#{$map?uuid}">{$ref}</ref></bibl></witness>
    , $lw := tlslib:getlistwit($textid)
     return 
       update insert $w into $lw
