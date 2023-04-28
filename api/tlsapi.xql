@@ -1128,7 +1128,7 @@ return
 
 (:~
  : 2021-06-18 save-zh
- : 
+ : 2023-04-28 TODO this seems dangerous, does not take into account possible child elements of seg
 :)
 declare function tlsapi:save-zh($map as map(*)){
 let $user := sm:id()//sm:real/sm:username/text()

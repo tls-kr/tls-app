@@ -508,6 +508,7 @@ declare function dialogs:pb-dialog($map as map(*)){
             <div class="modal-header"><h5>Add pagebreak <small class="text-muted ">{$map?uid}</small></h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close" title="Close">x</button>
             </div>
+            {if ($wl) then
             <div class="modal-body">
             <div class="form row">
             <div class="col-md-3">Text line</div>
@@ -537,55 +538,74 @@ declare function dialogs:pb-dialog($map as map(*)){
             <div class="col-md-2"></div>
             </div>
             </div>
+            else
+            local:no-witness($seg/ancestor::tei:TEI/@xml:id)
+            }
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                {if ($wl) then
                 <button type="button" class="btn btn-primary" onclick="save_pb()">Save</button>
+                else ()}
             </div>     
         </div>
     </div>
 </div>
 };
 
-declare function dialogs:edit-dialog($map as map(*)){
- let $seg := collection($config:tls-texts-root)//tei:seg[@xml:id=$map?uid]
- , $wl := $seg/ancestor::tei:TEI//tei:witness
+declare function local:no-witness($textid as xs:string){
+         <div class="modal-body">
+            <h6><span class="bg-warning">Warning:</span>　<b>No textual witnesses defined</b></h6>
+            <div class="form row">
+            <div class="col-md-12 mt-2"><p>To add page information or register variants carried by specific textual witnesses, the witnesses for a text need to make known to the system.  The list of witnesses is maintained as part of the text, {tlslib:get-title($textid)} in this case.</p>
+            <p>Click on the following link to search the bibliography for textual witnesses.  If they are not yet found in the bibliography, you will be able to add a new item and then indicate this as a textual witness. </p>
+            <p><a class="badge badge-pill badge-light" title="Search bibliography" href="search.html?query={tlslib:get-title($textid)}&amp;textid={$textid}&amp;search-type=10">Search bibliography</a></p></div>
+            </div>
+         </div>
+};
 
+declare function dialogs:edit-app-dialog($map as map(*)){
+ let $app := if (string-length($map?appid) > 0) then collection($config:tls-texts-root)//tei:app[@xml:id=$map?appid] else ()
+ let $seg := if ($app) then $app/ancestor::tei:TEI//tei:seg[anchor[@xml:id = substring($app/@to, 2)]] else collection($config:tls-texts-root)//tei:seg[@xml:id=$map?uid]
+ , $wl := $seg/ancestor::tei:TEI//tei:witness
+ , $lem := if (string-length($map?sel)>0) then $map?sel else $app/tei:lem/text() 
  return
- <div id="edit-dialog" class="modal" tabindex="-1" role="dialog" style="display: none;">
+ <div id="edit-app-dialog" class="modal" tabindex="-1" role="dialog" style="display: none;">
     <div class="modal-dialog modal-lg" role="document">
+      <form id="edit-app-form">
         <div class="modal-content">
-            <div class="modal-header"><h5>Add/edit variant on line <span class="font-weight-bold">{$map?line}</span></h5>
+            <div class="modal-header"><h5>Add/edit variant on line <span class="font-weight-bold">{$seg/text()}</span></h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close" title="Close">x</button>
             </div>
+            {if ($wl) then
             <div class="modal-body">
             <div class="form row">
-            <div class="col-md-3">Lemma Text</div>
-            <div class="col-md-3">Variant Reading</div>
-            <div class="col-md-3">Witness</div>
+            <div class="col-md-3">Lemma text:</div>
+            <div class="col-md-3">{$lem}</div>
+            <div class="col-md-3"><small class="text-muted">This is shown in the main text</small></div>
             </div>
+            <h6 class="font-weight-bold">Variant readings:</h6>
+            {for $w in $wl
+            return
             <div class="form row">
-            <div class="col-md-3">{$map?sel}</div>
-            <div class="col-md-3"><input id="reading" class="form-control" required="true" value="{$map?sel}"/></div>
-            <div class="col-md-3"><select class="form-control" id="witness" name="witness">
-                  {for $w in $wl
-                    return
-                    <option value="{$w/@xml:id}">{$w/text()}</option>
-                   } 
-                 </select></div>
+            <div class="col-md-3">Witness {$w/text()}</div>
+            <div class="col-md-3"><input id="rdg---{$w/@xml:id}" name="rdg---{$w/@xml:id}" class="form-control" required="true" value="{if ($app[tei:rdg[@wit="#"||$w/@xml:id]]) then $app[tei:rdg[@wit="#"||$w/@xml:id]]/text() else $map?sel}"/></div>
             </div>
+            }
             <div class="form row">
-            <div class="col-md-9"><p class="text-muted">The <b>lemma</b> carries the established text, while the <b>reading</b> has the text that is carried by the selected witness.</p></div>
+            <div class="col-md-9"><p class="text-muted">The <b>lemma</b> carries the established text, while the various witnesses register the <b>reading</b> of the specific witness. If a witness has the same reading as the lemma, it should be left that way here (these will be ignored when saving the apparatus).</p></div>
             </div>
             <div class="form row">
             <div class="font-weight-bold mt-2 col-md-1">Note:</div>
-            <div class="col-md-8"><textarea id="note" class="form-control"></textarea></div>
+            <div class="col-md-8"><textarea id="note" name="note" class="form-control"></textarea></div>
             </div>
             </div>
+            else local:no-witness($seg/ancestor::tei:TEI/@xml:id)}
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
                 <button type="button" class="btn btn-primary" onclick="save_txc()">Save</button>
             </div>     
         </div>
+       </form>
     </div>
 </div>
 };

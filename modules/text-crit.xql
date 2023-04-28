@@ -60,14 +60,36 @@ return $res
 declare function txc:save-txc($map as map(*)){
 let $seg := collection($config:tls-texts)//tei:seg[@xml:id=$map?uid]
 , $tei := $seg/ancestor::tei:TEI
+, $rd-keys := for $l in map:keys($map) 
+   where starts-with($l, "rdg---")
+   order by $l
+   return $l
+, $ck := (for $r in $rd-keys return $map?($r), $map?sel)
 , $bid := $seg/@xml:id || "-" || $map?pos
 , $fid := "beg-" || $bid 
 , $tid := "end-" || $bid
+, $appid := "app-" || $bid
 , $ns1 := xed:insert-node-at($seg, xs:integer($map?pos), <anchor type="app" xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$fid}"/>)
 , $ns2 := xed:insert-node-at($ns1, xs:integer($map?pos)+string-length($map?sel), <anchor type="app" xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$tid}"/>)
-, $app := <app xmlns="http://www.tei-c.org/ns/1.0" from="#{$fid}" to="#{$tid}"><lem>{$map?sel}</lem><rdg wit="#{$map?wit}">{$map?rdg}</rdg>{
-if (string-length($map?note)>0) then <note>{$map?note}</note> else () 
-}</app>
-, $res := (txc:check-txc-elements($seg), update replace $seg with $ns2, update insert $app into $tei//tei:listApp)
+, $app := <app xml:id="{$appid}" xmlns="http://www.tei-c.org/ns/1.0" from="#{$fid}" to="#{$tid}"><lem>{$map?sel}</lem>
+  {for $r in $rd-keys  
+   let $rdg := $map?($r)
+   , $wit := substring-after($r, "rdg---")
+   where not ($rdg = $map?sel)
+   return
+  <rdg wit="#{$wit}">{$rdg}</rdg>}
+  {if (string-length($map?note)>0) then <note>{$map?note}</note> else () }
+  </app>
+, $res := 
+   if (count(distinct-values($ck)) = 1) then "Error: No variant given!" 
+   else 
+   (txc:check-txc-elements($seg), 
+    if ($tei//tei:app[@xml:id=$appid]) then 
+     update replace $tei//tei:app[@xml:id=$appid] with $app
+     else 
+    ( 
+    update replace $seg with $ns2, update insert $app into $tei//tei:listApp, 
+  "Success.")
+  )
 return $res
 };
