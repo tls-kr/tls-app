@@ -559,13 +559,27 @@ declare function tlslib:get-rating($txtid){
     return 
     if ($ratings[@id=$txtid]) then $ratings[@id=$txtid]/@rating else 0
 };
+
 (:~
 : Lookup the title for a given textid
 : @param $txtid
 :)
 declare function tlslib:get-title($txtid as xs:string){
-let $title := collection($config:tls-texts-root) //tei:TEI[@xml:id=$txtid]//tei:titleStmt/tei:title/text()
+let $title := string-join(collection($config:tls-texts-root) //tei:TEI[@xml:id=$txtid]//tei:titleStmt/tei:title/text(), "・")
 return $title
+};
+
+(:~
+: Extract the textid from the location.
+: Special treatment for legacy files from CHANT
+: @param $location
+:)
+
+declare function tlslib:get-textid ($location as xs:string){
+(:if (starts-with($location, "KR")) then:)
+if (1) then 
+ tokenize($map?location, "_")[1]
+else ()
 };
 
 (: -- Search / retrieval related functions -- :)
