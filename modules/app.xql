@@ -71,6 +71,29 @@ function app:page-title($node as node()*, $model as map(*)) as xs:string
 return "TLS - " || $ts
 };
 
+(: display the taxonomy in HTML format :)
+
+declare function app:doc-taxonomy(){
+let $tax := doc($config:tls-texts||"/meta/taxonomy.xml")
+return
+<div>
+    <h3>The genre categories</h3>
+    <p>At different locations in the system, lists of results can be sliced into smaller result sets using certain pre-defined categories. For lack of better name, they will be called 'genre categories' here.  </p>
+    <p>Currently, the following top-level genres are defined:
+    <ul>{for $t in $tax//tei:taxonomy/tei:category return
+    <li><a href="#{$t/@xml:id}--head"><span class="md2">{$t/tei:catDesc/text()}</span></a>　(<small class="md-2 text-muted">{data($t/@xml:id)}</small>)</li>
+    }</ul>
+    </p>
+    <h3>Full view of the defined genre categories</h3>
+    <div>
+    <p>The internal codes are given in parentheses.</p>
+    {for $t in $tax//tei:taxonomy/tei:category 
+     let $cat := $t/@xml:id
+     return
+       src:facets-html($t, map{}, $cat, "")}
+    </div>
+</div>
+};
 
 (:~
 : Display the documentation. This is called from documentation.html
@@ -83,6 +106,7 @@ switch($section)
  case "overview" return doc(concat($config:app-root, "/documentation/overview.html"))
  case "team" return doc(concat($config:app-root, "/documentation/team.html"))
  case "manual" return doc(concat($config:app-root, "/documentation/manual.html"))
+ case "taxonomy" return app:doc-taxonomy()
  default return (
  doc(concat($config:app-root, "/documentation/manual.html"))
  )
@@ -378,7 +402,7 @@ function app:textview($node as node()*, $model as map(*), $location as xs:string
      else
       let $firstdiv := 
          if ($first = 'true') then 
-            (collection($config:tls-texts-root)//tei:TEI[@xml:id=$location]//tei:body/tei:div)[1]
+            collection($config:tls-texts-root)//tei:TEI[@xml:id=$location]//tei:body/tei:div[1]
          else
             let $user := sm:id()//sm:real/sm:username/text()
             , $visit := (for $v in collection($config:tls-user-root || "/" || $user)//tei:list[@type="visits"]/tei:item

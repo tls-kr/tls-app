@@ -600,6 +600,7 @@ declare function tlslib:navbar-doc(){
                                 <a class="dropdown-item" href="documentation.html?section=team">Advisory Board</a>
                                 <div class="dropdown-divider"/>
                                 <a class="dropdown-item" href="documentation.html?section=manual">About this website</a>
+                                <a class="dropdown-item" href="documentation.html?section=taxonomy">Genre categories</a>
                                 {if ("tls-user" = sm:id()//sm:group) then 
                                 <a class="dropdown-item" href="changes.html">Recent changes</a>
                                 else ()}
@@ -2439,6 +2440,7 @@ declare function tlslib:guguolin($qc){
 
 declare function tlslib:search-top-menu($search-type, $query, $txtmatchcount, $title, $trmatch, $textid, $qc, $count, $mode) {
   switch($search-type)
+(:  case "8":)
   case "5" return
        (<a class="btn badge badge-light" href="search.html?query={$query}&amp;start=1&amp;search-type=1&amp;textid={$textid}&amp;mode={$mode}">Click here to display all  matches</a>,<br/>)
   case "8" return
