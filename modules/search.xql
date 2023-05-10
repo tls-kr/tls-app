@@ -348,6 +348,35 @@ declare function src:facets-sum-n($n, $map){
   default return $n
 };
 
+(: sum of characters on the same level :)
+declare function src:lev-sum($node){
+let $p := $node/parent::tei:category
+, $cn := $p/tei:category
+, $s := sum(for $t in $cn return 
+    if ($t/@sum) then xs:int($t/@sum)
+    else if ($t/@n) then xs:int($t/@n) 
+    else 0)
+   return $s
+};
+
+declare function src:facets-ratio($n){
+  typeswitch ($n)
+  case element(tei:category) return
+   let $sum := src:lev-sum($n)
+   , $this := if ($n/@sum) then xs:int($n/@sum)
+    else if ($n/@n) then xs:int($n/@n) 
+    else 0
+   , $cur-ratio := if ($this > 0 and $sum > 0) then $this div $sum else ()
+   return
+    element {QName(namespace-uri($n),local-name($n))} {
+    $n/@* except $n/@res-ratio,
+    if ($cur-ratio and $n/@ratio) then attribute res-ratio {$cur-ratio div xs:float($n/@ratio)} else () ,
+    for $nn in $n/node() return src:facets-ratio($nn)}
+  case element(*)
+   return $n
+  default return $n
+};
+
 declare function src:facets-prune($n){
   typeswitch ($n)
   case element(tei:category) return
@@ -387,10 +416,12 @@ declare function src:facets-html($node, $map, $baseid, $url){
 declare function src:facets-html-node($n, $baseid, $url){
    <li id="{$baseid}---{$n/@xml:id}">
    {if (string-length($url) > 0) then 
-   <a href="{$url}&amp;genre={$baseid}&amp;cat={$n/@xml:id}">{$n/tei:catDesc/text()}
-   {if ($n/@sum) then <span>{data($n/@sum)}</span> else ()}
-   {if ($n/@n) then <span>{data($n/@n)}</span> else ()}
-   </a>
+   <span>
+   <a title="Click here to filter on this category" class="mr-2 ml-2" href="{$url}&amp;genre={$baseid}&amp;cat={$n/@xml:id}">{$n/tei:catDesc/text()}</a>
+   {if ($n/@sum) then <span title="Aggregate over this and lower levels" class="badge badge-primary">{data($n/@sum)}</span> else ()}
+   {if ($n/@n) then <span title="Count on this level only" class="badge badge-secondary">{data($n/@n)}</span> else ()}
+   {if ($n/@res-ratio) then <span title="Ratio of this result towards the expected result" class="badge badge-secondary">{data($n/@res-ratio)}</span> else ()}
+   </span>
    else 
    <span><span class="md2">{$n/tei:catDesc/text()}</span>　(<small class="md-2 text-muted">{data($n/@xml:id)}</small>)</span> }
    {if ($n/tei:category) then 
@@ -415,9 +446,10 @@ for $g in $genres
 let $map := src:facets-map($model?hits, $g)
 , $tax := doc($config:tls-texts||"/meta/taxonomy.xml")//tei:category[@xml:id=$g]
 , $tree :=  src:facets-add-n($tax, $map) => src:facets-sum-n($map)   => src:facets-prune()
+, $tree2 := src:facets-ratio($tree)
 return
 <p>
-{src:facets-html($tree, $map, $g, $url )}
+{src:facets-html($tree2, $map, $g, $url )}
 </p>
 }
 </div>
