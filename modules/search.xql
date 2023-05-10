@@ -294,6 +294,8 @@ declare function src:facets-get-metadata($hit, $field){
                 let $res := for $t in $header//tei:textClass/tei:catRef[@scheme="#"||$field]/@target return substring($t, 2)
                 return
                 if (string-length(string-join($res)) > 0) then $res else "notav"
+            case "extent" return
+                $header//tei:extent/tei:measure[@unit="char"]/@quantity
             case "genre" return ()
             default return ()
 };
@@ -368,7 +370,8 @@ declare function src:facets-html($node, $map, $baseid, $url){
   case element(tei:category) return 
     src:facets-html-node($n, $baseid, $url)
   case element(tei:catDesc) return 
-    <h3 id="{$baseid}--head">{$n/text()}</h3>
+    (<span class="anchor" id="{$baseid}--head"></span>,
+    <h3 >{$n/text()}</h3>)
   default return $n
   }
   {if ($map?notav) then 
