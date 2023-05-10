@@ -60,6 +60,7 @@ return $res
 declare function txc:save-txc($map as map(*)){
 let $seg := collection($config:tls-texts)//tei:seg[@xml:id=$map?uid]
 , $tei := $seg/ancestor::tei:TEI
+, $user := sm:id()//sm:real/sm:username/text()
 , $rd-keys := for $l in map:keys($map) 
    where starts-with($l, "rdg---")
    order by $l
@@ -71,7 +72,7 @@ let $seg := collection($config:tls-texts)//tei:seg[@xml:id=$map?uid]
 , $appid := "app-" || $bid
 , $ns1 := xed:insert-node-at($seg, xs:integer($map?pos), <anchor type="app" xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$fid}"/>)
 , $ns2 := xed:insert-node-at($ns1, xs:integer($map?pos)+string-length($map?sel), <anchor type="app" xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$tid}"/>)
-, $app := <app xml:id="{$appid}" xmlns="http://www.tei-c.org/ns/1.0" from="#{$fid}" to="#{$tid}"><lem>{$map?sel}</lem>
+, $app := <app resp="#{$user}" modified="{current-dateTime()}" xml:id="{$appid}" xmlns="http://www.tei-c.org/ns/1.0" from="#{$fid}" to="#{$tid}"><lem>{$map?sel}</lem>
   {for $r in $rd-keys  
    let $rdg := $map?($r)
    , $wit := substring-after($r, "rdg---")

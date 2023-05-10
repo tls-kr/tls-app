@@ -1515,7 +1515,7 @@ else ()
 declare function tlsapi:quick-search($map as map(*)){
 let $hits := 
       if ($map?target = 'texts') then
-            src:ngram-query($map?query, $map?mode, $map?search-type, $map?textid)
+            src:ngram-query($map?query, $map?mode, $map?search-type, $map?textid, $map?genre, $map?cat)
       else if ($map?target = 'wikidata') then 
             wd:search($map)
       else ()

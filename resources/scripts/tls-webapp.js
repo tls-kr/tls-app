@@ -20,8 +20,7 @@ $(function() {
        "check_callback" :  true 
        },
      "plugins" : ["dnd", "contextmenu" ]
-     }
-    );
+     });
     }
 } finally {}    
     set_keyup ();

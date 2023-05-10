@@ -31,6 +31,13 @@
   font-family: 'Microsoft YaHei', 'SimSun', 'Songti TC' , 'WenQuanYi', 'Noto Sans TC', sans;    
 }
 
+span.anchor {
+    margin-top: -54px; /* height of nav, in this case 54px */
+    display: block;
+    height: 54px; /* height of nav, in this case 54px */
+    visibility: hidden;
+    position: relative;
+}
 
 @media (min-width: 767px) {
   #header {
