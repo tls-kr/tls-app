@@ -37,6 +37,8 @@ declare variable $src:search-titles := "7";
 declare variable $src:search-tabulated := "8";
 declare variable $src:search-advanced := "9";
 declare variable $src:search-bib := "10";
+declare variable $src:search-notes := "11";
+declare variable $src:textlist := "12";
 
 (: search related functions :)
 (:~
@@ -71,10 +73,12 @@ function src:query($node as node()*, $model as map(*), $query as xs:string?, $mo
        src:advanced-search($query, $mode)
      case $src:search-bib return
        bib:biblio-search($query, $mode, $textid)
+     case $src:textlist return
+       src:textlist($genre, $cat)
      default return "Unknown search type"
     let $store := session:set-attribute($src:SESSION, $hits)
     return
-    map{"hits" : $hits, "query" : $query, "mode" : $mode, "search-type" : $search-type, "textid" : $textid, "resno" : 50}
+    map{"hits" : $hits, "query" : $query, "mode" : $mode, "search-type" : $search-type, "textid" : $textid, "resno" : 50, "cat" : $cat}
 };
 
 declare function src:do-query($queryStr as xs:string?, $mode as xs:string?)
@@ -260,6 +264,9 @@ function src:show-hits-h1($node as node()*, $map as map(*),  $type as xs:string)
 let $st :=  if (string-length($type) > 0) then map:get($config:search-map, $map?search-type) || "/" || map:get($config:lmap, $type) else map:get($config:search-map, $map?search-type)
 return
 if ($map?search-type = "10") then () else
+ if ($map?search-type = "12") then 
+<h1>Catalog list {if (string-length($map?cat) > 0) then "excerpt for subcategory " || src:cat-title($map?cat) else ()} ({count($map?hits)} items)</h1>
+ else
 <h1>Searching in <strong>{$st}</strong> for <mark class="chn-font">{$map?query}</mark></h1>
 };
 
@@ -272,7 +279,7 @@ let $query := $model?query
   , $cnt := if (string-length($type) > 0) then count(map:get($map, $type)) else count($model?hits)
 return
 (: if type = 10 do not display here :)
-if ($model?search-type = "10") then () else
+if ($model?search-type = ("10", "12")) then () else
 <h4>Found {$cnt} {if ($cnt = 1) then " match" else " matches"},  <span>showing {$start} to {min(($cnt, $start + $model?resno -1))}</span></h4>
 
 };
@@ -280,9 +287,10 @@ if ($model?search-type = "10") then () else
 (: for a $hit, we find the value associated with the requested genre :)
  
 declare function src:facets-get-metadata($hit, $field){
-    let $header := $hit/ancestor::tei:TEI/tei:teiHeader
+    let $header := $hit/ancestor-or-self::tei:TEI/tei:teiHeader
     return
         switch ($field)
+            case "textid" return $hit/ancestor-or-self::tei:TEI/@xml:id
             case "title" return 
                 string-join((
                     $header//tei:msDesc/tei:head, $header//tei:titleStmt/tei:title[@type = 'main'],
@@ -377,6 +385,25 @@ declare function src:facets-ratio($n){
   default return $n
 };
 
+declare function src:facets-ratio-other($n){
+  typeswitch ($n)
+  case element(tei:category) return
+   let $sum := src:lev-sum($n)
+   , $this := if ($n/@char-sum) then xs:int($n/@char-sum)
+    else if ($n/@chars) then xs:int($n/@chars) 
+    else 0
+   return
+    element {QName(namespace-uri($n),local-name($n))} {
+    $n/@* except $n/@ratio,
+    if ($this > 0 and $sum > 0) then attribute ratio {$this div $sum} else () ,
+    for $nn in $n/node() return src:facets-ratio($nn)}
+  case element(*)
+   return $n
+  default return $n
+};
+
+
+
 declare function src:facets-prune($n){
   typeswitch ($n)
   case element(tei:category) return
@@ -420,7 +447,19 @@ declare function src:facets-html-node($n, $baseid, $url){
    <a title="Click here to filter on this category" class="mr-2 ml-2" href="{$url}&amp;genre={$baseid}&amp;cat={$n/@xml:id}">{$n/tei:catDesc/text()}</a>
    {if ($n/@sum) then <span title="Aggregate over this and lower levels" class="badge badge-primary">{data($n/@sum)}</span> else ()}
    {if ($n/@n) then <span title="Count on this level only" class="badge badge-secondary">{data($n/@n)}</span> else ()}
-   {if ($n/@res-ratio) then <span title="Ratio of this result towards the expected result" class="badge badge-secondary">{data($n/@res-ratio)}</span> else ()}
+   {if ($n/@res-ratio) then (<span>　</span>,
+     let $r := round(xs:float($n/@res-ratio))
+     , $f := format-number($r, "##.##")
+     return
+     if ($r > 1.2) then
+       <span title="This result is larger than expected" class="badge badge-danger">{$f}</span>
+     else 
+      if ($r < 0.8) then 
+      <span title="This result is smaller than expected" class="badge badge-success">{$f}</span>
+      else
+      <span title="This result is in the expected range" class="badge badge-lignt">{$f}</span>)
+   else () 
+   }
    </span>
    else 
    <span><span class="md2">{$n/tei:catDesc/text()}</span>　(<small class="md-2 text-muted">{data($n/@xml:id)}</small>)</span> }
@@ -431,6 +470,10 @@ declare function src:facets-html-node($n, $baseid, $url){
    }</li>
 };
 
+declare function src:cat-title($cat){
+doc($config:tls-texts||"/meta/taxonomy.xml")//tei:category[@xml:id=$cat]/tei:catDesc/text()
+};
+
 declare function src:facets($node as node()*, $model as map(*), $query as xs:string?, $mode as xs:string?, $search-type as xs:string?, $textid as xs:string?){
  let $genres := ("tls-dates", "kr-categories")
  (: query=國語&start=1&search-type=1&textid=KR2o0001&mode=# :)
@@ -438,21 +481,34 @@ declare function src:facets($node as node()*, $model as map(*), $query as xs:str
   , $utextid := if (string-length($textid) > 0) then "&amp;textid="||$textid else ""
  , $url := "search.html?query="||$query||"&amp;search-type="||$search-type || $umode || $utextid 
  return
-<div>
-<h1>Facets</h1>
-<p></p>
 <div>{
-for $g in $genres
-let $map := src:facets-map($model?hits, $g)
-, $tax := doc($config:tls-texts||"/meta/taxonomy.xml")//tei:category[@xml:id=$g]
-, $tree :=  src:facets-add-n($tax, $map) => src:facets-sum-n($map)   => src:facets-prune()
-, $tree2 := src:facets-ratio($tree)
-return
-<p>
-{src:facets-html($tree2, $map, $g, $url )}
-</p>
-}
-</div>
+        switch ($search-type)
+           case ($src:textlist) return 
+            let $hits := collection($config:tls-texts-root)//tei:TEI
+            , $g := "kr-categories"
+            , $map := src:facets-map($hits, $g)
+            , $tax := doc($config:tls-texts||"/meta/taxonomy.xml")//tei:category[@xml:id=$g]
+            , $tree :=  src:facets-add-n($tax, $map) => src:facets-sum-n($map) 
+            return
+              <p>
+                {src:facets-html($tree, $map, $g, $url )}
+              </p>
+          
+           default return
+           <div>
+            <h1>Facets</h1>
+            <p></p>{
+            for $g in $genres
+            let $map := src:facets-map($model?hits, $g)
+            , $tax := doc($config:tls-texts||"/meta/taxonomy.xml")//tei:category[@xml:id=$g]
+            , $tree :=  src:facets-add-n($tax, $map) => src:facets-sum-n($map) => src:facets-prune()
+            , $tree2 := src:facets-ratio($tree)
+            return
+            <p>
+            {src:facets-html($tree2, $map, $g, $url )}
+            </p>
+           }</div>
+        }   
 </div>
 };
 
@@ -553,6 +609,27 @@ let $query := $model?query
      return 
      try {
      src:show-text-results(map{"p" : $p, "nav": $nav, "hits": $hits, "start" : $start, "resno" : $resno, "q1" : $q1, "query": $query, "search-type" : $search-type }) } catch * {()}
+    case $src:textlist return 
+     for $h in $model?hits
+       let $title := src:facets-get-metadata($h, "title")
+       , $textid := src:facets-get-metadata($h, "textid")
+       , $grp := subsequence(src:facets-get-metadata($h, "kr-categories"), 1, 1)
+       group by $grp
+       order by $grp
+       return 
+        for $g in $grp
+        order by $g
+        return 
+         (<ul>{$g}<span class="md-2 chn-font"><mark>{src:cat-title($g)}</mark></span>
+         {
+         for $t at $pos in $title 
+         order by $textid[$pos]
+         return
+         
+          <li><span class="badge badge-light"><a href="textview.html?location={$textid[$pos]}">{data($textid[$pos])}</a></span><span class="md-2 font-weight-bold chn-font">{$t}</span></li>
+        }
+        </ul>
+        )
     case $src:search-field return
      src:show-field-results(map{"hits": $model?hits, "map":$map, "query" : $query, "search-type" : $search-type, "type" : $type, "start" : $start, "resno" : $resno})
     case $src:search-dic return
@@ -662,6 +739,12 @@ declare function src:show-tab-results($map as map(*)){
     <li><a href="search.html?query={$map?query}&amp;start=1&amp;search-type=5&amp;textid={$loc}&amp;mode={$map?mode}">{data($loc[1])}　{$tit[1]} </a>　{sum($hcnt)} match(es)</li>
     }
     </ul></div>
+};
+
+declare function src:textlist($genre as xs:string?, $cat as xs:string?){
+let $hit-res := collection($config:tls-texts-root)//tei:TEI//tei:body
+return
+ if (string-length($cat) > 0) then src:facets-filter-hits($hit-res, $genre, $cat) else $hit-res 
 };
 
 declare function src:show-title-results ($map as map(*)){
