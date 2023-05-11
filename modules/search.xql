@@ -462,7 +462,10 @@ declare function src:facets-html-node($n, $baseid, $url){
    }
    </span>
    else 
-   <span><span class="md2">{$n/tei:catDesc/text()}</span>　(<small class="md-2 text-muted">{data($n/@xml:id)}</small>)</span> }
+   (<span><span class="md2">{$n/tei:catDesc/text()}</span>　(<small class="md-2 text-muted">{data($n/@xml:id)}</small>)</span>
+(:   ,if (string-length($n/@sum) > 0) then <p>{data($n/@sum)}</p> else ():)
+   )
+   }
    {if ($n/tei:category) then 
     <ul>{for $c in $n/tei:category
     return src:facets-html-node($c, $baseid, $url)}</ul>

@@ -1667,12 +1667,20 @@ else ()}
 }</ul>
 };
 
+declare function tlsapi:save-textcat($map as map(*)){
+    let $head := collection($config:tls-texts-root)//tei:TEI[@xml:id=$map?textid]
+    return
+    if (string-length($map?textcat)>0) then tlslib:checkCat($head, "kr-categories", $map?textcat) else ()
+};
+
 declare function tlsapi:save-textdate($map as map(*)){
 let $user := sm:id()//sm:real/sm:username/text()
    ,$dates := if (exists(doc("/db/users/" || $user || "/textdates.xml")//date)) then 
       doc("/db/users/" || $user || "/textdates.xml")//data else 
       doc($config:tls-texts-meta  || "/textdates.xml")//data
     ,$node := $dates[@corresp="#" || $map?textid]
+    ,$head := collection($config:tls-texts-root)//tei:TEI[@xml:id=$map?textid]
+    ,$savecat := if (string-length($map?datecat)>0) then tlslib:checkCat($head, "tls-dates", $map?datecat) else ()
     ,$na := if (string-length($map?na) > 0) then $map?na else $map?nb
     ,$pr := if ($map?prose ne "　") then $map?prose else if($na eq $map?nb) then $na else $map?nb || " to " || $na
     ,$nh := if (string-length($map?src) > 0) then <span id="textdate-note" class="text-muted"> {$map?src}</span> else ()

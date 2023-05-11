@@ -388,6 +388,8 @@ declare
 function app:textview($node as node()*, $model as map(*), $location as xs:string?, $mode as xs:string?, $prec as xs:int?, $foll as xs:int?, $first as xs:string)
 {
     let $dataroot := $config:tls-data-root
+    , $user := sm:id()//sm:real/sm:username/text()
+    , $usercoll := collection($config:tls-user-root || "/" || $user)
     return
     (session:create(),
     if (string-length($location) > 0) then
@@ -404,8 +406,10 @@ function app:textview($node as node()*, $model as map(*), $location as xs:string
          if ($first = 'true') then 
             collection($config:tls-texts-root)//tei:TEI[@xml:id=$location]//tei:body/tei:div[1]
          else
-            let $user := sm:id()//sm:real/sm:username/text()
-            , $visit := (for $v in collection($config:tls-user-root || "/" || $user)//tei:list[@type="visits"]/tei:item
+            let $rec := $usercoll//tei:list[@type='visit']/tei:item[@xml:id=$location]
+            let $visit := if ($rec) then substring($rec/@target, 2) else
+              (: 2023-05-11 -- changed to new way to record visits, will phase the following out after a while :)
+              (for $v in collection($config:tls-user-root || "/" || $user)//tei:list[@type="visits"]/tei:item
                let $date := xs:dateTime($v/@modified)
                ,$target := substring($v/tei:ref/@target, 2)
                order by $date descending

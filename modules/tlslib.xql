@@ -1440,30 +1440,81 @@ else ()}
 (: ~
  : on visiting a page, record the visit in the history.xml file
 :)
+
+(: for a $hit, we find the value associated with the requested genre :)
  
+declare function tlslib:get-metadata($hit, $field){
+    let $header := $hit/ancestor-or-self::tei:TEI/tei:teiHeader
+    return
+        switch ($field)
+            case "textid" return $hit/ancestor-or-self::tei:TEI/@xml:id
+            case "title" return 
+                string-join((
+                    $header//tei:msDesc/tei:head, $header//tei:titleStmt/tei:title[@type = 'main'],
+                    $header//tei:titleStmt/tei:title
+                ), " - ")
+            case "tls-dates"
+            case "kr-categories"
+            case "tls-regions" return 
+                let $res := for $t in $header//tei:textClass/tei:catRef[@scheme="#"||$field]/@target return substring($t, 2)
+                return
+                if (string-length(string-join($res)) > 0) then $res else "notav"
+            case "extent" return
+                data($header//tei:extent/tei:measure[@unit="char"]/@quantity)
+            case "genre" return ()
+            default return ()
+};
+
+declare function tlslib:cat-title($cat){
+string-join(doc($config:tls-texts||"/meta/taxonomy.xml")//tei:category[@xml:id=$cat]/tei:catDesc/text(), ' - ')
+};
+
+
+declare function tlslib:checkCat($node as node(), $scheme as xs:string, $catid as xs:string){
+    let $catref := <catRef xmlns="http://www.tei-c.org/ns/1.0" scheme="#{$scheme}" target="#{$catid}"/>
+    , $tc := <textClass xmlns="http://www.tei-c.org/ns/1.0">{$catref}</textClass>
+    , $header := $node/ancestor-or-self::tei:TEI/tei:teiHeader
+    return
+    if ($header//tei:profileDesc) then
+        if ($header//tei:catRef[@target="#"||$catid]) then () else
+            if ($header//tei:textClass) then
+                update insert $catref into $header//tei:textClass
+            else
+                update insert $tc into $header//tei:profileDesc
+    else 
+        let $node := <profileDesc xmlns="http://www.tei-c.org/ns/1.0">{$tc}</profileDesc>
+        return
+            update insert $node following $header//tei:fileDesc 
+};
+
+
 declare function tlslib:record-visit($targetseg as node()){
 let $user := sm:id()//sm:real/sm:username/text(),
 $groups := sm:get-user-groups($user),
-$cm := substring(string(current-date()), 1, 7),
-$doc := if ("guest" = $groups) then () else tlslib:get-visit-file($cm),
-$date := current-dateTime(),
-$item := <item xmlns="http://www.tei-c.org/ns/1.0" modified="{current-dateTime()}"><ref target="#{$targetseg/@xml:id}">{$targetseg/text()}</ref></item>
+$doc := if ("guest" = $groups) then () else tlslib:get-visit-file(),
+$date := current-dateTime()
+, $textid := tlslib:get-metadata($targetseg, "textid")
+, $ex := $doc//tei:item[@xml:id=$textid]
+, $item := <item xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$textid}" modified="{current-dateTime()}"><ref target="#{$targetseg/@xml:id}">{$targetseg/text()}</ref></item>
 return 
-if ($doc) then
-update insert $item  into $doc//tei:list[@xml:id="vis-" || $cm || "-start"]
-else ()
+if ($ex) then 
+  update replace $ex with $item
+else
+  if ($doc) then
+     update insert $item  into $doc//tei:list[@xml:id="recent-start"]
+  else ()
 };
 
-declare function tlslib:get-visit-file($cm as xs:string){
+declare function tlslib:get-visit-file(){
   let $user := sm:id()//sm:real/sm:username/text(),
-  $doc-path := $config:tls-user-root|| $user || "/visits-" || $cm || ".xml",
+  $doc-path := $config:tls-user-root|| $user || "/recent.xml",
   $doc := if (not(doc-available($doc-path))) then 
-    doc(xmldb:store($config:tls-user-root|| $user,  "visits-" || $cm || ".xml",
-<TEI xmlns="http://www.tei-c.org/ns/1.0" xml:id="vis-{$user}-{$cm}">
+    doc(xmldb:store($config:tls-user-root|| $user,  "recent.xml",
+<TEI xmlns="http://www.tei-c.org/ns/1.0" xml:id="vis-{$user}">
   <teiHeader>
       <fileDesc>
          <titleStmt>
-            <title>Visited pages for month {$cm}</title>
+            <title>Visited texts for {$user}</title>
          </titleStmt>
          <publicationStmt>
             <ab>published electronically as part of the TLS project at https://hxwd.org</ab>
@@ -1479,7 +1530,7 @@ declare function tlslib:get-visit-file($cm as xs:string){
   <text>
       <body>
       <div><head>Visited pages</head>
-      <list type="visits" xml:id="vis-{$cm}-start"></list>
+      <list type="visits" xml:id="recent-start"></list>
       </div>
       </body>
   </text>
@@ -2511,7 +2562,9 @@ declare function tlslib:get-obs-node($type as xs:string){
 declare function tlslib:textinfo($textid){
 let   $user := sm:id()//sm:real/sm:username/text(),
       $d := collection($config:tls-texts-root)//tei:TEI[@xml:id=$textid],
-      $charcount := string-length(normalize-space($d//tei:text)),
+      $cat := tlslib:get-metadata($d, "kr-categories"),
+      $datecat := tlslib:get-metadata($d, "tls-dates"),
+      $charcount := tlslib:get-metadata($d, "extent"),
       $dates := if (exists(doc("/db/users/" || $user || "/textdates.xml")//date)) then 
       doc("/db/users/" || $user || "/textdates.xml")//data else 
       doc($config:tls-texts-meta  || "/textdates.xml")//data,
@@ -2526,8 +2579,14 @@ return
          </div>  
          <div class="row">
            <div class="col-sm-1"/>
+           <div class="col-sm-2"><span class="font-weight-bold float-right">Catalog category:</span></div>
+           <div class="col-sm-5"><span class="sm" id="text-cat" data-text-cat="{$cat}">{tlslib:cat-title($cat)}</span>
+           {if (sm:is-authenticated()) then <span class="badge badge-pill badge-light" onclick="edit_textcat('{$textid}')">Edit category</span> else ()} </div>　
+         </div>  
+         <div class="row">
+           <div class="col-sm-1"/>
            <div class="col-sm-2"><span class="font-weight-bold float-right">Dates:</span></div>
-           <div class="col-sm-5">{
+           <div class="col-sm-5"><span class="sm badge badge-pill" id="date-cat" data-date-cat="{$datecat}">{tlslib:cat-title($datecat)}</span>　{
            if ($date) then 
             (<span id="textdate-outer"><span id="textdate" data-not-before="{$date/@notbefore}" data-not-after="{$date/@notafter}">{$date/text()}<span id="textdate-note" class="text-muted">{$date/note/text()}</span></span></span>,
             if (sm:is-authenticated()) then <span class="badge badge-pill badge-light" onclick="edit_textdate('{$textid}')">Edit date</span> else 
