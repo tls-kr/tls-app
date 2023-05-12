@@ -380,6 +380,8 @@ declare function dialogs:new-syn-dialog($para as map(*)){
 };
 
 declare function dialogs:edit-textdate($para as map(*)){
+let $cat := doc($config:tls-texts-meta||"/taxonomy.xml")//tei:category[@xml:id="tls-dates"]//tei:category 
+return
 <div id="edit-textdate-dialog" class="modal" tabindex="-1" role="dialog" style="display: none;">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
@@ -388,7 +390,18 @@ declare function dialogs:edit-textdate($para as map(*)){
             </div>
             <div class="modal-body">
             <h6 class="font-weight-bold">{$para?textid}: {tlslib:get-title($para?textid)}</h6>
-                <small class="text-muted">A text date consists of the (1) lower (<span class="font-weight-bold">not-before</span>) and (2) upper limits (<span class="font-weight-bold">not-after</span>) as well as (3) a human readable form. (1) and (2) should be positive integers for AD years and negative integers for BC years.</small>
+                <small class="text-muted">A text date consists of the (1) lower (<span class="font-weight-bold">not-before</span>) and (2) upper limits (<span class="font-weight-bold">not-after</span>) as well as (3) a human readable form. (1) and (2) should be positive integers for AD years and negative integers for BC years.  <br/>In addition, we associate the text with a date-category in the <a href="documentation.html?section=taxonomy#tls-dates--head">date taxonomy</a>.</small>
+                <div id="input-cat-group">
+                    <label for="select-date-cat"><strong>Date category:</strong> </label>
+                <select id="select-date-cat" class="form-control">{for $c in $cat 
+                order by $c/@xml:id descending
+                return 
+                if (string-length($para?datecat) > 0 and $para?datecat = $c/@xml:id) then 
+                <option value="{$c/@xml:id}" selected="true">{$c/tei:catDesc/text()}</option>
+                else
+                <option value="{$c/@xml:id}">{$c/tei:catDesc/text()}</option>
+                }</select>
+                </div>
                 <div id="input-nb-group">
                     <label for="input-nb"><strong>(1) lower limit (not-before)</strong> </label>
                     <input id="input-nb" class="form-control" value="{if ($para?nb ne "undefined") then $para?nb else ()}"/>
@@ -415,6 +428,47 @@ declare function dialogs:edit-textdate($para as map(*)){
      </div>
 </div>
 };
+
+declare function dialogs:edit-textcat($para as map(*)){
+let $cat := doc($config:tls-texts-meta||"/taxonomy.xml")//tei:category[@xml:id="kr-categories"]//tei:category 
+, $textcat := tokenize($para?textcat)
+return
+<div id="edit-textcat-dialog" class="modal" tabindex="-1" role="dialog" style="display: none;">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header"><h5>Category for this text</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" title="Close">x</button>
+            </div>
+            <div class="modal-body">
+            <h6 class="font-weight-bold">{$para?textid}: {tlslib:get-title($para?textid)}</h6>
+                <small class="text-muted">Position in the classified catalog</small>
+                <div id="input-cat-group">
+                    <label for="input-nb"><strong>Catalog category:</strong> </label>
+                <select id="select-kr-cat" class="form-control" multiple="true">{for $c in $cat 
+                order by $c/@xml:id ascending
+                return 
+                if ($c/@xml:id = $textcat) then 
+                <option value="{$c/@xml:id}" selected="true">{$c/tei:catDesc/text()}</option>
+                else
+                <option value="{$c/@xml:id}">{$c/tei:catDesc/text()}</option>}</select>
+                </div>
+                <!--
+                <div id="input-src-group">
+                    <label for="input-src"><strong>Note</strong> </label>
+                    <textarea id="input-src" class="form-control">{if ($para?src ne "undefined") then $para?src else ()}</textarea>
+                </div>
+               -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="save_textcat('{$para?textid}')">Save</button>
+           </div>
+         </div>
+     </div>
+</div>
+};
+
+
 
 declare function dialogs:dialog-stub(){
 <div id="dialog-stub" class="modal" tabindex="-1" role="dialog" style="display: none;">

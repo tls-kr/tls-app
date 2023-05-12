@@ -19,6 +19,17 @@ import module namespace tlsapi="http://hxwd.org/tlsapi" at "/db/apps/tls-app/api
 import module namespace config="http://hxwd.org/config" at "/db/apps/tls-app/modules/config.xqm";
 import module namespace src="http://hxwd.org/search" at "/db/apps/tls-app/modules/search.xql"; 
 
+(: sum of characters on the same level :)
+declare function tax:lev-sum($node){
+let $p := $node/parent::tei:category
+, $cn := $p/tei:category
+, $s := sum(for $t in $cn return 
+    if ($t/@char-sum) then xs:int($t/@char-sum)
+    else if ($t/@chars) then xs:int($t/@chars) 
+    else 0)
+   return $s
+};
+
 declare function tax:extent-map(){
     map:merge(
     for $h in collection($config:tls-texts-root)//tei:TEI//tei:body
@@ -62,6 +73,24 @@ declare function tax:facets-sum-chars($n, $map){
   default return $n
 };
 
+declare function tax:facets-ratio($n){
+  typeswitch ($n)
+  case element(tei:category) return
+   let $sum := tax:lev-sum($n)
+   , $this := if ($n/@char-sum) then xs:int($n/@char-sum)
+    else if ($n/@chars) then xs:int($n/@chars) 
+    else 0
+   return
+    element {QName(namespace-uri($n),local-name($n))} {
+    $n/@* except $n/@ratio,
+    if ($this > 0 and $sum > 0) then attribute ratio {$this div $sum} else () ,
+    for $nn in $n/node() return tax:facets-ratio($nn)}
+  case element(*)
+   return $n
+  default return $n
+};
+
+
 declare function tax:update-taxonomy(){
 let $g := "kr-categories"
 let $tax := doc($config:tls-texts-meta||"/taxonomy.xml")//tei:category[@xml:id=$g]
@@ -70,6 +99,7 @@ let $tax := doc($config:tls-texts-meta||"/taxonomy.xml")//tei:category[@xml:id=$
 , $hits := collection($config:tls-texts-root)//tei:TEI//tei:body
 , $tmap := src:facets-map($hits, $g)
 , $tree2 :=  src:facets-add-n($tree, $tmap) => src:facets-sum-n($tmap)  
+, $tree3 := tax:facets-ratio($tree2)
 return 
-  update replace $tax with $tree2
+  update replace $tax with $tree3
 };

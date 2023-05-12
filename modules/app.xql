@@ -388,6 +388,8 @@ declare
 function app:textview($node as node()*, $model as map(*), $location as xs:string?, $mode as xs:string?, $prec as xs:int?, $foll as xs:int?, $first as xs:string)
 {
     let $dataroot := $config:tls-data-root
+    , $user := sm:id()//sm:real/sm:username/text()
+    , $usercoll := collection($config:tls-user-root || "/" || $user)
     return
     (session:create(),
     if (string-length($location) > 0) then
@@ -404,8 +406,10 @@ function app:textview($node as node()*, $model as map(*), $location as xs:string
          if ($first = 'true') then 
             collection($config:tls-texts-root)//tei:TEI[@xml:id=$location]//tei:body/tei:div[1]
          else
-            let $user := sm:id()//sm:real/sm:username/text()
-            , $visit := (for $v in collection($config:tls-user-root || "/" || $user)//tei:list[@type="visits"]/tei:item
+            let $rec := $usercoll//tei:list[@type='visit']/tei:item[@xml:id=$location]
+            let $visit := if ($rec) then substring($rec/@target, 2) else
+              (: 2023-05-11 -- changed to new way to record visits, will phase the following out after a while :)
+              (for $v in collection($config:tls-user-root || "/" || $user)//tei:list[@type="visits"]/tei:item
                let $date := xs:dateTime($v/@modified)
                ,$target := substring($v/tei:ref/@target, 2)
                order by $date descending
@@ -429,7 +433,7 @@ function app:textview($node as node()*, $model as map(*), $location as xs:string
     )
 };
 
-
+(: 2023-05-12 - now using search.html?query=&search-type=12 , this will be phased out.  :) 
 declare function app:textlist(){
 (: this is also quite expensive, need to cache... :)
     let $titles := map:merge(for $t in collection(concat($config:tls-texts-root, '/tls'))//tei:titleStmt/tei:title
@@ -1270,7 +1274,7 @@ return
                                 Browse
                             </a>
                             <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-                                <a class="dropdown-item" href="textlist.html">Texts</a>
+                                <a class="dropdown-item" href="search.html?search-type=12">Texts</a>
                                 <a class="dropdown-item" href="browse.html?type=concept">Concepts</a>
                                 <a class="dropdown-item" href="browse.html?type=taxchar">Characters</a>
                                 <a class="dropdown-item" href="browse.html?type=taxword">Words</a>
@@ -1517,6 +1521,7 @@ declare
     %templates:wrap
 function app:stats($node as node()*, $model as map(*)){
 let $user := sm:id()//sm:real/sm:username/text()
+  , $r := tlslib:recent-texts-list(10)
   , $d := for $d1 in collection($config:tls-data-root||"/statistics/")//div[@type="statistics"]
    let $m := xs:dateTime($d1/@modified)
    order by $m descending
@@ -1529,6 +1534,11 @@ https://api.github.com/repos/tls-kr/tls-app/issues?labels=need+discussion
             <span class="text-danger">This website is under development. {if ($user = "guest") then () else <a class="font-weight-bold" href="https://join.slack.com/t/tls-7al8577/shared_invite/zt-1h6hfirdt-8EdFCAxsQalvCIdIs3OK6w">Click here to access the feedback channel</a>}</span>
         </p>,
         <p>Problems and suggestions can be reported and discussed also on <a href="https://github.com/tls-kr/tls-app/issues">GitHub Issues</a></p>,
+        if ($r) then <div>
+        <h3>Welcome back!</h3>
+        <p>Here are some texts you recently looked at:</p>
+        <ul>{for $l in $r return $l}</ul>
+        </div> else (),
 <div>
 <h3>Overview of the content of the database (last updated: {format-dateTime(xs:dateTime(data($d[1]/@modified)), "[MNn] [D], [Y]", "en", (), ())})</h3>
 {$d[1]//table[@id='stat-overview']}

@@ -37,6 +37,8 @@ declare variable $src:search-titles := "7";
 declare variable $src:search-tabulated := "8";
 declare variable $src:search-advanced := "9";
 declare variable $src:search-bib := "10";
+declare variable $src:search-notes := "11";
+declare variable $src:textlist := "12";
 
 (: search related functions :)
 (:~
@@ -71,10 +73,12 @@ function src:query($node as node()*, $model as map(*), $query as xs:string?, $mo
        src:advanced-search($query, $mode)
      case $src:search-bib return
        bib:biblio-search($query, $mode, $textid)
+     case $src:textlist return
+       src:textlist($genre, $cat)
      default return "Unknown search type"
     let $store := session:set-attribute($src:SESSION, $hits)
     return
-    map{"hits" : $hits, "query" : $query, "mode" : $mode, "search-type" : $search-type, "textid" : $textid, "resno" : 50}
+    map{"hits" : $hits, "query" : $query, "mode" : $mode, "search-type" : $search-type, "textid" : $textid, "resno" : 50, "cat" : $cat}
 };
 
 declare function src:do-query($queryStr as xs:string?, $mode as xs:string?)
@@ -259,7 +263,15 @@ declare
 function src:show-hits-h1($node as node()*, $map as map(*),  $type as xs:string){
 let $st :=  if (string-length($type) > 0) then map:get($config:search-map, $map?search-type) || "/" || map:get($config:lmap, $type) else map:get($config:search-map, $map?search-type)
 return
-if ($map?search-type = "10") then () else
+if ($map?search-type = $src:search-bib ) then () else
+ if ($map?search-type = $src:textlist) then
+   let $count := count($map?hits)
+   return 
+   if($count >0) then
+    <h1>Catalog  {if (string-length($map?cat) > 0) then "excerpt for subcategory " || tlslib:cat-title($map?cat) else ()}
+    <span>({$count} items)</span> </h1>
+   else src:textlist-doc()
+ else
 <h1>Searching in <strong>{$st}</strong> for <mark class="chn-font">{$map?query}</mark></h1>
 };
 
@@ -272,7 +284,7 @@ let $query := $model?query
   , $cnt := if (string-length($type) > 0) then count(map:get($map, $type)) else count($model?hits)
 return
 (: if type = 10 do not display here :)
-if ($model?search-type = "10") then () else
+if ($model?search-type = ("10", "12")) then () else
 <h4>Found {$cnt} {if ($cnt = 1) then " match" else " matches"},  <span>showing {$start} to {min(($cnt, $start + $model?resno -1))}</span></h4>
 
 };
@@ -280,9 +292,10 @@ if ($model?search-type = "10") then () else
 (: for a $hit, we find the value associated with the requested genre :)
  
 declare function src:facets-get-metadata($hit, $field){
-    let $header := $hit/ancestor::tei:TEI/tei:teiHeader
+    let $header := $hit/ancestor-or-self::tei:TEI/tei:teiHeader
     return
         switch ($field)
+            case "textid" return $hit/ancestor-or-self::tei:TEI/@xml:id
             case "title" return 
                 string-join((
                     $header//tei:msDesc/tei:head, $header//tei:titleStmt/tei:title[@type = 'main'],
@@ -348,6 +361,54 @@ declare function src:facets-sum-n($n, $map){
   default return $n
 };
 
+(: sum of characters on the same level :)
+declare function src:lev-sum($node){
+let $p := $node/parent::tei:category
+, $cn := $p/tei:category
+, $s := sum(for $t in $cn return 
+    if ($t/@sum) then xs:int($t/@sum)
+    else if ($t/@n) then xs:int($t/@n) 
+    else 0)
+   return $s
+};
+
+declare function src:facets-ratio($n){
+  typeswitch ($n)
+  case element(tei:category) return
+   let $sum := src:lev-sum($n)
+   , $this := if ($n/@sum) then xs:int($n/@sum)
+    else if ($n/@n) then xs:int($n/@n) 
+    else 0
+   , $cur-ratio := if ($this > 0 and $sum > 0) then $this div $sum else ()
+   return
+    element {QName(namespace-uri($n),local-name($n))} {
+    $n/@* except $n/@res-ratio,
+    if ($cur-ratio and $n/@ratio) then attribute res-ratio {$cur-ratio div xs:float($n/@ratio)} else () ,
+    for $nn in $n/node() return src:facets-ratio($nn)}
+  case element(*)
+   return $n
+  default return $n
+};
+
+declare function src:facets-ratio-other($n){
+  typeswitch ($n)
+  case element(tei:category) return
+   let $sum := src:lev-sum($n)
+   , $this := if ($n/@char-sum) then xs:int($n/@char-sum)
+    else if ($n/@chars) then xs:int($n/@chars) 
+    else 0
+   return
+    element {QName(namespace-uri($n),local-name($n))} {
+    $n/@* except $n/@ratio,
+    if ($this > 0 and $sum > 0) then attribute ratio {$this div $sum} else () ,
+    for $nn in $n/node() return src:facets-ratio($nn)}
+  case element(*)
+   return $n
+  default return $n
+};
+
+
+
 declare function src:facets-prune($n){
   typeswitch ($n)
   case element(tei:category) return
@@ -387,17 +448,38 @@ declare function src:facets-html($node, $map, $baseid, $url){
 declare function src:facets-html-node($n, $baseid, $url){
    <li id="{$baseid}---{$n/@xml:id}">
    {if (string-length($url) > 0) then 
-   <a href="{$url}&amp;genre={$baseid}&amp;cat={$n/@xml:id}">{$n/tei:catDesc/text()}
-   {if ($n/@sum) then <span>{data($n/@sum)}</span> else ()}
-   {if ($n/@n) then <span>{data($n/@n)}</span> else ()}
-   </a>
+   <span>
+   <a title="Click here to filter on this category" class="mr-2 ml-2" href="{$url}&amp;genre={$baseid}&amp;cat={$n/@xml:id}">{$n/tei:catDesc/text()}</a>
+   {if ($n/@sum) then <span title="Aggregate over this and lower levels" class="badge badge-primary">{data($n/@sum)}</span> else ()}
+   {if ($n/@n) then <span title="Count on this level only" class="badge badge-secondary">{data($n/@n)}</span> else ()}
+   {if ($n/@res-ratio) then (<span>　</span>,
+     let $r := round(xs:float($n/@res-ratio))
+     , $f := format-number($r, "##.##")
+     return
+     if ($r > 1.2) then
+       <span title="This result is larger than expected" class="badge badge-danger">{$f}</span>
+     else 
+      if ($r < 0.8) then 
+      <span title="This result is smaller than expected" class="badge badge-success">{$f}</span>
+      else
+      <span title="This result is in the expected range" class="badge badge-lignt">{$f}</span>)
+   else () 
+   }
+   </span>
    else 
-   <span><span class="md2">{$n/tei:catDesc/text()}</span>　(<small class="md-2 text-muted">{data($n/@xml:id)}</small>)</span> }
+   (<span><span class="md2">{$n/tei:catDesc/text()}</span>　(<small class="md-2 text-muted">{data($n/@xml:id)}</small>)</span>
+(:   ,if (string-length($n/@sum) > 0) then <p>{data($n/@sum)}</p> else ():)
+   )
+   }
    {if ($n/tei:category) then 
     <ul>{for $c in $n/tei:category
     return src:facets-html-node($c, $baseid, $url)}</ul>
     else ()
    }</li>
+};
+
+declare function src:catx-title($cat){
+doc($config:tls-texts||"/meta/taxonomy.xml")//tei:category[@xml:id=$cat]/tei:catDesc/text()
 };
 
 declare function src:facets($node as node()*, $model as map(*), $query as xs:string?, $mode as xs:string?, $search-type as xs:string?, $textid as xs:string?){
@@ -407,21 +489,42 @@ declare function src:facets($node as node()*, $model as map(*), $query as xs:str
   , $utextid := if (string-length($textid) > 0) then "&amp;textid="||$textid else ""
  , $url := "search.html?query="||$query||"&amp;search-type="||$search-type || $umode || $utextid 
  return
-<div>
-<h1>Facets</h1>
-<p></p>
-<div>{
-for $g in $genres
-let $map := src:facets-map($model?hits, $g)
-, $tax := doc($config:tls-texts||"/meta/taxonomy.xml")//tei:category[@xml:id=$g]
-, $tree :=  src:facets-add-n($tax, $map) => src:facets-sum-n($map)   => src:facets-prune()
-return
-<p>
-{src:facets-html($tree, $map, $g, $url )}
-</p>
-}
-</div>
-</div>
+        switch ($search-type)
+           case $src:textlist return 
+            let $hits := collection($config:tls-texts-root)//tei:TEI
+            , $g := "kr-categories"
+            , $map := src:facets-map($hits, $g)
+            , $tax := doc($config:tls-texts||"/meta/taxonomy.xml")//tei:category[@xml:id=$g]
+            , $tree :=  src:facets-add-n($tax, $map) => src:facets-sum-n($map) 
+            return
+            <div class="col-md-3">
+              <h1>TLS Text list</h1>
+              <p>There are currently <mark>{count($hits)}</mark> texts available. <br/>Please click on the links in the list below to browse the titles or search for titles in the search box.</p>
+              <p>
+                {src:facets-html($tree, $map, $g, $url )}
+              </p>
+            </div>   
+           case $src:search-texts 
+           case $src:search-one-text
+           case $src:search-tr-lines
+           case $src:search-tabulated return 
+           <div  class="col-md-3">
+            <h1>Facets</h1>
+            <p></p>{
+            for $g in $genres
+            let $map := src:facets-map($model?hits, $g)
+            , $tax := doc($config:tls-texts||"/meta/taxonomy.xml")//tei:category[@xml:id=$g]
+            , $tree :=  src:facets-add-n($tax, $map) => src:facets-sum-n($map) => src:facets-prune()
+            , $tree2 := src:facets-ratio($tree)
+            return
+            <p>
+            {src:facets-html($tree2, $map, $g, $url )}
+            </p>
+           }</div>
+         default return 
+         <div class="col-md-1">
+         </div>
+        
 };
 
 (: apply the filter to the result set 
@@ -471,7 +574,7 @@ declare
 function src:show-hits($node as node()*, $model as map(*), $start as xs:int, $type as xs:string, $mode as xs:string, $search-type as xs:string, $textid as xs:string?, $genre as xs:string?, $cat as xs:string?)
 {
 let $query := $model?query
-    ,$iskanji := tlslib:iskanji($query) 
+    ,$iskanji := if (string-length($query)>0) then tlslib:iskanji($query) else ()
     ,$title := if (string-length($textid) > 0) then collection($config:tls-texts-root)//tei:TEI[@xml:id=$textid]//tei:titleStmt/tei:title/text() else ()
     (: no of results to display :)
     ,$resno := $model?resno
@@ -521,6 +624,27 @@ let $query := $model?query
      return 
      try {
      src:show-text-results(map{"p" : $p, "nav": $nav, "hits": $hits, "start" : $start, "resno" : $resno, "q1" : $q1, "query": $query, "search-type" : $search-type }) } catch * {()}
+    case $src:textlist return 
+     for $h in $model?hits
+       let $title := src:facets-get-metadata($h, "title")
+       , $textid := src:facets-get-metadata($h, "textid")
+       , $grp := subsequence(src:facets-get-metadata($h, "kr-categories"), 1, 1)
+       group by $grp
+       order by $grp
+       return 
+        for $g in $grp
+        order by $g
+        return 
+         (<ul><span class="md-2 chn-font"><mark>{tlslib:cat-title($g)}</mark></span>
+         {
+         for $t at $pos in $title 
+         order by $textid[$pos]
+         return
+         
+          <li><span class="badge badge-light"><a href="textview.html?location={$textid[$pos]}">{data($textid[$pos])}</a></span><span class="md-2 font-weight-bold chn-font">{$t}</span></li>
+        }
+        </ul>
+        )
     case $src:search-field return
      src:show-field-results(map{"hits": $model?hits, "map":$map, "query" : $query, "search-type" : $search-type, "type" : $type, "start" : $start, "resno" : $resno})
     case $src:search-dic return
@@ -632,6 +756,12 @@ declare function src:show-tab-results($map as map(*)){
     </ul></div>
 };
 
+declare function src:textlist($genre as xs:string?, $cat as xs:string?){
+let $hit-res := collection($config:tls-texts-root)//tei:TEI//tei:body
+return
+ if (string-length($cat) > 0) then src:facets-filter-hits($hit-res, $genre, $cat) else ()
+};
+
 declare function src:show-title-results ($map as map(*)){
     <div><h2>Existing texts in TLS:</h2>
     <ul>{
@@ -728,7 +858,65 @@ declare function src:get-kwic($node as element(), $config as element(config), $l
   </tr>
 };
 
+declare function src:textlist-doc(){
+   <div>
+     <h1>TLS Text list</h1>
+     <p>This page allows you to browse the contents of the TLS and discover what texts are available.  The texts are basically classified into the four traditional bibliographic categories.       However, the Daoist and Buddhist texts, which are usually part of the <i>KR3 子部</i> in the traditional classification are treated as top level categories, bringing for a total of six top level categories, as shown in Table 1.
+     </p>
+<table id="orgca5db22" border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+<caption class="t-above"><span class="table-number">Table 1:</span> The six top categories (as in the <a href="https://kanripo.org">Kanseki Repository</a>)</caption>
 
+<colgroup>
+<col  class="org-left" />
+
+<col  class="org-left" />
+
+<col  class="org-left" />
+</colgroup>
+<tbody>
+<tr>
+<td class="org-left">KR1</td>
+<td class="org-left">經部 <i>Jing bu</i></td>
+<td class="org-left">Confucian Classics (incl. music, dictionaries and elementary learning)</td>
+</tr>
+
+<tr>
+<td class="org-left">KR2</td>
+<td class="org-left">史部 <i>Shi bu</i></td>
+<td class="org-left">Historiography and politics</td>
+</tr>
+
+<tr>
+<td class="org-left">KR3</td>
+<td class="org-left">子部 <i>Zi bu</i></td>
+<td class="org-left">Masters, philosophers and treatises</td>
+</tr>
+
+<tr>
+<td class="org-left">KR4</td>
+<td class="org-left">集部 <i>Ji bu</i></td>
+<td class="org-left">Anthologies (Poetry and Collected Writings)</td>
+</tr>
+
+<tr>
+<td class="org-left">KR5</td>
+<td class="org-left">道部 <i>Dao bu</i></td>
+<td class="org-left">Daoist texts</td>
+</tr>
+
+<tr>
+<td class="org-left">KR6</td>
+<td class="org-left">佛部 <i>Fo bu</i></td>
+<td class="org-left">Buddhist texts</td>
+</tr>
+</tbody>
+</table>
+     <p>In the classified catalog, the four categories have been folded into one (artificial) top level, in order to allow direct comparison to the Daoist and Buddhist texts.</p>
+<h3>Usage</h3>
+     <p>To access the classified catalog, <b>click on any of the links</b> shown to the left. </p>
+     <p>If you are looking for a specific title, use the <b>search function in the upper right corner</b> and select "titles" from the dropdown selector.</p>
+   </div>
+};
 
 
 declare function src:advanced-search($query, $mode){

@@ -2368,16 +2368,59 @@ function save_updated_gloss(uuid, ch, pos){
 
   }); 
 }
+
+// add or edit text cat
+function edit_textcat(textid){
+  var src = $('#text-cat-note').text();
+  var textcat = $('#text-cat').attr('data-text-cat');
+  //var datecat = $("#select-text-cat").val();
+  $.ajax({
+  type : "GET",
+  dataType : "html",  
+  url : "api/responder.xql?func=dialogs:edit-textcat&textid="+textid+"&textcat="+textcat, 
+  success : function(resp){
+  $('#remoteDialog').html(resp);
+  $('#edit-textcat-dialog').modal('show');
+  }
+  });
+    
+};
+function save_textcat(textid){
+  var nb = $('#input-nb').val();
+  var na = $('#input-na').val();
+  var prose = $('#input-prose').val();
+  var src = $('#input-src').val();
+  var textcat = $("#select-text-cat").val();
+  $.ajax({
+  type : "GET",
+  dataType : "html",  
+  url : "api/responder.xql?func=save-textcat&textid="+textid+"&textcat="+textcat, 
+  success : function(resp){
+      $('#edit-textcat-dialog').modal('hide');
+      toastr.info("Text category has been saved.", "HXWD says:");  
+      $('#textcat-outer').html(resp);
+  },
+  error : function(resp){
+   console.log(resp)
+  alert("PROBLEM"+resp);
+  }
+
+  }); 
+};
+
+
+
 // add or edit text date
 function edit_textdate(textid){
   var nb = $('#textdate').attr('data-not-before');
   var na = $('#textdate').attr('data-not-after');  
   var prose = document.getElementById( "textdate" ).childNodes[0].nodeValue;
   var src = $('#textdate-note').text();
+  var datecat = $('#date-cat').attr('data-date-cat');
   $.ajax({
   type : "GET",
   dataType : "html",  
-  url : "api/responder.xql?func=dialogs:edit-textdate&textid=" + textid+"&nb="+nb+"&na="+na+"&prose="+prose+"&src="+src, 
+  url : "api/responder.xql?func=dialogs:edit-textdate&textid=" + textid+"&datecat="+datecat+"&nb="+nb+"&na="+na+"&prose="+prose+"&src="+src, 
   success : function(resp){
   $('#remoteDialog').html(resp);
   $('#edit-textdate-dialog').modal('show');
@@ -2385,15 +2428,17 @@ function edit_textdate(textid){
   });
     
 };
+
 function save_textdate(textid){
   var nb = $('#input-nb').val();
   var na = $('#input-na').val();
   var prose = $('#input-prose').val();
   var src = $('#input-src').val();
+  var datecat = $("#select-date-cat").val();
   $.ajax({
   type : "GET",
   dataType : "html",  
-  url : "api/responder.xql?func=save-textdate&textid="+textid+"&nb="+nb+"&na="+na+"&prose="+prose+"&src="+src, 
+  url : "api/responder.xql?func=save-textdate&textid="+textid+"&datecat="+datecat+"&nb="+nb+"&na="+na+"&prose="+prose+"&src="+src, 
   success : function(resp){
       $('#edit-textdate-dialog').modal('hide');
       toastr.info("Textdate has been saved.", "HXWD says:");  
