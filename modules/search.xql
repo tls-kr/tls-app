@@ -265,7 +265,7 @@ let $st :=  if (string-length($type) > 0) then map:get($config:search-map, $map?
 return
 if ($map?search-type = "10") then () else
  if ($map?search-type = "12") then 
-<h1>Catalog list {if (string-length($map?cat) > 0) then "excerpt for subcategory " || src:cat-title($map?cat) else ()} ({count($map?hits)} items)</h1>
+<h1>Catalog list {if (string-length($map?cat) > 0) then "excerpt for subcategory " || tlslib:cat-title($map?cat) else ()} ({count($map?hits)} items)</h1>
  else
 <h1>Searching in <strong>{$st}</strong> for <mark class="chn-font">{$map?query}</mark></h1>
 };
@@ -473,7 +473,7 @@ declare function src:facets-html-node($n, $baseid, $url){
    }</li>
 };
 
-declare function src:cat-title($cat){
+declare function src:catx-title($cat){
 doc($config:tls-texts||"/meta/taxonomy.xml")//tei:category[@xml:id=$cat]/tei:catDesc/text()
 };
 
@@ -484,21 +484,24 @@ declare function src:facets($node as node()*, $model as map(*), $query as xs:str
   , $utextid := if (string-length($textid) > 0) then "&amp;textid="||$textid else ""
  , $url := "search.html?query="||$query||"&amp;search-type="||$search-type || $umode || $utextid 
  return
-<div>{
         switch ($search-type)
-           case ($src:textlist) return 
+           case $src:textlist return 
             let $hits := collection($config:tls-texts-root)//tei:TEI
             , $g := "kr-categories"
             , $map := src:facets-map($hits, $g)
             , $tax := doc($config:tls-texts||"/meta/taxonomy.xml")//tei:category[@xml:id=$g]
             , $tree :=  src:facets-add-n($tax, $map) => src:facets-sum-n($map) 
             return
+            <div class="col-md-3">
               <p>
                 {src:facets-html($tree, $map, $g, $url )}
               </p>
-          
-           default return
-           <div>
+            </div>   
+           case $src:search-texts 
+           case $src:search-one-text
+           case $src:search-tr-lines
+           case $src:search-tabulated return 
+           <div  class="col-md-3">
             <h1>Facets</h1>
             <p></p>{
             for $g in $genres
@@ -511,8 +514,10 @@ declare function src:facets($node as node()*, $model as map(*), $query as xs:str
             {src:facets-html($tree2, $map, $g, $url )}
             </p>
            }</div>
-        }   
-</div>
+         default return 
+         <div class="col-md-1">
+         </div>
+        
 };
 
 (: apply the filter to the result set 
@@ -623,7 +628,7 @@ let $query := $model?query
         for $g in $grp
         order by $g
         return 
-         (<ul>{$g}<span class="md-2 chn-font"><mark>{src:cat-title($g)}</mark></span>
+         (<ul><span class="md-2 chn-font"><mark>{tlslib:cat-title($g)}</mark></span>
          {
          for $t at $pos in $title 
          order by $textid[$pos]

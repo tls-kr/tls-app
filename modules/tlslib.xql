@@ -1539,8 +1539,24 @@ declare function tlslib:get-visit-file(){
   return $doc
 };
 
+declare function tlslib:recent-visits(){
+  let $user := sm:id()//sm:real/sm:username/text(),
+  $doc := if ($user="guest") then () else doc($config:tls-user-root|| $user || "/recent.xml")
+  return
+  $doc//tei:list[@type="visits"]/tei:item
+};
 
-
+declare function tlslib:recent-texts-list($num){
+subsequence( for $l in  tlslib:recent-visits()
+  let $date := xs:dateTime($l/@modified)
+  , $textid := $l/@xml:id
+  , $title := tlslib:get-title($textid)
+  , $target := substring($l/tei:ref/@target, 2)
+  order by $date descending
+  return 
+  <li><a href="textview.html?location={$target}">{$title}</a></li>
+  , 1, $num)
+};
 
 declare function tlslib:get-crypt-file($type as xs:string){
   let $cm := substring(string(current-date()), 1, 7),
