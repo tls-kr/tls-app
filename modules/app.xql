@@ -433,7 +433,7 @@ function app:textview($node as node()*, $model as map(*), $location as xs:string
     )
 };
 
-
+(: 2023-05-12 - now using search.html?query=&search-type=12 , this will be phased out.  :) 
 declare function app:textlist(){
 (: this is also quite expensive, need to cache... :)
     let $titles := map:merge(for $t in collection(concat($config:tls-texts-root, '/tls'))//tei:titleStmt/tei:title
@@ -1274,7 +1274,7 @@ return
                                 Browse
                             </a>
                             <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-                                <a class="dropdown-item" href="textlist.html">Texts</a>
+                                <a class="dropdown-item" href="search.html?search-type=12">Texts</a>
                                 <a class="dropdown-item" href="browse.html?type=concept">Concepts</a>
                                 <a class="dropdown-item" href="browse.html?type=taxchar">Characters</a>
                                 <a class="dropdown-item" href="browse.html?type=taxword">Words</a>

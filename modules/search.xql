@@ -263,9 +263,14 @@ declare
 function src:show-hits-h1($node as node()*, $map as map(*),  $type as xs:string){
 let $st :=  if (string-length($type) > 0) then map:get($config:search-map, $map?search-type) || "/" || map:get($config:lmap, $type) else map:get($config:search-map, $map?search-type)
 return
-if ($map?search-type = "10") then () else
- if ($map?search-type = "12") then 
-<h1>Catalog list {if (string-length($map?cat) > 0) then "excerpt for subcategory " || tlslib:cat-title($map?cat) else ()} ({count($map?hits)} items)</h1>
+if ($map?search-type = $src:search-bib ) then () else
+ if ($map?search-type = $src:textlist) then
+   let $count := count($map?hits)
+   return 
+   if($count >0) then
+    <h1>Catalog  {if (string-length($map?cat) > 0) then "excerpt for subcategory " || tlslib:cat-title($map?cat) else ()}
+    <span>({$count} items)</span> </h1>
+   else src:textlist-doc()
  else
 <h1>Searching in <strong>{$st}</strong> for <mark class="chn-font">{$map?query}</mark></h1>
 };
@@ -493,6 +498,8 @@ declare function src:facets($node as node()*, $model as map(*), $query as xs:str
             , $tree :=  src:facets-add-n($tax, $map) => src:facets-sum-n($map) 
             return
             <div class="col-md-3">
+              <h1>TLS Text list</h1>
+              <p>There are currently <mark>{count($hits)}</mark> texts available. <br/>Please click on the links in the list below to browse the titles or search for titles in the search box.</p>
               <p>
                 {src:facets-html($tree, $map, $g, $url )}
               </p>
@@ -567,7 +574,7 @@ declare
 function src:show-hits($node as node()*, $model as map(*), $start as xs:int, $type as xs:string, $mode as xs:string, $search-type as xs:string, $textid as xs:string?, $genre as xs:string?, $cat as xs:string?)
 {
 let $query := $model?query
-    ,$iskanji := tlslib:iskanji($query) 
+    ,$iskanji := if (string-length($query)>0) then tlslib:iskanji($query) else ()
     ,$title := if (string-length($textid) > 0) then collection($config:tls-texts-root)//tei:TEI[@xml:id=$textid]//tei:titleStmt/tei:title/text() else ()
     (: no of results to display :)
     ,$resno := $model?resno
@@ -752,7 +759,7 @@ declare function src:show-tab-results($map as map(*)){
 declare function src:textlist($genre as xs:string?, $cat as xs:string?){
 let $hit-res := collection($config:tls-texts-root)//tei:TEI//tei:body
 return
- if (string-length($cat) > 0) then src:facets-filter-hits($hit-res, $genre, $cat) else $hit-res 
+ if (string-length($cat) > 0) then src:facets-filter-hits($hit-res, $genre, $cat) else ()
 };
 
 declare function src:show-title-results ($map as map(*)){
@@ -851,7 +858,65 @@ declare function src:get-kwic($node as element(), $config as element(config), $l
   </tr>
 };
 
+declare function src:textlist-doc(){
+   <div>
+     <h1>TLS Text list</h1>
+     <p>This page allows you to browse the contents of the TLS and discover what texts are available.  The texts are basically classified into the four traditional bibliographic categories.       However, the Daoist and Buddhist texts, which are usually part of the <i>KR3 子部</i> in the traditional classification are treated as top level categories, bringing for a total of six top level categories, as shown in Table 1.
+     </p>
+<table id="orgca5db22" border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+<caption class="t-above"><span class="table-number">Table 1:</span> The six top categories (as in the <a href="https://kanripo.org">Kanseki Repository</a>)</caption>
 
+<colgroup>
+<col  class="org-left" />
+
+<col  class="org-left" />
+
+<col  class="org-left" />
+</colgroup>
+<tbody>
+<tr>
+<td class="org-left">KR1</td>
+<td class="org-left">經部 <i>Jing bu</i></td>
+<td class="org-left">Confucian Classics (incl. music, dictionaries and elementary learning)</td>
+</tr>
+
+<tr>
+<td class="org-left">KR2</td>
+<td class="org-left">史部 <i>Shi bu</i></td>
+<td class="org-left">Historiography and politics</td>
+</tr>
+
+<tr>
+<td class="org-left">KR3</td>
+<td class="org-left">子部 <i>Zi bu</i></td>
+<td class="org-left">Masters, philosophers and treatises</td>
+</tr>
+
+<tr>
+<td class="org-left">KR4</td>
+<td class="org-left">集部 <i>Ji bu</i></td>
+<td class="org-left">Anthologies (Poetry and Collected Writings)</td>
+</tr>
+
+<tr>
+<td class="org-left">KR5</td>
+<td class="org-left">道部 <i>Dao bu</i></td>
+<td class="org-left">Daoist texts</td>
+</tr>
+
+<tr>
+<td class="org-left">KR6</td>
+<td class="org-left">佛部 <i>Fo bu</i></td>
+<td class="org-left">Buddhist texts</td>
+</tr>
+</tbody>
+</table>
+     <p>In the classified catalog, the four categories have been folded into one (artificial) top level, in order to allow direct comparison to the Daoist and Buddhist texts.</p>
+<h3>Usage</h3>
+     <p>To access the classified catalog, <b>click on any of the links</b> shown to the left. </p>
+     <p>If you are looking for a specific title, use the <b>search function in the upper right corner</b> and select "titles" from the dropdown selector.</p>
+   </div>
+};
 
 
 declare function src:advanced-search($query, $mode){
