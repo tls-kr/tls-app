@@ -99,15 +99,15 @@ $newswl
 (: instead of using a uuid-named file hierarchy, this version uses one file per text to store the annotations :)
 declare function tlsapi:save-swl-to-docs($line-id as xs:string, $sense-id as xs:string, 
 $user as xs:string, $currentword as xs:string, $pos as xs:string) {
-let $data-root := "/db/apps/tls-data"
-let $targetcoll := if (xmldb:collection-available($data-root || "/notes/doc")) then $data-root || "/notes/doc" else 
-    concat($data-root || "/notes", xmldb:create-collection($data-root || "/notes", "doc"))
+let $targetcoll := if (xmldb:collection-available($config:tls-data-root || "/notes/doc")) then $config:tls-data-root || "/notes/doc" else 
+    concat($config:tls-data-root || "/notes", xmldb:create-collection($config:tls-data-root || "/notes", "doc"))
 ,$textid := tokenize($line-id, "_")[1]
 ,$seg := collection($config:tls-texts-root)//tei:seg[@xml:id=$line-id]
 return
 if ($seg/@state='locked') then "Line is locked.  Please add punctuation before attempting to attribute."
 else (
 let $docname :=  $textid || "-ann.xml"
+ ,$cat := tlslib:checkCat($seg,  "swl") 
 ,$newswl:=tlsapi:make-attribution($line-id, $sense-id, $user, $currentword, $pos)
 ,$targetdoc :=   if (doc-available(concat($targetcoll,"/",$docname))) then
                     doc(concat($targetcoll,"/", $docname)) else 
@@ -721,7 +721,7 @@ $seg-id:=$swl/parent::tei:seg/@xml:id,
 $creator-id := substring($swl/tls:metadata/@resp, 2),
 $score := if ($swl/tls:metadata/@score) then data($swl/tls:metadata/@score) else 0,
 $date := format-dateTime(xs:dateTime($swl/tls:metadata/@created),"[MNn] [D1o], [Y] at [h].[m01][Pn]"),
-$creator := doc("/db/apps/tls-data/vault/members.xml")//tei:person[@xml:id=$creator-id]
+$creator := doc($config:tls-data-root || "/vault/members.xml")//tei:person[@xml:id=$creator-id]
 return
 <div id="review-swl-dialog" class="modal" tabindex="-1" role="dialog" style="display: none;">
     <div class="modal-dialog modal-lg" role="document">
@@ -755,7 +755,7 @@ return
              let $cr2-id := $d/tei:name/text(),
              $action:= $d/tei:resp/text(),
              $cr2-date := format-dateTime(xs:dateTime($d/tei:resp/@notBefore),"[MNn] [D1o], [Y] at [h].[m01][Pn]"),
-             $cr2 := doc("/db/apps/tls-data/vault/members.xml")//tei:person[@xml:id=$cr2-id]//tei:persName/text()
+             $cr2 := doc($config:tls-data-root || "/vault/members.xml")//tei:person[@xml:id=$cr2-id]//tei:persName/text()
              return
              <p><span class="font-weight-bold" title="{$cr2}">@{$cr2-id}</span>({$cr2-date})-><span class="rp-5 {if ($action = 'approve') then 'bg-success' else if ($action = 'change') then 'bg-warning' else 'bg-danger'}">{$action}</span> &#160;&#160;<span class="bg-light">{$d/tei:note/text()}</span> </p>
 }</div>
@@ -1670,17 +1670,17 @@ else ()}
 declare function tlsapi:save-textcat($map as map(*)){
     let $head := collection($config:tls-texts-root)//tei:TEI[@xml:id=$map?textid]
     return
-    if (string-length($map?textcat)>0) then tlslib:checkCat($head, "kr-categories", $map?textcat) else ()
+    if (string-length($map?textcat)>0) then tlslib:checkCat($head, $map?textcat) else ()
 };
 
 declare function tlsapi:save-textdate($map as map(*)){
 let $user := sm:id()//sm:real/sm:username/text()
-   ,$dates := if (exists(doc("/db/users/" || $user || "/textdates.xml")//date)) then 
-      doc("/db/users/" || $user || "/textdates.xml")//data else 
+   ,$dates := if (exists(doc($config:tls-user-root || $user || "/textdates.xml")//date)) then 
+      doc($config:tls-user-root || $user || "/textdates.xml")//data else 
       doc($config:tls-texts-meta  || "/textdates.xml")//data
     ,$node := $dates[@corresp="#" || $map?textid]
     ,$head := collection($config:tls-texts-root)//tei:TEI[@xml:id=$map?textid]
-    ,$savecat := if (string-length($map?datecat)>0) then tlslib:checkCat($head, "tls-dates", $map?datecat) else ()
+    ,$savecat := if (string-length($map?datecat)>0) then tlslib:checkCat($head,  $map?datecat) else ()
     ,$na := if (string-length($map?na) > 0) then $map?na else $map?nb
     ,$pr := if ($map?prose ne "　") then $map?prose else if($na eq $map?nb) then $na else $map?nb || " to " || $na
     ,$nh := if (string-length($map?src) > 0) then <span id="textdate-note" class="text-muted"> {$map?src}</span> else ()

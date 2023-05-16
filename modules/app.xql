@@ -90,7 +90,7 @@ return
     {for $t in $tax//tei:taxonomy/tei:category 
      let $cat := $t/@xml:id
      return
-       src:facets-html($t, map{}, $cat, "")}
+       src:facets-html($t, map{}, $cat, "", "open")}
     </div>
 </div>
 };

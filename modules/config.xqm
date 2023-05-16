@@ -44,6 +44,7 @@ declare variable $config:tls-data-root := substring-before($config:app-root, dat
 declare variable $config:tls-texts := substring-before($config:app-root, data($config:expath-descriptor/@abbrev)) || "tls-texts";
 declare variable $config:tls-texts-root := $config:tls-texts || "/data";
 declare variable $config:tls-texts-meta := $config:tls-texts || "/meta";
+declare variable $config:tls-texts-taxonomy := $config:tls-texts-meta || "/taxonomy.xml";
 declare variable $config:tls-texts-img := $config:tls-texts || "/img";
 declare variable $config:tls-texts-var := $config:tls-texts || "/var";
 declare variable $config:tls-krx-root := substring-before($config:app-root, data($config:expath-descriptor/@abbrev)) || "tls-krx";

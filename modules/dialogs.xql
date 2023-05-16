@@ -444,7 +444,7 @@ return
                 <small class="text-muted">Position in the classified catalog</small>
                 <div id="input-cat-group">
                     <label for="input-nb"><strong>Catalog category:</strong> </label>
-                <select id="select-kr-cat" class="form-control" multiple="true">{for $c in $cat 
+                <select id="select-text-cat" class="form-control" multiple="true">{for $c in $cat 
                 order by $c/@xml:id ascending
                 return 
                 if ($c/@xml:id = $textcat) then 
