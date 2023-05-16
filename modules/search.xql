@@ -202,10 +202,11 @@ declare function src:ngram-query($queryStr as xs:string?, $mode as xs:string?, $
            if (matches($s, $qs[1]) or matches($s, $qs[2])) then
               $s else ()
        else $pmatches:)
-(:    , $hit-res := 
-    for $hit in $matches
+    , $cmatches :=   if (string-length($cat) > 0) then src:facets-filter-hits($pmatches, $genre, $cat) else $pmatches
+    , $hit-res := 
+    for $hit in $cmatches
      let $textid := substring-before(tokenize(document-uri(root($hit)), "/")[last()], ".xml"),
-      (\: for the CHANT text no text date data exist, so we use this flag to cheat a bit :\)
+      (: for the CHANT text no text date data exist, so we use this flag to cheat a bit :)
       $flag := substring($textid, 1, 3),
       $filter := 
        if ($search-type = $src:search-one-text) then $stextid = $textid 
@@ -216,7 +217,7 @@ declare function src:ngram-query($queryStr as xs:string?, $mode as xs:string?, $
        else true(),
       $r := 
        if ($mode = "rating") then 
-         (\: the order by is ascending because of the dates, so here we inverse the rating :\)
+         (: the order by is ascending because of the dates, so here we inverse the rating :)
          if ($ratings[@id=$textid]) then - xs:int($ratings[@id=$textid]/@rating) else 0
        else
         switch ($flag)
@@ -226,12 +227,13 @@ declare function src:ngram-query($queryStr as xs:string?, $mode as xs:string?, $
          case "CH8" return -200
          default return
           if (string-length($dates[@corresp="#" || $textid]/@notafter) > 0) then tlslib:getdate($dates[@corresp="#" || $textid]) else 0
-(\:    let $id := $hit/ancestor::tei:TEI/@xml:id :\)     
+(:    let $id := $hit/ancestor::tei:TEI/@xml:id :)     
     order by $r ascending
     where $filter
-    return $hit :)
+    return $hit 
    return
-   if (string-length($cat) > 0) then src:facets-filter-hits($pmatches, $genre, $cat) else $pmatches
+   
+ $hit-res
 };
 
 
