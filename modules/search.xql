@@ -48,16 +48,19 @@ declare variable $src:textlist := "12";
 :)
 declare 
     %templates:wrap
-function src:query($node as node()*, $model as map(*), $query as xs:string?, $mode as xs:string?, $search-type as xs:string?, $textid as xs:string?, $genre as xs:string?, $cat as xs:string?)
+function src:query($node as node()*, $model as map(*), $query as xs:string?, $mode as xs:string?, $search-type as xs:string?, $textid as xs:string?, $filter as xs:string?)
 {
     session:create(),
+    let $cat := map:merge(for $c in tokenize($filter, ";") 
+                           let $ck := tokenize($c, ":")
+                           return map:entry($ck[1], $ck[2]))
     let $hits := 
      switch($search-type)
      case $src:search-texts 
      case $src:search-one-text
      case $src:search-tr-lines
      case $src:search-tabulated return 
-        src:ngram-query($query, $mode, $search-type, $textid, $genre, $cat) 
+        src:ngram-query($query, $mode, $search-type, $textid, $cat) 
      case $src:search-dic return
       (: searching for kanji in dictionary, eg. the words in concepts :)
        src:dic-query($query, $mode)
@@ -74,7 +77,7 @@ function src:query($node as node()*, $model as map(*), $query as xs:string?, $mo
      case $src:search-bib return
        bib:biblio-search($query, $mode, $textid)
      case $src:textlist return
-       src:textlist($genre, $cat)
+       src:textlist($cat)
      default return "Unknown search type"
     let $store := session:set-attribute($src:SESSION, $hits)
     , $totalhits := 0 (: if ($search-type = ($src:search-texts, $src:search-one-text ,$src:search-tr-lines, $src:search-tabulated)) then  
@@ -163,7 +166,7 @@ declare function src:tr-query($queryStr as xs:string?, $mode as xs:string?)
 };
 
 (: paragraph based query :)
-declare function src:ngram-query($queryStr as xs:string?, $mode as xs:string?, $search-type as xs:string?, $stextid as xs:string?, $genre as xs:string?, $cat as xs:string?)
+declare function src:ngram-query($queryStr as xs:string?, $mode as xs:string?, $search-type as xs:string?, $stextid as xs:string?, $cat as map(*)?)
 {
     let $dataroot := ($config:tls-data-root, $config:tls-texts-root, $config:tls-user-root)
     , $qs := tokenize($queryStr, "[\s;]")
@@ -202,7 +205,7 @@ declare function src:ngram-query($queryStr as xs:string?, $mode as xs:string?, $
            if (matches($s, $qs[1]) or matches($s, $qs[2])) then
               $s else ()
        else $pmatches:)
-    , $cmatches :=   if (string-length($cat) > 0) then src:facets-filter-hits($pmatches, $genre, $cat) else $pmatches
+    , $cmatches :=   if (count(map:keys($cat)) > 0) then src:facets-filter-hits($pmatches, $cat) else $pmatches
     , $hit-res := 
     for $hit in $cmatches
      let $textid := substring-before(tokenize(document-uri(root($hit)), "/")[last()], ".xml"),
@@ -275,7 +278,7 @@ if ($map?search-type = $src:search-bib ) then () else
    let $count := count($map?hits)
    return 
    if($count >0) then
-    <h1>Catalog  {if (string-length($map?cat) > 0) then "excerpt for subcategory " || tlslib:cat-title($map?cat) else ()}
+    <h1>Catalog  {if (count(map:keys($map?cat)) > 0) then "excerpt for subcategory " || string-join(for $c in map:keys($map?cat) return tlslib:cat-title($map?cat?($c)), " / ") else ()}
     <span>({$count} items)</span> </h1>
    else src:textlist-doc()
  else
@@ -448,7 +451,10 @@ declare function src:facets-html($node, $map, $baseid, $url, $state){
     {if ($n/preceding-sibling::tei:catDesc[@rend='top'] and not ($n/following-sibling::tei:category)) then
       if ($map?notav) then 
        if (string-length($url) > 0) then 
-        <li id="{$baseid}---notav"><a href="{$url}&amp;genre={$baseid}&amp;cat=notav" onclick="#">Not assigned <span>{$map?notav}</span></a></li>
+         if (contains($url, "filter=")) then   
+         <li id="{$baseid}---notav"><a href="{$url};{$baseid}:notav" onclick="#">Not assigned <span>{$map?notav}</span></a></li>
+        else
+         <li id="{$baseid}---notav"><a href="{$url}&amp;filter={$baseid}:notav" onclick="#">Not assigned <span>{$map?notav}</span></a></li>
        else
         <li id="{$baseid}---notav">Not assigned</li>
        else ()
@@ -472,7 +478,11 @@ declare function src:facets-html-node($n, $baseid, $url){
    <li id="{$baseid}---{$n/@xml:id}">
    {if (string-length($url) > 0) then 
    <span>
-   <a title="Click here to filter on this category" class="mr-2 ml-2" href="{$url}&amp;genre={$baseid}&amp;cat={$n/@xml:id}">{$n/tei:catDesc/text()}</a>
+    {if (contains($url, "filter=")) then   
+   <a title="Click here to filter on this category" class="mr-2 ml-2" href="{$url};{$baseid}:{$n/@xml:id}">{$n/tei:catDesc/text()}</a>
+    else 
+   <a title="Click here to filter on this category" class="mr-2 ml-2" href="{$url}&amp;filter={$baseid}:{$n/@xml:id}">{$n/tei:catDesc/text()}</a>
+   }
    {if ($n/@sum) then <span title="Aggregate over this and lower levels" class="badge badge-primary">{data($n/@sum)}</span> else ()}
    {if ($n/@n) then <span title="Count on this level only" class="badge badge-secondary">{data($n/@n)}</span> else ()}
    {(:  if ($n/@res-ratio) then (<span>　</span>,
@@ -511,6 +521,8 @@ declare function src:facets($node as node()*, $model as map(*), $query as xs:str
  (: query=國語&start=1&search-type=1&textid=KR2o0001&mode=# :)
   let $umode := if (string-length($mode) > 0) then "&amp;mode="||$mode else ""
   , $utextid := if (string-length($textid) > 0) then "&amp;textid="||$textid else ""
+  , $fkeys := map:keys($model?cat)
+ , $uxfilter := if (count($fkeys) > 0) then "&amp;filter=" || string-join(for $c in $fkeys return $c||":"||$model?cat?($c), ";") else ""
  , $url := "search.html?query="||$query||"&amp;search-type="||$search-type || $umode || $utextid 
  return
         switch ($search-type)
@@ -527,8 +539,10 @@ declare function src:facets($node as node()*, $model as map(*), $query as xs:str
             let $map := src:facets-map($hits, $g)
             , $tax := doc($config:tls-texts-taxonomy)//tei:category[@xml:id=$g]
             , $tree :=  src:facets-add-n($tax, $map) => src:facets-sum-n($map) 
+            , $ufilter := if (count($fkeys) > 0) then "&amp;filter=" || string-join(for $c in $fkeys where not ($c = $g) return $c||":"||$model?cat?($c), ";") else ""
+            , $furl := $url || $ufilter
             return
-                src:facets-html($tree, $map, $g, $url, "closed" )}
+                src:facets-html($tree, $map, $g, $furl, "closed" )}
               </div>
             </div>   
            case $src:search-texts 
@@ -539,16 +553,21 @@ declare function src:facets($node as node()*, $model as map(*), $query as xs:str
            return 
            <div  class="col-md-3">
             <h1>Facets</h1>
-            <p></p>{
+            <p>{if (count($fkeys) > 0) then <span>Applied filters: <br/>
+            {string-join(for $f in $fkeys return tlslib:cat-title($model?cat?($f)), " / ")}
+            </span>
+            else ()}</p>{
             for $g in $genres
             let $map := src:facets-map($model?hits, $g)
             , $tax := doc($config:tls-texts-taxonomy)//tei:category[@xml:id=$g]
+            , $ufilter := if (count($fkeys) > 0) then "&amp;filter=" || string-join(for $c in $fkeys where not ($c = $g) return $c||":"||$model?cat?($c), ";") else ""
+            , $furl := $url || $ufilter
             , $tree :=  src:facets-add-n($tax, $map) => src:facets-sum-n($map) => src:facets-prune()
  (:           , $tree2 := src:facets-ratio($tree):)
             return
-            <p>
-            {src:facets-html($tree, $map, $g, $url, "open" )}
-            </p>
+            <div>
+            {src:facets-html($tree, $map, $g, $furl, "open" )}
+            </div>
            }</div>
          default return 
          <div class="col-md-1">
@@ -558,7 +577,13 @@ declare function src:facets($node as node()*, $model as map(*), $query as xs:str
 
 (: apply the filter to the result set 
 TODO: add the metadata to result set in src:ngram-query
+ let $cats := for $genre in map:keys($cat) 
+               let $c := $cat?($genre)
+               return
+               if ($c = 'notav') then $c else src:facets-expand-cat($genre, $c)
+ return 
 :)
+
 declare function src:facets-filter-hits($hits, $genre, $cat){
  let $cats := if ($cat = 'notav') then $cat else src:facets-expand-cat($genre, $cat)
  return 
@@ -566,6 +591,21 @@ declare function src:facets-filter-hits($hits, $genre, $cat){
    let $md := src:facets-get-metadata($h, $genre)
    where $md = $cats
    return $h
+};
+
+(: apply the filter sequentially :) 
+declare function src:facets-filter-hits($hits, $cat){
+  let $fkeys := map:keys($cat)
+  return
+  if (count($fkeys) > 0) then 
+    let $genre := $fkeys[1]
+    , $c := $cat?($genre)
+    , $h := src:facets-filter-hits($hits, $genre, $c)
+    , $m := map:remove($cat, $genre)
+    return 
+     src:facets-filter-hits($h, $m)
+  else
+    $hits
 };
 
 (: get the full set of relevant category ids :)
@@ -579,7 +619,13 @@ return
 (: only add to query if set :)
 
 declare function src:maybe-query($type, $item){
-if (string-length($item)>0) then "&amp;"||$type||"="||$item else ()
+ if ($item instance of xs:string) then
+   if (string-length($item)>0) then "&amp;"||$type||"="||$item else ()
+ else 
+   if ($item instance of map()) then 
+     if (count(map:keys($item)) > 0) then "&amp;filter=" || string-join(for $c in map:keys($item) return $c||":"||$item?($c), ";")
+    else ()
+   else ()
 };
 
 (:~
@@ -600,7 +646,7 @@ declare
 %templates:default("textid", "")
 %templates:default("genre", "")
 %templates:default("cat", "")
-function src:show-hits($node as node()*, $model as map(*), $start as xs:int, $type as xs:string, $mode as xs:string, $search-type as xs:string, $textid as xs:string?, $genre as xs:string?, $cat as xs:string?)
+function src:show-hits($node as node()*, $model as map(*), $start as xs:int, $type as xs:string, $mode as xs:string, $search-type as xs:string, $textid as xs:string?, $filter as xs:string?)
 {
 let $query := $model?query
     ,$iskanji := if (string-length($query)>0) then tlslib:iskanji($query) else ()
@@ -612,7 +658,7 @@ let $query := $model?query
     ,$qs := tokenize($query, "[\s;]")
     ,$q1 := substring($qs[1], 1, 1)
     ,$rat := "Go to the menu -> Browse -> Texts to rate your favorite texts."
-    ,$burl := "search.html?query="||$query||"&amp;search-type="||$search-type || src:maybe-query("textid",$textid) || src:maybe-query("genre",$genre) || src:maybe-query("cat",$cat)
+    ,$burl := "search.html?query="||$query||"&amp;search-type="||$search-type || src:maybe-query("textid",$textid) || src:maybe-query("cat",$model?cat)
     ,$qc := for $c in string-to-codepoints($query) 
        where $c > 255
        return  codepoints-to-string($c)
@@ -632,7 +678,8 @@ let $query := $model?query
     case $src:search-one-text
     case $src:search-trans
     case $src:search-tr-lines return
-     let $hits := if (string-length($cat) > 0) then src:facets-filter-hits($model?hits, $genre, $cat) else $model?hits
+(:     let $hits := $model?hits:)
+     let $hits := if (count(map:keys($model?cat)) > 0) then src:facets-filter-hits($model?hits, $model?cat) else $model?hits
      let $txtmatchcount := (: count(for $h in $model?hits let $x := $h/@xml:id where starts-with($x, $textid) return $h) :) 0
      , $trmatch := (:count(for $h in $model?hits let $x := "#" || $h/@xml:id
                    return collection($config:tls-translation-root)//tei:seg[@corresp=$x]):) 0
@@ -814,10 +861,12 @@ declare function src:show-tab-results($map as map(*)){
     </ul></div>
 };
 
-declare function src:textlist($genre as xs:string?, $cat as xs:string?){
-let $hit-res := collection($config:tls-texts-root)//tei:TEI//tei:body
-return
- if (string-length($cat) > 0) then src:facets-filter-hits($hit-res, $genre, $cat) else ()
+declare function src:textlist($cat as map(*)?){
+ if (count(map:keys($cat)) > 0) then 
+  let $hit-res := collection($config:tls-texts-root)//tei:TEI//tei:body
+  return
+  src:facets-filter-hits($hit-res, $cat) 
+ else ()
 };
 
 declare function src:show-title-results ($map as map(*)){

@@ -1513,9 +1513,13 @@ else ()
 };
 
 declare function tlsapi:quick-search($map as map(*)){
-let $hits := 
+  let $cat := map:merge(for $c in tokenize($map?filter, ";") 
+                           let $ck := tokenize($c, ":")
+                           return map:entry($ck[1], $ck[2]))
+
+  let $hits := 
       if ($map?target = 'texts') then
-            src:ngram-query($map?query, $map?mode, $map?search-type, $map?textid, $map?genre, $map?cat)
+            src:ngram-query($map?query, $map?mode, $map?search-type, $map?textid, $cat)
       else if ($map?target = 'wikidata') then 
             wd:search($map)
       else ()
