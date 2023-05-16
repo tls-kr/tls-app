@@ -259,7 +259,7 @@ declare function tlslib:ontology-links($uid as xs:string, $type as xs:string, $c
 declare function tlslib:get-content-slots($seg as node(), $options as map(*)) {
 let $user := sm:id()//sm:real/sm:username/text()
 ,$id := $seg/@xml:id
-,$tr := for $s in collection($config:tls-translation-root, "/db/users/" || $user || "/translations")//tei:seg[@corresp="#"||$id]
+,$tr := for $s in collection($config:tls-translation-root, $config:tls-user-root || $user || "/translations")//tei:seg[@corresp="#"||$id]
         return root($s)
 ,$retmap := map:merge(
           for $t in $tr
@@ -555,7 +555,7 @@ declare function tlslib:proc-p-for-edit($node as node()){
 :)
 declare function tlslib:get-rating($txtid){
     let $user := sm:id()//sm:real/sm:username/text(),
-    $ratings := doc("/db/users/" || $user || "/ratings.xml")//text
+    $ratings := doc($config:tls-user-root || $user || "/ratings.xml")//text
     return 
     if ($ratings[@id=$txtid]) then $ratings[@id=$txtid]/@rating else 0
 };
@@ -628,7 +628,7 @@ TODO: move to XHR
 declare function tlslib:navbar-bookmarks(){
 let $user := sm:id()//sm:real/sm:username/text()
 ,$bm := doc($config:tls-user-root || $user|| "/bookmarks.xml")
-,$ratings := doc("/db/users/" || $user || "/ratings.xml")//text
+,$ratings := doc($config:tls-user-root || $user || "/ratings.xml")//text
 
 
 return
@@ -684,7 +684,7 @@ declare function tlslib:has-edit-permission($text-id as xs:string) as xs:boolean
   else
    if (sm:id()//sm:real/sm:username/text() = "guest") then false () else 
    if (sm:id()//sm:group = ("test")) then false() else 
-    let $permissions := doc("/db/users/tls-admin/permissions.xml")
+    let $permissions := doc($config:tls-user-root || "tls-admin/permissions.xml")
     return $text-id and 
         sm:id()//sm:group = "tls-punc" and 
         $permissions//tls:text-permissions[@text-id = $text-id]/tls:allow-review[@user-id = sm:id()//sm:username/text()]
@@ -1466,17 +1466,35 @@ declare function tlslib:get-metadata($hit, $field){
 };
 
 declare function tlslib:cat-title($cat){
-string-join(doc($config:tls-texts||"/meta/taxonomy.xml")//tei:category[@xml:id=$cat]/tei:catDesc/text(), ' - ')
+let $title := string-join(doc($config:tls-texts-taxonomy)//tei:category[@xml:id=$cat]/tei:catDesc/text(), ' - ')
+return
+if (string-length($title) > 0) then $title else "Not assigned"
 };
 
+declare function tlslib:delCat($node as node(), $catid as xs:string){
+    let $header := $node/ancestor-or-self::tei:TEI/tei:teiHeader
+    , $r := $header//tei:catRef[@target="#"||$catid]
+    return 
+      update delete $r
+};
 
-declare function tlslib:checkCat($node as node(), $scheme as xs:string, $catid as xs:string){
+(: category xml:ids have to be unique across the document, so I do not need to provide the scheme here :)
+declare function tlslib:checkCat($node as node(), $catid as xs:string){
+    let $tax := doc($config:tls-texts-taxonomy)
+    , $scheme := $tax//tei:category[@xml:id=$catid]/ancestor::tei:category[parent::tei:taxonomy]/@xml:id
     let $catref := <catRef xmlns="http://www.tei-c.org/ns/1.0" scheme="#{$scheme}" target="#{$catid}"/>
     , $tc := <textClass xmlns="http://www.tei-c.org/ns/1.0">{$catref}</textClass>
     , $header := $node/ancestor-or-self::tei:TEI/tei:teiHeader
     return
+    if ($scheme) then
     if ($header//tei:profileDesc) then
-        if ($header//tei:catRef[@target="#"||$catid]) then () else
+        if ($header//tei:catRef[@target="#"||$catid]) then 
+            let $r := $header//tei:catRef[@target="#"||$catid]
+            , $s := substring($r/@scheme ,2)
+            return
+            if ($s = $scheme) then () else
+                update replace $r with $catref
+        else
             if ($header//tei:textClass) then
                 update insert $catref into $header//tei:textClass
             else
@@ -1485,6 +1503,7 @@ declare function tlslib:checkCat($node as node(), $scheme as xs:string, $catid a
         let $node := <profileDesc xmlns="http://www.tei-c.org/ns/1.0">{$tc}</profileDesc>
         return
             update insert $node following $header//tei:fileDesc 
+    else "Error: no valid scheme found for category: " || $catid
 };
 
 
@@ -2505,31 +2524,6 @@ declare function tlslib:guguolin($qc){
 </form>
 };
 
-declare function tlslib:search-top-menu($search-type, $query, $txtmatchcount, $title, $trmatch, $textid, $qc, $count, $mode) {
-  switch($search-type)
-(:  case "8":)
-  case "5" return
-       (<a class="btn badge badge-light" href="search.html?query={$query}&amp;start=1&amp;search-type=1&amp;textid={$textid}&amp;mode={$mode}">Click here to display all  matches</a>,<br/>)
-  case "8" return
-       (<a class="btn badge badge-light" href="search.html?query={$query}&amp;start=1&amp;search-type=1&amp;textid={$textid}&amp;mode={$mode}">Click here to display all  matches</a>,<br/>)
-  default return
-   (if ($count < 6000) then 
-    ( <a class="btn badge badge-light" href="search.html?query={$query}&amp;start=1&amp;search-type=8&amp;textid={$textid}&amp;mode={$mode}">Click here to display matches tabulated by text</a>,<br/>) else (),
-      
-     if ($trmatch > 0 and not ($search-type="6")) then
-     (<a class="btn badge badge-light" href="search.html?query={$query}&amp;start=1&amp;search-type=6&amp;mode={$mode}">Click here to display only {$trmatch} matching lines that have a translation</a>,<br/>)
-     else 
-    (<a class="btn badge badge-light" href="search.html?query={$query}&amp;start=1&amp;search-type=1&amp;mode={$mode}">Click here to display all  matches</a>,<br/>)
-    ,
-    
-  if (string-length($title) > 0 and $txtmatchcount > 0) then 
-    (<a class="btn badge badge-light" href="search.html?query={$query}&amp;start=1&amp;search-type=5&amp;textid={$textid}&amp;mode={$mode}">Click here to display only {$txtmatchcount} matches in {$title}</a>,<br/>)
-  else ()
-  ), 
-  tlslib:linkheader($qc),
-   <br/>
-     
-};
 
 declare function tlslib:get-obs-node($type as xs:string){
   let $cm := substring(string(current-date()), 1, 7),
@@ -2581,8 +2575,8 @@ let   $user := sm:id()//sm:real/sm:username/text(),
       $cat := tlslib:get-metadata($d, "kr-categories"),
       $datecat := tlslib:get-metadata($d, "tls-dates"),
       $charcount := tlslib:get-metadata($d, "extent"),
-      $dates := if (exists(doc("/db/users/" || $user || "/textdates.xml")//date)) then 
-      doc("/db/users/" || $user || "/textdates.xml")//data else 
+      $dates := if (exists(doc($config:tls-user-root || $user || "/textdates.xml")//date)) then 
+      doc($config:tls-user-root || $user || "/textdates.xml")//data else 
       doc($config:tls-texts-meta  || "/textdates.xml")//data,
       $date := $dates[@corresp="#" || $textid],
       $loewe := doc($config:tls-data-root||"/bibliography/loewe-ect.xml")//tei:bibl[tei:ref[@target = "#"||$textid]]
@@ -2704,6 +2698,8 @@ declare function tlslib:store-new-translation($lang as xs:string, $txtid as xs:s
   ,$newid := if ($vis = "option4") then $txtid else $txtid || "-" || $lang || "-" || tokenize($uuid, "-")[1]
   ,$lg := $config:languages($lang)
   ,$title := tlslib:get-title($txtid)
+  ,$txt := collection($config:tls-texts-root)//tei:TEI[@xml:id=$txtid]
+  ,$cat := tlslib:checkCat($txt,  "tr-" || $lang) 
   ,$trcoll := if ($vis="option3") then $config:tls-user-root || $user || "/translations" 
     else if ($vis = "option4") then $config:tls-data-root || "/notes/research" 
     else $config:tls-translation-root || "/" || $lang

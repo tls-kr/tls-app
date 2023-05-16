@@ -77,8 +77,12 @@ function src:query($node as node()*, $model as map(*), $query as xs:string?, $mo
        src:textlist($genre, $cat)
      default return "Unknown search type"
     let $store := session:set-attribute($src:SESSION, $hits)
+    , $totalhits := 0 (: if ($search-type = ($src:search-texts, $src:search-one-text ,$src:search-tr-lines, $src:search-tabulated)) then  
+        session:get-attribute($src:SESSION || ".totalhits") 
+        else count($hits) :)
+
     return
-    map{"hits" : $hits, "query" : $query, "mode" : $mode, "search-type" : $search-type, "textid" : $textid, "resno" : 50, "cat" : $cat}
+    map{"hits" : $hits, "totalhits": $totalhits, "query" : $query, "mode" : $mode, "search-type" : $search-type, "textid" : $textid, "resno" : 50, "cat" : $cat}
 };
 
 declare function src:do-query($queryStr as xs:string?, $mode as xs:string?)
@@ -137,7 +141,7 @@ declare %private function src:filter($node as node(), $mode as xs:string?) as te
 declare
     %templates:wrap
 function src:hit-count($node as node()*, $model as map(*), $query as xs:string?) {
-   count($model("hits"))
+   $model?totalhits
 };
 
 
@@ -165,7 +169,7 @@ declare function src:ngram-query($queryStr as xs:string?, $mode as xs:string?, $
     , $qs := tokenize($queryStr, "[\s;]")
     , $user := sm:id()//sm:real/sm:username/text()
     , $ratings := doc($config:tls-user-root || $user || "/ratings.xml")//text
-    , $user-dates-doc := "/db/users/" || $user || "/textdates.xml"
+    , $user-dates-doc := $config:tls-user-root || $user || "/textdates.xml"
     , $dates := 
         if (exists(doc($user-dates-doc)//data)) then 
          doc($user-dates-doc)//data 
@@ -189,18 +193,19 @@ declare function src:ngram-query($queryStr as xs:string?, $mode as xs:string?, $
         else
          (collection($dataroot)//tei:p[ngram:wildcard-contains(., $qs[1])] | 
          collection($dataroot)//tei:lg[ngram:wildcard-contains(., $qs[1])])
-    , $matches := 
-       (: this messes up the search display, disabling for now :)
+    (:  , $sethits := session:set-attribute($src:SESSION || ".totalhits", count($pmatches)):)
+(:    , $matches := 
+       (\: this messes up the search display, disabling for now :\)
        if (contains($queryStr, ";xx")) then 
           for $s in $pmatches//tei:seg
           return
            if (matches($s, $qs[1]) or matches($s, $qs[2])) then
               $s else ()
-       else $pmatches
-    , $hit-res := 
+       else $pmatches:)
+(:    , $hit-res := 
     for $hit in $matches
      let $textid := substring-before(tokenize(document-uri(root($hit)), "/")[last()], ".xml"),
-      (: for the CHANT text no text date data exist, so we use this flag to cheat a bit :)
+      (\: for the CHANT text no text date data exist, so we use this flag to cheat a bit :\)
       $flag := substring($textid, 1, 3),
       $filter := 
        if ($search-type = $src:search-one-text) then $stextid = $textid 
@@ -211,7 +216,7 @@ declare function src:ngram-query($queryStr as xs:string?, $mode as xs:string?, $
        else true(),
       $r := 
        if ($mode = "rating") then 
-         (: the order by is ascending because of the dates, so here we inverse the rating :)
+         (\: the order by is ascending because of the dates, so here we inverse the rating :\)
          if ($ratings[@id=$textid]) then - xs:int($ratings[@id=$textid]/@rating) else 0
        else
         switch ($flag)
@@ -221,12 +226,12 @@ declare function src:ngram-query($queryStr as xs:string?, $mode as xs:string?, $
          case "CH8" return -200
          default return
           if (string-length($dates[@corresp="#" || $textid]/@notafter) > 0) then tlslib:getdate($dates[@corresp="#" || $textid]) else 0
-(:    let $id := $hit/ancestor::tei:TEI/@xml:id :)     
+(\:    let $id := $hit/ancestor::tei:TEI/@xml:id :\)     
     order by $r ascending
     where $filter
-    return $hit 
+    return $hit :)
    return
-   if (string-length($cat) > 0) then src:facets-filter-hits($hit-res, $genre, $cat) else $hit-res 
+   if (string-length($cat) > 0) then src:facets-filter-hits($pmatches, $genre, $cat) else $pmatches
 };
 
 
@@ -301,6 +306,7 @@ declare function src:facets-get-metadata($hit, $field){
                     $header//tei:msDesc/tei:head, $header//tei:titleStmt/tei:title[@type = 'main'],
                     $header//tei:titleStmt/tei:title
                 ), " - ")
+            case "tls-internal"
             case "tls-dates"
             case "kr-categories"
             case "tls-regions" return 
@@ -323,11 +329,12 @@ declare function src:facets-map($hits, $genre){
     map:merge(
     for $h in $hits
     let $md := src:facets-get-metadata($h, $genre)
-    , $grp := string-join($md[1])
+     for $m in $md
+     let $grp := $m
     group by $grp
     where string-length($grp) > 0
     return
-    map:entry($grp, count($md))
+    map:entry($grp, count($m))
     )
 };
 
@@ -422,25 +429,39 @@ declare function src:facets-prune($n){
   default return $n
 };
 (: convert the pruned category tree to HTML for jstree :)
-declare function src:facets-html($node, $map, $baseid, $url){
-  <div  id="chartree">
+declare function src:facets-html($node, $map, $baseid, $url, $state){
+  <div  id="{$baseid}--chartree">
   <ul>{
   for $n in $node/node()
   return
   typeswitch ($n)
   case element(tei:category) return 
-    src:facets-html-node($n, $baseid, $url)
+    let $hx := $n/tei:catDesc/text()
+    return
+    ((:<span class="anchor" id="{$baseid}--head">YY</span>,
+    <h3>YY{if (string-length($hx) > 0) then $hx else "Not assigned"}</h3>
+    ,
+:)    <div class="collapse {if ($state='closed') then () else 'show'}" id="{$baseid}--body">
+    {src:facets-html-node($n, $baseid, $url)}
+    {if ($n/preceding-sibling::tei:catDesc[@rend='top'] and not ($n/following-sibling::tei:category)) then
+      if ($map?notav) then 
+       if (string-length($url) > 0) then 
+        <li id="{$baseid}---notav"><a href="{$url}&amp;genre={$baseid}&amp;cat=notav" onclick="#">Not assigned <span>{$map?notav}</span></a></li>
+       else
+        <li id="{$baseid}---notav">Not assigned</li>
+       else ()
+      else ()
+    }    
+    </div>)
   case element(tei:catDesc) return 
-    (<span class="anchor" id="{$baseid}--head"></span>,
-    <h3 >{$n/text()}</h3>)
+    let $hx := $n/text()
+    return
+    if ($n/@rend = "top") then 
+    (<span class="anchor" id="{$baseid}--head">XX</span>,
+    <h3 data-toggle="collapse" data-target="#{$baseid}--body">{if (string-length($hx) > 0) then $hx else "Not assigned"}</h3>)
+    else ()
   default return $n
   }
-  {if ($map?notav) then 
-   if (string-length($url) > 0) then 
-  <li id="{$baseid}---notav"><a href="{$url}&amp;genre={$baseid}&amp;cat=notav" onclick="#">Not assigned <span>{$map?notav}</span></a></li>
-  else
-  <li id="{$baseid}---notav">Not assigned</li>
-  else ()}
   </ul></div>
 };
 
@@ -452,7 +473,7 @@ declare function src:facets-html-node($n, $baseid, $url){
    <a title="Click here to filter on this category" class="mr-2 ml-2" href="{$url}&amp;genre={$baseid}&amp;cat={$n/@xml:id}">{$n/tei:catDesc/text()}</a>
    {if ($n/@sum) then <span title="Aggregate over this and lower levels" class="badge badge-primary">{data($n/@sum)}</span> else ()}
    {if ($n/@n) then <span title="Count on this level only" class="badge badge-secondary">{data($n/@n)}</span> else ()}
-   {if ($n/@res-ratio) then (<span>　</span>,
+   {(:  if ($n/@res-ratio) then (<span>　</span>,
      let $r := round(xs:float($n/@res-ratio))
      , $f := format-number($r, "##.##")
      return
@@ -464,6 +485,8 @@ declare function src:facets-html-node($n, $baseid, $url){
       else
       <span title="This result is in the expected range" class="badge badge-lignt">{$f}</span>)
    else () 
+   :)
+   ()
    }
    </span>
    else 
@@ -479,46 +502,50 @@ declare function src:facets-html-node($n, $baseid, $url){
 };
 
 declare function src:catx-title($cat){
-doc($config:tls-texts||"/meta/taxonomy.xml")//tei:category[@xml:id=$cat]/tei:catDesc/text()
+doc($config:tls-texts-taxonomy)//tei:category[@xml:id=$cat]/tei:catDesc/text()
 };
 
 declare function src:facets($node as node()*, $model as map(*), $query as xs:string?, $mode as xs:string?, $search-type as xs:string?, $textid as xs:string?){
- let $genres := ("tls-dates", "kr-categories")
  (: query=國語&start=1&search-type=1&textid=KR2o0001&mode=# :)
-  , $umode := if (string-length($mode) > 0) then "&amp;mode="||$mode else ""
+  let $umode := if (string-length($mode) > 0) then "&amp;mode="||$mode else ""
   , $utextid := if (string-length($textid) > 0) then "&amp;textid="||$textid else ""
  , $url := "search.html?query="||$query||"&amp;search-type="||$search-type || $umode || $utextid 
  return
         switch ($search-type)
            case $src:textlist return 
             let $hits := collection($config:tls-texts-root)//tei:TEI
-            , $g := "kr-categories"
-            , $map := src:facets-map($hits, $g)
-            , $tax := doc($config:tls-texts||"/meta/taxonomy.xml")//tei:category[@xml:id=$g]
-            , $tree :=  src:facets-add-n($tax, $map) => src:facets-sum-n($map) 
+            let $genres := ("tls-internal", "tls-dates", "kr-categories")
             return
             <div class="col-md-3">
               <h1>TLS Text list</h1>
               <p>There are currently <mark>{count($hits)}</mark> texts available. <br/>Please click on the links in the list below to browse the titles or search for titles in the search box.</p>
-              <p>
-                {src:facets-html($tree, $map, $g, $url )}
-              </p>
+              <div>
+                {for $g in $genres
+(:                            , $g := "kr-categories":)
+            let $map := src:facets-map($hits, $g)
+            , $tax := doc($config:tls-texts-taxonomy)//tei:category[@xml:id=$g]
+            , $tree :=  src:facets-add-n($tax, $map) => src:facets-sum-n($map) 
+            return
+                src:facets-html($tree, $map, $g, $url, "closed" )}
+              </div>
             </div>   
            case $src:search-texts 
            case $src:search-one-text
            case $src:search-tr-lines
            case $src:search-tabulated return 
+            let $genres := ("tls-dates", "kr-categories")
+           return 
            <div  class="col-md-3">
             <h1>Facets</h1>
             <p></p>{
             for $g in $genres
             let $map := src:facets-map($model?hits, $g)
-            , $tax := doc($config:tls-texts||"/meta/taxonomy.xml")//tei:category[@xml:id=$g]
+            , $tax := doc($config:tls-texts-taxonomy)//tei:category[@xml:id=$g]
             , $tree :=  src:facets-add-n($tax, $map) => src:facets-sum-n($map) => src:facets-prune()
-            , $tree2 := src:facets-ratio($tree)
+ (:           , $tree2 := src:facets-ratio($tree):)
             return
             <p>
-            {src:facets-html($tree2, $map, $g, $url )}
+            {src:facets-html($tree, $map, $g, $url, "open" )}
             </p>
            }</div>
          default return 
@@ -542,7 +569,7 @@ declare function src:facets-filter-hits($hits, $genre, $cat){
 (: get the full set of relevant category ids :)
 
 declare function src:facets-expand-cat($genre, $cat){
-let $tax := doc($config:tls-texts||"/meta/taxonomy.xml")//tei:category[@xml:id=$genre]//tei:category[@xml:id=$cat]
+let $tax := doc($config:tls-texts-taxonomy)//tei:category[@xml:id=$genre]//tei:category[@xml:id=$cat]
 return
 (data($tax/@xml:id), for $t in $tax//tei:category return data($t/@xml:id))
 };
@@ -575,7 +602,7 @@ function src:show-hits($node as node()*, $model as map(*), $start as xs:int, $ty
 {
 let $query := $model?query
     ,$iskanji := if (string-length($query)>0) then tlslib:iskanji($query) else ()
-    ,$title := if (string-length($textid) > 0) then collection($config:tls-texts-root)//tei:TEI[@xml:id=$textid]//tei:titleStmt/tei:title/text() else ()
+    ,$title := if (string-length($textid) > 0) then tlslib:get-title($textid) else ()
     (: no of results to display :)
     ,$resno := $model?resno
     ,$map := session:get-attribute($src:SESSION || ".types")
@@ -596,7 +623,7 @@ let $query := $model?query
     case $src:search-titles return
       src:show-title-results(map{"hits": $model?hits, "query" : $query})
     case $src:search-tabulated return 
-      let $p := tlslib:search-top-menu($search-type, $query, 0, "", 0, $textid, $qc, count($model?hits), $map?mode)
+      let $p := src:search-top-menu($search-type, $query, 0, "", 0, $textid, $qc, count($model?hits), $map?mode)
       return
       src:show-tab-results(map{"p": $p, "hits" : $model?hits, "mode" : $map?mode, "query":$query}) 
     case $src:search-texts 
@@ -604,12 +631,12 @@ let $query := $model?query
     case $src:search-trans
     case $src:search-tr-lines return
      let $hits := if (string-length($cat) > 0) then src:facets-filter-hits($model?hits, $genre, $cat) else $model?hits
-     let $txtmatchcount := count(for $h in $model?hits let $x := $h/@xml:id where starts-with($x, $textid) return $h)
-     , $trmatch := count(for $h in $model?hits let $x := "#" || $h/@xml:id
-                   return collection($config:tls-translation-root)//tei:seg[@corresp=$x])
+     let $txtmatchcount := (: count(for $h in $model?hits let $x := $h/@xml:id where starts-with($x, $textid) return $h) :) 0
+     , $trmatch := (:count(for $h in $model?hits let $x := "#" || $h/@xml:id
+                   return collection($config:tls-translation-root)//tei:seg[@corresp=$x]):) 0
     , $p :=     <p>
      {if ($start = 1) then      
-      tlslib:search-top-menu($search-type, $query, $txtmatchcount, $title, $trmatch, $textid, $qc, count($hits), $mode) else () }
+      src:search-top-menu($search-type, $query, $txtmatchcount, $title, $trmatch, $textid, $qc, count($hits), $mode) else () }
      { if ($user = "guest") then () else
        if ($mode = "rating") then 
     ("&#160;Sorting by text rating. " , <a class="btn badge badge-light" href="{$burl}&amp;start=1&amp;mode=date">Click here to sort by text date instead. </a> )
@@ -652,6 +679,35 @@ let $query := $model?query
     default return "Unknown search type",
     <div class="col-sm-0">{wd:quick-search-form('title')}</div>
 };
+
+declare function src:search-top-menu($search-type, $query, $txtmatchcount, $title, $trmatch, $textid, $qc, $count, $mode) {
+  switch($search-type)
+(:  case "8":)
+  case "5" return
+       (<a class="btn badge badge-light" href="search.html?query={$query}&amp;start=1&amp;search-type=1&amp;textid={$textid}&amp;mode={$mode}">Click here to display all  matches</a>,<br/>)
+  case "8" return
+       (<a class="btn badge badge-light" href="search.html?query={$query}&amp;start=1&amp;search-type=1&amp;textid={$textid}&amp;mode={$mode}">Click here to display all  matches</a>,<br/>)
+  default return
+   (if ($count < 6000) then 
+    ( <a class="btn badge badge-light" href="search.html?query={$query}&amp;start=1&amp;search-type=8&amp;textid={$textid}&amp;mode={$mode}">Click here to display matches tabulated by text</a>,<br/>) else (),
+      
+     if ($trmatch > 0 and not ($search-type="6")) then
+     (<a class="btn badge badge-light" href="search.html?query={$query}&amp;start=1&amp;search-type=6&amp;mode={$mode}">Click here to display only {$trmatch} matching lines that have a translation</a>,<br/>)
+     else 
+    (<a class="btn badge badge-light" href="search.html?query={$query}&amp;start=1&amp;search-type=1&amp;mode={$mode}">Click here to display all  matches</a>,<br/>)
+    ,
+    
+  if (string-length($title) > 0 and $txtmatchcount > 0) then 
+    (<a class="btn badge badge-light" href="search.html?query={$query}&amp;start=1&amp;search-type=5&amp;textid={$textid}&amp;mode={$mode}">Click here to display only {$txtmatchcount} matches in {$title}</a>,<br/>)
+  else ()
+  ), 
+  tlslib:linkheader($qc),
+   <br/>
+     
+};
+
+
+
 
 (:      
  :)
