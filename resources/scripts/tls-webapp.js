@@ -2718,8 +2718,20 @@ function save_txc(){
   });
 };
 
-function edit_app(appid){
-    alert("Edit the apparatus: coming soon!!");
+function edit_app(textid,appid){
+//    alert("Edit the apparatus: coming soon!!");
+     var fname = "edit-app-dialog"
+     $.ajax({
+     type : "GET",
+     dataType : "html",  
+     url : "api/responder.xql?func=dialogs:"+fname+"&appid=" + appid+"&textid="+textid,
+     success : function(resp){
+     $('#remoteDialog').html(resp);
+     $('#'+fname).modal('show');
+   }
+  });
+
+
 };
 
 // display dialog for punctuation
