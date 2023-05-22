@@ -504,15 +504,14 @@ declare function tlslib:proc-seg($node as node(), $options as map(*)){
   case element (tei:lb)  return ()
   case element (exist:match) return <mark>{$node/text()}</mark>
   case element (tei:anchor) return 
-    
-    let $t := if (starts-with($node/@xml:id, "nkr_note_mod")) then local:cleanstring($node/ancestor::tei:TEI//tei:note[@target = "#"|| $node/@xml:id]//text()) else
-    if ($node/@type='app' and starts-with($node/@xml:id, 'end-')) then 
-     let $app := $node/ancestor::tei:TEI//tei:app[@to="#"||$node/@xml:id]
-     return
+    (: since I need it later, I will get it here, even if it might not get a result :)
+    let $app := $node/ancestor::tei:TEI//tei:app[@from="#"||$node/@xml:id]
+    let $t := if (starts-with($node/@xml:id, "xxnkr_note_mod")) then local:cleanstring($node/ancestor::tei:TEI//tei:note[@target = "#"|| $node/@xml:id]//text()) else
+    if (starts-with($node/@xml:id, 'beg')) then 
      tlslib:format-app($app)
     else
-    ()
-    return if ($t) then <span title="{$t}" class="text-muted"><img class="icon note-anchor" onclick="edit_app('')" src="{$config:circle}"/></span> else ()
+      ()
+    return if ($t) then <span title="{$t}" class="text-muted"><img class="icon note-anchor" onclick="edit_app('{$options?textid}','{data($node/@xml:id)}')" src="{$config:circle}"/></span> else ()
   case element(tei:seg) return (if (string-length($node/@n) > 0) then data($node/@n)||"　" else (), for $n in $node/node() return tlslib:proc-seg($n, $options))
   case attribute(*) return () 
  default return $node    
@@ -520,8 +519,12 @@ declare function tlslib:proc-seg($node as node(), $options as map(*)){
 
 (: format the app for display in the segment :)
 declare function tlslib:format-app($app as node()){
-$app//text()
-(:     "〔"|| $app/tei:lem/text() ||"〕："||string-join(for $r in $app/tei:rdg return $r/text() || "【" || $app/ancestor::tei:TEI//tei:witness[@xml:id=substring($r/@wit, 2)]/text() ||  "】", "，"):)
+ let $lwit := $app/ancestor::tei:TEI//tei:witness[@xml:id=substring($app/tei:lem/@wit, 2)]/text()
+ let $lem :=  $app/tei:lem//text() || $lwit ||"；" 
+ , $t := string-join(for $r in $app/tei:rdg
+        let $wit := "【" || string-join(for $w in tokenize($r/@wit) return $app/ancestor::tei:TEI//tei:witness[@xml:id=substring($w, 2)]/text() , "，") ||  "】"
+        return $r/text() || $wit, "；")
+  return $lem || $t      
 };
 
 (: replace the nodes listed in $config:proc-seg-for-edit-hidden-element-names with a placeholder, c with the @n content :)
@@ -573,6 +576,16 @@ declare function tlslib:get-title($txtid as xs:string){
 let $title := string-join(collection($config:tls-texts-root) //tei:TEI[@xml:id=$txtid]//tei:titleStmt/tei:title/text(), "・")
 return $title
 };
+
+(:~
+: Get the document for a given textid
+: @param $txtid
+:)
+declare function tlslib:get-doc($txtid as xs:string){
+collection($config:tls-texts-root)//tei:TEI[@xml:id=$txtid]
+};
+
+
 
 (:~
 : Extract the textid from the location.
@@ -1278,7 +1291,7 @@ else ()
 if ($seg/@type='comm') then 'tls-comm ' else 
 if($locked) then 'locked ' else () }{
 if ($ann='false') then 'col-sm-4' else 'col-sm-2'} zh chn-font {$alpheios-class} {$markup-class}" lang="{$lang}" id="{$seg/@xml:id}" data-tei="{ util:node-id($seg) }">{
-tlslib:proc-seg($seg, map{"punc" : true()})
+tlslib:proc-seg($seg, map{"punc" : true(), "textid" : $textid})
 }{(:if (exists($seg/tei:anchor/@xml:id)) then <span title="{normalize-space(string-join($seg/ancestor::tei:div//tei:note[tei:ptr/@target='#'||$seg/tei:anchor/@xml:id]/text()))}" >●</span> else ():) ()}</div>　
 <div class="col-sm-5 tr" title="{$resp1}" lang="en-GB" tabindex="{$options('pos')+500}" id="{$seg/@xml:id}-tr" contenteditable="{if (not($testuser) and not($locked)) then 'true' else 'false'}">{typeswitch ($slot1) 
 case element(tei:TEI) return  $slot1//tei:seg[@corresp="#"||$seg/@xml:id]/text()

@@ -618,16 +618,19 @@ declare function local:no-witness($textid as xs:string){
 };
 
 declare function dialogs:edit-app-dialog($map as map(*)){
- let $app := if (string-length($map?appid) > 0) then collection($config:tls-texts-root)//tei:app[@xml:id=$map?appid] else ()
- let $seg := if ($app) then $app/ancestor::tei:TEI//tei:seg[anchor[@xml:id = substring($app/@to, 2)]] else collection($config:tls-texts-root)//tei:seg[@xml:id=$map?uid]
+(: CBETA texts do not have a xml:id on app, so we are using the from attribute here :)
+ let $app := if (string-length($map?appid) > 0) then 
+   let $doc := tlslib:get-doc($map?textid)
+   return $doc//tei:app[@from="#"||$map?appid] else ()
+ let $seg := if ($app) then $app/ancestor::tei:TEI//tei:seg[tei:anchor[@xml:id = substring($app/@to, 2)]] else collection($config:tls-texts-root)//tei:seg[@xml:id=$map?uid]
  , $wl := $seg/ancestor::tei:TEI//tei:witness
- , $lem := if (string-length($map?sel)>0) then $map?sel else $app/tei:lem/text() 
+ , $lem := if (string-length($map?sel)>0) then $map?sel else $app/tei:lem//text() 
  return
  <div id="edit-app-dialog" class="modal" tabindex="-1" role="dialog" style="display: none;">
     <div class="modal-dialog modal-lg" role="document">
       <form id="edit-app-form">
         <div class="modal-content">
-            <div class="modal-header"><h5>Add/edit variant on line <span class="font-weight-bold">{$seg/text()}</span></h5>
+            <div class="modal-header"><h5>Add/edit variant on line <span class="font-weight-bold">{$seg//text()}</span></h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close" title="Close">x</button>
             </div>
             {if ($wl) then
@@ -639,10 +642,11 @@ declare function dialogs:edit-app-dialog($map as map(*)){
             </div>
             <h6 class="font-weight-bold">Variant readings:</h6>
             {for $w in $wl
+             let $rdg := $app/tei:rdg["#"||$w/@xml:id = tokenize(@wit)]
             return
             <div class="form row">
             <div class="col-md-3">Witness {$w/text()}</div>
-            <div class="col-md-3"><input id="rdg---{$w/@xml:id}" name="rdg---{$w/@xml:id}" class="form-control" required="true" value="{if ($app[tei:rdg[@wit="#"||$w/@xml:id]]) then $app[tei:rdg[@wit="#"||$w/@xml:id]]/text() else $map?sel}"/></div>
+            <div class="col-md-3"><input id="rdg---{$w/@xml:id}" name="rdg---{$w/@xml:id}" class="form-control" required="true" value="{if ($rdg) then  $rdg/text() else $map?sel}"/></div>
             </div>
             }
             <div class="form row">

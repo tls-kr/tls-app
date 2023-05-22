@@ -1555,6 +1555,7 @@ for $h at $n in $disp
     $cseg := collection($config:tls-texts-root)//tei:seg[@xml:id=$loc],
     $head :=  $cseg/ancestor::tei:div[1]/tei:head[1]//text(),    
     $title := $cseg/ancestor::tei:TEI//tei:titleStmt/tei:title/text(),
+    $textid := tlslib:get-textid($loc),
     $tr := collection($config:tls-translation-root)//tei:seg[@corresp="#"||$loc]
     ,$m1 := substring(($h/exist:match)[1]/text(), 1, 1)
     where $m1 = $q1
@@ -1565,10 +1566,10 @@ return
 <div class="col-md-1">{xs:int($map?start)+$n - 1}</div>
 <div class="col-md-3"><a href="textview.html?location={$loc}&amp;query={$map?query}">{$title, " / ", $head}</a></div>
 <div class="col-md-8">{ 
-for $sh in $h/preceding-sibling::tei:seg[position()<4] return tlslib:proc-seg($sh, map{"punc" : true()}),
-        tlslib:proc-seg($h, map{"punc" : true()}),
+for $sh in $h/preceding-sibling::tei:seg[position()<4] return tlslib:proc-seg($sh, map{"punc" : true(), "textid" : $textid}),
+        tlslib:proc-seg($h, map{"punc" : true(), "textid" : $textid}),
         (: this is a hack, it will probably show the most recent translation if there are more, but we want to make this predictable... :)
-        for $sh in $h/following-sibling::tei:seg[position()<4] return tlslib:proc-seg($sh, map{"punc" : true()}),
+        for $sh in $h/following-sibling::tei:seg[position()<4] return tlslib:proc-seg($sh, map{"punc" : true(), "textid" : $textid }),
         if ($tr) then (<br/>, $tr) else ()}</div>
 </div>
 }

@@ -352,7 +352,11 @@ function app:tv-data($node as node()*, $model as map(*))
 {
    session:create(),
    let $location := request:get-parameter("location", "")
-   let $seg := 
+(:  , $l := log:info($app:log, "Loading; app:tv-data "):)
+ (: 2023-05-22  The following is extremely inefficient and duplicates code in app:textview, since it seems not to be used, disabled for now 
+    the right way forward would be to streamline here and then use it where needed. 
+ :)
+(:   let $seg := 
     if (string-length($location) > 0) then
      if (contains($location, '_')) then
       let $textid := tokenize($location, '_')[1]
@@ -363,11 +367,13 @@ function app:tv-data($node as node()*, $model as map(*))
       let $targetseg := if ($firstdiv//tei:seg) then ($firstdiv//tei:seg)[1] else  ($firstdiv/following::tei:seg)[1] 
       return
        $targetseg
-    else (), 
-    $textid := tokenize($seg/@xml:id, "_")[1],
+    else (), :)
+    let $textid := tokenize($location, "_")[1],
     $title := collection($config:tls-texts-root)//tei:TEI[@xml:id=$textid]//tei:titleStmt/tei:title
+(:   , $l := log:info($app:log, "Leaving app:tv-data "):)
+
     return
-    map {"seg" : $seg, "textid" : $textid, "title" : $title}
+    map { "textid" : $textid, "title" : $title}
 };
 
 
@@ -390,6 +396,8 @@ function app:textview($node as node()*, $model as map(*), $location as xs:string
     let $dataroot := $config:tls-data-root
     , $user := sm:id()//sm:real/sm:username/text()
     , $usercoll := collection($config:tls-user-root || "/" || $user)
+    , $message := (for $k in map:keys($model) return $k) => string-join(",")
+(:    , $l := log:info($app:log, "Loading; $model keys: " || $message):)
     return
     (session:create(),
     if (string-length($location) > 0) then
@@ -407,6 +415,7 @@ function app:textview($node as node()*, $model as map(*), $location as xs:string
             collection($config:tls-texts-root)//tei:TEI[@xml:id=$location]//tei:body/tei:div[1]
          else
             let $rec := $usercoll//tei:list[@type='visit']/tei:item[@xml:id=$location]
+            
             let $visit := if ($rec) then substring($rec/@target, 2) else
               (: 2023-05-11 -- changed to new way to record visits, will phase the following out after a while :)
               (for $v in collection($config:tls-user-root || "/" || $user)//tei:list[@type="visits"]/tei:item
@@ -419,12 +428,18 @@ function app:textview($node as node()*, $model as map(*), $location as xs:string
             if ($visit) then 
              let $rst := collection($config:tls-texts-root)//tei:seg[@xml:id=$visit]
              return if ($rst) then $rst else 
-              (collection($config:tls-texts-root)//tei:TEI[@xml:id=$location]//tei:body)[1]
+               let $doc := collection($config:tls-texts-root)//tei:TEI[@xml:id=$location]
+(:                , $l := log:info($app:log, "Loading text, no visit" || count($doc)):)
+               return
+                 subsequence($doc//tei:body, 1, 1)
             else          
-             (collection($config:tls-texts-root)//tei:TEI[@xml:id=$location]//tei:body)[1]
+             let $doc := collection($config:tls-texts-root)//tei:TEI[@xml:id=$location]
+(:                , $l := log:info($app:log, "Loading text, all failed: " || count($doc)):)
+             return
+               subsequence($doc//tei:body, 1, 1)
     
       let $targetseg := if (local-name($firstdiv) = "seg") then $firstdiv else 
-      if ($firstdiv//tei:seg) then ($firstdiv//tei:seg)[1] else  ($firstdiv/following::tei:seg)[1] 
+      if ($firstdiv//tei:seg) then subsequence($firstdiv//tei:seg, 1, 1) else  subsequence($firstdiv/following::tei:seg, 1, 1) 
       return
         try {tlslib:display-chunk($targetseg, $model, 0, $prec + $foll)} catch * {"An error occurred, can't display text. Code:" || count($targetseg) || " (targetseg)"}
     else 
@@ -1253,6 +1268,7 @@ function app:navbar-main($node as node()*, $model as map(*), $query as xs:string
 {
 let $context := substring-before(tokenize(request:get-uri(), "/")[last()], ".html")
  ,$testuser := contains(sm:id()//sm:group, ('tls-test', 'guest'))
+(: , $l := log:info($app:log, "Loading; app:navbar-main "):)
 
 return
 <nav class="navbar navbar-expand-sm navbar-light bg-light fixed-top">
