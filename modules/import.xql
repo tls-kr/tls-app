@@ -21,6 +21,7 @@ import module namespace log="http://hxwd.org/log" at "log.xql";
 
 declare variable $imp:ignore-elements := ("body", "docNumber", "juan", "jhead", "byline" ,"mulu") ;
 declare variable $imp:log := $config:tls-log-collection || "/import";
+declare variable $imp:perm := map{"owner" : "tls", "group":"tls-user", "mode":"rwxrwxr--"};
 
 declare variable $imp:kanji-groups := <groups>
     <group name="ExtA" lower="㐀" upper="䷿" lower-dec="13312" upper-dec="19967"/>
@@ -82,8 +83,8 @@ return $s
 declare function imp:add-cb-seg($node as node(), $pref as xs:string){
 let $pstr := string-join(imp:prepare-element($node))
 , $res := string-join(for $r at $pos in tokenize($pstr, '\$') return $r || "$" || $pos || "$", '')
-, $juan := ($node/preceding::cb:juan)[last()]/@n 
-, $jid := if ($juan) then $juan else "000" 
+, $juan := data(($node/preceding::cb:juan)[last()]/@n | ($node/preceding::tei:juan)[last()]/@n )
+, $jid := if (string-length($juan) > 0) then $juan else "000" 
 , $lb := if ($node/@xml:id) then substring($node/@xml:id , 6) else $node/preceding::tei:lb[1]/@n
 , $id  := $jid || "-" || $lb
 , $astr := analyze-string ($res, $config:seg-split-tokens)
@@ -96,7 +97,7 @@ let $pstr := string-join(imp:prepare-element($node))
         where string-length($sl) > 0
         return
             element {QName(namespace-uri($node), "seg")} {
-               $node/@* except ($node/@xml:id , $node/@cb:place) ,
+               $node/@* except ($node/@xml:id , $node/@cb:place, $node/@style) ,
                if ($node/ancestor::*:div[1]/@type = 'commentary') then 
                  attribute {"type"} {"comm"}  else (),
                attribute xml:id {$nid}, 
@@ -178,15 +179,97 @@ declare function imp:recursive-update-ns($nodes as node()*, $ns as xs:string, $p
  default return $node
 };
 
+
+
+declare function imp:get-tmp-copy($cbid as xs:string){
+let $tmp-path := $config:tls-texts-root||"/tmp"
+, $ldoc := collection($tmp-path)//tei:TEI[@xml:id=$cbid]
+return
+if ($ldoc) then
+ let $du :=  tlslib:path-component(substring-after (document-uri(root($ldoc)), $tmp-path))
+ , $cbroot :=  "/db/apps/tls-texts/data/CBETA"
+ , $targetcoll := dbu:ensure-collection ($cbroot||$du, $imp:perm)
+ , $uri :=  xmldb:store($targetcoll, $cbid || ".xml", $ldoc)
+ , $acl := dbu:set-permissions( $uri , $imp:perm)
+ return $uri
+else
+ let $doc := (if (starts-with($cbid, "KR")) then imp:dl-krp-text($cbid) else imp:dl-cbeta-text($cbid))
+ , $vol := tokenize($cbid, "n")[1]
+ , $top := tokenize ($cbid, "\d+")[1]
+ , $targetcoll := dbu:ensure-collection ($config:tls-texts-root || "/CBETA/" || $top || "/" || $vol , $imp:perm )
+ , $uri :=  xmldb:store($targetcoll, $cbid || ".xml", $doc)
+ , $acl := dbu:set-permissions( $uri , $imp:perm)
+ return $uri
+};
+
+
 (: for KR we pass the text id as cbid :)
 declare function imp:get-local-copy($cbid as xs:string, $krid as xs:string){
-let $doc := (if (starts-with($cbid, "KR")) then imp:dl-krp-text($cbid) else imp:dl-cbeta-text($cbid))
-, $targetcoll := xmldb:create-collection($config:tls-texts-root || "/KR/", substring($krid, 1, 3) || "/" || substring($krid, 1, 4) )
-, $uri :=  xmldb:store($targetcoll, $krid || ".xml", $doc)
-, $acl := (sm:chmod(xs:anyURI($uri), "rwxrwxr--"),
-    sm:chgrp(xs:anyURI($uri), "tls-user"))
-return $uri
+ let $doc := (if (starts-with($cbid, "KR")) then imp:dl-krp-text($cbid) else imp:dl-cbeta-text($cbid))
+ , $targetcoll := xmldb:create-collection($config:tls-texts-root || "/KR/", substring($krid, 1, 3) || "/" || substring($krid, 1, 4) )
+ , $uri :=  xmldb:store($targetcoll, $krid || ".xml", $doc)
+ , $acl := dbu:set-permissions( $uri , $imp:perm)
+ return $uri
 };
+
+
+declare function imp:calculate-extent($d){
+  let $body := $d/ancestor-or-self::tei:TEI/tei:text/tei:body
+  return
+  sum(for $s in $body//tei:seg return imp:clean-string-length($s))
+};
+
+declare function imp:updateExtent($header as node()){
+    let $sum := imp:calculate-extent($header)
+    , $old := $header//tei:fileDesc/tei:extent[not(child::tei:measure)]/text()
+    , $oe := if ($old) then <measure xmlns="http://www.tei-c.org/ns/1.0" unit="juan">{replace($old, "卷", "")}</measure> else ()
+    let $extent := <extent xmlns="http://www.tei-c.org/ns/1.0"><measure unit="char" quantity="{$sum}"/><date when-iso="{current-dateTime()}"></date>{$oe}</extent>
+    return
+    if ($header//tei:fileDesc/tei:extent) then
+        update replace $header//tei:fileDesc/tei:extent with $extent
+    else 
+        if ($header//tei:fileDesc/tei:editionStmt) then
+            update insert $extent following $header//tei:fileDesc/tei:editionStmt
+        else
+            update insert $extent following $header//tei:fileDesc/tei:titleStmt
+};
+
+declare function imp:updateIdno($header as node(), $e){
+    let $cbid := data($e/@cbid)
+    let $krid := data($e/@krid)
+    let $cno := <idno xmlns="http://www.tei-c.org/ns/1.0" type="CBETA">{$cbid}</idno>
+    , $kno := <idno xmlns="http://www.tei-c.org/ns/1.0" type="kanripo">{if ($krid) then $krid else "krid_missing"}</idno>
+    , $dno := <idno xmlns="http://www.tei-c.org/ns/1.0" type="DILA">{data($e/@xmlid)}</idno>
+    , $oldkno := $header//tei:edition/tei:idno[@type="kanripo"]
+    , $oldcno := $header//tei:edition/tei:idno[@type="CBETA"]
+    , $olddno := $header//tei:edition/tei:idno[@type="DILA"]
+    , $cat1 :=  if ($krid) then tlslib:checkCat($header, "kr-categories", substring($krid, 1, 4)) else 
+        let $cat := doc($config:tls-texts-meta||"/taxonomy.xml")
+        let $d := $cat//tei:catDesc[. = $e/category/text()]
+        return tlslib:checkCat($header, $d/parent::tei:category/@xml:id)
+
+    , $cat2 := tlslib:checkCat($header, "auth-cat", tokenize($cbid, "n")[1])
+    return
+    (
+    if ($oldkno) then
+        update replace $oldkno with $kno
+    else 
+        update insert $kno into $header//tei:edition
+    ,
+    if ($olddno) then
+        update replace $olddno with $dno
+    else 
+        update insert $dno into $header//tei:edition
+    
+    , if ($oldcno) then
+        update replace $oldcno with $cno
+      else
+        if ($header//tei:edition) then
+            update insert $cno into $header//tei:edition
+        else ()
+    )
+};
+
 
 (: updates to the header in files imported from CBETA 
 TODO: also update the creation date, e.g. from 
@@ -197,20 +280,72 @@ use these lists for dates and text type , e.g. translated or original
 :)
 declare function imp:update-metadata($doc as node(), $kid as xs:string, $title as xs:string){
 let $cbid := $doc/tei:TEI/@xml:id
-, $idno := update insert attribute xml:id {$cbid} into $doc//tei:idno[@type="CBETA"]
 , $newid := update replace $doc/tei:TEI/@xml:id with $kid
-, $state := update insert attribute state {"red"} into $doc/tei:TEI
 , $user := sm:id()//sm:real/sm:username/text()
 , $nt := <titleStmt xmlns="http://www.tei-c.org/ns/1.0">
 			<title>{$title}</title>
 {$doc//tei:titleStmt/tei:author, $doc//tei:titleStmt/tei:respStmt}
 		</titleStmt>
-, $dt := update replace $doc//tei:titleStmt with $nt
-, $rev := <change  xmlns="http://www.tei-c.org/ns/1.0" when="{current-dateTime()}"> <name>{$user}</name>Various changes for compatibility with the TLS Application, derived from the version published by CBETA on GitHub.</change>          
+, $dt := if ($title = "no_title") then () else update replace $doc//tei:titleStmt with $nt
+, $rev := <change  xmlns="http://www.tei-c.org/ns/1.0" when="{current-dateTime()}"> <name>{$user}</name>Some changes for compatibility with the TLS Application, derived from the version published by CBETA on GitHub.</change>          
 , $rv := update insert $rev into  $doc//tei:revisionDesc
 return 
 ()
 };
+
+(: pickup the info from catalog file entry :)
+declare function imp:process-entry($doc, $e){
+let $cnode := $doc//tei:creation
+let $cat := doc($config:tls-texts-meta||"/taxonomy.xml")
+let $dnb := if ($e/when/@not_before) then format-number(xs:int($e/when/@not_before), "0000") else ()
+let $dna := if ($e/when/@not_after) then format-number(xs:int($e/when/@not_after), "0000") else ()
+, $d :=  element {QName(xs:anyURI("http://www.tei-c.org/ns/1.0"), "date")} { 
+         if ($dnb) then attribute notBefore {$dnb} else (),
+         if ($dna) then attribute notAfter {$dna} else ()}
+, $pl := if ($e/places) then  for $p in $e/places/place
+                let $n := $p/text()
+                return <placeName xmlns="http://www.tei-c.org/ns/1.0" xml:lang="zh-Hant" key="{$p/@key}">{$n}<geo>{data($p/@lat)},{data($p/@long)}</geo></placeName>
+         else ()
+, $dyn := if ($e/dynasty) then 
+            let $d := $cat//tei:catDesc[. = $e/dynasty/text()]
+            return tlslib:checkCat($doc, $d/parent::tei:category/@xml:id)
+          else ()
+, $cn := for $c in $e/contributors/name
+         let $n := $c/text()
+         return <persName xmlns="http://www.tei-c.org/ns/1.0" xml:lang="zh-Hant" key="{$c/@key}">{$n}</persName>
+, $creation := <creation xmlns="http://www.tei-c.org/ns/1.0">{$d}{$cn}{$pl}</creation>
+return 
+ if ($cnode) then update replace $cnode with $creation 
+ else update insert $creation into $doc//tei:profileDesc
+};
+
+declare function imp:do-cbeta-conversion($cbid as xs:string){
+ let $eentry := collection($config:tls-texts-meta)//entry[@cbid=$cbid]
+ , $entry := if ($eentry) then $eentry else collection($config:tls-texts-meta)//entry[matches(child::files/@n, $cbid)]
+, $fn := tokenize ($entry/files/@n, ";")
+, $pos :=  if (count($fn) > 1) then 
+        for $fx at $px in $fn
+        where matches($fx, $cbid)
+        return $px
+    else ()
+, $fnum := if ($pos) then "(" || $pos || ")" else ()
+ let $doc := doc(imp:get-tmp-copy($cbid))
+ , $pref := $cbid || "_CBETA_" 
+ , $etitle := $entry/title/text() || $fnum
+ , $title := if ($etitle) then $etitle else "no_title"
+ , $log := log:info($imp:log, $cbid || " - " || $title)
+ , $h := imp:update-metadata($doc, $cbid, $title)
+ , $bd :=  imp:rec-adjust-pb($doc//tei:text/tei:body, "http://www.tei-c.org/ns/1.0", $pref) 
+ , $res := imp:recursive-update-ns($bd, "http://www.tei-c.org/ns/1.0", $pref)
+ , $res1 := update replace $doc//tei:text/tei:body with $res
+ , $res2 := collection($config:tls-texts-root)//tei:TEI[@xml:id=$cbid]
+ , $ext := imp:updateExtent($res2)
+ , $idno := if ($entry) then imp:updateIdno($res2, $entry) else ()
+ , $ent := if ($entry) then imp:process-entry($res2, $entry) else ()
+ , $state := tlslib:checkCat($res2, "tls-state", "state-red")
+return $cbid
+};
+
 
 declare function imp:do-conversion($kid as xs:string, $cbid as xs:string){
 let $krt := doc($config:tls-add-titles)
@@ -218,7 +353,8 @@ let $krt := doc($config:tls-add-titles)
  , $doc := doc(imp:get-local-copy($cbid, $kid))
  , $state := xed:set-state($doc, "red")
   (: this is for the CBETA texts :)
- , $upd := if (starts-with($kid, "KR6")) then (let $pref := $kid || "_CBETA_" 
+ , $upd := if (starts-with($kid, "KR6")) then 
+    (let $pref := $kid || "_CBETA_" 
    , $h := imp:update-metadata($doc, $kid, $krt//work[@krid=$kid]/title/text())
    , $bd :=  imp:rec-adjust-pb($doc//tei:text/tei:body, "http://www.tei-c.org/ns/1.0", $pref) 
    , $res := update replace $doc//tei:text/tei:body with imp:recursive-update-ns($bd, "http://www.tei-c.org/ns/1.0", $pref) return () ) 
@@ -268,7 +404,9 @@ declare function imp:prepare-krp($nodes as node()*){
 
 declare function imp:dl-cbeta-text($cbid as xs:string){
 let $cbeta-gh-base := "https://raw.githubusercontent.com/cbeta-org/xml-p5/master/"
-, $path := substring($cbid, 1, 1) || "/" || substring($cbid, 1, 3) || "/" || $cbid || ".xml" 
+ , $vol := tokenize($cbid, "n")[1]
+ , $top := tokenize ($cbid, "\d+")[1]
+, $path := $top || "/" || $vol || "/" || $cbid || ".xml" 
 let $res :=  
             http:send-request(<http:request http-version="1.1" href="{xs:anyURI($cbeta-gh-base||$path)}" method="get">
                                 <http:header name="Connection" value="close"/>

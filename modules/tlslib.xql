@@ -39,6 +39,11 @@ declare function tlslib:html-file(){
 (:~ 
 : Helper functions
 :)
+
+declare function tlslib:path-component($p){
+string-join((tokenize($p, "/")) [position() < last()], "/")
+};
+
 (: quick fix, this needs to be made user-extensible :)
 declare function tlslib:annotation-types($type as xs:string){
   let $map := 
@@ -1477,6 +1482,32 @@ declare function tlslib:delCat($node as node(), $catid as xs:string){
     return 
       update delete $r
 };
+
+(: not checking for scheme here :)
+declare function tlslib:checkCat($node as node(), $scheme as xs:string, $catid as xs:string){
+    let $tax := doc($config:tls-texts-taxonomy)
+    let $catref := <catRef xmlns="http://www.tei-c.org/ns/1.0" scheme="#{$scheme}" target="#{$catid}"/>
+    , $tc := <textClass xmlns="http://www.tei-c.org/ns/1.0">{$catref}</textClass>
+    , $header := $node/ancestor-or-self::tei:TEI/tei:teiHeader
+    return
+    if ($header//tei:profileDesc) then
+        if ($header//tei:catRef[@target="#"||$catid]) then 
+            let $r := $header//tei:catRef[@target="#"||$catid]
+            , $s := substring($r/@scheme ,2)
+            return
+            if ($s = $scheme) then () else
+                update replace $r with $catref
+        else
+            if ($header//tei:textClass) then
+                update insert $catref into $header//tei:textClass
+            else
+                update insert $tc into $header//tei:profileDesc
+    else 
+        let $node := <profileDesc xmlns="http://www.tei-c.org/ns/1.0">{$tc}</profileDesc>
+        return
+            update insert $node following $header//tei:fileDesc 
+};
+
 
 (: category xml:ids have to be unique across the document, so I do not need to provide the scheme here :)
 declare function tlslib:checkCat($node as node(), $catid as xs:string){

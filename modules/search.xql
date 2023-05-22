@@ -51,9 +51,14 @@ declare
 function src:query($node as node()*, $model as map(*), $query as xs:string?, $mode as xs:string?, $search-type as xs:string?, $textid as xs:string?, $filter as xs:string?)
 {
     session:create(),
+    let $s-time := util:system-dateTime()
     let $cat := map:merge(for $c in tokenize($filter, ";") 
-                           let $ck := tokenize($c, ":")
-                           return map:entry($ck[1], $ck[2]))
+                           return
+                            if (string-length($c) > 0) then
+                             let $ck := tokenize($c, ":")
+                             return map:entry($ck[1], $ck[2])
+                           else () )
+    , $ngtype := ($src:search-texts,$src:search-one-text,$src:search-tr-lines,$src:search-tabulated)                           
     let $hits := 
      switch($search-type)
      case $src:search-texts 
@@ -85,7 +90,8 @@ function src:query($node as node()*, $model as map(*), $query as xs:string?, $mo
         else count($hits) :)
 
     return
-    map{"hits" : $hits, "totalhits": $totalhits, "query" : $query, "mode" : $mode, "search-type" : $search-type, "textid" : $textid, "resno" : 50, "cat" : $cat}
+    
+    map{"hits" : if ($search-type = $ngtype) then $hits?hits else $hits, "totalhits": if ($search-type = $ngtype) then $hits?all-hits else (), "query" : $query, "mode" : $mode, "search-type" : $search-type, "textid" : $textid, "resno" : 50, "cat" : $cat, "s-time": $s-time}
 };
 
 declare function src:do-query($queryStr as xs:string?, $mode as xs:string?)
@@ -235,8 +241,7 @@ declare function src:ngram-query($queryStr as xs:string?, $mode as xs:string?, $
     where $filter
     return $hit 
    return
-   
- $hit-res
+   map{"hits" :  $hit-res, "all-hits" : $pmatches}
 };
 
 
@@ -273,7 +278,7 @@ declare
 function src:show-hits-h1($node as node()*, $map as map(*),  $type as xs:string){
 let $st :=  if (string-length($type) > 0) then map:get($config:search-map, $map?search-type) || "/" || map:get($config:lmap, $type) else map:get($config:search-map, $map?search-type)
 return
-if ($map?search-type = $src:search-bib ) then () else
+(if ($map?search-type = $src:search-bib ) then () else
  if ($map?search-type = $src:textlist) then
    let $count := count($map?hits)
    return 
@@ -283,6 +288,9 @@ if ($map?search-type = $src:search-bib ) then () else
    else src:textlist-doc()
  else
 <h1>Searching in <strong>{$st}</strong> for <mark class="chn-font">{$map?query}</mark></h1>
+,
+<p>Time: {util:system-dateTime() - $map?s-time}</p>
+)
 };
 
 declare
@@ -305,15 +313,15 @@ declare function src:facets-get-metadata($hit, $field){
     let $header := $hit/ancestor-or-self::tei:TEI/tei:teiHeader
     return
         switch ($field)
-            case "textid" return $hit/ancestor-or-self::tei:TEI/@xml:id
+            case "textid" return $header/parent::tei:TEI/@xml:id
             case "title" return 
                 string-join((
                     $header//tei:msDesc/tei:head, $header//tei:titleStmt/tei:title[@type = 'main'],
                     $header//tei:titleStmt/tei:title
                 ), " - ")
+            case "kr-categories"
             case "tls-internal"
             case "tls-dates"
-            case "kr-categories"
             case "tls-regions" return 
                 let $res := for $t in $header//tei:textClass/tei:catRef[@scheme="#"||$field]/@target return substring($t, 2)
                 return
@@ -475,6 +483,7 @@ declare function src:facets-html($node, $map, $baseid, $url, $state){
 
 
 declare function src:facets-html-node($n, $baseid, $url){
+   if ($n/@rend="textid") then () else
    <li id="{$baseid}---{$n/@xml:id}">
    {if (string-length($url) > 0) then 
    <span>
@@ -553,12 +562,13 @@ declare function src:facets($node as node()*, $model as map(*), $query as xs:str
            return 
            <div  class="col-md-3">
             <h1>Facets</h1>
+            <p>Time: {util:system-dateTime() - $model?s-time}</p>
             <p>{if (count($fkeys) > 0) then <span>Applied filters: <br/>
             {string-join(for $f in $fkeys return tlslib:cat-title($model?cat?($f)), " / ")}
             </span>
             else ()}</p>{
             for $g in $genres
-            let $map := src:facets-map($model?hits, $g)
+            let $map := src:facets-map($model?totalhits, $g)
             , $tax := doc($config:tls-texts-taxonomy)//tei:category[@xml:id=$g]
             , $ufilter := if (count($fkeys) > 0) then "&amp;filter=" || string-join(for $c in $fkeys where not ($c = $g) return $c||":"||$model?cat?($c), ";") else ""
             , $furl := $url || $ufilter
@@ -814,7 +824,7 @@ declare function src:show-text-results($map as map(*)){
       let $loc := if ($map?search-type=$src:search-trans) then substring($h/@corresp,2) else $h/@xml:id,
       $m1 := try { substring(($h/exist:match)[1]/text(), 1, 1) } catch * {"x"},
       $cseg := collection($config:tls-texts-root)//tei:seg[@xml:id=$loc],
-      $head :=  $cseg/ancestor::tei:div[1]/tei:head[1]//text() ,
+      $head :=  $cseg/ancestor::tei:div[1]/tei:head[1]/tei:seg/text() ,
       $title := $cseg/ancestor::tei:TEI//tei:titleStmt/tei:title/text(),
 (:     at some point use this to select the translation the user prefers
       $tr := tlslib:get-translations($model?textid),
@@ -825,6 +835,7 @@ declare function src:show-text-results($map as map(*)){
       <tr>
         <td class="chn-font">{$c + $map?start -1}</td>
         <td><a href="textview.html?location={$loc}&amp;query={$map?query}">{$title, " / ", $head}</a>
+        <span class="btn" title="Show more information about this text"></span>
         </td>
         {if ($map?search-type = $src:search-trans) then  
         (<td>{$cseg}</td>,<td>{$h}</td>) else
