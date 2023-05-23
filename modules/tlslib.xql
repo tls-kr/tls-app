@@ -508,7 +508,8 @@ declare function tlslib:proc-seg($node as node(), $options as map(*)){
     let $app := $node/ancestor::tei:TEI//tei:app[@from="#"||$node/@xml:id]
     let $t := if (starts-with($node/@xml:id, "xxnkr_note_mod")) then local:cleanstring($node/ancestor::tei:TEI//tei:note[@target = "#"|| $node/@xml:id]//text()) else
     if (starts-with($node/@xml:id, 'beg')) then 
-     tlslib:format-app($app)
+     if ($app) then
+       tlslib:format-app($app) else ()
     else
       ()
     return if ($t) then <span title="{$t}" class="text-muted"><img class="icon note-anchor" onclick="edit_app('{$options?textid}','{data($node/@xml:id)}')" src="{$config:circle}"/></span> else ()
@@ -524,7 +525,8 @@ declare function tlslib:format-app($app as node()){
  , $t := string-join(for $r in $app/tei:rdg
         let $wit := "【" || string-join(for $w in tokenize($r/@wit) return $app/ancestor::tei:TEI//tei:witness[@xml:id=substring($w, 2)]/text() , "，") ||  "】"
         return $r/text() || $wit, "；")
-  return $lem || $t      
+ , $note := if ($app/tei:note) then "&#xA;(Note: " || $app/tei:note/text() || ")" else () 
+  return $lem || $t || $note
 };
 
 (: replace the nodes listed in $config:proc-seg-for-edit-hidden-element-names with a placeholder, c with the @n content :)
@@ -585,6 +587,14 @@ declare function tlslib:get-doc($txtid as xs:string){
 collection($config:tls-texts-root)//tei:TEI[@xml:id=$txtid]
 };
 
+(:~
+: Get the documents for a given cat
+: @param $cat
+: @param $options 
+:)
+declare function tlslib:get-docs-for-cat($cat as xs:string, $options as map(*)){
+collection($config:tls-texts-root)//tei:catRef[@target="#"||$cat]
+};
 
 
 (:~

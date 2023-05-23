@@ -68,9 +68,9 @@ let $seg := collection($config:tls-texts)//tei:seg[@xml:id=$map?uid]
 , $ck := (for $r in $rd-keys return $map?($r), $map?sel)
 , $bid := $seg/@xml:id || "-" || $map?pos
 , $fid := "beg-" || $bid 
-, $tid := "end-" || $bid
 , $appid := "app-" || $bid
 , $ns1 := xed:insert-node-at($seg, xs:integer($map?pos), <anchor type="app" xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$fid}"/>)
+, $tid := "end-" || $bid
 , $ns2 := xed:insert-node-at($ns1, xs:integer($map?pos)+string-length($map?sel), <anchor type="app" xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$tid}"/>)
 , $app := <app resp="#{$user}" modified="{current-dateTime()}" xml:id="{$appid}" xmlns="http://www.tei-c.org/ns/1.0" from="#{$fid}" to="#{$tid}"><lem>{$map?sel}</lem>
   {for $r in $rd-keys  
