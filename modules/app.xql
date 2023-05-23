@@ -76,7 +76,9 @@ return "TLS - " || $ts
 declare function app:doc-taxonomy(){
 let $tax := doc($config:tls-texts||"/meta/taxonomy.xml")
 return
-<div>
+<div class="row">
+    <div class="col-md-2" ></div>
+    <div class="col-md-6" >
     <h3>The genre categories</h3>
     <p>At different locations in the system, lists of results can be sliced into smaller result sets using certain pre-defined categories. For lack of better name, they will be called 'genre categories' here.  </p>
     <p>Currently, the following top-level genres are defined:
@@ -93,6 +95,8 @@ return
        src:facets-html($t, map{}, $cat, "", "open")}
     </div>
 </div>
+    <div class="col-md-2" ></div>
+</div>
 };
 
 (:~
@@ -106,6 +110,7 @@ switch($section)
  case "overview" return doc(concat($config:app-root, "/documentation/overview.html"))
  case "team" return doc(concat($config:app-root, "/documentation/team.html"))
  case "manual" return doc(concat($config:app-root, "/documentation/manual.html"))
+ case "text-crit" return doc(concat($config:app-root, "/documentation/text-critical-editing.html"))
  case "taxonomy" return app:doc-taxonomy()
  default return (
  doc(concat($config:app-root, "/documentation/manual.html"))
