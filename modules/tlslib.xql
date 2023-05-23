@@ -596,7 +596,7 @@ collection($config:tls-texts-root)//tei:TEI[@xml:id=$txtid]
 declare function tlslib:get-textid ($location as xs:string){
 (:if (starts-with($location, "KR")) then:)
 if (1) then 
- tokenize($map?location, "_")[1]
+ tokenize($location, "_")[1]
 else ()
 };
 
@@ -618,6 +618,7 @@ declare function tlslib:navbar-doc(){
                                 <a class="dropdown-item" href="documentation.html?section=team">Advisory Board</a>
                                 <div class="dropdown-divider"/>
                                 <a class="dropdown-item" href="documentation.html?section=manual">About this website</a>
+                                <a class="dropdown-item" href="documentation.html?section=text-crit">Critically establishing a text</a>
                                 <a class="dropdown-item" href="documentation.html?section=taxonomy">Genre categories</a>
                                 {if ("tls-user" = sm:id()//sm:group) then 
                                 <a class="dropdown-item" href="changes.html">Recent changes</a>
