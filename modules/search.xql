@@ -215,6 +215,7 @@ declare function src:ngram-query($queryStr as xs:string?, $mode as xs:string?, $
     , $hit-res := 
     for $hit in $cmatches
      let $textid := substring-before(tokenize(document-uri(root($hit)), "/")[last()], ".xml"),
+(:     let $textid := tlslib:get-metadata($hit, "textid"),:)
       (: for the CHANT text no text date data exist, so we use this flag to cheat a bit :)
       $flag := substring($textid, 1, 3),
       $filter := 
