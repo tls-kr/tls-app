@@ -620,13 +620,16 @@ declare function xed:insert-node-at($node as node(), $pos as xs:integer, $insert
       typeswitch($n)
       case element(*) return $n
       case text() return 
-      let $l := string-length(string-join($n/preceding::text() intersect $node/node()))
-      return
-      if ($l + string-length($n) >= $pos and $pos > $l) then
-      let $s := substring($n, 1, $pos - $l)
-      , $s2 := substring($n, $pos - $l + 1)
-      return ($s, $insert, $s2)
-      else $n
+       if ($pos = 0) then
+        ($insert, $n)
+       else
+        let $l := string-length(string-join($n/preceding::text() intersect $node/node()))
+        return
+        if ($l + string-length($n) >= $pos and $pos > $l) then
+         let $s := substring($n, 1, $pos - $l)
+         , $s2 := substring($n, $pos - $l + 1)
+         return ($s, $insert, $s2)
+        else $n
       default return $n
     }
       
