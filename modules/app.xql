@@ -1941,7 +1941,7 @@ map {"current-time" : current-dateTime(), "shared-secret" : util:uuid(), "captch
 };
 
 declare function app:render($node as node()*, $model as map(*)){
-let $question := map{"12x13" : "What is twelve times thirteen, written in Chinese?" }
+let $question := map{"12x13" : "What is twelve times thirteen? (write the answer in numbers)" }
 return
 <p>
      <input type="hidden" name="ss" value="{$model?shared-secret}"/>
