@@ -2652,6 +2652,97 @@ function save_taxchar(type){
 
 // display dialog for pb
 // fname is the name of the function in dialogs, has to be the same as the ID of the remote dialog returned by that function
+function add_bibref_dialog(bibcnt){
+     var apdname = "edit-app-dialog";     
+     var fname = "add-bibref-dialog";
+     $.ajax({
+     type : "GET",
+     dataType : "html",  
+     url : "api/responder.xql?func=dialogs:"+fname+"&bibcnt=" + bibcnt,
+     success : function(resp){
+     $('#remBibRef').html(resp);
+     $('#'+apdname).modal('hide');
+     $('#'+fname).modal('show');
+   }
+  });
+    
+};
+
+function bibref_search(){
+  var query = $('#input-bib').val() 
+     $.ajax({
+     type : "GET",
+     dataType : "html",  
+     url : "api/responder.xql?func=bib:quick-search&query=" + query,
+     success : function(resp){
+     $('#bib-results').html(resp);
+   }
+  });
+  
+};
+
+// bibref_attach('{$uuid}')"
+function bibref_attach(action){
+     var apdname = "edit-app-dialog";     
+     var fname = "add-bibref-dialog";
+     var bibref = $('input[name=select-bib]:checked').attr('id')
+     var content = $('#content-'+bibref).html()
+     var page = $('#input-page').val()
+     if (action == 'select'){
+        $('#bibl-refs').html('<p id="selected-bibref" data-uuid="'+bibref+'" data-page="'+page+'"><b>See:</b></br>'+content+', p.' + page + '</p>')
+     }
+     $('#'+apdname).modal('show');
+     $('#'+fname).modal('hide');     
+};
+
+
+function do_link_items(){
+    var items = $('input[name=res-check]:checked').attr('id')
+    var arr = [];
+        $.each($("input[name='res-check']:checked"), function(){
+                  arr.push($(this).attr('id'));
+         });
+    alert("Your selected items are: " + arr.join(", "));
+//    alert(items)
+};
+
+
+// add a url to a bibliographic item
+function add_url(modsid){
+     var fname = "add-url-dialog"
+     $.ajax({
+     type : "GET",
+     dataType : "html",  
+     url : "api/responder.xql?func=dialogs:"+fname+"&modsid=" + modsid,
+     success : function(resp){
+     $('#remoteDialog').html(resp);
+     $('#'+fname).modal('show');
+     }
+    });
+};
+
+function biburl_save(modsid){
+     var fname = "add-url-dialog"
+//     var url = encodeURI($('#input-url').val());
+//     var desc = $('#input-desc').val();
+//     var note = $('#input-note').val();
+     formData = $("#add-url-form").serialize()  
+     $.ajax({
+     type : "POST",
+//     dataType : "html",  
+     data: formData,
+     url : "api/responder.xql?func=bib:url-save&modsid=" + modsid,
+      success : function(resp){
+      toastr.info("New URL saved.", "漢學文典 says:");
+      }
+     });
+     $('#'+fname).modal('hide');
+     $('#remoteDialog').html('');
+ //    window.location = 'bibliography.html?uuid='+modsid
+};
+
+// display dialog for pb
+// fname is the name of the function in dialogs, has to be the same as the ID of the remote dialog returned by that function
 function display_named_dialog(uid, fname){
      //what an ugly kludge... repeated again!!
      if (uid == 'x-get-line-id') {
@@ -2701,10 +2792,12 @@ function save_txc(){
   uid = line_id;
   pos = $("#swl-query-span" ).attr("data-pos");
   sel = $("#swl-query-span").text();
-  line = $( "#swl-line-text-span" ).text();
+  line = $("#swl-line-text-span" ).text();
+  bibref = $('#selected-bibref').attr('data-uuid');
+  bibpage = $('#selected-bibref').attr('data-page');
   $.ajax({
   type : "POST",
-  url : "api/responder.xql?func=txc:save-txc&uid="+uid + "&pos=" + pos + "&sel=" + sel + "&line="+line,
+  url : "api/responder.xql?func=txc:save-txc&uid="+uid + "&pos=" + pos + "&sel=" + sel + "&line="+line+ "&bibref=" + bibref + "&bibpage=" + bibpage,
   data: formData,
   success : function(resp){
    if (resp.startsWith('Error')) {

@@ -109,6 +109,12 @@ return
 response:redirect-to(xs:anyURI("https://www.zotero.org"||$request?path)))
 };
 
+
+declare function bib:get-mods($modsid){
+ let $biblio := collection($config:tls-data-root || "/bibliography")
+ return $biblio//mods:mods[@ID=$modsid]
+};
+
 declare function bib:save-mods($mods as node()){
 let $id := "uuid-" || util:uuid() 
 , $coll := dbu:ensure-collection($config:tls-data-root || "/bibliography/" || substring($id, 6, 1))
@@ -302,8 +308,16 @@ return
 <div class="row">
 <div class="col-sm-2"/>
 <div class="col-sm-2"><span class="font-weight-bold float-right">Electronic Version</span></div>
-<div class="col-sm-5">{if (string-length($r)>0) then <a class="btn badge" href="textview.html?location={$r/ancestor::tei:TEI/@xml:id}&amp;mode=visit">TLS</a> else ()}<a class="btn badge badge-light" target="GXDS" style="background-color:paleturquoise" href="https://archive.org/search.php?query={string-join(for $n in $m/mods:name return ($n/mods:namePart[@type='given'])[1] || " " || ($n/mods:namePart[@type='family'])[1], ', ')}%20AND%20mediatype%3A%28texts%29 ">Find on Internet Archive</a> <button class="btn badge badge-warning" type="button" onclick="add_ref('')">Add direct link to this work</button></div>
+<div class="col-sm-5">{if (string-length($r)>0) then <a class="btn badge" href="textview.html?location={$r/ancestor::tei:TEI/@xml:id}&amp;mode=visit">TLS</a> else ()}<a class="btn badge badge-light" target="GXDS" style="background-color:paleturquoise" href="https://archive.org/search.php?query={string-join(for $n in $m/mods:name return ($n/mods:namePart[@type='given'])[1] || " " || ($n/mods:namePart[@type='family'])[1], ', ')}%20AND%20mediatype%3A%28texts%29 ">Find on Internet Archive</a> <button class="btn badge badge-warning" type="button" onclick="add_url('{$m/@ID}')">Add direct link to this work</button></div>
 </div>
+{ if ($m/mods:location) then
+<div class="row">
+<div class="col-sm-2"/>
+<div class="col-sm-2"><span class="font-weight-bold float-right">Registered URLs</span></div>
+<div class="col-sm-5"><ul>{for $l in $m/mods:location/mods:url return <li><a href="{$l/text()}">{data($l/@displayLabel)}</a><br/><span class="text-muted">{data($l/@note)}</span></li>}</ul></div>
+</div>
+else ()
+}
 <div class="row">
 <div class="col-sm-2"/>
 <div class="col-sm-2"><span class="font-weight-bold float-right">Referred from</span></div>
@@ -330,6 +344,16 @@ else
 :)
 };
 
+declare function bib:url-save($para as map(*)){
+let $mods := bib:get-mods($para?modsid)
+let $urlnode := if (string-length($para?note)>0) then
+              <location xmlns="http://www.loc.gov/mods/v3"><url note="{$para?note}" displayLabel="{$para?desc}">{$para?url}</url></location>
+              else
+              <location xmlns="http://www.loc.gov/mods/v3"><url displayLabel="{$para?desc}">{$para?url}</url></location>
+return
+update insert $urlnode into $mods
+(:$para:)
+};
 
 declare function bib:display-author-role($n as node()*){
   <span>{if (exists($n/mods:role)) then "(" || $n/mods:role/mods:roleTerm ||"): " else ()} {bib:display-author($n)}</span>
@@ -366,6 +390,30 @@ return
 bib:biblio-short($q, "title", $textid)
 }</ul></div>
 };
+
+(: this is used to find and select references  :)
+declare function bib:quick-search($map as map(*)){
+let $biblio := collection($config:tls-data-root || "/bibliography")
+, $qr := for $q in tokenize($map?query) 
+  return
+  ($biblio//mods:name/mods:namePart[contains(.,$q)]/ancestor::mods:mods | $biblio//mods:title[contains(., $q)]/ancestor::mods:mods| $biblio//mods:subTitle[contains(., $q)]/ancestor::mods:mods)
+return
+for $q in $qr 
+let $t := lower-case(normalize-space(($q//mods:title)[1]))
+order by $t
+return
+bib:qs-short($q, "title")
+};
+
+declare function bib:qs-short($m as node(), $mode as xs:string) {
+<li>
+<input class="form-check-input" type="radio" name="select-bib" id="{$m/@ID}"/>
+<span id="content-{$m/@ID}">
+<span class="font-weight-bold">{string-join(for $n in $m//mods:name return bib:display-author($n), '; ')}</span>　<span>{string-join($m//mods:title/text(), " ")}, {$m//mods:dateIssued/text()}　</span>
+</span>
+</li>
+};
+
 
 
 declare function bib:fix-mods($m as node()){
@@ -827,6 +875,19 @@ let $f := substring(substring-after($uuid, "uuid-"), 1, 1)
 return
   $config:tls-data-root || "/bibliography/" || $f || "/" 
 };
+
+declare function bib:get-ref-title($uuid){
+let $biblio := collection($config:tls-data-root || "/bibliography")
+,$t:=$biblio//mods:mods[@ID=$uuid]
+return ($t//mods:title/text() )
+};
+
+declare function bib:get-bib-ref($uuid){
+let $biblio := collection($config:tls-data-root || "/bibliography")
+,$t:=$biblio//mods:mods[@ID=$uuid]
+return ($t//mods:note[@type="bibliographic-reference"]/text() )
+};
+
 
 (: TODO: Avoid duplicated keys :)
 declare function bib:make-bibref($fam as xs:string, $giv as xs:string, $date as xs:string) as xs:string{
