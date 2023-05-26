@@ -1558,14 +1558,17 @@ for $h at $n in $disp
     $textid := tlslib:get-textid($loc),
     $tr := collection($config:tls-translation-root)//tei:seg[@corresp="#"||$loc]
     ,$m1 := substring(($h/exist:match)[1]/text(), 1, 1)
+    , $col1 :=  if ("dba" = sm:id()//sm:group) then "col-md-1" else "col-md-2"
     where $m1 = $q1
 (:  :)
 
 return
 <div class="row">
-<div class="col-md-1">{xs:int($map?start)+$n - 1}</div>
+<div class="{$col1}">{xs:int($map?start)+$n - 1}</div>
+{ if ("dba" = sm:id()//sm:group) then 
+<div class="col-md-1"><input class="form-check-input" type="checkbox" name="res-check" value="" id="res-{$loc}"/></div> else ()}
 <div class="col-md-3"><a href="textview.html?location={$loc}&amp;query={$map?query}">{$title, " / ", $head}</a></div>
-<div class="col-md-8">{ 
+<div class="col-md-7">{ 
 for $sh in $h/preceding-sibling::tei:seg[position()<4] return tlslib:proc-seg($sh, map{"punc" : true(), "textid" : $textid}),
         tlslib:proc-seg($h, map{"punc" : true(), "textid" : $textid}),
         (: this is a hack, it will probably show the most recent translation if there are more, but we want to make this predictable... :)
@@ -1577,7 +1580,12 @@ for $sh in $h/preceding-sibling::tei:seg[position()<4] return tlslib:proc-seg($s
   <ul class="pagination">
     <li class="page-item"><a class="page-link {if ($start = 1) then "disabled" else ()}" onclick="{$prevp}" href="#">&#171;</a></li>
     <li class="page-item"><a class="page-link" onclick="{$nextp}" href="#">&#187;</a></li>
+    { if ("dba" = sm:id()//sm:group) then 
+    <li> <span class="btn" onclick="do_link_items()">Link selected items to this line</span></li>
+    else ()
+    }
   </ul>
+ 
 </nav>
 
 </div>

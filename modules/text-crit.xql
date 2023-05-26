@@ -13,7 +13,7 @@ import module namespace krx="http://hxwd.org/krx-utils" at "krx-utils.xql";
 import module namespace tlslib="http://hxwd.org/lib" at "tlslib.xql";
 import module namespace dbu="http://exist-db.org/xquery/utility/db" at "db-utility.xqm";
 import module namespace xed="http://hxwd.org/xml-edit" at "xml-edit.xql";
-
+import module namespace bib="http://hxwd.org/biblio" at "biblio.xql";
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
 
@@ -71,6 +71,11 @@ let $seg := collection($config:tls-texts)//tei:seg[@xml:id=$map?uid]
 , $appid := "app-" || $bid
 , $ns1 := xed:insert-node-at($seg, xs:integer($map?pos), <anchor type="app" xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$fid}"/>)
 , $tid := "end-" || $bid
+, $bibref := if (string-length($map?bibref) > 0 and not ($map?bibref="undefined")) then 
+    let $ref := bib:get-bib-ref($map?bibref)
+    , $tit := bib:get-ref-title($map?bibref)
+    return
+   <bibl xmlns="http://www.tei-c.org/ns/1.0"><title>{$tit}</title>, <ref target="#{$map?bibref}">{$ref}</ref>, p.<biblScope unit="page">{$map?bibpage}</biblScope></bibl> else ()
 , $ns2 := xed:insert-node-at($ns1, xs:integer($map?pos)+string-length($map?sel), <anchor type="app" xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$tid}"/>)
 , $app := <app resp="#{$user}" modified="{current-dateTime()}" xml:id="{$appid}" xmlns="http://www.tei-c.org/ns/1.0" from="#{$fid}" to="#{$tid}"><lem>{$map?sel}</lem>
   {for $r in $rd-keys  
@@ -79,7 +84,7 @@ let $seg := collection($config:tls-texts)//tei:seg[@xml:id=$map?uid]
    where not ($rdg = $map?sel)
    return
   <rdg wit="#{$wit}">{$rdg}</rdg>}
-  {if (string-length($map?note)>0) then <note>{$map?note}</note> else () }
+  {if (string-length($map?note)>0) then <note>{$map?note}{$bibref}</note> else () }
   </app>
 , $res := 
    if (count(distinct-values($ck)) = 1) then "Error: No variant given!" 

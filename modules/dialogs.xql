@@ -468,6 +468,90 @@ return
 </div>
 };
 
+declare function dialogs:add-url-dialog($para as map(*)){
+<div id="add-url-dialog" class="modal" tabindex="-1" role="dialog" style="display: none;">
+    <div class="modal-dialog" role="document">
+      <form id="add-url-form">
+        <div class="modal-content">
+            <div class="modal-header"><h5>Add link (URL) to bibliographic reference</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" title="Close">x</button>
+            </div>
+            <div class="modal-body">
+            <h6 class="font-weight-bold"></h6>
+            <div class="form-row">
+                <div id="input-desc-group" class="col-md-12">
+                    <label for="input-desc"><strong>Short description of the item</strong> </label>
+                    <input id="input-desc" name="desc" class="form-control" value=""/>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div id="input-url-group" class="col-md-12">
+                    <label for="input-url"><strong>Please paste the URL to a digital version of this work here:</strong> </label>
+                    <input id="input-url" name="url" class="form-control" value=""/>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div id="input-note-group" class="col-md-12">
+                    <label for="input-note"><strong>Additional note</strong> </label>
+                    <textarea id="input-note" name="note" class="form-control"></textarea>
+                </div>
+            </div>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="biburl_save('{$para?modsid}')">Save</button>
+           </div>
+         </div>
+        </form>
+     </div>
+</div>
+};
+
+
+
+declare function dialogs:add-bibref-dialog($para as map(*)){
+<div id="add-bibref-dialog" class="modal" tabindex="-1" role="dialog" style="display: none;">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header"><h5>Add bibliographic reference</h5>
+                <button type="button" class="close" onclick="bibref_attach('cancel')" aria-label="Close" title="Close">x</button>
+            </div>
+            <div class="modal-body">
+            <h6 class="font-weight-bold"></h6>
+            <div class="form-row">
+                <div id="input-group" class="col-md-10">
+                    <small for="input-bib"><strong>Search bibliography for</strong> </small>
+                    <input id="input-bib" class="form-control" value=""/>
+                </div>    
+                <div id="input-group-btn" class="col-md-2">
+                    <small for="input-bib"><strong>　　　　　</strong> </small>
+                    <button class="btn badge badge-primary ml-2" type="button" onclick="bibref_search()">
+                        Go!
+                    </button>
+                </div>
+            </div>
+            <div class="form-row">
+            <ul id="bib-results">
+            </ul>
+            </div>
+            <div class="form-row">
+                <div id="input-bib-group" class="col-md-12">
+                    <label for="input-page"><strong>Page reference</strong> </label>
+                    <input id="input-page" class="form-control" value=""/>
+                </div>
+            </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="bibref_attach('cancel')">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="bibref_attach('select')">Select</button>
+           </div>
+         </div>
+     </div>
+</div>
+};
 
 
 declare function dialogs:dialog-stub(){
@@ -654,7 +738,20 @@ declare function dialogs:edit-app-dialog($map as map(*)){
             </div>
             <div class="form row">
             <div class="font-weight-bold mt-2 col-md-1">Note:</div>
-            <div class="col-md-8"><textarea id="note" name="note" class="form-control"></textarea></div>
+            <div class="col-md-8"><textarea id="note" name="note" class="form-control">{$app/tei:note/text()}</textarea>
+            <span id="bibl-refs">{for $r in $app/tei:note/tei:bibl//text() return $r}</span>
+            {if (count($app/tei:note/tei:bibl) = 0 and sm:is-authenticated()) then 
+              <span class="text-muted"><br/>For source references, please include the page number.</span>
+             else ()
+            }</div>
+            <div class="col-md-2">{ 
+            if (sm:is-authenticated()) then 
+              let $cnt := count($app/tei:note/tei:bibl)
+               return  
+                if ($cnt = 0) then 
+                <span><a class="badge badge-pill badge-light"  href="#" onclick="add_bibref_dialog('{$cnt}')" title="Add source reference">Add source reference</a></span>
+                else ()
+            else ()}</div>
             </div>
             </div>
             else local:no-witness($seg/ancestor::tei:TEI/@xml:id)}
@@ -669,6 +766,14 @@ declare function dialogs:edit-app-dialog($map as map(*)){
     </div>
 </div>
 };
+
+(: the reference is a bibl of the form: 
+<bibl><ref target="#uuid-60d39cc0-d76b-4275-8490-886ace4204be">BUCK 1988</ref>
+<title>A Dictionary of Selected Synonyms in the Principal Indo-European Languages</title>
+<biblScope unit="page">9.11</biblScope></bibl>
+The title can be omitted
+:)
+
 
 declare function dialogs:punc-dialog($map as map(*)){
  let $seg := collection($config:tls-texts-root)//tei:seg[@xml:id=$map?uid]

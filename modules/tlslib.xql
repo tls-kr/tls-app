@@ -525,7 +525,7 @@ declare function tlslib:format-app($app as node()){
  , $t := string-join(for $r in $app/tei:rdg
         let $wit := "【" || string-join(for $w in tokenize($r/@wit) return $app/ancestor::tei:TEI//tei:witness[@xml:id=substring($w, 2)]/text() , "，") ||  "】"
         return $r/text() || $wit, "；")
- , $note := if ($app/tei:note) then "&#xA;(Note: " || $app/tei:note/text() || ")" else () 
+ , $note := if ($app/tei:note) then "&#xA;(Note: " || $app/tei:note/text() || ")&#xA;" || $app/tei:note/tei:bibl else () 
   return $lem || $t || $note
 };
 
@@ -586,6 +586,11 @@ return $title
 declare function tlslib:get-doc($txtid as xs:string){
 collection($config:tls-texts-root)//tei:TEI[@xml:id=$txtid]
 };
+
+declare function tlslib:get-seg($sid as xs:string){
+collection($config:tls-texts-root)//tei:seg[@xml:id=$sid]
+};
+
 
 (:~
 : Get the documents for a given cat
@@ -2793,15 +2798,15 @@ declare function tlslib:store-new-translation($lang as xs:string, $txtid as xs:s
          <publicationStmt>
             <ab>published electronically as part of the TLS project at https://hxwd.org</ab>
             {if ($copy = "option1") then 
-            <availability status="1">This work is in the public domain</availability> 
+            <availability status="free"><ab>This work is in the public domain</ab></availability> 
             else 
              if ($copy = "option2") then
-            <availability status="2">This work has been licensed for use in the TLS</availability> 
+            <availability status="restricted"><ab>This work has been licensed for use in the TLS</ab></availability> 
             else 
              if ($copy = "option3") then
-            <availability status="3">This work has not been licensed for use in the TLS</availability> 
+            <availability status="restricted">This work has not been licensed for use in the TLS</availability> 
             else
-            <availability status="4">The copyright status of this work is unclear</availability> 
+            <availability status="unknown">The copyright status of this work is unclear</availability> 
             }
          </publicationStmt>
          <sourceDesc>

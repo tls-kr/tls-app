@@ -50,7 +50,6 @@ declare function local:teiheader($map as map(*)){
 declare function local:page($f, $map){
     let $pid := $map?krid||"_tls_p"||$map?pid
     return
-    <p  xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$pid}">{
         for $g in $f//*[local-name()='region']
         return
         if ($g/@type='vtext') then
@@ -61,9 +60,9 @@ declare function local:page($f, $map){
          return 
         if (string-length(string-join($row, '')) > 0) then 
          if ($hd = 'head') then
-         <seg xml:id="{$pid}.s{$pos}" state="locked" type="{$hd}">{$lb}{$row}</seg>
+            <seg xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$pid}.s{$pos}" state="locked" type="{$hd}">{$lb}{$row}</seg>
          else
-         <seg xml:id="{$pid}.s{$pos}" state="locked">{$lb}{$row}</seg>
+         <seg  xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$pid}.s{$pos}" state="locked">{$lb}{$row}</seg>
         else 
             if ($row//@quantity) then (
 (:                log:info($local:log,  $row//@quantity):)
@@ -79,8 +78,8 @@ declare function local:page($f, $map){
                 <graphic facs="{$map?krid}/{$g/@src}.png" type="inline" />
              </figure>
         else <problem>Unknown region type {data($g/@type)}</problem>
-    }{(: $f :) ()}
-    </p>
+    (: $f :) 
+    
 };
 
 declare function local:cp-res($name, $krid, $id){
@@ -134,7 +133,7 @@ declare function local:convert-kx($map){
     , $path := $dzp||$map?id||"/xml"
     , $pn := collection($dzp||$map?id||"/xml")//page
    , $log := log:info($local:log, "Page path: " || $path || "count: " || count($pn))
-    let $txt := <text xmlns="http://www.tei-c.org/ns/1.0"><body><div>{
+    let $txt := <text xmlns="http://www.tei-c.org/ns/1.0"><body><div><p  xmlns="http://www.tei-c.org/ns/1.0" >{
        for $f in $pn
        let $uri := substring-before(tokenize(document-uri(root($f)), "/")[last()], ".xml") => xs:int()
        
@@ -143,7 +142,7 @@ declare function local:convert-kx($map){
         (<pb xmlns="http://www.tei-c.org/ns/1.0" ed="KX" n="{$map?id}.{$uri}" xml:id="{$map?krid}_tls_{$uri}a"/>,
         local:page($f, map{"krid": $map?krid, "pid" : $uri, "id" : $map?id, "uri" : $uri})
         )
-    }</div></body></text>    
+    }</p></div></body></text>    
     , $doc := <TEI xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$map?krid}">
         {$h}
         {$txt}

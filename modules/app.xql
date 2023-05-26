@@ -1602,6 +1602,7 @@ function app:dialogs($node as node()*, $model as map(*))
         </div>
         <div id="remoteDialog"/>
         <div id="remDialog2"/>
+        <div id="remBibRef"/>
    </div>
 };
 
