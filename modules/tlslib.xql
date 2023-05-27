@@ -275,6 +275,14 @@ let $user := sm:id()//sm:real/sm:username/text()
 return $retmap
 };
 
+declare function tlslib:get-translation-file($trid as xs:string){
+let $user := sm:id()//sm:real/sm:username/text()
+let $tru := collection($config:tls-user-root|| $user || "/translations")/tei:TEI[@xml:id=$trid]
+, $trc := collection($config:tls-translation-root)//tei:TEI[@xml:id=$trid]
+, $trfile := if ($tru) then $tru else $trc
+return $trfile
+};
+
 declare function tlslib:get-translations($textid as xs:string){
 let $user := sm:id()//sm:real/sm:username/text()
   (: this is trying to work around a bug in fn:collection 
@@ -879,6 +887,9 @@ declare function tlslib:trsubmenu($textid as xs:string, $slot as xs:string, $tri
            where not($k = ($trid, "content-id")) return $k
     ,$type := if ($trid and map:contains($tr, $trid)) then $tr($trid)[5] else "Translation"       
  return
+ <div class="btn-group" role="group" >
+   <button type="button" class="btn btn-secondary" onclick="goto_translation_seg('{$trid}', 'first')" title="Go to first translated line">←</button>
+   
   <div class="dropdown" id="{$slot}" data-trid="{$trid}">
             <button class="btn btn-secondary dropdown-toggle" type="button" id="ddm-{$slot}" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
             {if ($trid and map:contains($tr, $trid)) 
@@ -914,8 +925,15 @@ declare function tlslib:trsubmenu($textid as xs:string, $slot as xs:string, $tri
         else ()
         }
   </div>
+  </div>
+  {if (sm:id()//sm:group/text() = ("tls-editor", "tls-admin")) then
+   <button type="button" class="btn btn-secondary" title="Edit translation file" onclick="display_tr_file_dialog('{$slot}','{$trid}')">
+    <img class="icon"  src="resources/icons/octicons/svg/note.svg"/>
+   </button>
+   else ()
+   }
+   <button type="button" class="btn btn-secondary" onclick="goto_translation_seg('{$trid}', 'last')"  title="Go to last translated line">→</button>
 </div>
-
 };
 
 declare function tlslib:display-bibl($bibl as node()){
@@ -1006,10 +1024,10 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
       with selection for translation etc, we use this as a header line :)()}
        <div class="row">
         <div class="col-sm-2" id="toprow-1"><img class="icon state-{$state}"  src="{$config:circle}"/><span class="font-weight-bold">{$head}</span><span class="btn badge badge-light">line {$xpos} / {($xpos * 100) idiv $sc}%</span> <span class="btn badge badge-light" title="{$pb/@xml:id}">{data($pb/@n)}</span><!-- zh --></div>
-        <div class="col-sm-5" id="toprow-2"><!-- tr -->
+        <div class="col-sm-5" id="top-slot1"><!-- tr -->
         {if ($show-transl) then tlslib:trsubmenu($model?textid, "slot1", $slot1-id, $tr) else ()}
         </div>
-        <div class="col-sm-4" id="toprow-3">
+        <div class="col-sm-4" id="top-slot2">
         {if ($show-transl) then tlslib:trsubmenu($model?textid, "slot2", $slot2-id, $tr) else ()}
         </div>
         </div>
@@ -2087,12 +2105,17 @@ return
 </li>
 };
 
-declare function tlslib:translation-firstseg($transid as xs:string){
-let $dataroot := ($config:tls-translation-root, $config:tls-user-root)
-, $doc := collection($dataroot)//tei:TEI[@xml:id=$transid]
-, $firstseg := substring((for $s in $doc//tei:seg
+declare function tlslib:get-translation-seg($transid as xs:string, $first as xs:boolean){
+let $doc := tlslib:get-translation-file($transid)
+, $segs := $doc//tei:seg
+, $firstseg := if ($first) 
+               then substring((for $s in $segs
                 let $id := $s/@corresp
-                order by $id
+                order by $id 
+                return $id)[1], 2)
+               else substring((for $s in $segs
+                let $id := $s/@corresp
+                order by $id descending
                 return $id)[1], 2)
   return $firstseg
 };
@@ -2747,9 +2770,88 @@ for $s in subsequence($seq, 2)
   </tls:contents>
 }; 
 
+(: 2023-05-27 - store changes to existing trans file if $trid is not "" :)
+declare function tlslib:update-tr-file($lang as xs:string, $txtid as xs:string, $translator as xs:string, $trtitle as xs:string, $bibl as xs:string, $vis as xs:string, $copy as xs:string, $type as xs:string, $rel-id as xs:string, $trid as xs:string){
+let $user := sm:id()//sm:real/sm:username/text()
+let $tru := collection($config:tls-user-root|| $user || "/translations")/tei:TEI[@xml:id=$trid]
+, $trc := collection($config:tls-translation-root)//tei:TEI[@xml:id=$trid]
+, $trfile := if ($tru) then $tru else $trc
+, $fullname := sm:id()//sm:real/sm:fullname/text()
+, $buri := document-uri(root($trfile))
+, $oldvis := if ($tru) then "option3" else "option1"
+,$lg := $config:languages($lang)
+,$title := tlslib:get-title($txtid)
+,$trx := if (not($translator = "yy")) then $translator else if ($vis = "option3") then $fullname else "TLS Project"
+, $titlestmt :=if ($type = "transl") then 
+         <titleStmt xmlns="http://www.tei-c.org/ns/1.0">
+            {if (string-length($trtitle) > 0) then 
+            <title>{$trtitle}</title>
+            else
+            <title>Translation of {$title} into ({$lg})</title>}
+            <editor role="translator">{$trx}</editor>
+         </titleStmt>
+            else if ($type = "notes") then
+         <titleStmt xmlns="http://www.tei-c.org/ns/1.0">
+            <title>Research Notes for {$title}</title>
+            <editor role="creator">{$trx}</editor>
+         </titleStmt>
+            else
+         <titleStmt xmlns="http://www.tei-c.org/ns/1.0">
+            <title>Comments to {$title}</title>
+            <editor role="creator">{$trx}</editor>
+         </titleStmt>
+, $pubstmt := <publicationStmt xmlns="http://www.tei-c.org/ns/1.0">
+            <ab>published electronically as part of the TLS project at https://hxwd.org</ab>
+            {if ($copy = "option1") then 
+            <availability status="1"><ab>This work is in the public domain</ab></availability> 
+            else 
+             if ($copy = "option2") then
+            <availability status="2"><ab>This work has been licensed for use in the TLS</ab></availability> 
+            else 
+             if ($copy = "option3") then
+            <availability status="3">This work has not been licensed for use in the TLS</availability> 
+            else
+            <availability status="4">The copyright status of this work is unclear</availability> 
+            }
+         </publicationStmt>
+, $srcdesc :=<sourceDesc xmlns="http://www.tei-c.org/ns/1.0">
+            {if (not($bibl = "") or not ($trtitle = "")) then 
+            <bibl><title>{$trtitle}</title>{$bibl}</bibl> else 
+            <p>Created by members of the TLS project</p>}
+            
+            {if ($type="transl") then 
+             <ab>Translation of <bibl corresp="#{$txtid}">
+                  <title xml:lang="och">{$title}</title>
+               </bibl> into <lang xml:lang="{$lang}">{$lg}</lang>.</ab>
+             else 
+             <p>Comments and notes to <bibl corresp="#{$txtid}">
+                  <title xml:lang="och">{$title}</title>
+               </bibl>{if (string-length($rel-id) > 0) then ("for translation ", <ref target="#{$rel-id}"></ref>) else ()}.</p>
+             }
+         </sourceDesc>
+, $mod := <creation resp="#{$user}"  xmlns="http://www.tei-c.org/ns/1.0">Header modified: <date>{current-dateTime()}</date> by {$user}</creation>
+, $doupd := (
+    update replace $trfile//tei:titleStmt with $titlestmt,
+    update replace $trfile//tei:publicationStmt with $pubstmt,
+    update replace $trfile//tei:sourceDesc with $srcdesc,
+    update insert $mod into $trfile//tei:profileDesc
+    )
+, $move := if ($vis = $oldvis) then () else
+        let $resource := tokenize($buri, "/")[last()]
+        let $src-coll := substring-before($buri,$resource)
+        return
+        if ($vis = "option3") then 
+         let $trg-coll := $config:tls-user-root|| $user || "/translations"
+         return
+          xmldb:move($src-coll, $trg-coll, $resource) 
+        else 
+         let $trg-coll := $config:tls-translation-root || "/" || $lang
+         return
+          xmldb:move($src-coll, $trg-coll, $resource) 
+return ($vis, $oldvis, $trid)
+};
 
 (: 2022-02-21 - moved this from tlsapi to allow non-api use :)
-
 declare function tlslib:store-new-translation($lang as xs:string, $txtid as xs:string, $translator as xs:string, $trtitle as xs:string, $bibl as xs:string, $vis as xs:string, $copy as xs:string, $type as xs:string, $rel-id as xs:string){
   let $user := sm:id()//sm:real/sm:username/text()
   ,$fullname := sm:id()//sm:real/sm:fullname/text()
@@ -2781,7 +2883,10 @@ declare function tlslib:store-new-translation($lang as xs:string, $txtid as xs:s
       <fileDesc>
             {if ($type = "transl") then 
          <titleStmt>
-            <title>Translation of {$title} into ({$lg})</title>
+            {if (string-length($trtitle) > 0) then 
+            <title>{$trtitle}</title>
+            else
+            <title>Translation of {$title} into ({$lg})</title>}
             <editor role="translator">{$trx}</editor>
          </titleStmt>
             else if ($type = "notes") then
@@ -2798,15 +2903,15 @@ declare function tlslib:store-new-translation($lang as xs:string, $txtid as xs:s
          <publicationStmt>
             <ab>published electronically as part of the TLS project at https://hxwd.org</ab>
             {if ($copy = "option1") then 
-            <availability status="free"><ab>This work is in the public domain</ab></availability> 
+            <availability status="1"><ab>This work is in the public domain</ab></availability> 
             else 
              if ($copy = "option2") then
-            <availability status="restricted"><ab>This work has been licensed for use in the TLS</ab></availability> 
+            <availability status="2"><ab>This work has been licensed for use in the TLS</ab></availability> 
             else 
              if ($copy = "option3") then
-            <availability status="restricted">This work has not been licensed for use in the TLS</availability> 
+            <availability status="3">This work has not been licensed for use in the TLS</availability> 
             else
-            <availability status="unknown">The copyright status of this work is unclear</availability> 
+            <availability status="4">The copyright status of this work is unclear</availability> 
             }
          </publicationStmt>
          <sourceDesc>

@@ -21,8 +21,11 @@ let $bibl := request:get-parameter("bibl", "")
 , $copy := request:get-parameter("copy", "")
 , $type := request:get-parameter("type", "")
 , $rel-id := request:get-parameter("rel", "")
+, $trid := request:get-parameter("trid", "")
 
 
 return
-tlslib:store-new-translation($lang, $textid, $translator, $trtitle, $bibl, $vis, $copy, $type, $rel-id)
+ if (string-length($trid) > 0) then 
+ tlslib:update-tr-file($lang, $textid, $translator, $trtitle, $bibl, $vis, $copy, $type, $rel-id, $trid) else
+ tlslib:store-new-translation($lang, $textid, $translator, $trtitle, $bibl, $vis, $copy, $type, $rel-id)
 

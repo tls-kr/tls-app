@@ -418,7 +418,8 @@ function new_translation(slot){
 
 // called from new tranlation dialog
 // slot is slot1 or slot2, 
-function store_new_translation(slot, textid){
+// 2023-05-27: if trid is present, we are editing metadata for an existing file
+function store_new_translation(slot, textid, trid){
   var lang = $('#select-lang').val()
   var transl = $('#select-transl').val()
   var bibl = $('#input-biblio').val()
@@ -431,11 +432,11 @@ function store_new_translation(slot, textid){
   $.ajax({
   type : "GET",
   dataType : "html",
-  url : "api/store_new_translation.xql?lang="+lang+"&textid="+textid+"&transl="+transl+"&trtitle="+trtitle+"&bibl="+bibl+"&vis="+vis+"&copy="+copy+"&type="+type+"&rel="+rel, 
+  url : "api/store_new_translation.xql?lang="+lang+"&textid="+textid+"&transl="+transl+"&trtitle="+trtitle+"&bibl="+bibl+"&vis="+vis+"&copy="+copy+"&type="+type+"&rel="+rel+"&trid="+ trid, 
   success : function(resp){
   // todo : reload the selector with latest information
   $('#new-translation-dialog').modal('hide');
-  reload_selector(slot);
+  reload_selector(slot, trid);
   toastr.info("New work has been saved.", "HXWD says:")  
   }
   });
@@ -449,10 +450,22 @@ function reload_selector(slot, newid){
   dataType : "html",
   url : "api/responder.xql"+location+"&slot="+slot+"&content-id="+newid+"&func=reload-selector", 
   success : function(resp){
-  $("#"+slot).html(resp)
+  $("#top-"+slot).html(resp)
   }
-  });
-    
+  });    
+};
+
+function goto_translation_seg(trid, dir){
+  $.ajax({
+  type : "GET",
+  dataType : "html",
+  url : "api/responder.xql?func=goto-translation-seg&trid="+trid+"&dir="+dir, 
+  success : function(resp){
+    if (resp.length > 0) {
+     window.location = resp;
+    }
+    }
+  });        
 };
 
 function get_sf(senseid, type){
@@ -2738,7 +2751,23 @@ function biburl_save(modsid){
      });
      $('#'+fname).modal('hide');
      $('#remoteDialog').html('');
- //    window.location = 'bibliography.html?uuid='+modsid
+     window.location = 'bibliography.html?uuid='+modsid
+};
+
+function display_tr_file_dialog(slot, trid){
+  var location = window.location.search;
+  console.log(location)
+  $.ajax({
+  type : "GET",
+  dataType : "html",
+  url : "api/new_translation.xql"+location+"&slot="+slot+"&trid="+trid, 
+  success : function(resp){
+    $('#remoteDialog').html(resp);
+    $('#new-translation-dialog').modal('show');
+  
+  }
+  });
+    
 };
 
 // display dialog for pb
