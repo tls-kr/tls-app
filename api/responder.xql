@@ -30,7 +30,7 @@ let $resmap := map:merge(
    return
    if ($p = 'body') then 
    if (contains($content-type, "xml")) then
-   map:entry($p, request:get-data())
+   map:entry($p, request:get-data()) 
    else 
    map:entry($p, util:base64-decode(request:get-data()))
    else

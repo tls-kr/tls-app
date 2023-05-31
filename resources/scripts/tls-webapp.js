@@ -455,6 +455,16 @@ function reload_selector(slot, newid){
   });    
 };
 
+function showhide_passwd(elid) {
+//  var x = document.getElementById(elid);
+  var x = $("#"+elid);
+  if (x.type === "password") {
+    x.type = "text";
+  } else {
+    x.type = "password";
+  }
+}
+
 function goto_translation_seg(trid, dir){
   $.ajax({
   type : "GET",
@@ -2754,7 +2764,22 @@ function biburl_save(modsid){
      window.location = 'bibliography.html?uuid='+modsid
 };
 
-function display_tr_file_dialog(slot, trid){
+function show_dialog(dialog_name, options){
+     var opt = JSON.stringify(options);
+     $.ajax({
+     type : "GET",
+     dataType : "html",  
+     url : "api/responder.xql?func=dialogs:dispatcher&name="+dialog_name+"&options="+opt,
+     success : function(resp){
+     $('#remoteDialog').html(resp);
+     $('#'+dialog_name).modal('show');
+   }
+  });
+    
+};
+
+function display_tr_file_dialog(dialog_name, slot, trid){
+   $('#'+dialog_name).modal('hide');
   var location = window.location.search;
   console.log(location)
   $.ajax({

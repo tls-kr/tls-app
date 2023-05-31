@@ -15,6 +15,7 @@ import module namespace krx="http://hxwd.org/krx-utils" at "krx-utils.xql";
 import module namespace wd="http://hxwd.org/wikidata" at "wikidata.xql"; 
 import module namespace tlslib="http://hxwd.org/lib" at "tlslib.xql";
 import module namespace log="http://hxwd.org/log" at "log.xql";
+import module namespace tu="http://hxwd.org/utils" at "tlsutils.xql";
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
@@ -46,7 +47,7 @@ declare function ly:setup-grid($map as map(*)){
         else 6
        else 3
  , $slot-map := ly:get-slot-map($slots, $map)
- , $context := tlslib:html-file()
+ , $context := tu:html-file()
  , $targetseg := $map?targetseg 
  , $prec := if ($map?prec) then xs:int($map?prec) else 2
  , $foll := if ($map?foll) then xs:int($map?foll) else 28

@@ -32,6 +32,7 @@ import module namespace ly="http://hxwd.org/layout" at "layout.xql";
 import module namespace log="http://hxwd.org/log" at "log.xql";
 import module namespace src="http://hxwd.org/search" at "search.xql";
 import module namespace sgn="http://hxwd.org/signup" at "signup.xql"; 
+import module namespace tu="http://hxwd.org/utils" at "tlsutils.xql";
 
 declare variable $app:log := $config:tls-log-collection || "/app";
 
@@ -118,7 +119,7 @@ switch($section)
 };
 
 declare function app:jstree-script($node as node(), $model as map(*)){
-if (tlslib:html-file() = ("char", "word")) then 
+if (tu:html-file() = ("char", "word")) then 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/jstree.min.js"/>
 else ()
 };
@@ -1142,6 +1143,7 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
     ,$entry-id := $e/@xml:id
     ,$pr := $e/tei:form/tei:pron
     ,$def := $e/tei:def/text()
+    , $resp := tu:get-member-initials($e/@resp)
     ,$word-rel := doc($config:tls-data-root || "/core/word-relations.xml")//tei:div[@type='word-rel' and .//tei:item[@corresp="#"||$entry-id]]
 (:    ,$word-rel := doc($config:tls-data-root || "/core/word-relations.xml")//tei:item[@corresp="#"||$entry-id]/ancestor::tei:div[@type="word-rel"]:)
     ,$wc := sum(for $sw in $e//tei:sense 
@@ -1181,7 +1183,9 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
     if ($pos < $len) then ($s, <br/>) else ($s)
     
     }    
-    
+        {if ($resp) then 
+    <small><span class="ml-2 btn badge-secondary" title="{$resp[1]} - {$e/@tls:created}">{$resp[2]}</span></small> else ()}
+
     <small>{"  " || $wc} {if ($wc = 1) then " Attribution" else " Attributions"}</small>
     {if ($wc = 0) then
     tlslib:format-button("delete_word_from_concept('"|| $entry-id || "', 'word')", "Delete the word "|| $zi || ", including all syntactic words.", "open-iconic-master/svg/x.svg", "", "", "tls-editor") else 
@@ -1247,6 +1251,7 @@ if (sm:is-authenticated() and not($user)) then
 <img class="icon mr-2" 
 src="resources/icons/open-iconic-master/svg/person.svg"/>{sm:id()//sm:real/sm:username/text()}</a>
 <div class="dropdown-menu" aria-labelledby="settingsDropdown">
+<a onclick="show_dialog('passwd-dialog', '{{}}')" class="dropdown-item bg-warning">Change Password</a>
 <a onclick="dologout()" class="dropdown-item bg-danger">Logout</a>
 <a class="dropdown-item" href="settings.html">Settings</a>
 <a class="dropdown-item" href="https://join.slack.com/t/tls-7al8577/shared_invite/zt-1h6hfirdt-8EdFCAxsQalvCIdIs3OK6w">Feedback channel</a>

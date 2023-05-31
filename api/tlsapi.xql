@@ -834,13 +834,13 @@ return
 
 declare function tlsapi:goto-translation-seg($map as map(*)){
  let $first := if ($map?dir = 'first') then true() else false()
- let $targetseg := tlslib:get-translation-seg($map?trid, $first)
+ let $targetseg := try {tlslib:get-translation-seg($map?trid, $first)} catch * {()}
  
  return 
-  if (string-length($targetseg) = 0) 
-   then ""
+  if (string-length($targetseg/@corresp) = 0) 
+   then "?location=" || tokenize($map?trid, "_")[1]
    else
-  "textview.html?location="||$targetseg
+  "textview.html?location="||substring($targetseg/@corresp, 2)
 };
 
 
