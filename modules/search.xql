@@ -712,7 +712,17 @@ let $query := $model?query
      try {
      src:show-text-results(map{"p" : $p, "nav": $nav, "hits": $hits, "start" : $start, "resno" : $resno, "q1" : $q1, "query": $query, "search-type" : $search-type }) } catch * {()}
     case $src:textlist return 
-     for $h in $model?hits
+     src:show-catalog-results($model)
+    case $src:search-field return
+     src:show-field-results(map{"hits": $model?hits, "map":$map, "query" : $query, "search-type" : $search-type, "type" : $type, "start" : $start, "resno" : $resno})
+    case $src:search-dic return
+     src:show-dic-results(map:merge(($model, map:entry("start",$start), map:entry("qc", $qc))))
+    default return "Unknown search type",
+    <div class="col-sm-0">{wd:quick-search-form('title')}</div>
+};
+
+declare function src:show-catalog-results($map as map(*)){
+     for $h in $map?hits
        let $title := src:facets-get-metadata($h, "title")
        , $textid := src:facets-get-metadata($h, "textid")
        , $grp := subsequence(src:facets-get-metadata($h, "kr-categories"), 1, 1)
@@ -725,19 +735,19 @@ let $query := $model?query
          (<ul><span class="md-2 chn-font"><mark>{tlslib:cat-title($g)}</mark></span>
          {
          for $t at $pos in $title 
+         let $state := "closed"
          order by $textid[$pos]
          return
          
-          <li><span class="badge badge-light"><a href="textview.html?location={$textid[$pos]}">{data($textid[$pos])}</a></span><span class="md-2 font-weight-bold chn-font">{$t}</span></li>
+          <li><span class="badge badge-light"><a href="textview.html?location={$textid[$pos]}">{data($textid[$pos])}</a></span><span class="md-2 font-weight-bold chn-font">{$t}</span><span class="btn badge badge-light " data-toggle="collapse" data-target="#{$textid[$pos]}--body">
+           <img class="icon "  src="resources/icons/octicons/svg/info.svg"/></span>
+          <div class="collapse" id="{$textid[$pos]}--body">
+          {tlslib:textinfo($textid[$pos])}
+          </div>
+          </li>
         }
         </ul>
         )
-    case $src:search-field return
-     src:show-field-results(map{"hits": $model?hits, "map":$map, "query" : $query, "search-type" : $search-type, "type" : $type, "start" : $start, "resno" : $resno})
-    case $src:search-dic return
-     src:show-dic-results(map:merge(($model, map:entry("start",$start), map:entry("qc", $qc))))
-    default return "Unknown search type",
-    <div class="col-sm-0">{wd:quick-search-form('title')}</div>
 };
 
 declare function src:search-top-menu($search-type, $query, $txtmatchcount, $title, $trmatch, $textid, $qc, $count, $mode) {

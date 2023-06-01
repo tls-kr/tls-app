@@ -832,19 +832,41 @@ return
  )
 };
 
+declare function tlsapi:goto-translation-seg($map as map(*)){
+ let $first := if ($map?dir = 'first') then true() else false()
+ let $targetseg := try {tlslib:get-translation-seg($map?trid, $first)} catch * {()}
+ 
+ return 
+  if (string-length($targetseg/@corresp) = 0) 
+   then "?location=" || tokenize($map?trid, "_")[1]
+   else
+  "textview.html?location="||substring($targetseg/@corresp, 2)
+};
+
+
 (:~
 : Dialog for new translation stub
 :)
 
-declare function tlsapi:new-translation($slot as xs:string, $loc as xs:string){
+declare function tlsapi:new-translation($slot as xs:string, $loc as xs:string?, $trid as xs:string?){
+let $user := sm:id()//sm:real/sm:username/text()
+let $tru := collection($config:tls-user-root|| $user || "/translations")/tei:TEI[@xml:id=$trid]
+, $trc := collection($config:tls-translation-root)//tei:TEI[@xml:id=$trid]
+, $trfile := if ($tru) then $tru else $trc
+, $vis := if ($tru) then "option3" else "option1"
+, $cop := data($trfile//tei:availability/@status)
+, $ref := substring($trfile//tei:ref/@target, 2)
+, $segcount := count($trfile//tei:seg)
 let $textid := tokenize($loc, "_")[1],
 $title := tlslib:get-title($textid),
 $tr := tlslib:get-translations($textid)
+, $type := $trfile/@type
+, $trlg := if ($trfile//tei:sourceDesc//tei:lang/@xml:lang) then data($trfile//tei:sourceDesc//tei:lang/@xml:lang) else "en"
 return
 <div id="new-translation-dialog" class="modal" tabindex="-1" role="dialog" style="display: none;">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
-            <div class="modal-header"><h5>Start a new translation or comment file for {$title}</h5>
+            <div class="modal-header">{if ($trfile) then <h5>Edit translation file metadata for {$title} ({$segcount} lines)</h5> else <h5>Start a new translation or comment file for {$title}</h5>}
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close" title="Close">x</button>
             </div>
             <div class="modal-body">
@@ -854,13 +876,19 @@ return
              <div class="form-group col-md-2 font-weight-bold">Type of work:</div>
              <div class="form-group col-md-2 font-weight-bold">
              <div class="form-check form-check-inline">
-              <input class="form-check-input" type="radio" name="typradio" id="typrad1" value="transl" checked="true"/>
+             {if ($type = 'comment') then 
+              <input class="form-check-input" type="radio" name="typradio" id="typrad1" value="transl"/>
+              else
+              <input class="form-check-input" type="radio" name="typradio" id="typrad1" value="transl" checked="true"/>}
               <label class="form-check-label" for="typrad1">Translation</label>
              </div>
              </div>
              <div class="form-group col-md-2 font-weight-bold">
              <div class="form-check form-check-inline">
-              <input class="form-check-input" type="radio" name="typradio" id="typrad2" value="comment"/>
+             {if ($type = 'comment') then 
+              <input class="form-check-input" type="radio" name="typradio" id="typrad2" value="comment"  checked="true"/>
+              else
+              <input class="form-check-input" type="radio" name="typradio" id="typrad2" value="comment"/>}
               <label class="form-check-label" for="typrad2">Comments</label>
               </div> 
               </div>
@@ -872,7 +900,7 @@ return
                   {for $l in map:keys($config:languages)
                     order by $l
                     return
-                    if ($l = "en") then
+                    if ($l = $trlg) then
                     <option value="{$l}" selected="true">{$config:languages($l)}</option>
                     else
                     <option value="{$l}">{$config:languages($l)}</option>
@@ -881,7 +909,7 @@ return
               </div>
               <div id="select-transl-group" class="form-group ui-widget col-md-3">
                   <label for="select-transl">Creator (if it is not you:-): </label>
-                  <input id="select-transl" class="form-control" />
+                  <input id="select-transl" class="form-control" value="{$trfile//tei:titleStmt/tei:editor[@role='translator']/text()}"/>
               </div>
               <div id="select-type-group1" class="form-group ui-widget col-md-6">
                  <label for="select-rel">For comments, are they related to a translation?</label>
@@ -892,6 +920,9 @@ return
                     let $l := $this[3]
                     order by $l
                     return
+                    if ($c = $ref) then
+                    <option value="{$c}" title="{$c}" selected="true">by {$this[2]} ({$this[3]})</option>
+                    else
                     <option value="{$c}" title="{$c}">by {$this[2]} ({$this[3]})</option>
                    } 
                  </select>                 
@@ -902,7 +933,10 @@ return
            <div class="form-row">
              <div class="form-group col-md-4">
              <div class="form-check">
+             {if ($vis = "option1") then 
               <input class="form-check-input" type="radio" name="visradio" id="visrad1" value="option1" checked="true"/>
+              else
+              <input class="form-check-input" type="radio" name="visradio" id="visrad1" value="option1"/>}
              <label class="form-check-label" for="visrad1">
                Show to everybody
              </label>
@@ -916,7 +950,10 @@ return
               </div>
              <div class="form-group col-md-4">
              <div class="form-check">
+             {if ($vis = "option1") then 
              <input class="form-check-input" type="radio" name="visradio" id="visrad3" value="option3"/>
+             else 
+             <input class="form-check-input" type="radio" name="visradio" id="visrad3" value="option3" checked="true"/>}
              <label class="form-check-label" for="visrad3">
              Keep it to me only
              </label>
@@ -928,18 +965,21 @@ return
             <div class="form-row">
               <div id="select-trtitle-group" class="form-group ui-widget col-md-6">
                   <label for="select-trtitle">Title: </label>
-                  <input id="select-trtitle" class="form-control" />
+                  <input id="select-trtitle" class="form-control" value="{if ($trfile//tei:sourceDesc/tei:bibl/tei:title) then $trfile//tei:sourceDesc/tei:bibl/tei:title/text() else $trfile//tei:titleStmt/tei:title/text()}"/>
               </div>
               <div id="select-concept-group" class="form-group ui-widget col-md-6" >
                     <label for="input-biblio" >Publisher, place and year</label>
-                    <input id="input-biblio" class="form-control" />
+                    <input id="input-biblio" class="form-control" value="{normalize-space(string-join($trfile//tei:sourceDesc/tei:bibl/text(), ''))}"/>
               </div>
               </div>
 
            <div class="form-row">
              <div class="form-group col-md-3">
              <div class="form-check">
+             {if ($cop = "1") then
               <input class="form-check-input" type="radio" name="copradio" id="coprad1" value="option1" checked="true"/>
+              else
+              <input class="form-check-input" type="radio" name="copradio" id="coprad1" value="option1"/>}
              <label class="form-check-label" for="coprad1">
                No copyright
              </label>
@@ -947,19 +987,28 @@ return
              </div> 
              <div class="form-group col-md-3">
              <div class="form-check">
-            <input class="form-check-input" type="radio" name="copradio" id="coprad2" value="option2"/>
+             {if ($cop = "2") then
+            <input class="form-check-input" type="radio" name="copradio" id="coprad2" value="option2" checked="true"/>
+            else 
+            <input class="form-check-input" type="radio" name="copradio" id="coprad2" value="option2"/>}
             <label class="form-check-label" for="coprad2">Licensed</label>
                </div>
               </div>
              <div class="form-group col-md-3">
              <div class="form-check">
-            <input class="form-check-input" type="radio" name="copradio" id="coprad3" value="option3"/>
+             {if ($cop = "3") then
+            <input class="form-check-input" type="radio" name="copradio" id="coprad3" value="option3" checked="true"/>
+            else
+            <input class="form-check-input" type="radio" name="copradio" id="coprad3" value="option3"/>}
             <label class="form-check-label" for="coprad3">Not Licensed</label>
                </div>
               </div>
              <div class="form-group col-md-3">
              <div class="form-check">
-             <input class="form-check-input" type="radio" name="copradio" id="coprad4" value="option4"/>
+             {if ($cop = "4") then
+             <input class="form-check-input" type="radio" name="copradio" id="coprad4" value="option4" checked="true"/>
+             else
+             <input class="form-check-input" type="radio" name="copradio" id="coprad4" value="option4"/>}
              <label class="form-check-label" for="coprad4">
              Status unclear
              </label>
@@ -971,7 +1020,7 @@ return
             <div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" onclick="store_new_translation('{$slot}','{$textid}')">Save</button>
+                <button type="button" class="btn btn-primary" onclick="store_new_translation('{$slot}','{$textid}', '{$trid}')">Save</button>
            </div>
      </div>
      </div>

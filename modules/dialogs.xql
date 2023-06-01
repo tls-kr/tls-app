@@ -35,7 +35,108 @@ declare variable $dialogs:lmap := map{
 "none" : "Texts or Translation",
 "old-chinese-contrasts" : "Old Chinese Contrasts",
 "pointers" : "Pointers"
+, "tr-info-dialog" : map{"title" : "Information about translation "
+                         ,"dsize" : "modal-lg" 
+                         }
+, "passwd-dialog" : map{"title" : "Change Password"}                         
 };
+
+
+declare function local:modal-frame($name, $map){
+<div id="{$name}" class="modal" tabindex="-1" role="dialog" style="display: none;">
+    <div class="modal-dialog {$map?dsize}" role="document">
+      <form id="{$name}-form">
+        <div class="modal-content">
+            <div class="modal-header"><h5>{$map?title}</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" title="Close">x</button>
+            </div>
+            <div class="modal-body">
+            <h6 class="font-weight-bold">{$map?subtitle}</h6>
+            {$map?body}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                {$map?buttons}
+           </div>
+         </div>
+        </form>
+     </div>
+</div>
+};
+(: todo password visibility toggle  :)
+declare function local:form-input-row($name, $map){
+            <div class="form-row">
+              {if ($map?required = true()) then
+              
+                <div id="{$map?input-id}-group" class="{if (string-length($map?col-size)>0) then $map?col-size else "col-md-12"} ">
+                    <label for="{$map?input-id}"><strong>{$map?hint}</strong> </label>
+                    <input id="{$map?input-id}" type="{$map?type}" required="required"  name="{if (string-length($map?input-name)>0) then $map?input-name else $map?input-id}" class="form-control" value="{$map?input-value}"/>
+                </div>
+               else
+                <div id="{$map?input-id}-group" class="{if (string-length($map?col-size)>0) then $map?col-size else "col-md-12"} ">
+                    <label for="{$map?input-id}"><strong>{$map?hint}</strong> </label>
+                    <input id="{$map?input-id}" type="{$map?type}" name="{if (string-length($map?input-name)>0) then $map?input-name else $map?input-id}" class="form-control" value="{$map?input-value}"/>
+                </div>    
+              }  
+            </div>
+};
+
+declare function local:tr-info-dialog($name, $options){
+let $body := tlslib:transinfo($options?trid)
+, $buttons := (if (sm:id()//sm:group/text() = ("tls-editor", "tls-admin")) then
+                 <button type="button" class="btn btn-primary" onclick="display_tr_file_dialog('{$name}','{$options?slot}', '{$options?trid}')">Edit Translation Data</button> else () )
+return                 
+      local:modal-frame($name, 
+      map{
+        "dsize" : "modal-lg", 
+        "body": $body, 
+        "buttons" : $buttons, 
+        "options" : $options,
+        "title":  "Information about translation"
+      })           
+};
+
+declare function local:passwd-dialog($name, $options){
+let $body := (local:form-input-row($name, map{"input-id" : "passwd-1", "hint" : "Please enter the new password:", "type" : "password", "required" : true() })
+             ,local:form-input-row($name, map{"input-id" : "passwd-2", "hint" : "Please repeat the new password:" , "type" : "password", "required" : true()}))
+                 
+, $buttons := (<button type="button" class="btn btn-primary" onclick="change_passwd()">Submit</button>)
+return                 
+      local:modal-frame($name, 
+      map{
+        "dsize" : "", 
+        "body": $body, 
+        "buttons" : $buttons, 
+        "options" : $options,
+        "title":  "Change Password"
+      })           
+};
+
+
+declare function local:stub-dialog($name, $options){
+let $body := ()
+, $buttons := ( )
+return                 
+      local:modal-frame($name, 
+      map{
+        "dsize" : "modal-lg", 
+        "body": $body, 
+        "buttons" : $buttons, 
+        "options" : $options,
+        "title":  ""
+      })           
+};
+
+
+(: todo: rewrite this in a way that it has only on swith, that dispatches to specific local functions  :)
+declare function dialogs:dispatcher($para as map(*)){
+let $options := parse-json($para?options)
+return switch($para?name)
+               case "tr-info-dialog" return local:tr-info-dialog($para?name, $options)
+               case "passwd-dialog" return local:passwd-dialog($para?name, $options)
+               default return ()
+};
+
 
 (: 2021-11-30: extending this functionality to cover observations of type block defined in facts.xml :)
 

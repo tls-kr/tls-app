@@ -18,6 +18,7 @@ import module namespace xed="http://hxwd.org/xml-edit" at "xml-edit.xql";
 import module namespace http="http://expath.org/ns/http-client";
 import module namespace dbu="http://exist-db.org/xquery/utility/db" at "db-utility.xqm";
 import module namespace log="http://hxwd.org/log" at "log.xql";
+import module namespace tu="http://hxwd.org/utils" at "tlsutils.xql";
 
 declare variable $imp:ignore-elements := ("body", "docNumber", "juan", "jhead", "byline" ,"mulu") ;
 declare variable $imp:log := $config:tls-log-collection || "/import";
@@ -186,7 +187,7 @@ let $tmp-path := $config:tls-texts-root||"/tmp"
 , $ldoc := collection($tmp-path)//tei:TEI[@xml:id=$cbid]
 return
 if ($ldoc) then
- let $du :=  tlslib:path-component(substring-after (document-uri(root($ldoc)), $tmp-path))
+ let $du :=  tu:path-component(substring-after (document-uri(root($ldoc)), $tmp-path))
  , $cbroot :=  "/db/apps/tls-texts/data/CBETA"
  , $targetcoll := dbu:ensure-collection ($cbroot||$du, $imp:perm)
  , $uri :=  xmldb:store($targetcoll, $cbid || ".xml", $ldoc)
