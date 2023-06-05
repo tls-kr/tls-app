@@ -16,6 +16,7 @@ import module namespace wd="http://hxwd.org/wikidata" at "wikidata.xql";
 import module namespace bib="http://hxwd.org/biblio" at "biblio.xql";
 import module namespace tlslib="http://hxwd.org/lib" at "tlslib.xql";
 import module namespace log="http://hxwd.org/log" at "log.xql";
+import module namespace tu="http://hxwd.org/utils" at "tlsutils.xql";
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
@@ -39,6 +40,8 @@ declare variable $src:search-advanced := "9";
 declare variable $src:search-bib := "10";
 declare variable $src:search-notes := "11";
 declare variable $src:textlist := "12";
+declare variable $src:ngtype := ($src:search-texts,$src:search-one-text,$src:search-tr-lines,$src:search-tabulated);                           
+declare variable $src:sortmax := 5000;
 
 (: search related functions :)
 (:~
@@ -58,7 +61,6 @@ function src:query($node as node()*, $model as map(*), $query as xs:string?, $mo
                              let $ck := tokenize($c, ":")
                              return map:entry($ck[1], $ck[2])
                            else () )
-    , $ngtype := ($src:search-texts,$src:search-one-text,$src:search-tr-lines,$src:search-tabulated)                           
     let $hits := 
      switch($search-type)
      case $src:search-texts 
@@ -91,7 +93,7 @@ function src:query($node as node()*, $model as map(*), $query as xs:string?, $mo
 
     return
     
-    map{"hits" : if ($search-type = $ngtype) then $hits?hits else $hits, "totalhits": if ($search-type = $ngtype) then $hits?all-hits else (), "query" : $query, "mode" : $mode, "search-type" : $search-type, "textid" : $textid, "resno" : 50, "cat" : $cat, "s-time": $s-time}
+    map{"hits" : if ($search-type = $src:ngtype) then $hits?hits else $hits, "totalhits": if ($search-type = $src:ngtype) then $hits?all-hits else (), "query" : $query, "mode" : $mode, "search-type" : $search-type, "textid" : $textid, "resno" : 50, "cat" : $cat, "s-time": $s-time}
 };
 
 declare function src:do-query($queryStr as xs:string?, $mode as xs:string?)
@@ -195,8 +197,8 @@ declare function src:ngram-query($queryStr as xs:string?, $mode as xs:string?, $
        if ($search-type = $src:search-one-text) then 
         (collection($dataroot)//tei:TEI[@xml:id=$stextid]//tei:p[ngram:wildcard-contains(., $qs[1])] |
         collection($dataroot)//tei:TEI[@xml:id=$stextid]//tei:lg[ngram:wildcard-contains(., $qs[1])])
-       else
-        if (string-length($qs[1]) < 2) then
+       else (: 2023-06-01 disabling this temporarily  :)
+        if (string-length($qs[1]) < -1) then
          (collection($config:tls-texts-root || "/tls")//tei:p[ngram:wildcard-contains(., $qs[1])],
          collection($config:tls-texts-root || "/tls")//tei:lg[ngram:wildcard-contains(., $qs[1])])
         else
@@ -212,7 +214,7 @@ declare function src:ngram-query($queryStr as xs:string?, $mode as xs:string?, $
               $s else ()
        else $pmatches:)
     , $cmatches :=   if (count(map:keys($cat)) > 0) then src:facets-filter-hits($pmatches, $cat) else $pmatches
-    , $hit-res := 
+    , $hit-res := if (count($cmatches) > 5000) then $cmatches else
     for $hit in $cmatches
      let $textid := substring-before(tokenize(document-uri(root($hit)), "/")[last()], ".xml"),
 (:     let $textid := tlslib:get-metadata($hit, "textid"),:)
@@ -236,7 +238,7 @@ declare function src:ngram-query($queryStr as xs:string?, $mode as xs:string?, $
          case "CH7" return 700
          case "CH8" return -200
          default return
-          if (string-length($dates[@corresp="#" || $textid]/@notafter) > 0) then tlslib:getdate($dates[@corresp="#" || $textid]) else 0
+          if (string-length($dates[@corresp="#" || $textid]/@notafter) > 0) then tu:index-date($dates[@corresp="#" || $textid]) else 0
 (:    let $id := $hit/ancestor::tei:TEI/@xml:id :)     
     order by $r ascending
     where $filter
@@ -280,6 +282,9 @@ function src:show-hits-h1($node as node()*, $map as map(*),  $type as xs:string)
 let $st :=  if (string-length($type) > 0) then map:get($config:search-map, $map?search-type) || "/" || map:get($config:lmap, $type) else map:get($config:search-map, $map?search-type)
 return
 (if ($map?search-type = $src:search-bib ) then () else
+ if ($map?search-type = $src:ngtype) then (
+ <h1>Searching in <strong>{if (count(map:keys($map?cat)) > 0) then string-join(for $c in map:keys($map?cat) return tlslib:cat-title($map?cat?($c)), " / ") else $st}</strong> for <mark class="chn-font">{$map?query}</mark></h1>
+) else
  if ($map?search-type = $src:textlist) then
    let $count := count($map?hits)
    return 
@@ -302,14 +307,42 @@ let $query := $model?query
   , $map := session:get-attribute($src:SESSION || ".types")
   , $cnt := if (string-length($type) > 0) then count(map:get($map, $type)) else count($model?hits)
 return
-(: if type = 10 do not display here :)
-if ($model?search-type = ("10", "12")) then () else
+(: if type = 10 do not display here :) 
+if ($model?search-type = ($src:search-bib, $src:textlist)) then () else (
 <h4>Found {$cnt} {if ($cnt = 1) then " match" else " matches"},  <span>showing {$start} to {min(($cnt, $start + $model?resno -1))}</span></h4>
+,if (count($model?hits) < $src:sortmax) then () else
+ <div class="row">
+ <div class="col-md-8">
+ <p class="bg-warning">Sorting is disabled, since we have more than {$src:sortmax} hits. <br/>Select a facet from the display to the left to filter and reduce the number of hits and apply sorting.</p>
+ </div>
+ </div>
+)
+};
 
+
+declare function src:find-similar-segments($inp-seg){
+ let $seg := typeswitch($inp-seg)
+              case element(*) return $inp-seg
+              default return tlslib:get-seg($inp-seg)
+ let $s := string-join(for $t in $seg return $t/text())
+ let $ng := for $i in 1 to string-length($s) 
+             let $n := substring($s, $i, 2)
+             where string-length($n) > 1
+             return $n
+ , $ns :=  count($ng) div 2
+ for $q in $ng 
+   for $r in collection($config:tls-texts-root)//tei:p[ngram:contains(.,$q)]
+      for $sg in util:expand($r)//exist:match/ancestor::tei:seg
+        let $id := $sg/@xml:id
+      , $grp := $id[1]
+      group by $grp
+      order by count($id) descending
+      where count($id) > $ns and not($id = $seg/@xml:id)
+      return <m n="{count($id)}">{$grp}{$sg[1]}</m>
 };
 
 (: for a $hit, we find the value associated with the requested genre :)
- 
+ (: 2023-06-03 this is duplicated with tlslib, which is more evolved. remove here! :)
 declare function src:facets-get-metadata($hit, $field){
     let $header := $hit/ancestor-or-self::tei:TEI/tei:teiHeader
     return
@@ -564,6 +597,7 @@ declare function src:facets($node as node()*, $model as map(*), $query as xs:str
            <div  class="col-md-3">
             <h1>Facets</h1>
             <p>Time: {util:system-dateTime() - $model?s-time}</p>
+            <p>Total number of hits: {count($model?totalhits)}</p>
             <p>{if (count($fkeys) > 0) then <span>Applied filters: <br/>
             {string-join(for $f in $fkeys return tlslib:cat-title($model?cat?($f)), " / ")}
             </span>
@@ -835,8 +869,10 @@ declare function src:show-text-results($map as map(*)){
       let $loc := if ($map?search-type=$src:search-trans) then substring($h/@corresp,2) else $h/@xml:id,
       $m1 := try { substring(($h/exist:match)[1]/text(), 1, 1) } catch * {"x"},
       $cseg := collection($config:tls-texts-root)//tei:seg[@xml:id=$loc],
-      $head :=  $cseg/ancestor::tei:div[1]/tei:head[1]/tei:seg/text() ,
-      $title := $cseg/ancestor::tei:TEI//tei:titleStmt/tei:title/text(),
+(:      $head :=  $cseg/ancestor::tei:div[1]/tei:head[1]/tei:seg/text() ,:)
+      $head :=  tlslib:get-metadata($cseg, "head"),
+(:      $title := $cseg/ancestor::tei:TEI//tei:titleStmt/tei:title/text(),:)
+      $title := tlslib:get-metadata($cseg, "title"),
 (:     at some point use this to select the translation the user prefers
       $tr := tlslib:get-translations($model?textid),
       $slot1-id := tlslib:get-content-id($model?textid, 'slot1', $tr),:)
@@ -846,7 +882,8 @@ declare function src:show-text-results($map as map(*)){
       <tr>
         <td class="chn-font">{$c + $map?start -1}</td>
         <td><a href="textview.html?location={$loc}&amp;query={$map?query}">{$title, " / ", $head}</a>
-        <span class="btn" title="Show more information about this text"></span>
+        <span class="btn badge badge-light " onclick="show_dialog('text-info', {{'textid': '{tlslib:get-metadata($cseg, 'textid')}'}})" title="Information about this text">
+           <img class="icon "  src="resources/icons/octicons/svg/info.svg"/></span>
         </td>
         {if ($map?search-type = $src:search-trans) then  
         (<td>{$cseg}</td>,<td>{$h}</td>) else

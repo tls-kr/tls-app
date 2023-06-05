@@ -67,8 +67,8 @@ declare variable $config:seg-split-tokens := '[，。：．；？﹖！，』」
 
 declare variable $config:kanji-numberlike-tokens := '[〇一二三四五六七八九十百千萬億兆上中下]';
 
-declare variable $config:zvar-in := "㦳㩁㫚㮣䎛䱎倂値吴呉塡墫奨奬娯娱嬀帲恆悦户戸挿捝揷揺摇敚晩棁榝涚潙硏祙税絚絶緖脱腁苿蔿虁蜕詽說謡豣跥躛輧郞郷鄕鋭鎭隷黒𠮟𡉟𢖽𢗿𢬎𣢧𤽜𥑘𥡴𨓜𨺓𩿲𱽌𱽨";
-declare variable $config:zvar-out:= "㘽搉曶槩㖈䱍併值吳吳填壿獎獎娛娛媯帡恒悅戶戶插挩插搖搖敓晚梲樧涗溈研𥘯稅絙絕緒脫胼茉蒍蘷蛻訮説謠豜跺躗軿郎鄉鄉銳鎮隸黑叱壯志怽𢫮䶾皌砞稽逸隆𩿣𬻋𦰥";
+declare variable $config:zvar-in := "︻︼㦳㩁㫚㮣䎛䱎倂値吴呉塡墫奨奬娯娱嬀帲恆悦户戸挿捝揷揺摇敚晩棁榝涚潙硏祙税絚絶緖脱腁苿蔿虁蜕詽說謡豣跥躛輧郞郷鄕鋭鎭隷黒𠮟𡉟𢖽𢗿𢬎𣢧𤽜𥑘𥡴𨓜𨺓𩿲𱽌𱽨";
+declare variable $config:zvar-out:= "【】㘽搉曶槩㖈䱍併值吳吳填壿獎獎娛娛媯帡恒悅戶戶插挩插搖搖敓晚梲樧涗溈研𥘯稅絙絕緒脫胼茉蒍蘷蛻訮説謠豜跺躗軿郎鄉鄉銳鎮隸黑叱壯志怽𢫮䶾皌砞稽逸隆𩿣𬻋𦰥";
 
 (: the underscore is in reality a space, for the purpose at hand has to be escaped :) 
 declare variable $config:concept-name-chars := "['_,-/3ABCDEFGHIJKLMNOPQRSTUVWXYZx:]";

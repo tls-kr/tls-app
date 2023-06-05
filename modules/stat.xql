@@ -35,7 +35,7 @@ $translations := for $d in collection($config:tls-translation-root)
     return
     <li>
         {if ($lc > 0) then
-    <a href="textview.html?location={tlslib:translation-firstseg($t//tei:TEI/@xml:id)}">{$t//tei:titleStmt/tei:title/text()} // by  {$t//tei:titleStmt/tei:editor/text()} (<span>{$lc}</span> lines)</a>
+    <a href="textview.html?location={tlslib:get-translation-seg($t//tei:TEI/@xml:id, true())}">{$t//tei:titleStmt/tei:title/text()} // by  {$t//tei:titleStmt/tei:editor/text()} (<span>{$lc}</span> lines)</a>
     else 
     <span>{$t//tei:titleStmt/tei:title/text()} // by  {$t//tei:titleStmt/tei:editor/text()} ({$lc} lines)</span>        
         }

@@ -2394,6 +2394,7 @@ function save_updated_gloss(uuid, ch, pos){
 
 // add or edit text cat
 function edit_textcat(textid){
+  $('.modal').modal('hide');
   var src = $('#text-cat-note').text();
   var textcat = $('#text-cat').attr('data-text-cat');
   //var datecat = $("#select-text-cat").val();
@@ -2435,6 +2436,7 @@ function save_textcat(textid){
 
 // add or edit text date
 function edit_textdate(textid){
+  $('.modal').modal('hide');
   var nb = $('#textdate').attr('data-not-before');
   var na = $('#textdate').attr('data-not-after');  
   var prose = document.getElementById( "textdate" ).childNodes[0].nodeValue;
@@ -2766,6 +2768,7 @@ function biburl_save(modsid){
 
 function show_dialog(dialog_name, options){
      var opt = JSON.stringify(options);
+     $('.modal').modal('hide');
      $.ajax({
      type : "GET",
      dataType : "html",  

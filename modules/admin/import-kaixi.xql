@@ -110,7 +110,7 @@ declare function local:proc-row($nodes){
          attribute quantity {string-length($n)}}
         else 
             (:  TODO normalize text :)
-            $n/text()
+            xed:normalize-chars($n)
         (: ︻ ︼ :)
     default return $node/text()
 };
