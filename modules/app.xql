@@ -329,7 +329,10 @@ declare function app:do-browse($type as xs:string?, $filter as xs:string?)
 
 declare 
     %templates:wrap
-function app:getdata($node as node()*, $model as map(*))
+    %templates:default("prec", 15)
+    %templates:default("foll", 15)     
+    %templates:default("first", "false")     
+function app:getdata($node as node()*, $model as map(*), $location as xs:string?, $mode as xs:string?, $prec as xs:int?, $foll as xs:int?, $first as xs:string)
 {
    session:create(),
    let $uid := request:get-parameter("uuid", "")
@@ -337,13 +340,13 @@ function app:getdata($node as node()*, $model as map(*))
    , $context := substring-before(tokenize(request:get-uri(), "/")[last()], ".html")
    return
     if (string-length($clabel) > 0) then
-    map{"concept" : $clabel, "context" : $context}
+      map{"concept" : $clabel, "context" : $context}
     else if (string-length($uid) > 0) then
-    let $clabel := (collection($config:tls-data-root || "/concepts") | collection($config:tls-data-root || "/domain"))//tei:div[@xml:id = $uid]/tei:head/text()
-    return
-    map{"concept" : $clabel, "context" : $context}
+      let $clabel := (collection($config:tls-data-root || "/concepts") | collection($config:tls-data-root || "/domain"))//tei:div[@xml:id = $uid]/tei:head/text()
+      return
+      map{"concept" : $clabel, "context" : $context}
     else
-    map{"concept" : "unknown", "context" : $context}
+      map{"concept" : "unknown", "context" : $context}
 };
 
 (: textview related functions :)
@@ -354,32 +357,17 @@ function app:getdata($node as node()*, $model as map(*))
 
 declare 
     %templates:wrap
-function app:tv-data($node as node()*, $model as map(*))
+    %templates:default("prec", 15)
+    %templates:default("foll", 15)     
+    %templates:default("first", "false")     
+function app:tv-data($node as node()*, $model as map(*), $location as xs:string?, $mode as xs:string?, $prec as xs:int?, $foll as xs:int?, $first as xs:string)
 {
    session:create(),
-   let $location := request:get-parameter("location", "")
-(:  , $l := log:info($app:log, "Loading; app:tv-data "):)
- (: 2023-05-22  The following is extremely inefficient and duplicates code in app:textview, since it seems not to be used, disabled for now 
-    the right way forward would be to streamline here and then use it where needed. 
- :)
-(:   let $seg := 
-    if (string-length($location) > 0) then
-     if (contains($location, '_')) then
-      let $textid := tokenize($location, '_')[1]
-      return
-       collection($config:tls-texts-root)//tei:seg[@xml:id=$location]
-     else
-      let $firstdiv := (collection($config:tls-texts-root)//tei:TEI[@xml:id=$location]//tei:body/tei:div)[1]
-      let $targetseg := if ($firstdiv//tei:seg) then ($firstdiv//tei:seg)[1] else  ($firstdiv/following::tei:seg)[1] 
-      return
-       $targetseg
-    else (), :)
-    let $textid := tokenize($location, "_")[1],
-    $title := collection($config:tls-texts-root)//tei:TEI[@xml:id=$textid]//tei:titleStmt/tei:title
-(:   , $l := log:info($app:log, "Leaving app:tv-data "):)
-
+    let $textid := tlslib:get-textid($location)
+    , $title := tlslib:get-title($textid)
+    , $seg := tlslib:get-first-seg($location, $mode, $first)
     return
-    map { "textid" : $textid, "title" : $title}
+    map { "textid" : $textid, "title" : $title, "seg": $seg}
 };
 
 
@@ -403,51 +391,13 @@ function app:textview($node as node()*, $model as map(*), $location as xs:string
     , $user := sm:id()//sm:real/sm:username/text()
     , $usercoll := collection($config:tls-user-root || "/" || $user)
     , $message := (for $k in map:keys($model) return $k) => string-join(",")
+(:    , $dispseg := tlslib:get-first-seg($location, $mode, $first):)
+    , $dispseg := $model("seg")
 (:    , $l := log:info($app:log, "Loading; $model keys: " || $message):)
     return
     (session:create(),
-    if (string-length($location) > 0) then
-     if (contains($location, '_')) then
-       let $textid := tokenize($location, '_')[1]
-       let $firstseg := collection($config:tls-texts-root)//tei:seg[@xml:id=$location]
-       return
-         try {tlslib:display-chunk($firstseg, $model, $prec, $foll)} catch * {"An error occurred, can't display text. Code:" || count($firstseg) || " (firstseg)" }
-     else
-      if (not($mode = 'visit') and collection($config:tls-manifests)//mf:manifest[@xml:id=$location]) then 
-      krx:show-manifest(collection($config:tls-manifests)//mf:manifest[@xml:id=$location]) 
-     else
-      let $firstdiv := 
-         if ($first = 'true') then 
-            collection($config:tls-texts-root)//tei:TEI[@xml:id=$location]//tei:body/tei:div[1]
-         else
-            let $rec := $usercoll//tei:list[@type='visit']/tei:item[@xml:id=$location]
-            
-            let $visit := if ($rec) then substring($rec/@target, 2) else
-              (: 2023-05-11 -- changed to new way to record visits, will phase the following out after a while :)
-              (for $v in collection($config:tls-user-root || "/" || $user)//tei:list[@type="visits"]/tei:item
-               let $date := xs:dateTime($v/@modified)
-               ,$target := substring($v/tei:ref/@target, 2)
-               order by $date descending
-               where starts-with($target, $location)
-               return $target)[1]
-            return
-            if ($visit) then 
-             let $rst := collection($config:tls-texts-root)//tei:seg[@xml:id=$visit]
-             return if ($rst) then $rst else 
-               let $doc := collection($config:tls-texts-root)//tei:TEI[@xml:id=$location]
-(:                , $l := log:info($app:log, "Loading text, no visit" || count($doc)):)
-               return
-                 subsequence($doc//tei:body, 1, 1)
-            else          
-             let $doc := collection($config:tls-texts-root)//tei:TEI[@xml:id=$location]
-(:                , $l := log:info($app:log, "Loading text, all failed: " || count($doc)):)
-             return
-               subsequence($doc//tei:body, 1, 1)
-    
-      let $targetseg := if (local-name($firstdiv) = "seg") then $firstdiv else 
-      if ($firstdiv//tei:seg) then subsequence($firstdiv//tei:seg, 1, 1) else  subsequence($firstdiv/following::tei:seg, 1, 1) 
-      return
-        try {tlslib:display-chunk($targetseg, $model, 0, $prec + $foll)} catch * {"An error occurred, can't display text. Code:" || count($targetseg) || " (targetseg)"}
+    if (string-length($location) > 0) then 
+      try {tlslib:display-chunk($dispseg, $model, $prec, $foll)} catch * {"An error occurred, can't display text. Code:" || count($dispseg) || " (dispseg)" }      
     else 
     app:textlist()
     
@@ -1251,8 +1201,10 @@ if (sm:is-authenticated() and not($user)) then
 <img class="icon mr-2" 
 src="resources/icons/open-iconic-master/svg/person.svg"/>{sm:id()//sm:real/sm:username/text()}</a>
 <div class="dropdown-menu" aria-labelledby="settingsDropdown">
-<a onclick="show_dialog('passwd-dialog', '{{}}')" class="dropdown-item bg-warning">Change Password</a>
 <a onclick="dologout()" class="dropdown-item bg-danger">Logout</a>
+<!--
+<a onclick="show_dialog('passwd-dialog', '{{}}')" class="dropdown-item bg-warning">Change Password</a>
+-->
 <a class="dropdown-item" href="settings.html">Settings</a>
 <a class="dropdown-item" href="https://join.slack.com/t/tls-7al8577/shared_invite/zt-1h6hfirdt-8EdFCAxsQalvCIdIs3OK6w">Feedback channel</a>
 </div>
@@ -1327,6 +1279,7 @@ return
                     
                     <form action="search.html" class="form-inline my-2 my-lg-0" method="get">
                     <input type="hidden" name="textid" value="{request:get-parameter("textid", map:get($model, 'textid'))}"/>
+<!--                    <input type="hidden" name="filter" value="{request:get-parameter("filter", tu:get-setting('search-default', 'tls-internal:annotation'))}"/> -->
                     <input id="query-inp" name="query" class="form-control mr-sm-2 chn-font" type="search" placeholder="Search" aria-label="Search" value="{if (string-length($query) > 0) then $query else ()}"/> in 
         <select class="form-control input-sm" name="search-type">
           {if (not($context = "bibliography")) then

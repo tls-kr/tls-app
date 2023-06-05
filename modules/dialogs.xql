@@ -112,6 +112,15 @@ return
       })           
 };
 
+declare function local:text-info($name, $options){
+  local:modal-frame($name, 
+      map{
+        "body": tlslib:textinfo($options?textid), 
+        "options" : $options,
+        "title":  "Text information"
+      })           
+};
+
 
 declare function local:stub-dialog($name, $options){
 let $body := ()
@@ -134,7 +143,8 @@ let $options := parse-json($para?options)
 return switch($para?name)
                case "tr-info-dialog" return local:tr-info-dialog($para?name, $options)
                case "passwd-dialog" return local:passwd-dialog($para?name, $options)
-               default return ()
+               case "text-info" return local:text-info($para?name, $options)
+               default return "Dialog not registered!"
 };
 
 

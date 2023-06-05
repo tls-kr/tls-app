@@ -180,13 +180,6 @@ let $file := if ($type = "sem-feat") then "semantic-features.xml" else
  )
 };
 
-declare function tlslib:getdate($node as node()) as xs:int{
- let $nb := xs:int($node/@notbefore)
- , $na := xs:int($node/@notafter)
- return
- xs:int(($na + $nb) div 2)
-};
-  
 (: Helper for ontology  I guess I need to return a map? :)  
 (: this covers now also the rhet-dev ontology :)
 
@@ -797,7 +790,7 @@ declare function tlslib:tv-header($node as node()*, $model as map(*)){
 
    return
       (
-      <span class="navbar-text ml-2 font-weight-bold">{$model('title')/text()} <small class="ml-2">{$model('seg')/ancestor::tei:div[1]/tei:head[1]/text()}</small></span> 
+      <span class="navbar-text ml-2 font-weight-bold">{$model('title')} <small class="ml-2">{$model('seg')/ancestor::tei:div[1]/tei:head[1]/text()}</small></span> 
       ,<li class="nav-item dropdown">
        <a id="navbar-mulu" role="button" data-toggle="dropdown" href="#" class="nav-link dropdown-toggle">目錄</a> 
        <div class="dropdown-menu">
@@ -1255,6 +1248,55 @@ else
 if (string-length($def) > 10) then concat(substring($def, 10), "...") else $def}</li>
 };
 
+declare function tlslib:get-first-seg($location, $mode, $first){
+    let $dataroot := $config:tls-data-root
+    , $user := sm:id()//sm:real/sm:username/text()
+    , $usercoll := collection($config:tls-user-root || "/" || $user)
+return
+     if (contains($location, '_')) then
+       let $textid := tokenize($location, '_')[1]
+       let $firstseg := collection($config:tls-texts-root)//tei:seg[@xml:id=$location]
+       return
+         $firstseg
+     else
+      if (not($mode = 'visit') and collection($config:tls-manifests)//mf:manifest[@xml:id=$location]) then 
+      krx:show-manifest(collection($config:tls-manifests)//mf:manifest[@xml:id=$location]) 
+     else
+      let $firstdiv := 
+         if ($first = 'true') then 
+            collection($config:tls-texts-root)//tei:TEI[@xml:id=$location]//tei:body/tei:div[1]
+         else
+            let $rec := $usercoll//tei:list[@type='visit']/tei:item[@xml:id=$location]
+            
+            let $visit := if ($rec) then substring($rec/@target, 2) else
+              (: 2023-05-11 -- changed to new way to record visits, will phase the following out after a while :)
+              (for $v in collection($config:tls-user-root || "/" || $user)//tei:list[@type="visits"]/tei:item
+               let $date := xs:dateTime($v/@modified)
+               ,$target := substring($v/tei:ref/@target, 2)
+               order by $date descending
+               where starts-with($target, $location)
+               return $target)[1]
+            return
+            if ($visit) then 
+             let $rst := collection($config:tls-texts-root)//tei:seg[@xml:id=$visit]
+             return if ($rst) then $rst else 
+               let $doc := collection($config:tls-texts-root)//tei:TEI[@xml:id=$location]
+(:                , $l := log:info($app:log, "Loading text, no visit" || count($doc)):)
+               return
+                 subsequence($doc//tei:body, 1, 1)
+            else          
+             let $doc := collection($config:tls-texts-root)//tei:TEI[@xml:id=$location]
+(:                , $l := log:info($app:log, "Loading text, all failed: " || count($doc)):)
+             return
+               subsequence($doc//tei:body, 1, 1)
+    
+      let $targetseg := if (local-name($firstdiv) = "seg") then $firstdiv else 
+      if ($firstdiv//tei:seg) then subsequence($firstdiv//tei:seg, 1, 1) else  subsequence($firstdiv/following::tei:seg, 1, 1) 
+      return
+    $targetseg
+};
+
+
 (:~
 : displays a tei:seg element, that is, a line of text, including associated items like translation and swl
 : @param $seg the tei:seg to display
@@ -1348,9 +1390,10 @@ return
 </div>
 <div class="col-sm-2"></div>
 </div>,
-if (local-name(($seg/following-sibling::tei:*)[1]) = 'figure') then
- let $fig:= "../tls-texts/img/" || ($seg/following-sibling::tei:figure)[1]/tei:graphic/@facs
- , $tit := ($seg/following-sibling::tei:figure)[1]/tei:graphic/@n
+if (local-name(($seg/following::tei:*)[1]) = 'figure') then
+ let $img := ($seg/following::tei:*)[1]
+ let $fig:= "../tls-texts/img/" || $img/tei:graphic/@facs
+ , $tit := $img/tei:graphic/@n
  return
 <div class="row">
 <span title="{$tit}"><img src="{$fig}"/></span>
@@ -1497,6 +1540,20 @@ declare function tlslib:get-metadata($hit, $field){
                 if (string-length(string-join($res)) > 0) then $res else "notav"
             case "extent" return
                 data($header//tei:extent/tei:measure[@unit="char"]/@quantity)
+            case "head" return
+                $hit/ancestor::tei:div[1]/tei:head[1]/tei:seg/text()
+            case "edition" return
+                let $textid := $hit/ancestor-or-self::tei:TEI/@xml:id
+                , $ab := doc($config:tls-texts-meta||"/chant-refs.xml")//ab[@refid=$textid]
+                return
+                if ($ab) then $ab/text()
+                 else
+                 if($header//tei:sourceDesc/tei:bibl) then 
+                  string-join((
+                    $header//tei:sourceDesc//tei:title[@level="s"]
+                  ), " - ")                
+                else
+                normalize-space(string-join($header//tei:sourceDesc//text(), ' '))
             case "genre" return ()
             default return ()
 };
@@ -1542,6 +1599,7 @@ declare function tlslib:checkCat($node as node(), $scheme as xs:string, $catid a
 
 (: category xml:ids have to be unique across the document, so I do not need to provide the scheme here :)
 declare function tlslib:checkCat($node as node(), $catid as xs:string){
+    let $nt  := ("kr-categories", "tls-dates", "tls-regions")
     let $tax := doc($config:tls-texts-taxonomy)
     , $scheme := $tax//tei:category[@xml:id=$catid]/ancestor::tei:category[parent::tei:taxonomy]/@xml:id
     let $catref := <catRef xmlns="http://www.tei-c.org/ns/1.0" scheme="#{$scheme}" target="#{$catid}"/>
@@ -1550,7 +1608,7 @@ declare function tlslib:checkCat($node as node(), $catid as xs:string){
     return
     if ($scheme) then
     if ($header//tei:profileDesc) then
-        if ($header//tei:catRef[@target="#"||$catid]) then 
+        if ($header//tei:catRef[@target="#"||$catid] or ($scheme = $nt and $header//tei:catRef[@target="#"||$scheme])) then 
             let $r := $header//tei:catRef[@target="#"||$catid]
             , $s := substring($r/@scheme ,2)
             return
@@ -2714,18 +2772,18 @@ return
          <div class="row">
            <div class="col-sm-1"/>
            <div class="col-sm-2"><span class="font-weight-bold float-right">Edition:</span></div>
-           <div class="col-sm-5"><span class="sm">{collection($config:tls-texts-root)//ab[@refid=$textid]}</span></div>　
+           <div class="col-sm-9"><span class="sm">{tlslib:get-metadata($d, "edition")}</span></div>　
          </div>  
          <div class="row">
            <div class="col-sm-1"/>
            <div class="col-sm-2"><span class="font-weight-bold float-right">Catalog category:</span></div>
-           <div class="col-sm-5"><span class="sm" id="text-cat" data-text-cat="{$cat}">{tlslib:cat-title($cat)}</span>
+           <div class="col-sm-9"><span class="sm" id="text-cat" data-text-cat="{$cat}">{tlslib:cat-title($cat)}</span>
            {if (sm:is-authenticated()) then <span class="badge badge-pill badge-light" onclick="edit_textcat('{$textid}')">Edit category</span> else ()} </div>　
          </div>  
          <div class="row">
            <div class="col-sm-1"/>
            <div class="col-sm-2"><span class="font-weight-bold float-right">Dates:</span></div>
-           <div class="col-sm-5"><span class="sm badge badge-pill" id="date-cat" data-date-cat="{$datecat}">{tlslib:cat-title($datecat)}</span>　{
+           <div class="col-sm-9"><span class="sm badge badge-pill" id="date-cat" data-date-cat="{$datecat}">{tlslib:cat-title($datecat)}</span>　{
            if ($date) then 
             (<span id="textdate-outer"><span id="textdate" data-not-before="{$date/@notbefore}" data-not-after="{$date/@notafter}">{$date/text()}<span id="textdate-note" class="text-muted">{$date/note/text()}</span></span></span>,
             if (sm:is-authenticated()) then <span class="badge badge-pill badge-light" onclick="edit_textdate('{$textid}')">Edit date</span> else 
@@ -2736,29 +2794,29 @@ return
          <div class="row">
            <div class="col-sm-1"/>
            <div class="col-sm-2">{ if (sm:is-authenticated()) then <span class="font-weight-bold float-right" title="Click on one of the stars to rate the text and add to the ★ menu.">Rating:</span> else ()}</div>
-           <div class="col-sm-5">{ if (sm:is-authenticated()) then
+           <div class="col-sm-9">{ if (sm:is-authenticated()) then
            <input id="input-{$textid}" name="input-name" type="number" class="rating"
     min="1" max="10" step="2" data-theme="krajee-svg" data-size="xs" value="{tlslib:get-rating($textid)}"/> else ()}</div> 
         </div>
          <div class="row">        
            <div class="col-sm-1"/>
            <div class="col-sm-2"><span class="font-weight-bold float-right">Textlength:</span></div>
-           <div class="col-sm-5"><span>{$charcount} characters.</span></div>
+           <div class="col-sm-9"><span>{$charcount} characters.</span></div>
          </div>   
          <div class="row">
            <div class="col-sm-1"/>
            <div class="col-sm-2"><span class="font-weight-bold float-right">Comment:</span></div>
-           <div class="col-sm-5"><span class="tr-x" id="{$textid}-com" contenteditable="true">　</span></div>    
+           <div class="col-sm-9"><span class="tr-x" id="{$textid}-com" contenteditable="true">　</span></div>    
          </div>  
          <div class="row">
            <div class="col-sm-1"/>
            <div class="col-sm-2"><span class="font-weight-bold float-right">Wikidata:</span></div>
-           <div class="col-sm-5">{wd:display-qitems($textid, 'title', tlslib:get-title($textid))}</div>    
+           <div class="col-sm-9">{wd:display-qitems($textid, 'title', tlslib:get-title($textid))}</div>    
          </div>  
          <div class="row">
            <div class="col-sm-1"/>
            <div class="col-sm-2"><span class="font-weight-bold float-right">References:</span></div>
-           <div class="col-sm-5"><span>{if ($loewe) then <span>{$loewe/tei:author}, in Loewe(ed), <i>Early Chinese Texts</i> (1995), p.{$loewe/tei:citedRange/text()}<br/></span> else '　'}</span>
+           <div class="col-sm-9"><span>{if ($loewe) then <span>{$loewe/tei:author}, in Loewe(ed), <i>Early Chinese Texts</i> (1995), p.{$loewe/tei:citedRange/text()}<br/></span> else '　'}</span>
            <span>{for $r in $d//tei:witness 
            let $ref := $r//tei:ref/@target
            return <span>{

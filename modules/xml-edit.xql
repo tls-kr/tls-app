@@ -33,6 +33,10 @@ declare variable $xed:encodingDesc :=
        <variantEncoding location="external" method="double-end-point"/>
 </encodingDesc>;
 
+declare function xed:normalize-chars($s as xs:string){
+fn:translate($s, $config:zvar-in, $config:zvar-out)
+};
+
 (:~
   Split parent of xml node at the node n
   n will be the first node of the second element, the first element contains all the preceding siblings

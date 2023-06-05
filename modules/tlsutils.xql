@@ -47,10 +47,35 @@ return ($name, string-join(for $n in tokenize($name)
 };
 
 declare function tu:format-segid($segid as xs:string){
-let $res := analyze-string($segid, "_([\d]+)-(\d+)([a-z])\.?(\d+)")//fn:match/fn:group/text()
-return string-join(($res[1], format-number(xs:int($res[2]), "000"), $res[3], format-number(xs:int($res[4]), "000")) , ""  )
+let $res := analyze-string(tokenize($segid, "_")[3], "\d+")
+return
+string-join(for $r in $res//fn:*
+ return
+ if (local-name($r) = 'match') then format-number(xs:int($r), "0000") else $r/text() )
 };
 
 declare function tu:path-component($p){
 string-join((tokenize($p, "/")) [position() < last()], "/")
+};
+
+declare function tu:index-date($node as node()) as xs:int{
+ let $nb := xs:int($node/@notbefore)
+ , $na := xs:int($node/@notafter)
+ return
+ xs:int(($na + $nb) div 2)
+};
+  
+
+
+declare function tu:get-setting($value, $default){
+let $user := sm:id()//sm:real/sm:username/text()
+, $user-coll := collection($config:tls-user-root|| $user)
+return
+   switch ($value) 
+     case ('search-default') return 
+        if ($user-coll//tei:item[@xml:id=$value]) 
+          then $user-coll//tei:item[@xml:id=$value]/text()
+          else $default
+     default return ("No setting available for "||$value)
+     
 };
