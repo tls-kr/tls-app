@@ -814,14 +814,22 @@ declare function tlslib:tv-header($node as node()*, $model as map(*)){
       )
 };
 
+(: 2023-06-09 working around a bug in some texts... temporarily .. :)
+declare function tlslib:generate-toc($node){
+for $h in $node//tei:head
+    let $locseg := $h//tei:seg/@xml:id
+    return
+    <a class="dropdown-item" title="{$locseg}" href="textview.html?location={$locseg}&amp;prec=0&amp;foll=30">{$h//text()}</a>
+};
+
+
 (:~
 : generate the table of contents for the textview header.  Called from
 : @param $node  a node from the text to process
 : @see tlslib:tv-header()
 : TODO: Store a generated TOC in the text file and use if available
 :)
-
-declare function tlslib:generate-toc($node){
+declare function tlslib:generate-toc-correct($node){
  if ($node/tei:head) then
   let $locseg := if ($node//tei:seg/@xml:id) then ($node//tei:seg/@xml:id)[1] else $node/following::tei:seg[1]/@xml:id
   ,$head := if ($node/tei:head[1]/tei:seg) then ($node/tei:head[1]/tei:seg)/text() else ($node//text())[1]
