@@ -485,6 +485,7 @@ declare function tlslib:proc-seg($node as node(), $options as map(*)){
    else
      $node/text()
   case element (tei:lb)  return ()
+  case element (tei:space)  return "　"
   case element (exist:match) return <mark>{$node/text()}</mark>
   case element (tei:anchor) return 
     (: since I need it later, I will get it here, even if it might not get a result :)
@@ -816,10 +817,11 @@ declare function tlslib:tv-header($node as node()*, $model as map(*)){
 
 (: 2023-06-09 working around a bug in some texts... temporarily .. :)
 declare function tlslib:generate-toc($node){
-for $h in $node//tei:head
+subsequence (for $h in $node//tei:head
     let $locseg := $h//tei:seg/@xml:id
     return
     <a class="dropdown-item" title="{$locseg}" href="textview.html?location={$locseg}&amp;prec=0&amp;foll=30">{$h//text()}</a>
+    , 1, 100)
 };
 
 
@@ -959,6 +961,7 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
         else (),
       $pseg := if ($prec > 0) then $targetseg/preceding::tei:seg[fn:position() < $prec] 
         else ()
+      , $zh-width := 'col-sm-3'
       let $d := $targetseg/ancestor::tei:div[1],
       $state := if ($d/ancestor::tei:TEI/@state) then $d/ancestor::tei:TEI/@state else "yellow" ,
       $pb := $targetseg/preceding::tei:pb[1] ,
@@ -1003,7 +1006,7 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
       {(:  this is the same structure as the one display-seg will fill it 
       with selection for translation etc, we use this as a header line :)()}
        <div class="row">
-        <div class="col-sm-2" id="toprow-1"><img class="icon state-{$state}"  src="{$config:circle}"/><span class="font-weight-bold">{$head}</span><span class="btn badge badge-light">line {$xpos} / {($xpos * 100) idiv $sc}%</span> <span class="btn badge badge-light" title="{$pb/@xml:id}">{data($pb/@n)}</span><!-- zh --></div>
+        <div class="{$zh-width}" id="toprow-1"><img class="icon state-{$state}"  src="{$config:circle}"/><span class="font-weight-bold">{$head}</span><span class="btn badge badge-light">line {$xpos} / {($xpos * 100) idiv $sc}%</span> <span class="btn badge badge-light" title="{$pb/@xml:id}">{data($pb/@n)}</span><!-- zh --></div>
         <div class="col-sm-5" id="top-slot1"><!-- tr -->
         {if ($show-transl) then tlslib:trsubmenu($model?textid, "slot1", $slot1-id, $tr) else ()}
         </div>
@@ -1013,7 +1016,7 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
         </div>
       </div>
       <div id="chunkcol-left" class="col-sm-12">
-      {tlslib:chunkcol-left($dseg, $model, $tr, $slot1-id, $slot2-id, data($targetseg/@xml:id), 0)}
+      {tlslib:chunkcol-left($dseg, map:put($model, "zh-width", $zh-width), $tr, $slot1-id, $slot2-id, data($targetseg/@xml:id), 0)}
       </div>
       <div id="chunkcol-right" class="col-sm-0">
       {tlslib:swl-form-dialog('textview', $model)}
@@ -1353,18 +1356,18 @@ else ()
 }<div class="{
 if ($seg/@type='comm') then 'tls-comm ' else 
 if($locked) then 'locked ' else () }{
-if ($ann='false') then 'col-sm-4' else 'col-sm-2'} zh chn-font {$alpheios-class} {$markup-class}" lang="{$lang}" id="{$seg/@xml:id}" data-tei="{ util:node-id($seg) }">{
+if ($ann='false') then 'col-sm-4' else $options?zh-width} zh chn-font {$alpheios-class} {$markup-class}" lang="{$lang}" id="{$seg/@xml:id}" data-tei="{ util:node-id($seg) }">{
 tlslib:proc-seg($seg, map{"punc" : true(), "textid" : $textid})
 }{(:if (exists($seg/tei:anchor/@xml:id)) then <span title="{normalize-space(string-join($seg/ancestor::tei:div//tei:note[tei:ptr/@target='#'||$seg/tei:anchor/@xml:id]/text()))}" >●</span> else ():) ()}</div>　
 <div class="col-sm-4 tr" title="{$resp1}" lang="en-GB" tabindex="{$options('pos')+500}" id="{$seg/@xml:id}-tr" contenteditable="{if (not($testuser) and not($locked)) then 'true' else 'false'}">{typeswitch ($slot1) 
-case element(tei:TEI) return  $slot1//tei:seg[@corresp="#"||$seg/@xml:id]/text()
+case element(tei:TEI) return  $slot1//tei:seg[@corresp="#"||$seg/@xml:id]//text()
 default return (krx:get-varseg-ed($seg/@xml:id, substring-before($slot1, "::")))
 }</div>
  {if ($ann = 'false') then () else 
  (: using en-GB for now, need to get that from translation in the future...  :)
   <div class="col-sm-4 tr" title="{$resp2}" lang="en-GB" tabindex="{$options('pos')+1000}" id="{$seg/@xml:id}-ex" contenteditable="{if (not($testuser) and not($locked)) then 'true' else 'false'}">
   {typeswitch ($slot2) 
-case element(tei:TEI) return $slot2//tei:seg[@corresp="#"||$seg/@xml:id]/text()  
+case element(tei:TEI) return $slot2//tei:seg[@corresp="#"||$seg/@xml:id]//text()  
 default return
 
 (krx:get-varseg-ed($seg/@xml:id, substring-before($slot2, "::")))
