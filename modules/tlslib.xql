@@ -718,14 +718,16 @@ declare function tlslib:should-display-navbar-review($context as xs:string, $mod
      :)
 
 declare function tlslib:navbar-review($context as xs:string){
+let $hl := if (tlslib:attention-needed()) then "highlight" else ""
+return
  <li class="nav-item dropdown">
-  <a class="nav-link dropdown-toggle" href="#"  id="navbarDropdownEditors" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">內部</a>
+  <a class="nav-link dropdown-toggle {$hl}" href="#"  id="navbarDropdownEditors" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">內部</a>
    <div class="dropdown-menu" aria-labelledby="navbarDropdownEditors">
      {if (sm:id()//sm:group = "tls-editor") then
         (<a class="dropdown-item" href="review.html?type=swl">Review SWLs</a>,
         <a class="dropdown-item" href="review.html?type=gloss">Add pronounciation glosses</a>,
         <a class="dropdown-item" href="review.html?type=special">Special pages</a>,
-        <a class="dropdown-item" href="review.html?type=user">Account requests</a>)
+        <a class="dropdown-item {$hl}" href="review.html?type=user">Account requests</a>)
        else
         ()
      }
@@ -745,6 +747,17 @@ declare function tlslib:navbar-review($context as xs:string){
    </div>
  </li>
 };
+
+declare function tlslib:attention-needed(){
+ let $ux := collection("/db/groups/tls-admin/new-users")//verified[@status='true']
+ , $v := xs:dateTime(tlslib:visit-time("sgn:review"))
+ , $c := count(for $u in $ux
+  let $m := xs:dateTime($u/tk/user/@time-stamp)
+  where $m > $v
+  return $u)
+  return $c > 0
+};
+
 
 (:~ 
 : this is the header line used for the text display, called from app:textview
@@ -1537,7 +1550,7 @@ declare function tlslib:get-metadata($hit, $field){
     let $header := $hit/ancestor-or-self::tei:TEI/tei:teiHeader
     return
         switch ($field)
-            case "textid" return $hit/ancestor-or-self::tei:TEI/@xml:id
+            case "textid" return if ($hit/@textid) then ($hit/@textid) else $hit/ancestor-or-self::tei:TEI/@xml:id
             case "title" return 
                 string-join((
                     $header//tei:msDesc/tei:head, $header//tei:titleStmt/tei:title[@type = 'main'],
@@ -1689,6 +1702,13 @@ declare function tlslib:get-visit-file(){
   return $doc
 };
 
+declare function tlslib:visit-time($textid as xs:string){
+  let $user := sm:id()//sm:real/sm:username/text(),
+  $doc := if ($user="guest") then () else doc($config:tls-user-root|| $user || "/recent.xml")
+  return
+  $doc//tei:list[@type="visits"]/tei:item[@xml:id=$textid]/@modified
+};
+
 declare function tlslib:recent-visits(){
   let $user := sm:id()//sm:real/sm:username/text(),
   $doc := if ($user="guest") then () else doc($config:tls-user-root|| $user || "/recent.xml")
@@ -1703,6 +1723,7 @@ subsequence( for $l in  tlslib:recent-visits()
   , $title := tlslib:get-title($textid)
   , $target := substring($l/tei:ref/@target, 2)
   order by $date descending
+  where not ($textid = $config:ignored-text-ids)
   return 
   <li><a href="textview.html?location={$target}">{$title}</a></li>
   , 1, $num)

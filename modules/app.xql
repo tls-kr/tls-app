@@ -1186,6 +1186,8 @@ function app:get_sw($node as node()*, $model as map(*), $word as xs:string?)
 for $w in tlslib:getwords($word, $model)
 return $w
 };
+
+'{{\'user\' : \'{$me}\'}}'
 :)
 
 (: login :)
@@ -1196,6 +1198,8 @@ function app:login($node as node()*, $model as map(*))
 let $user := request:get-parameter("user", ())
 return
 if (sm:is-authenticated() and not($user)) then 
+let $me := sm:id()//sm:real/sm:username/text()
+return
 <li class="nav-item dropdown">
 <a class="nav-link dropdown-toggle" href="#" id="settingsDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
 <img class="icon mr-2" 
@@ -1203,7 +1207,7 @@ src="resources/icons/open-iconic-master/svg/person.svg"/>{sm:id()//sm:real/sm:us
 <div class="dropdown-menu" aria-labelledby="settingsDropdown">
 <a onclick="dologout()" class="dropdown-item bg-danger">Logout</a>
 <!--
-<a onclick="show_dialog('passwd-dialog', '{{}}')" class="dropdown-item bg-warning">Change Password</a>
+<a onclick="show_dialog('passwd-dialog', '{$me}')" class="dropdown-item bg-warning">Change Password</a>
 -->
 <a class="dropdown-item" href="settings.html">Settings</a>
 <a class="dropdown-item" href="https://join.slack.com/t/tls-7al8577/shared_invite/zt-1h6hfirdt-8EdFCAxsQalvCIdIs3OK6w">Feedback channel</a>

@@ -17,6 +17,7 @@ import module namespace bib="http://hxwd.org/biblio" at "biblio.xql";
 import module namespace tlslib="http://hxwd.org/lib" at "tlslib.xql";
 import module namespace log="http://hxwd.org/log" at "log.xql";
 import module namespace tu="http://hxwd.org/utils" at "tlsutils.xql";
+import module namespace dbu="http://exist-db.org/xquery/utility/db" at "db-utility.xqm";
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
@@ -426,36 +427,43 @@ let $p := $node/parent::tei:category
    return $s
 };
 
-declare function src:facets-ratio($n){
+declare function src:facets-ratio($n, $map){
   typeswitch ($n)
   case element(tei:category) return
    let $sum := src:lev-sum($n)
-   , $this := if ($n/@sum) then xs:int($n/@sum)
-    else if ($n/@n) then xs:int($n/@n) 
-    else 0
+   , $this := if ($n/@sum) then xs:int($n/@sum) else if ($n/@n) then xs:int($n/@n) else 0
    , $cur-ratio := if ($this > 0 and $sum > 0) then $this div $sum else ()
    return
     element {QName(namespace-uri($n),local-name($n))} {
-    $n/@* except $n/@res-ratio,
-    if ($cur-ratio and $n/@ratio) then attribute res-ratio {$cur-ratio div xs:float($n/@ratio)} else () ,
-    for $nn in $n/node() return src:facets-ratio($nn)}
+    $n/@* except ($n/@res-ratio, $n/@cur-ratio),
+    switch($map?key)
+    case "chars" return
+        if ($cur-ratio and $n/@chars-ratio) then attribute res-ratio {$cur-ratio div xs:float($n/@chars-ratio)} else () 
+    case "segs" return
+        if ($cur-ratio and $n/@segs-ratio) then attribute res-ratio {$cur-ratio div xs:float($n/@segs-ratio)} else () 
+    case "cur" return
+        if ($cur-ratio) then attribute cur-ratio {$cur-ratio} else () 
+    default return ()
+    ,
+    for $nn in $n/node() return src:facets-ratio($nn, $map)}
   case element(*)
    return $n
   default return $n
 };
 
+(: unused?! 2023-06-27 :)
 declare function src:facets-ratio-other($n){
   typeswitch ($n)
   case element(tei:category) return
    let $sum := src:lev-sum($n)
-   , $this := if ($n/@char-sum) then xs:int($n/@char-sum)
+   , $this := if ($n/@chars-sum) then xs:int($n/@chars-sum)
     else if ($n/@chars) then xs:int($n/@chars) 
     else 0
    return
     element {QName(namespace-uri($n),local-name($n))} {
     $n/@* except $n/@ratio,
     if ($this > 0 and $sum > 0) then attribute ratio {$this div $sum} else () ,
-    for $nn in $n/node() return src:facets-ratio($nn)}
+    for $nn in $n/node() return src:facets-ratio-other($nn)}
   case element(*)
    return $n
   default return $n
@@ -475,6 +483,59 @@ declare function src:facets-prune($n){
    return $n
   default return $n
 };
+
+declare function src:facets-table($node, $map, $baseid, $url, $state){
+  <div  id="{$baseid}--table">
+  <table>
+<th>
+<td>Category</td>
+<td>Docs</td>
+<td>Sum</td>
+<td>Docs</td>
+<td>CurRatio</td>
+<td>CharsRatio</td>
+<td>CurRatio / CharsRatio</td>
+<td>SegsRatio</td>
+<td>CurRatio / SegsRatio</td>
+</th>
+  {
+  for $n in $node/node()
+  return
+  typeswitch ($n)
+  case element(tei:category) return 
+    let $hx := $n/tei:catDesc/text()
+    return
+  src:facets-table-row($n, $baseid, $url)
+  default return $n
+  }</table>
+  </div>
+};
+
+declare function src:facets-table-row($n, $baseid, $url){
+let $r := xs:float($n/@res-ratio)
+, $cl :=  if ($r > 1.2) then "red" else if ($r < 0.8) then "yellow" else "green"
+return
+(<tr>
+<td>{data($n/@xml:id)}　{$n/tei:catDesc/text()}</td>
+<td>{data($n/@docs)}</td>
+<td>{data($n/@sum)}</td>
+<td>{data($n/@n)}</td>
+<td>{data($n/@cur-ratio)}</td>
+<td>{data($n/@chars-ratio)}</td>
+<td>{xs:float($n/@cur-ratio) div xs:float($n/@chars-ratio)}</td>
+<td>{data($n/@segs-ratio)}</td>
+<td>{xs:float($n/@cur-ratio) div xs:float($n/@segs-ratio)}</td>
+</tr>
+,
+if ($n/tei:category) then 
+    for $c in $n/tei:category
+    return src:facets-table-row($c, $baseid, $url)
+else ()
+
+)
+};
+
+
 (: convert the pruned category tree to HTML for jstree :)
 declare function src:facets-html($node, $map, $baseid, $url, $state){
   <div  id="{$baseid}--chartree">
@@ -528,20 +589,19 @@ declare function src:facets-html-node($n, $baseid, $url){
    }
    {if ($n/@sum) then <span title="Aggregate over this and lower levels" class="badge badge-primary">{data($n/@sum)}</span> else ()}
    {if ($n/@n) then <span title="Count on this level only" class="badge badge-secondary">{data($n/@n)}</span> else ()}
-   {(:  if ($n/@res-ratio) then (<span>　</span>,
+   {  if ($n/@res-ratio) then (<span>　</span>,
      let $r := round(xs:float($n/@res-ratio))
-     , $f := format-number($r, "##.##")
+     , $f := format-number($r, "###.###")
      return
      if ($r > 1.2) then
-       <span title="This result is larger than expected" class="badge badge-danger">{$f}</span>
+       <span title="This result is larger than expected" data-ratio="{$n/@res-ratio}" class="badge badge-danger">{$f}</span>
      else 
       if ($r < 0.8) then 
-      <span title="This result is smaller than expected" class="badge badge-success">{$f}</span>
+      <span title="This result is smaller than expected" data-ratio="{$n/@res-ratio}" class="badge badge-warning">{$f}</span>
       else
-      <span title="This result is in the expected range" class="badge badge-lignt">{$f}</span>)
+      <span title="This result is in the expected range" data-ratio="{$n/@res-ratio}" class="badge badge-success">{$f}</span>)
    else () 
-   :)
-   ()
+   
    }
    </span>
    else 
@@ -567,6 +627,9 @@ declare function src:facets($node as node()*, $model as map(*), $query as xs:str
   , $fkeys := map:keys($model?cat)
  , $uxfilter := if (count($fkeys) > 0) then "&amp;filter=" || string-join(for $c in $fkeys return $c||":"||$model?cat?($c), ";") else ""
  , $url := "search.html?query="||$query||"&amp;search-type="||$search-type || $umode || $utextid 
+ , $user := sm:id()//sm:real/sm:username/text()
+ , $uuid := "uuid-" || util:uuid()
+ , $coll := dbu:ensure-collection($config:tls-data-root || "/notes/search/" || substring($uuid, 6, 1))
  return
         switch ($search-type)
            case $src:textlist return 
@@ -598,6 +661,7 @@ declare function src:facets($node as node()*, $model as map(*), $query as xs:str
             <h1>Facets</h1>
             <p>Time: {util:system-dateTime() - $model?s-time}</p>
             <p>Total number of hits: {count($model?totalhits)}</p>
+            {if (count($fkeys) = 0) then <p><a href="#" onclick="showtab('{$uuid}')">Result matrix</a></p> else ()}
             <p>{if (count($fkeys) > 0) then <span>Applied filters: <br/>
             {string-join(for $f in $fkeys return tlslib:cat-title($model?cat?($f)), " / ")}
             </span>
@@ -608,10 +672,17 @@ declare function src:facets($node as node()*, $model as map(*), $query as xs:str
             , $ufilter := if (count($fkeys) > 0) then "&amp;filter=" || string-join(for $c in $fkeys where not ($c = $g) return $c||":"||$model?cat?($c), ";") else ""
             , $furl := $url || $ufilter
             , $tree :=  src:facets-add-n($tax, $map) => src:facets-sum-n($map) => src:facets-prune()
- (:           , $tree2 := src:facets-ratio($tree):)
+            , $tab := if ($g = "tls-dates") then () else for $k in ("cur") return
+                      let $st := src:facets-ratio($tree, map{"key" : $k})
+                      
+                      let $tt := if (count($fkeys) > 0) then () else 
+                      <div xml:id="{$uuid}" xmlns="http://www.tei-c.org/ns/1.0" resp="#{$user}" modified="{current-dateTime()}" q="{$query}"><head>{$query}, {$k}</head><p>Total number of hits: {count($model?totalhits)}</p><ab>{$st}</ab>{src:facets-table($st, $map, $g, $furl, "open" )}</div>
+                      return if ($tt) then xmldb:store($coll, $uuid || ".xml", $tt) else ()
+            , $tree2 := if (true()) then $tree else src:facets-ratio($tree, map{"key" : "segs"})
             return
             <div>
-            {src:facets-html($tree, $map, $g, $furl, "open" )}
+            {
+            src:facets-html($tree2, $map, $g, $furl, "open" )}
             </div>
            }</div>
          default return 
@@ -1027,7 +1098,7 @@ declare function src:get-kwic($node as element(), $config as element(config), $l
 declare function src:textlist-doc(){
    <div>
      <h1>TLS Text list</h1>
-     <p>This page allows you to browse the contents of the TLS and discover what texts are available.  The texts are basically classified into the four traditional bibliographic categories.       However, the Daoist and Buddhist texts, which are usually part of the <i>KR3 子部</i> in the traditional classification are treated as top level categories, bringing for a total of six top level categories, as shown in Table 1.
+     <p>This page allows you to browse the contents of the TLS and discover what texts are available.  The texts are basically classified into the four traditional bibliographic categories.       However, the Daoist and Buddhist texts, which are usually part of the <i>KR3 子部</i> in the traditional classification are treated as top level categories, for a total of six top level categories, as shown in Table 1.
      </p>
 <table id="orgca5db22" border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
 <caption class="t-above"><span class="table-number">Table 1:</span> The six top categories (as in the <a href="https://kanripo.org">Kanseki Repository</a>)</caption>
@@ -1055,7 +1126,7 @@ declare function src:textlist-doc(){
 <tr>
 <td class="org-left">KR3</td>
 <td class="org-left">子部 <i>Zi bu</i></td>
-<td class="org-left">Masters, philosophers and treatises</td>
+<td class="org-left">Masters, philosophers and treatises; medical and mathematical texts</td>
 </tr>
 
 <tr>
@@ -1083,6 +1154,41 @@ declare function src:textlist-doc(){
      <p>If you are looking for a specific title, use the <b>search function in the upper right corner</b> and select "titles" from the dropdown selector.</p>
    </div>
 };
+
+declare function src:get-log-file(){
+  let $user := sm:id()//sm:real/sm:username/text(),
+  $today := substring-before(xs:string(current-dateTime()) , "T")
+  , $doc-path := $config:tls-user-root|| $user || "/search-"||$today||".xml",
+  $doc := if (not(doc-available($doc-path))) then 
+    doc(xmldb:store($config:tls-user-root|| $user,  "/search-"||$today||".xml",
+<TEI xmlns="http://www.tei-c.org/ns/1.0" xml:id="search-log-{$user}">
+  <teiHeader>
+      <fileDesc>
+         <titleStmt>
+            <title>Search log for {$user}</title>
+         </titleStmt>
+         <publicationStmt>
+            <ab>published electronically as part of the TLS project at https://hxwd.org</ab>
+         </publicationStmt>
+         <sourceDesc>
+            <p>Created by members of the TLS project</p>
+         </sourceDesc>
+      </fileDesc>
+     <profileDesc>
+        <creation>Initially created: <date>{current-dateTime()}</date> for {$user}.</creation>
+     </profileDesc>
+  </teiHeader>
+  <text>
+      <body>
+      <div><head>Search Log</head>
+      </div>
+      </body>
+  </text>
+</TEI>))
+    else doc($doc-path)
+  return $doc
+};
+
 
 
 declare function src:advanced-search($query, $mode){

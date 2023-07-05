@@ -63,6 +63,8 @@ declare variable $config:tls-manifests :=
   , :)$mf := "/manifests"
   return ((:"/db/users/"||$user||$mf,:) $config:tls-texts||$mf, $config:tls-krx-root||$mf) ;
 
+declare variable $config:ignored-text-ids := ("sgn:review");
+
 declare variable $config:seg-split-tokens := '[，。：．；？﹖！，』」/、]';
 
 declare variable $config:kanji-numberlike-tokens := '[〇一二三四五六七八九十百千萬億兆上中下]';
