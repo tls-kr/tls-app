@@ -629,7 +629,7 @@ declare function src:facets($node as node()*, $model as map(*), $query as xs:str
  , $url := "search.html?query="||$query||"&amp;search-type="||$search-type || $umode || $utextid 
  , $user := sm:id()//sm:real/sm:username/text()
  , $uuid := "uuid-" || util:uuid()
- , $coll := dbu:ensure-collection($config:tls-data-root || "/notes/search/" || substring($uuid, 6, 1))
+ , $coll := try {dbu:ensure-collection($config:tls-data-root || "/notes/search/" || substring($uuid, 6, 1))} catch * {()}
  return
         switch ($search-type)
            case $src:textlist return 
@@ -661,7 +661,7 @@ declare function src:facets($node as node()*, $model as map(*), $query as xs:str
             <h1>Facets</h1>
             <p>Time: {util:system-dateTime() - $model?s-time}</p>
             <p>Total number of hits: {count($model?totalhits)}</p>
-            {if (count($fkeys) = 0) then <p><a href="#" onclick="showtab('{$uuid}')">Result matrix</a></p> else ()}
+            {if (count($fkeys) = 0 and $coll) then  <p><a href="#" onclick="showtab('{$uuid}')">Result matrix</a></p> else ()}
             <p>{if (count($fkeys) > 0) then <span>Applied filters: <br/>
             {string-join(for $f in $fkeys return tlslib:cat-title($model?cat?($f)), " / ")}
             </span>
@@ -677,7 +677,7 @@ declare function src:facets($node as node()*, $model as map(*), $query as xs:str
                       
                       let $tt := if (count($fkeys) > 0) then () else 
                       <div xml:id="{$uuid}" xmlns="http://www.tei-c.org/ns/1.0" resp="#{$user}" modified="{current-dateTime()}" q="{$query}"><head>{$query}, {$k}</head><p>Total number of hits: {count($model?totalhits)}</p><ab>{$st}</ab>{src:facets-table($st, $map, $g, $furl, "open" )}</div>
-                      return if ($tt) then xmldb:store($coll, $uuid || ".xml", $tt) else ()
+                      return if ($tt and $coll) then xmldb:store($coll, $uuid || ".xml", $tt) else ()
             , $tree2 := if (true()) then $tree else src:facets-ratio($tree, map{"key" : "segs"})
             return
             <div>
