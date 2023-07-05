@@ -457,13 +457,17 @@ function reload_selector(slot, newid){
 
 function showhide_passwd(elid) {
 //  var x = document.getElementById(elid);
-  var x = $("#"+elid);
-  if (x.type === "password") {
-    x.type = "text";
+  els = elid.split(",")
+  els.forEach((el)=> {
+  var x = $("#"+el);
+  console.log("x:", x, x.attr('type'), elid)
+  if (x.attr('type') === "password") {
+    x.attr('type', "text");
   } else {
-    x.type = "password";
+    x.attr('type', "password");
   }
-}
+  })
+};
 
 function goto_translation_seg(trid, dir){
   $.ajax({
@@ -2777,9 +2781,24 @@ function show_dialog(dialog_name, options){
      $('#remoteDialog').html(resp);
      $('#'+dialog_name).modal('show');
    }
-  });
+  });  
+};
+
+function change_passwd(user){
+   var newpw = $("input[name='password']").val()
+   $.ajax({ 
+    type : "POST",
+    dataType : "json",
+    url : "api/changepw.xql",
+    data: {"passwd" : newpw, "user": user},
+    success : function (resp){
+     toastr.info("Your password has been changed.  You will be logged out.", "漢學文典 says:");
+     dologout()
+   }
+   });
     
 };
+
 
 function display_tr_file_dialog(dialog_name, slot, trid){
    $('#'+dialog_name).modal('hide');

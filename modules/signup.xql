@@ -240,6 +240,7 @@ return
 
 declare function sgn:review(){
 let $reviewer := sm:id()//sm:real/sm:username/text()
+, $visit := tlslib:record-visit(<seg xmlns="http://www.tei-c.org/ns/1.0" textid="sgn:review" xml:id="sgn:review">{$reviewer}</seg>)
 return
 <div>
 <h3>Review of account requests</h3>

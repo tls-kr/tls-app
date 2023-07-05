@@ -221,6 +221,7 @@ declare function imp:calculate-extent($d){
 };
 
 declare function imp:updateExtent($header as node()){
+  if ($header//tei:fileDesc/tei:extent/tei:measure[@unit="char"]) then () else
     let $sum := imp:calculate-extent($header)
     , $old := $header//tei:fileDesc/tei:extent[not(child::tei:measure)]/text()
     , $oe := if ($old) then <measure xmlns="http://www.tei-c.org/ns/1.0" unit="juan">{replace($old, "卷", "")}</measure> else ()
@@ -234,6 +235,23 @@ declare function imp:updateExtent($header as node()){
         else
             update insert $extent following $header//tei:fileDesc/tei:titleStmt
 };
+
+declare function imp:updateSegCount($header as node()){
+  if ($header//tei:fileDesc/tei:extent/tei:measure[@unit="seg"]) then () else
+  let $body := $header/ancestor-or-self::tei:TEI/tei:text/tei:body
+  , $segsum :=  count($body//tei:seg) 
+    let $measure := (<measure  xmlns="http://www.tei-c.org/ns/1.0" unit="seg" quantity="{$segsum}"/>,<date xmlns="http://www.tei-c.org/ns/1.0" when-iso="{current-dateTime()}"></date>)
+    , $extent := <extent xmlns="http://www.tei-c.org/ns/1.0">{$measure}</extent>
+    return
+    if ($header//tei:fileDesc/tei:extent) then
+        update insert $measure into $header//tei:fileDesc/tei:extent
+    else 
+        if ($header//tei:fileDesc/tei:editionStmt) then
+            update insert $extent following $header//tei:fileDesc/tei:editionStmt
+        else
+            update insert $extent following $header//tei:fileDesc/tei:titleStmt
+};
+
 
 declare function imp:updateIdno($header as node(), $e){
     let $cbid := data($e/@cbid)

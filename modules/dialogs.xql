@@ -95,12 +95,12 @@ return
         "title":  "Information about translation"
       })           
 };
-
+(: sth is not working here. :)
 declare function local:passwd-dialog($name, $options){
-let $body := (local:form-input-row($name, map{"input-id" : "passwd-1", "hint" : "Please enter the new password:", "type" : "password", "required" : true() })
+let $body := (local:form-input-row($name, map{"input-id" : "password", "hint" : "Please enter the new password:", "type" : "password", "required" : true() })
              ,local:form-input-row($name, map{"input-id" : "passwd-2", "hint" : "Please repeat the new password:" , "type" : "password", "required" : true()}))
                  
-, $buttons := (<button type="button" class="btn btn-primary" onclick="change_passwd()">Submit</button>)
+, $buttons := (<button type="button" class="btn btn-secondary" onclick="showhide_passwd('password,passwd-2')">Show/Hide</button>,<button type="button" class="btn btn-primary" onclick="change_passwd('{$options}')">Submit</button>,<input type="hidden" name="duration" value="P7D"/>, <input type="hidden" name="user" value="{$options}"/>)
 return                 
       local:modal-frame($name, 
       map{
@@ -108,7 +108,7 @@ return
         "body": $body, 
         "buttons" : $buttons, 
         "options" : $options,
-        "title":  "Change Password"
+        "title":  ("Change Password for user ", <b>{$options}</b>)
       })           
 };
 
