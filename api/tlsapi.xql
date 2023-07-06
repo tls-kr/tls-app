@@ -2003,6 +2003,12 @@ let $seg := collection($config:tls-texts)//tei:seg[@xml:id=$map?uid]
 return "Success"
 };
 
+declare function tlsapi:showtab($map as map(*)){
+let $d := collection($config:tls-data-root)//tei:div[@xml:id=$map?uuid]//div
+return $d
+};
+
+
 declare function tlsapi:stub($map as map(*)){
 () 
 };

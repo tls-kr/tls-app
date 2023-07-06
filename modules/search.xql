@@ -487,7 +487,7 @@ declare function src:facets-prune($n){
 declare function src:facets-table($node, $map, $baseid, $url, $state){
   <div  id="{$baseid}--table">
   <table>
-<th>
+<tr>
 <td>Category</td>
 <td>Docs</td>
 <td>Sum</td>
@@ -497,7 +497,7 @@ declare function src:facets-table($node, $map, $baseid, $url, $state){
 <td>CurRatio / CharsRatio</td>
 <td>SegsRatio</td>
 <td>CurRatio / SegsRatio</td>
-</th>
+</tr>
   {
   for $n in $node/node()
   return
@@ -506,7 +506,7 @@ declare function src:facets-table($node, $map, $baseid, $url, $state){
     let $hx := $n/tei:catDesc/text()
     return
   src:facets-table-row($n, $baseid, $url)
-  default return $n
+  default return ()
   }</table>
   </div>
 };
@@ -628,8 +628,9 @@ declare function src:facets($node as node()*, $model as map(*), $query as xs:str
  , $uxfilter := if (count($fkeys) > 0) then "&amp;filter=" || string-join(for $c in $fkeys return $c||":"||$model?cat?($c), ";") else ""
  , $url := "search.html?query="||$query||"&amp;search-type="||$search-type || $umode || $utextid 
  , $user := sm:id()//sm:real/sm:username/text()
- , $uuid := "uuid-" || util:uuid()
- , $coll := try {dbu:ensure-collection($config:tls-data-root || "/notes/search/" || substring($uuid, 6, 1))} catch * {()}
+ , $tabexists := collection($config:tls-data-root || "/notes/search/")//tei:div[@q=$query]
+ , $uuid := if ($tabexists) then ($tabexists/@xml:id)[1] else "uuid-" || util:uuid()
+ , $coll := if ($tabexists) then () else try {dbu:ensure-collection($config:tls-data-root || "/notes/search/" || substring($uuid, 6, 1))} catch * {()}
  return
         switch ($search-type)
            case $src:textlist return 
@@ -661,7 +662,7 @@ declare function src:facets($node as node()*, $model as map(*), $query as xs:str
             <h1>Facets</h1>
             <p>Time: {util:system-dateTime() - $model?s-time}</p>
             <p>Total number of hits: {count($model?totalhits)}</p>
-            {if (count($fkeys) = 0 and $coll) then  <p><a href="#" onclick="showtab('{$uuid}')">Result matrix</a></p> else ()}
+            {if (count($fkeys) = 0 and ($tabexists or $coll)) then  <p><a href="#" onclick="showtab('{$uuid}')">Result matrix</a></p> else ()}
             <p>{if (count($fkeys) > 0) then <span>Applied filters: <br/>
             {string-join(for $f in $fkeys return tlslib:cat-title($model?cat?($f)), " / ")}
             </span>
@@ -934,6 +935,7 @@ declare function src:show-field-results($map as map(*)){
 
 declare function src:show-text-results($map as map(*)){
     <div>{$map?p}
+    <div  id="show-text-results">
     <table class="table">
     {for $hx at $c in subsequence($map?hits, $map?start, $map?resno)
       for $h in if ($map?search-type=$src:search-trans) then $hx else try { util:expand($hx)//exist:match/ancestor::tei:seg } catch * {"x"}
@@ -970,6 +972,7 @@ declare function src:show-text-results($map as map(*)){
     }
     </table>
     {$map?nav}
+    </div>
     </div>
 
 };

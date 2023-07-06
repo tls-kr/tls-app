@@ -2799,6 +2799,16 @@ function change_passwd(user){
     
 };
 
+function showtab(uuid){
+  $.ajax({
+  type : "GET",
+  dataType : "html",
+  url : "api/responder.xql?func=showtab&uuid="+uuid, 
+  success : function(resp){
+    $('#show-text-results').html(resp);
+  }
+  });
+};
 
 function display_tr_file_dialog(dialog_name, slot, trid){
    $('#'+dialog_name).modal('hide');
