@@ -1777,6 +1777,7 @@ declare function tlslib:get-crypt-file($type as xs:string){
 declare function tlslib:save-setting($map as map(*)){
 let $doc := tlslib:get-settings()
 return
+if ($doc) then 
 switch($map?setting)
 case "search-showratio"
 case "search-defaultsection"
@@ -1792,7 +1793,7 @@ case "search-sortmax" return
      else update insert <section  xmlns="http://hxwd.org/ns/1.0" type="sort">{$item}</section> into $doc/tls:settings
      , "OK")
 default return ()
-
+else ()
 };
 
 (:~
@@ -1820,14 +1821,14 @@ declare function tlslib:get-settings() {
 let $user := sm:id()//sm:real/sm:username/text()
 , $filename := "settings.xml"
 ,$docpath := $config:tls-user-root || $user || "/" || $filename
-let $doc :=
+let $doc := try{
   if (not (doc-available($docpath))) then
    doc(xmldb:store($config:tls-user-root || $user, $filename, 
 <settings xmlns="http://hxwd.org/ns/1.0" xml:id="{$user}-settings">
 <section type="bookmarks"></section>
 <section type="slot-config"></section>
 </settings>)) 
- else doc($docpath)
+ else doc($docpath) } catch * {()}
 return $doc
 };
 
