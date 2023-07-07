@@ -180,6 +180,8 @@ declare function src:ngram-query($queryStr as xs:string?, $mode as xs:string?, $
     let $dataroot := ($config:tls-data-root, $config:tls-texts-root, $config:tls-user-root)
     , $qs := tokenize($queryStr, "[\s;]")
     , $user := sm:id()//sm:real/sm:username/text()
+    , $sm := xs:int(tlslib:get-settings()//tls:item[@type="search-sortmax"]/@value)
+    , $sortmax := if ($sm) then $sm else $src:sortmax
     , $ratings := doc($config:tls-user-root || $user || "/ratings.xml")//text
     , $user-dates-doc := $config:tls-user-root || $user || "/textdates.xml"
     , $dates := 
@@ -215,7 +217,7 @@ declare function src:ngram-query($queryStr as xs:string?, $mode as xs:string?, $
               $s else ()
        else $pmatches:)
     , $cmatches :=   if (count(map:keys($cat)) > 0) then src:facets-filter-hits($pmatches, $cat) else $pmatches
-    , $hit-res := if (count($cmatches) > 5000) then $cmatches else
+    , $hit-res := if (count($cmatches) > $sortmax and $sortmax > 0) then $cmatches else
     for $hit in $cmatches
      let $textid := substring-before(tokenize(document-uri(root($hit)), "/")[last()], ".xml"),
 (:     let $textid := tlslib:get-metadata($hit, "textid"),:)
@@ -307,14 +309,16 @@ function src:show-hits-h4($node as node()*, $model as map(*), $start as xs:int, 
 let $query := $model?query
   , $map := session:get-attribute($src:SESSION || ".types")
   , $cnt := if (string-length($type) > 0) then count(map:get($map, $type)) else count($model?hits)
+  , $sm := xs:int(tlslib:get-settings()//tls:item[@type="search-sortmax"]/@value)
+  , $sortmax := if ($sm or $sm = 0) then $sm else $src:sortmax
 return
 (: if type = 10 do not display here :) 
 if ($model?search-type = ($src:search-bib, $src:textlist)) then () else (
 <h4>Found {$cnt} {if ($cnt = 1) then " match" else " matches"},  <span>showing {$start} to {min(($cnt, $start + $model?resno -1))}</span></h4>
-,if (count($model?hits) < $src:sortmax) then () else
+,if (count($model?hits) < $sortmax or $sortmax < 1) then () else
  <div class="row">
  <div class="col-md-8">
- <p class="bg-warning">Sorting is disabled, since we have more than {$src:sortmax} hits. <br/>Select a facet from the display to the left to filter and reduce the number of hits and apply sorting.</p>
+ <p class="bg-warning" onclick="show_dialog('update-setting', {{'setting': 'search-sortmax', 'value': '{$sortmax}', 'hint': 'This is the number of hits beyond which searching will be disabled. The current value is {$sortmax}. Enter 0 to switch off the disabling.'}})">Sorting is disabled, since we have more than {$sortmax} hits. <br/>Select a facet from the display to the left to filter and reduce the number of hits and apply sorting or click here to change the setting.</p>
  </div>
  </div>
 )
@@ -491,7 +495,7 @@ declare function src:facets-table($node, $map, $baseid, $url, $state){
 <td>Category</td>
 <td>Docs</td>
 <td>Sum</td>
-<td>Docs</td>
+<td>Matches</td>
 <td>CurRatio</td>
 <td>CharsRatio</td>
 <td>CurRatio / CharsRatio</td>
