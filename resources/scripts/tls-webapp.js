@@ -1372,6 +1372,23 @@ function edit_swl(uid){
   });
 };
 
+function update_setting(setting, val_el){
+  var value =  $('#' + val_el).val();
+  $.ajax({
+  type : "GET",
+  dataType : "html",  
+  url : "api/responder.xql?func=tlslib:save-setting&setting=" + setting + "&value="+value, 
+  success : function(resp){
+     if (resp.startsWith("OK")) {
+       toastr.info("Setting has been changed.", "HXWD says:");
+     } else {
+      toastr.error("A problem occurred.", "HXWD says:");
+     }
+  }
+  });  
+  $('#update-setting').modal('hide');
+};
+
 function merge_word(word, wid, count, type){
   $.ajax({
   type : "GET",

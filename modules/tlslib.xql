@@ -1772,6 +1772,29 @@ declare function tlslib:get-crypt-file($type as xs:string){
   return $doc
 };
 
+(: generic function to save the setting of $map?setting to $map?value :)
+
+declare function tlslib:save-setting($map as map(*)){
+let $doc := tlslib:get-settings()
+return
+switch($map?setting)
+case "search-showratio"
+case "search-defaultsection"
+case "search-sortmax" return 
+    let $section-type := tokenize($map?setting, "-")[1]
+    let $item := <item xmlns="http://hxwd.org/ns/1.0" created="{current-dateTime()}" modified="{current-dateTime()}" type="{$map?setting}" value="{$map?value}"/>
+   return (
+    if ($doc//tls:item[@type=$map?setting]) then  
+      update replace  $doc//tls:item[@type=$map?setting] with $item
+    else 
+     if ($doc//tls:section[@type=$section-type]) then 
+      update insert $item into $doc//tls:section[@type=$section-type]
+     else update insert <section  xmlns="http://hxwd.org/ns/1.0" type="sort">{$item}</section> into $doc/tls:settings
+     , "OK")
+default return ()
+
+};
+
 (:~
  : saves the content-id of a content selected for a s slot for a text
 :)

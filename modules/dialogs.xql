@@ -121,6 +121,20 @@ declare function local:text-info($name, $options){
       })           
 };
 
+declare function local:update-setting($name, $options){
+let $body := (local:form-input-row($name, map{"input-id" : "setting", "input-value": $options?value,  "hint" : $options?hint, "type" : "text", "required" : true()}) )
+, $buttons := ( <button type="button" class="btn btn-primary" onclick="update_setting('{$options?setting}', 'setting')">Save</button> )
+return                 
+      local:modal-frame($name, 
+      map{
+        "dsize" : "", 
+        "body": $body, 
+        "buttons" : $buttons, 
+        "options" : $options,
+        "title":  "Update setting for " || $options?setting
+      })           
+};
+
 
 declare function local:stub-dialog($name, $options){
 let $body := ()
@@ -144,6 +158,7 @@ return switch($para?name)
                case "tr-info-dialog" return local:tr-info-dialog($para?name, $options)
                case "passwd-dialog" return local:passwd-dialog($para?name, $options)
                case "text-info" return local:text-info($para?name, $options)
+               case "update-setting" return local:update-setting($para?name, $options)
                default return "Dialog not registered!"
 };
 
