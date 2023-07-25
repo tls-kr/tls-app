@@ -1307,6 +1307,7 @@ return
                         <button id="search-submit" class="btn btn-outline-success my-2 my-sm-0" type="submit">
                             <img class="icon" src="resources/icons/open-iconic-master/svg/magnifying-glass.svg"/>
                         </button>
+                    <!--    
                     <li class="nav-item dropdown">    
                     <a class="nav-link dropdown-toggle" href="#" id="searchDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"></a>
                     <div class="dropdown-menu" aria-labelledby="searchDropdown">
@@ -1316,6 +1317,7 @@ return
                     <a class="dropdown-item" href="settings.html">Advanced Search</a>
                     </div>
                     </li>
+                    -->
                     </form>
                     </li>
                         {app:login($node, $model)}
