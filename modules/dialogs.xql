@@ -81,6 +81,27 @@ declare function local:form-input-row($name, $map){
             </div>
 };
 
+declare function local:search-settings($name, $options){
+let $search-options := map{"search-sortmax": 5000, "search-cutoff" : 0.2, "search-ratio" : "None"}
+, $body := for $o in map:keys($search-options)  
+     let $sval:=tlslib:get-settings()//tls:item[@type=$o]/@value
+     , $cval := if ($sval) then $sval else map:get($search-options, $o)
+     return
+     local:form-input-row($name, map{"input-id" : $o, "input-value" : $cval, "type" : "text"}) 
+, $buttons := ( <button type="button" class="btn btn-primary" onclick="update_setting('{$options?setting}', 'setting')">Save</button> )
+return
+      local:modal-frame($name, 
+      map{
+        "dsize" : "", 
+        "body":     $body, 
+        "buttons" : $buttons, 
+        "options" : $options,
+        "title":  ("Search settings ", <b>{$options}</b>)
+      })           
+ 
+};
+
+
 declare function local:tr-info-dialog($name, $options){
 let $body := tlslib:transinfo($options?trid)
 , $buttons := (if (sm:id()//sm:group/text() = ("tls-editor", "tls-admin")) then
@@ -121,6 +142,7 @@ declare function local:text-info($name, $options){
       })           
 };
 
+
 declare function local:update-setting($name, $options){
 let $body := (local:form-input-row($name, map{"input-id" : "setting", "input-value": $options?value,  "hint" : $options?hint, "type" : "text", "required" : true()}) )
 , $buttons := ( <button type="button" class="btn btn-primary" onclick="update_setting('{$options?setting}', 'setting')">Save</button> )
@@ -151,7 +173,7 @@ return
 };
 
 
-(: todo: rewrite this in a way that it has only on swith, that dispatches to specific local functions  :)
+(: todo: rewrite this in a way that it has only on switch, that dispatches to specific local functions  :)
 declare function dialogs:dispatcher($para as map(*)){
 let $options := parse-json($para?options)
 return switch($para?name)
@@ -159,6 +181,7 @@ return switch($para?name)
                case "passwd-dialog" return local:passwd-dialog($para?name, $options)
                case "text-info" return local:text-info($para?name, $options)
                case "update-setting" return local:update-setting($para?name, $options)
+               case "search-settings" return local:search-settings($para?name, $options)
                default return "Dialog not registered!"
 };
 

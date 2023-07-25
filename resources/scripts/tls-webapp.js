@@ -1372,6 +1372,14 @@ function edit_swl(uid){
   });
 };
 
+// call update_setting for settings; needs to be an array
+function save_sset(sets){
+  els = sets.split(",")
+  els.forEach((el)=> {
+  update_setting(el, el);
+  })  
+};
+
 function update_setting(setting, val_el){
   var value =  $('#' + val_el).val();
   $.ajax({
