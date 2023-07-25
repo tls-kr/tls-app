@@ -107,6 +107,34 @@ let $pstr := string-join(imp:prepare-element($node))
 return $segs
 };
 
+declare function imp:add-seg($node as node(), $pref as xs:string){
+let $pstr := string-join(imp:prepare-element($node))
+, $res := string-join(for $r at $pos in tokenize($pstr, '\$') return $r || "$" || $pos || "$", '')
+, $juan := data(($node/ancestor-or-self::tei:div)[last()]/@n) 
+, $nn := substring(local-name($node), 1, 1)
+, $jid := if (string-length($juan) > 0) then format-number(xs:int($juan), "000") else "000" 
+, $lb := if ($node/@xml:id) then substring($node/@xml:id , 6) else 
+   if ($node/preceding::tei:lb[1]/@n) then $node/preceding::tei:lb[1]/@n else count($node/preceding::tei:p)
+, $id  := $jid || "-" || $lb
+, $astr := analyze-string ($res, $config:seg-split-tokens)
+, $segs := for $m at $pos in $astr//fn:non-match
+     let $nm := $m/following-sibling::fn:*[1]
+     , $t := replace(string-join($nm/text(), ''), '/', '')
+     , $tx := tlslib:add-nodes($m/text(), $node/child::*)
+     , $sl := string-join($tx, '')=>normalize-space() => replace(' ', '') 
+     , $nid := if(local-name($node) = "p") then $pref  || $id ||".s" || ($pos ) else $pref  || $id || "." || $nn || ($pos )  
+        where string-length($sl) > 0
+        return
+            element {QName(namespace-uri($node), "seg")} {
+               $node/@* except ($node/@xml:id , $node/@cb:place, $node/@style) ,
+               if ($node/ancestor::*:div[1]/@type = 'commentary') then 
+                 attribute {"type"} {"comm"}  else (),
+               attribute xml:id {$nid}, 
+               ($tx, 
+               if (local-name($nm) = 'match' and string-length($t) > 0) then <c n="{$t}"/> else () )}
+return $segs
+};
+
 
 (: invoke imp:move-notes-out() and save and log the results etc :)
 declare function imp:process-seg($seg as node()){
@@ -363,6 +391,47 @@ declare function imp:do-cbeta-conversion($cbid as xs:string){
  , $ent := if ($entry) then imp:process-entry($res2, $entry) else ()
  , $state := tlslib:checkCat($res2, "tls-state", "state-red")
 return $cbid
+};
+
+declare function imp:recursive-update($nodes as node()*, $ns as xs:string, $pref as xs:string){
+ for $node in $nodes return
+ typeswitch($node)
+ case element (tei:p) return 
+             element {QName($ns, local-name($node))} { $node/@* , imp:add-seg($node, $pref)}
+ case element (tei:byline) return 
+             element {QName($ns, local-name($node))} { $node/@* , imp:add-seg($node, $pref)}
+ case element (tei:l) return  
+             element {QName($ns, local-name($node))} { $node/@* , imp:add-seg($node, $pref)} 
+(:             let $id := $pref || $node/parent::tei:lg/@xml:id || "." || count($node/preceding-sibling::*) 
+             return
+             element {QName($ns, "seg")} { 
+                $node/@*, 
+                attribute xml:id {$id},
+                attribute {"type"} {"l"},
+               $node/node()}:)
+ case element (tei:head) return        
+             element {QName($ns, local-name($node))} { $node/@* , imp:add-seg($node, $pref)}
+ case element (*) return element {QName($ns, local-name($node))} {
+             imp:remove-attr-ns($node/@*) , 
+             imp:recursive-update($node/node(), $ns, $pref) }            
+ default return $node
+};
+
+
+
+
+(: prepare a tei text, with semantic p $node is the document node, $map has configuration parameters :)
+declare function imp:tei-conversion($node as node(), $map as map(*)){
+let $krt := doc($config:tls-add-titles)
+let $text := $node//tei:text
+, $kid := $node/@xml:id
+, $ntext := update replace $text with imp:recursive-update($text, "http://www.tei-c.org/ns/1.0" , $map?pref)
+, $doc := collection($config:tls-texts-root)//tei:TEI[@xml:id=$kid]
+, $header := $doc//tei:teiHeader
+, $u1 := imp:updateExtent($header)
+, $u2 := imp:updateSegCount($header)
+, $u3 := tlslib:checkCat($header, tokenize($kid, "\d{2,4}")[1])
+return $kid
 };
 
 

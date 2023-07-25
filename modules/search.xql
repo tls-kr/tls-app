@@ -43,6 +43,9 @@ declare variable $src:search-notes := "11";
 declare variable $src:textlist := "12";
 declare variable $src:ngtype := ($src:search-texts,$src:search-one-text,$src:search-tr-lines,$src:search-tabulated);                           
 declare variable $src:sortmax := 5000;
+declare variable $src:cutoff := (0.2, 0.3, 0.5);
+declare variable $src:rtype := map{"None" : "None", "chars" : "Matches / Total Characters (MF/ICF)", "segs" : "Matches / Segments (MF/ISF)" };
+
 
 (: search related functions :)
 (:~
@@ -155,8 +158,33 @@ declare
 function src:hit-count($node as node()*, $model as map(*), $query as xs:string?) {
    $model?totalhits
 };
-
-
+(: $sset/tls:item[@type='search-ratio']/@value :)
+(: section is the search section of the settings file :)
+declare %private function src:src-options($section as node()){
+<p><b title="This algorithm is used to evaluate the matches in every category against the expected matches.">Select algorithm for display</b>
+<select class="form-control chn-font" id="search-ratio">
+{for $c in map:keys($src:rtype)
+return
+if ($section/tls:item[@type='search-ratio']/@value = $c) then
+<option value="{$c}" selected="true">{$src:rtype?($c)}</option> 
+else
+<option value="{$c}">{$src:rtype?($c)}</option> 
+}
+</select>
+<b title="Cutoff value used for the different display colors.">Select cutoff value {data($section/tls:item[@type='search-cutoff']/@value)}</b>
+<select class="form-control chn-font" id="search-cutoff">
+{for $c in $src:cutoff
+return
+if ($section/tls:item[@type='search-cutoff']/@value = $c) then
+<option value="{$c}" selected="true">{$c}</option> 
+else
+<option value="{$c}">{$c}</option> 
+}
+</select>
+<button type="button" class="btn btn-primary" onclick="save_sset('search-ratio,search-cutoff')">Save Settings</button>
+<button type="button" class="btn btn-primary" onclick="window.location.reload(true)">Update Page</button>
+</p>
+};
 
 (: query in dictionary :)
 declare function src:dic-query($queryStr as xs:string?, $mode as xs:string?)
@@ -317,7 +345,7 @@ if ($model?search-type = ($src:search-bib, $src:textlist)) then () else (
 <h4>Found {$cnt} {if ($cnt = 1) then " match" else " matches"},  <span>showing {$start} to {min(($cnt, $start + $model?resno -1))}</span></h4>
 ,if (count($model?hits) < $sortmax or $sortmax < 1) then () else
  <div class="row">
- <div class="col-md-8">
+ <div class="col-md-7">
  <p class="bg-warning" onclick="show_dialog('update-setting', {{'setting': 'search-sortmax', 'value': '{$sortmax}', 'hint': 'This is the number of hits beyond which searching will be disabled. The current value is {$sortmax}. Enter 0 to switch off the disabling.'}})">Sorting is disabled, since we have more than {$sortmax} hits. <br/>Select a facet from the display to the left to filter and reduce the number of hits and apply sorting or click here to change the setting.</p>
  </div>
  </div>
@@ -490,17 +518,17 @@ declare function src:facets-prune($n){
 
 declare function src:facets-table($node, $map, $baseid, $url, $state){
   <div  id="{$baseid}--table">
-  <table>
+  <table class="table table-bordered">
 <tr>
 <td>Category</td>
-<td>Docs</td>
+<td>Texts</td>
 <td>Sum</td>
 <td>Matches</td>
-<td>CurRatio</td>
-<td>CharsRatio</td>
-<td>CurRatio / CharsRatio</td>
-<td>SegsRatio</td>
-<td>CurRatio / SegsRatio</td>
+<td>MF</td>
+<td>ICF</td>
+<td>MF / ICF</td>
+<td>ISF</td>
+<td>MF / ISF</td>
 </tr>
   {
   for $n in $node/node()
@@ -516,9 +544,6 @@ declare function src:facets-table($node, $map, $baseid, $url, $state){
 };
 
 declare function src:facets-table-row($n, $baseid, $url){
-let $r := xs:float($n/@res-ratio)
-, $cl :=  if ($r > 1.2) then "red" else if ($r < 0.8) then "yellow" else "green"
-return
 (<tr>
 <td>{data($n/@xml:id)}　{$n/tei:catDesc/text()}</td>
 <td>{data($n/@docs)}</td>
@@ -542,6 +567,9 @@ else ()
 
 (: convert the pruned category tree to HTML for jstree :)
 declare function src:facets-html($node, $map, $baseid, $url, $state){
+    let $co := xs:float(tlslib:get-settings()//tls:item[@type="search-cutoff"]/@value)
+    , $cutoff := if ($co) then $co else $src:cutoff[1]
+  return
   <div  id="{$baseid}--chartree">
   <ul>{
   for $n in $node/node()
@@ -554,7 +582,7 @@ declare function src:facets-html($node, $map, $baseid, $url, $state){
     <h3>YY{if (string-length($hx) > 0) then $hx else "Not assigned"}</h3>
     ,
 :)    <div class="collapse {if ($state='closed') then () else 'show'}" id="{$baseid}--body">
-    {src:facets-html-node($n, $baseid, $url)}
+    {src:facets-html-node($n, $baseid, $url, $cutoff)}
     {if ($n/preceding-sibling::tei:catDesc[@rend='top'] and not ($n/following-sibling::tei:category)) then
       if ($map?notav) then 
        if (string-length($url) > 0) then 
@@ -581,7 +609,7 @@ declare function src:facets-html($node, $map, $baseid, $url, $state){
 };
 
 
-declare function src:facets-html-node($n, $baseid, $url){
+declare function src:facets-html-node($n, $baseid, $url, $cutoff){
    if ($n/@rend="textid") then () else
    <li id="{$baseid}---{$n/@xml:id}">
    {if (string-length($url) > 0) then 
@@ -594,16 +622,16 @@ declare function src:facets-html-node($n, $baseid, $url){
    {if ($n/@sum) then <span title="Aggregate over this and lower levels" class="badge badge-primary">{data($n/@sum)}</span> else ()}
    {if ($n/@n) then <span title="Count on this level only" class="badge badge-secondary">{data($n/@n)}</span> else ()}
    {  if ($n/@res-ratio) then (<span>　</span>,
-     let $r := round(xs:float($n/@res-ratio))
-     , $f := format-number($r, "###.###")
+     let $r := (xs:float($n/@res-ratio))
+     , $f := format-number($r, "##.#")
      return
-     if ($r > 1.2) then
-       <span title="This result is larger than expected" data-ratio="{$n/@res-ratio}" class="badge badge-danger">{$f}</span>
+     if ($r > (1 + $cutoff)) then
+       <span title="{$n/@res-ratio}: &#xA;This result is larger than expected" data-ratio="{$n/@res-ratio}" class="rat badge-danger">{$f}</span>
      else 
-      if ($r < 0.8) then 
-      <span title="This result is smaller than expected" data-ratio="{$n/@res-ratio}" class="badge badge-warning">{$f}</span>
+      if ($r < (1 - $cutoff)) then 
+      <span title="{$n/@res-ratio}: &#xA;This result is smaller than expected" data-ratio="{$n/@res-ratio}" class="rat badge badge-warning">{$f}</span>
       else
-      <span title="This result is in the expected range" data-ratio="{$n/@res-ratio}" class="badge badge-success">{$f}</span>)
+      <span title="{$n/@res-ratio}: &#xA;This result is in the expected range" data-ratio="{$n/@res-ratio}" class="rat badge badge-success">{$f}</span>)
    else () 
    
    }
@@ -615,7 +643,7 @@ declare function src:facets-html-node($n, $baseid, $url){
    }
    {if ($n/tei:category) then 
     <ul>{for $c in $n/tei:category
-    return src:facets-html-node($c, $baseid, $url)}</ul>
+    return src:facets-html-node($c, $baseid, $url, $cutoff )}</ul>
     else ()
    }</li>
 };
@@ -632,9 +660,12 @@ declare function src:facets($node as node()*, $model as map(*), $query as xs:str
  , $uxfilter := if (count($fkeys) > 0) then "&amp;filter=" || string-join(for $c in $fkeys return $c||":"||$model?cat?($c), ";") else ""
  , $url := "search.html?query="||$query||"&amp;search-type="||$search-type || $umode || $utextid 
  , $user := sm:id()//sm:real/sm:username/text()
- , $tabexists := collection($config:tls-data-root || "/notes/search/")//tei:div[@q=$query]
+ , $tabexists := try {collection($config:tls-data-root || "/notes/search/")//tei:div[@q=$query] } catch * {()}
  , $uuid := if ($tabexists) then ($tabexists/@xml:id)[1] else "uuid-" || util:uuid()
  , $coll := if ($tabexists) then () else try {dbu:ensure-collection($config:tls-data-root || "/notes/search/" || substring($uuid, 6, 1))} catch * {()}
+ , $sset := tlslib:get-settings()//tls:section[@type="search"]
+ , $rtype := if ($sset/tls:item[@type='search-ratio']) then $sset/tls:item[@type='search-ratio']/@value else "None"
+
  return
         switch ($search-type)
            case $src:textlist return 
@@ -664,10 +695,16 @@ declare function src:facets($node as node()*, $model as map(*), $query as xs:str
            return 
            <div  class="col-md-3">
             <h1>Facets</h1>
+            <div id="search-settings-details">
+            <h3 data-toggle="collapse" data-target="#search-details" class="badge badge-light">Configure...</h3>
+            <div id="search-details" class="collapse">
             <p>Time: {util:system-dateTime() - $model?s-time}</p>
             <p>Total number of hits: {count($model?totalhits)}</p>
+            {if ($sset) then src:src-options($sset) else ()}
             {if (count($fkeys) = 0 and ($tabexists or $coll)) then  <p><a href="#" onclick="showtab('{$uuid}')">Result matrix</a></p> else ()}
-            <p>{if (count($fkeys) > 0) then <span>Applied filters: <br/>
+            </div>
+            </div>
+            <p>{if (count($fkeys) > 0) then <span title="To release filters find 'Click here to display all matches' in the center of the page">Applied filters: <br/>
             {string-join(for $f in $fkeys return tlslib:cat-title($model?cat?($f)), " / ")}
             </span>
             else ()}</p>{
@@ -682,12 +719,12 @@ declare function src:facets($node as node()*, $model as map(*), $query as xs:str
                       
                       let $tt := if (count($fkeys) > 0) then () else 
                       <div xml:id="{$uuid}" xmlns="http://www.tei-c.org/ns/1.0" resp="#{$user}" modified="{current-dateTime()}" q="{$query}"><head>{$query}, {$k}</head><p>Total number of hits: {count($model?totalhits)}</p><ab>{$st}</ab>{src:facets-table($st, $map, $g, $furl, "open" )}</div>
-                      return if ($tt and $coll) then xmldb:store($coll, $uuid || ".xml", $tt) else ()
-            , $tree2 := if (true()) then $tree else src:facets-ratio($tree, map{"key" : "segs"})
+                      return if ($tt and $coll) then try{xmldb:store($coll, $uuid || ".xml", $tt)} catch * {()} else ()
+            , $tree2 := if ($rtype="None") then $tree else src:facets-ratio($tree, map{"key" : $rtype})
             return
             <div>
             {
-            src:facets-html($tree2, $map, $g, $furl, "open" )}
+            src:facets-html($tree2, $map, $g, $furl, if ($g = 'kr-categories') then "open" else "closed")}
             </div>
            }</div>
          default return 

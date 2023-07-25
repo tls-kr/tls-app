@@ -505,7 +505,7 @@ declare function tlslib:proc-seg($node as node(), $options as map(*)){
 (: format the app for display in the segment :)
 declare function tlslib:format-app($app as node()){
  let $lwit := $app/ancestor::tei:TEI//tei:witness[@xml:id=substring($app/tei:lem/@wit, 2)]/text()
- let $lem :=  $app/tei:lem//text() || $lwit ||"；" 
+ let $lem :=  string-join($app/tei:lem//text(), ' ') || $lwit ||"；" 
  , $t := string-join(for $r in $app/tei:rdg
         let $wit := "【" || string-join(for $w in tokenize($r/@wit) return $app/ancestor::tei:TEI//tei:witness[@xml:id=substring($w, 2)]/text() , "，") ||  "】"
         return $r/text() || $wit, "；")
@@ -1558,7 +1558,8 @@ declare function tlslib:get-metadata($hit, $field){
                 ), " - ")
             case "tls-dates"
             case "kr-categories"
-            case "tls-regions" return 
+            case "tls-regions" return
+(:                let $res := for $t in $header//tei:textClass/tei:catRef[@scheme="#"||$field]/@target return if (starts-with($t, "#KR")) then substring($t, 2) else            :)
                 let $res := for $t in $header//tei:textClass/tei:catRef[@scheme="#"||$field]/@target return substring($t, 2)
                 return
                 if (string-length(string-join($res)) > 0) then $res else "notav"
@@ -1779,7 +1780,8 @@ let $doc := tlslib:get-settings()
 return
 if ($doc) then 
 switch($map?setting)
-case "search-showratio"
+case "search-ratio"
+case "search-cutoff"
 case "search-defaultsection"
 case "search-sortmax" return 
     let $section-type := tokenize($map?setting, "-")[1]
@@ -1790,7 +1792,7 @@ case "search-sortmax" return
     else 
      if ($doc//tls:section[@type=$section-type]) then 
       update insert $item into $doc//tls:section[@type=$section-type]
-     else update insert <section  xmlns="http://hxwd.org/ns/1.0" type="sort">{$item}</section> into $doc/tls:settings
+     else update insert <section  xmlns="http://hxwd.org/ns/1.0" type="search">{$item}</section> into $doc/tls:settings
      , "OK")
 default return ()
 else ()
@@ -1827,6 +1829,7 @@ let $doc := try{
 <settings xmlns="http://hxwd.org/ns/1.0" xml:id="{$user}-settings">
 <section type="bookmarks"></section>
 <section type="slot-config"></section>
+<section type="search"></section>
 </settings>)) 
  else doc($docpath) } catch * {()}
 return $doc
