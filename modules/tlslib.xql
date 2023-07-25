@@ -1832,7 +1832,15 @@ let $doc := try{
 <section type="search"></section>
 </settings>)) 
  else doc($docpath) } catch * {()}
-return $doc
+return 
+if ($doc//tls:section[@type="search"]) then $doc
+else (
+update insert <section xmlns="http://hxwd.org/ns/1.0" type="search"></section> into $doc/tls:settings
+
+(:try {
+} catch * {()} :), 
+$doc
+)
 };
 
 declare function tlslib:merge-sw-word($map as map(*)){
