@@ -1525,7 +1525,7 @@ return
 https://api.github.com/repos/tls-kr/tls-app/issues?labels=need+discussion
 :)
 (<p>
-            <span class="text-danger">This website is under development. {if ($user = "guest") then () else <a class="font-weight-bold" href="https://join.slack.com/t/tls-7al8577/shared_invite/zt-1h6hfirdt-8EdFCAxsQalvCIdIs3OK6w">Click here to access the feedback channel</a>}</span>
+            <span class="text-danger">This website is under development.</span>
         </p>,
         <p>Problems and suggestions can be reported and discussed also on <a href="https://github.com/tls-kr/tls-app/issues">GitHub Issues</a></p>,
         if ($r) then <div>
