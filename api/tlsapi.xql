@@ -1371,6 +1371,34 @@ else ("Could not save bookmark. ", $docpath)
 
 };
 
+(:  
+ :)
+
+
+declare function tlsapi:get-facs-for-page($map as map(*)){
+ let $slot := $map?slot
+ ,$textid := tokenize($map?location, "_")[1]
+(: ,$pb := collection($config:tls-texts-root)//tei:pb[@n=$map?pb]
+ ,$fac := $pb/@facs:)
+ ,$ed := "SBCK"
+ ,$img := $config:tls-facs-root || $config:ed-img-map?($ed) || $map?pb
+ return 
+ <div id="viewer" class="card ann-dialog overflow-auto" style="top: 100px; left: {$map?left}px; width: {$map?width}px; height: {$map?height}px;"> 
+ <script type="text/javascript">
+    var viewer = OpenSeadragon({{
+     id: "viewer", 
+     prefixUrl: "resources/openseadragon-bin-4.1.0/images/", 
+     tileSources: {{
+        type: 'image',
+        url: "{$img}",
+        crossOriginPolicy : "Anonymous"
+     }}
+   
+    }});
+</script> 
+ </div>
+};
+
 
 declare function tlsapi:reload-selector($map as map(*)){
  let $group := sm:id()//sm:group

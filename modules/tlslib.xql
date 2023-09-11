@@ -832,6 +832,8 @@ declare function tlslib:tv-header($node as node()*, $model as map(*)){
 declare function tlslib:generate-toc($node){
 subsequence (for $h in $node//tei:head
     let $locseg := $h//tei:seg/@xml:id
+    , $textid := tokenize($locseg, "_")[1]
+    where matches($textid, "^[A-Za-z]")
     return
     <a class="dropdown-item" title="{$locseg}" href="textview.html?location={$locseg}&amp;prec=0&amp;foll=30">{$h//text()}</a>
     , 1, 100)
@@ -876,6 +878,7 @@ declare function tlslib:get-content-id($textid as xs:string, $slot as xs:string,
 
 (:~
  Display a selection menu for translations and commentaries, given the current slot and type
+ the map tr has five items : descheader, ?, lang, license, type
 :)
 declare function tlslib:trsubmenu($textid as xs:string, $slot as xs:string, $trid as xs:string, $tr as map(*)){
  let $edtps := ("documentary", "interpretative")
@@ -901,6 +904,14 @@ declare function tlslib:trsubmenu($textid as xs:string, $slot as xs:string, $tri
     <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
         {  for $k at $i in $keys
             return 
+         if ($k = "canvas") then 
+        <a class="dropdown-item" id="sel{$slot}-{$i}" onclick="get_canvas_for_page('{$slot}', '{$k}')" href="#">Show Canvas</a>
+         
+        else
+         if ($k = "facs") then 
+        <a class="dropdown-item" id="sel{$slot}-{$i}" onclick="get_facs_for_page('{$slot}', '{data($tr($k))}')" href="#">Facsimile {data($tr($k))}</a>
+         
+        else
          if ($tr($k)[5] = "Comments") then 
         <a class="dropdown-item" id="sel{$slot}-{$i}" onclick="get_tr_for_page('{$slot}', '{$k}')" href="#">{$tr($k)[5] || " " }  {$tr($k)[3]}</a>
 (:        else
@@ -978,6 +989,7 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
       let $d := $targetseg/ancestor::tei:div[1],
       $state := if ($d/ancestor::tei:TEI/@state) then $d/ancestor::tei:TEI/@state else "yellow" ,
       $pb := $targetseg/preceding::tei:pb[1] ,
+      $facs := $pb/@facs,
       $head := if ($d/tei:head[1]/tei:seg) then ( $d/tei:head[1]/tei:seg)/text() 
          else if ($d/ancestor::tei:div/tei:head) then $d/ancestor::tei:div/tei:head/tei:seg/text() 
          else ($d//text())[1],
@@ -989,7 +1001,10 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
       $show-transl := not(contains(sm:id()//sm:group/text(), "guest")),
       $show-variants := xs:boolean(1),
       $visit := tlslib:record-visit($targetseg),
-      $tr := if ($show-transl) then tlslib:get-translations($model?textid) else map{},
+      $tr := if ($show-transl) then 
+         if (string-length($facs) > 0) then map:merge((tlslib:get-translations($model?textid), map{"facs" : $facs})) 
+         else tlslib:get-translations($model?textid)
+         else map{},
       $slot1-id := tlslib:get-content-id($model?textid, 'slot1', $tr),
       $slot2-id := tlslib:get-content-id($model?textid, 'slot2', $tr),
       $atypes := distinct-values(for $s in $dseg/@xml:id
@@ -1835,10 +1850,9 @@ let $doc := try{
 return 
 if ($doc//tls:section[@type="search"]) then $doc
 else (
+try {
 update insert <section xmlns="http://hxwd.org/ns/1.0" type="search"></section> into $doc/tls:settings
-
-(:try {
-} catch * {()} :), 
+} catch * {()}, 
 $doc
 )
 };
