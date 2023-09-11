@@ -41,6 +41,7 @@ declare variable $config:repo-descriptor := doc(concat($config:app-root, "/repo.
 declare variable $config:expath-descriptor := doc(concat($config:app-root, "/expath-pkg.xml"))/expath:package;
 
 declare variable $config:tls-data-root := substring-before($config:app-root, data($config:expath-descriptor/@abbrev)) || "tls-data";
+declare variable $config:tls-facs-root := "https://img.kanripo.org/";
 declare variable $config:tls-texts := substring-before($config:app-root, data($config:expath-descriptor/@abbrev)) || "tls-texts";
 declare variable $config:tls-texts-root := $config:tls-texts || "/data";
 declare variable $config:tls-texts-meta := $config:tls-texts || "/meta";
@@ -259,6 +260,10 @@ declare variable $config:translation-map := map{
 "KR6q0053" : "Christoph Anderl", (: LINJILU 臨濟錄 :)
 "KR6q0082" : "YAMPOLSKY 1996" (: TANJING 六祖壇經 :),
 "KR6s0019" : "?" (: FYMYJ 翻譯名義序 :)
+};
+
+declare variable $config:ed-img-map := map{
+ "SBCK" : "general/sbck/"
 };
 
 declare variable $config:txtsource-map := map{

@@ -375,7 +375,34 @@ function more_display_lines(lineid, tab){
 
  * 
  */
+ 
+function get_canvas_for_page(slot, myid){
+}; 
+ 
+function get_facs_for_page(slot, myid){
+  var location = $('#chunkcol-left').children('div').eq(0).children('div').eq(0).attr('id');
+  var dw = document.documentElement.clientWidth;
+  var dh = document.documentElement.clientHeight;
+  var new_height = $('#chunkcol-left').outerHeight();
+  var new_width = $("#top-"+slot).outerWidth();
+  var new_left = $("#top-"+slot).position().left;
 
+  console.log(location, myid, new_left);
+   $.ajax({
+   type : "GET",
+   dataType : "html",
+   url : "api/responder.xql?func=get-facs-for-page&location="+location+"&pb="+myid+"&slot="+slot, 
+   success : function(resp){
+   // xxx###
+   $('#remoteDialog').html(resp);
+    $('#viewer').width(new_width);
+    $('#viewer').height(new_height);
+    $('#viewer').css({ 'left' : new_left});
+    $('#viewer').show();
+   // reload_selector(slot, myid);   
+   }
+  });
+};
 
 // called ftom textview, toprow
 // slot is slot1 or slot2, type is 'transl' or 'comm', no is the item number in the list
