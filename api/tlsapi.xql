@@ -1383,19 +1383,32 @@ declare function tlsapi:get-facs-for-page($map as map(*)){
  ,$ed := "SBCK"
  ,$img := $config:tls-facs-root || $config:ed-img-map?($ed) || $map?pb
  return 
- <div id="viewer" class="card ann-dialog overflow-auto" style="top: 100px; left: {$map?left}px; width: {$map?width}px; height: {$map?height}px;"> 
+ <div id="viewer-wrap-{$slot}">
+ <div id="viewer{$slot}" class="card ann-dialog overflow-auto" style="top: 100px; left: {$map?left}px; width: {$map?width}px; height: {$map?height}px;">  
+ <button type="button" class="close" onclick="hide_form('viewer{$slot}')" aria-label="Close" title="Close"><img class="icon" src="resources/icons/open-iconic-master/svg/circle-x.svg"/></button>
  <script type="text/javascript">
     var viewer = OpenSeadragon({{
-     id: "viewer", 
+     id: "viewer{$slot}", 
      prefixUrl: "resources/openseadragon-bin-4.1.0/images/", 
      tileSources: {{
         type: 'image',
         url: "{$img}",
         crossOriginPolicy : "Anonymous"
      }}
-   
     }});
-</script> 
+     viewer.addHandler('open', () => {{
+      let closeButton = new OpenSeadragon.Button({{
+        tooltip: 'Close',
+        srcRest: 'resources/icons/open-iconic-master/png/circle-x-6x.png',
+        srcGroup: 'resources/icons/open-iconic-master/png/circle-x-6x.png',
+        srcHover: 'resources/icons/open-iconic-master/png/circle-x-6x.png',
+        srcDown: 'resources/icons/open-iconic-master/png/circle-x-6x.png',
+        onClick: 'window.hide_form("viewer{$slot}")'
+      }});
+
+      // viewer.addControl(closeButton.element, {{ anchor: OpenSeadragon.ControlAnchor.TOP_LEFT }});
+    }});</script> 
+ </div>
  </div>
 };
 
