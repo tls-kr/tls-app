@@ -31,6 +31,10 @@
   font-family: 'Microsoft YaHei', 'SimSun', 'Songti TC' , 'WenQuanYi', 'Noto Sans TC', sans;    
 }
 
+span.lb {
+    display : none;
+}
+
 span.anchor {
     margin-top: -54px; /* height of nav, in this case 54px */
     display: block;
@@ -78,10 +82,6 @@ span.anchor {
 #content {
     padding-top: 50px;
   }
-
-#content{
-   padding-left: 50px;
-}
 
 #copyright p {
   padding: 0;

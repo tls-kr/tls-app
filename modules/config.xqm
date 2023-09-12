@@ -173,7 +173,8 @@ declare variable $config:lmap := map{
 
 
 declare variable $config:circle := "resources/icons/open-iconic-master/svg/media-record.svg";
-
+declare variable $config:pb := "resources/icons/open-iconic-master/svg/pin.svg";
+declare variable $config:lb := "resources/icons/vertical-line.svg";
 (: translation attribution :)
 (: Just for reference, might want to use this later...
 "None" : "TJAN TJOE SOM 1949FF", (\: BHT 白虎通 :\)

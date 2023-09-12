@@ -484,7 +484,8 @@ declare function tlslib:proc-seg($node as node(), $options as map(*)){
      <span class="swxz-uni">{data($node/@n)}</span>
    else
      $node/text()
-  case element (tei:lb)  return ()
+  case element (tei:lb)  return <span title="{data($node/@ed)}:{data($node/@n)}" class="lb text-muted"><img class="icon note-anchor" src="{$config:lb}"/></span>
+  case element (tei:pb)  return <span title="Click here to display a facsimile of this page\n{data($node/@ed)}:{data($node/@n)}" class="text-muted"><img class="icon note-anchor" onclick="get_facs_for_page('slot1', '{$node/@facs}')" src="{$config:pb}"/></span>
   case element (tei:space)  return "　"
   case element (exist:match) return <mark>{$node/text()}</mark>
   case element (tei:anchor) return 
@@ -1034,7 +1035,12 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
       {(:  this is the same structure as the one display-seg will fill it 
       with selection for translation etc, we use this as a header line :)()}
        <div class="row">
-        <div class="{$zh-width}" id="toprow-1"><img class="icon state-{$state}"  src="{$config:circle}"/><span class="font-weight-bold">{$head}</span><span class="btn badge badge-light">line {$xpos} / {($xpos * 100) idiv $sc}%</span> <span class="btn badge badge-light" title="{$pb/@xml:id}">{data($pb/@n)}</span><!-- zh --></div>
+        <div class="{$zh-width}" id="toprow-1"><img class="icon state-{$state}"  src="{$config:circle}"/><span class="font-weight-bold">{$head}</span><span class="btn badge badge-light">line {$xpos} / {($xpos * 100) idiv $sc}%</span> 
+        {if (string-length($pb/@facs) > 0) then 
+          <span class="btn badge badge-light" title="Click here to display a facsimile of this page\n {$pb/@xml:id}" onclick="get_facs_for_page('slot1', '{$pb/@facs}')" >{data($pb/@n)}</span>
+         else <span title="No facsimile available" class="btn badge badge-light">{data($pb/@n)}</span>
+         }
+        <!-- zh --></div>
         <div class="col-sm-5" id="top-slot1"><!-- tr -->
         {if ($show-transl) then tlslib:trsubmenu($model?textid, "slot1", $slot1-id, $tr) else ()}
         </div>
