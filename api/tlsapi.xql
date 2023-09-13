@@ -1380,12 +1380,13 @@ declare function tlsapi:get-facs-for-page($map as map(*)){
  ,$textid := tokenize($map?location, "_")[1]
 (: ,$pb := collection($config:tls-texts-root)//tei:pb[@n=$map?pb]
  ,$fac := $pb/@facs:)
- ,$ed := "SBCK"
- ,$img := $config:tls-facs-root || $config:ed-img-map?($ed) || $map?pb
+ ,$ed := $map?ed
+ ,$img := $config:tls-facs-root || $map?pb
  return 
- <div id="viewer-wrap-{$slot}">
+ <div id="viewer-wrap-{$slot}" class="card ann-dialog" style="position: absolute; top: 50px; left: {$map?left}px; width: {$map?width}px; height: 50px;">
+ <button type="button" class="close" onclick="hide_form('viewer-wrap-{$slot}')" aria-label="Close" title="Close"><img class="icon" src="resources/icons/open-iconic-master/svg/circle-x.svg"/></button>
+ <span>Bla</span>
  <div id="viewer{$slot}" class="card ann-dialog overflow-auto" style="top: 100px; left: {$map?left}px; width: {$map?width}px; height: {$map?height}px;">  
- <button type="button" class="close" onclick="hide_form('viewer{$slot}')" aria-label="Close" title="Close"><img class="icon" src="resources/icons/open-iconic-master/svg/circle-x.svg"/></button>
  <script type="text/javascript">
     var viewer = OpenSeadragon({{
      id: "viewer{$slot}", 

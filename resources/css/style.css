@@ -31,8 +31,16 @@
   font-family: 'Microsoft YaHei', 'SimSun', 'Songti TC' , 'WenQuanYi', 'Noto Sans TC', sans;    
 }
 
-span.lb {
+span.lb
+{
     display : none;
+}
+
+.ed-SBCK {
+     background-color: rgba(186, 245, 240, 0.25);       
+}
+.ed-WYG {
+     background-color: rgba(222, 186, 245, 0.25);           
 }
 
 span.anchor {
