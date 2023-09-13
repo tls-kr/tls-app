@@ -264,7 +264,8 @@ declare variable $config:translation-map := map{
 };
 
 declare variable $config:ed-img-map := map{
- "SBCK" : "general/sbck/"
+ "SBCK" : "general/sbck/",
+ "WYG" : "general/skqs/wyg/"
 };
 
 declare variable $config:txtsource-map := map{

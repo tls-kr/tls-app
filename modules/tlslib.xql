@@ -484,8 +484,9 @@ declare function tlslib:proc-seg($node as node(), $options as map(*)){
      <span class="swxz-uni">{data($node/@n)}</span>
    else
      $node/text()
-  case element (tei:lb)  return <span title="{data($node/@ed)}:{data($node/@n)}" class="lb text-muted"><img class="icon note-anchor" src="{$config:lb}"/></span>
-  case element (tei:pb)  return <span title="Click here to display a facsimile of this page\n{data($node/@ed)}:{data($node/@n)}" class="text-muted"><img class="icon note-anchor" onclick="get_facs_for_page('slot1', '{$node/@facs}')" src="{$config:pb}"/></span>
+  case element (tei:lb)  return <span title="{data($node/@ed)}:{data($node/@n)}" class="lb text-muted ed-{data($node/@ed)}"><img class="icon note-anchor" src="{$config:lb}"/></span>
+  case element (tei:pb)  return <span title="{data($node/@ed)}:{data($node/@n)}" class="lb text-muted ed-{data($node/@ed)}"><img class="icon note-anchor" src="{$config:lb}"/></span>
+  (: <span title="Click here to display a facsimile of this page\n{data($node/@ed)}:{data($node/@n)}" class="text-muted"><img class="icon note-anchor" onclick="get_facs_for_page('slot1', '{$node/@facs}')" src="{$config:pb}"/></span> :)
   case element (tei:space)  return "　"
   case element (exist:match) return <mark>{$node/text()}</mark>
   case element (tei:anchor) return 
@@ -910,7 +911,7 @@ declare function tlslib:trsubmenu($textid as xs:string, $slot as xs:string, $tri
          
         else
          if ($k = "facs") then 
-        <a class="dropdown-item" id="sel{$slot}-{$i}" onclick="get_facs_for_page('{$slot}', '{data($tr($k))}')" href="#">Facsimile {data($tr($k))}</a>
+        <a class="dropdown-item" id="sel{$slot}-{$i}" onclick="get_facs_for_page('{$slot}', '{$tr($k)[1]}', '{$tr($k)[2]}')" href="#">Facsimile {$tr($k)[2]}</a>
          
         else
          if ($tr($k)[5] = "Comments") then 
@@ -991,6 +992,7 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
       $state := if ($d/ancestor::tei:TEI/@state) then $d/ancestor::tei:TEI/@state else "yellow" ,
       $pb := $targetseg/preceding::tei:pb[1] ,
       $facs := $pb/@facs,
+      $fpref :=  $config:ed-img-map?($pb/@ed),
       $head := if ($d/tei:head[1]/tei:seg) then ( $d/tei:head[1]/tei:seg)/text() 
          else if ($d/ancestor::tei:div/tei:head) then $d/ancestor::tei:div/tei:head/tei:seg/text() 
          else ($d//text())[1],
@@ -1003,7 +1005,7 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
       $show-variants := xs:boolean(1),
       $visit := tlslib:record-visit($targetseg),
       $tr := if ($show-transl) then 
-         if (string-length($facs) > 0) then map:merge((tlslib:get-translations($model?textid), map{"facs" : $facs})) 
+         if (string-length($facs) > 0) then map:merge((tlslib:get-translations($model?textid), map{"facs" : ($config:ed-img-map?($pb/@ed)||$facs, data($pb/@ed))})) 
          else tlslib:get-translations($model?textid)
          else map{},
       $slot1-id := tlslib:get-content-id($model?textid, 'slot1', $tr),
@@ -1037,7 +1039,7 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
        <div class="row">
         <div class="{$zh-width}" id="toprow-1"><img class="icon state-{$state}"  src="{$config:circle}"/><span class="font-weight-bold">{$head}</span><span class="btn badge badge-light">line {$xpos} / {($xpos * 100) idiv $sc}%</span> 
         {if (string-length($pb/@facs) > 0) then 
-          <span class="btn badge badge-light" title="Click here to display a facsimile of this page\n {$pb/@xml:id}" onclick="get_facs_for_page('slot1', '{$pb/@facs}')" >{data($pb/@n)}</span>
+          <span class="btn badge badge-light ed-{data($pb/@ed)}" title="Click here to display a facsimile of this page\n {$pb/@xml:id}" onclick="get_facs_for_page('slot1', '{$fpref}{$pb/@facs}', '{data($pb/@ed)}')" >{data($pb/@ed)}:{data($pb/@n)}</span>
          else <span title="No facsimile available" class="btn badge badge-light">{data($pb/@n)}</span>
          }
         <!-- zh --></div>
@@ -1384,7 +1386,13 @@ return
 <div class="row {$mark}">{
 if($locked and $textid and tlslib:has-edit-permission($textid)) then 
   tlslib:format-button("display_punc_dialog('" || data($seg/@xml:id) || "')", "Add punctuation to this text segment", "octicons/svg/lock.svg", "", "", ("tls-editor", "tls-punc")) 
-else ()
+else if ($seg//tei:pb) then 
+ let $node := ($seg//tei:pb)[1]
+ , $n := tokenize($node/@n, '-')[2]
+ , $fpref :=  $config:ed-img-map?($node/@ed) 
+ return
+<span title="Click here to display a facsimile of this page\n{data($node/@ed)}:{data($node/@n)}" onclick="get_facs_for_page('slot1', '{$fpref}{$node/@facs}', '{data($node/@ed)}')" class="btn badge badge-light text-muted ed-{data($node/@ed)}">{$n}</span>
+else "　"
 (: either within or without the segment, for the moment place it within :)
 (:, if ($seg/tei:c[@type='shifted']) then <span class="swxz">{data($seg/tei:c[@type='shifted']/@n)}</span> else ():)
 }<div class="{

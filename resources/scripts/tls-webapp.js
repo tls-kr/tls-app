@@ -379,25 +379,26 @@ function more_display_lines(lineid, tab){
 function get_canvas_for_page(slot, myid){
 }; 
  
-function get_facs_for_page(slot, myid){
+function get_facs_for_page(slot, myid, ed){
   var location = $('#chunkcol-left').children('div').eq(0).children('div').eq(0).attr('id');
   var dw = document.documentElement.clientWidth;
   var dh = document.documentElement.clientHeight;
   var new_height = $('#chunkcol-left').outerHeight();
   var new_width = $("#top-"+slot).outerWidth();
   var new_left = $("#top-"+slot).position().left;
-  $(".lb").show();
+  $(".ed-"+ed).show();
   console.log(location, myid, new_left);
    $.ajax({
    type : "GET",
    dataType : "html",
-   url : "api/responder.xql?func=get-facs-for-page&location="+location+"&pb="+myid+"&slot="+slot, 
+   url : "api/responder.xql?func=get-facs-for-page&location="+location+"&pb="+myid+"&slot="+slot+"&left="+new_left+"&width="+new_width+"&height="+new_height, 
    success : function(resp){
    // xxx###
    $('#fac'+slot).html(resp);
     $('#viewer'+slot).width(new_width);
     $('#viewer'+slot).height(new_height);
     $('#viewer'+slot).css({ 'left' : new_left});
+    $('#viewer-wrap-'+slot).show();
     $('#viewer'+slot).show();
    // reload_selector(slot, myid);   
    }
@@ -571,7 +572,9 @@ var word = $("#swl-query-span").text();
 
 function hide_form(form){
   console.log("Hiding ..")
+  var f1 = form.replace('-wrap-', '')
   $("#"+form).hide()  
+  $("#"+f1).hide()  
   $(".lb").hide();
 };
 
