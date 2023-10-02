@@ -265,8 +265,121 @@ declare variable $config:translation-map := map{
 
 declare variable $config:ed-img-map := map{
  "SBCK" : "general/sbck/",
- "WYG" : "general/skqs/wyg/"
+ "WYG" : "general/skqs/wyg/",
+ "A" : "buddhist/"
+,"C" : "buddhist/"
+,"F" : "buddhist/"
+,"G" : "buddhist/"
+,"H" : "buddhist/"
+,"J" : "buddhist/"
+,"K" : "buddhist/"
+,"L" : "buddhist/"
+,"M" : "buddhist/"
+,"P" : "buddhist/"
+,"S" : "buddhist/"
+,"U" : "buddhist/"
+,"W" : "buddhist/"
+,"T" : "buddhist/"
+,"X" : "buddhist/"
+ 
 };
+
+declare variable $config:wits :=
+map{
+'DCS' : '【東禪寺】',
+'GOZAN' : '【日本五山版】',
+'CK-KZ-jye' : '【道藏輯要電子版】',
+'ZTDZ' : '【正統道藏・三家本】', 
+'T@DUN' : '【大→敦】', 
+'T@XI' : '【大→西】', 
+'WLG' : '【四庫全書・文瀾閣】', 
+'T@LIYI' : '【大→麗乙】', 
+'T@LIUBUBEN' : '【大→流布本】', 
+'T@HE' : '【大→和】', 
+'K' : '【麗】', 
+'T@DUNBING' : '【大→敦丙】', 
+'T@ZHI' : '【大→知】', 
+'L' : '【乾隆大藏經】', 
+'P' : '【永樂北藏】', 
+'T' : '【大】', 
+'X' : '【卍續】', 
+'T@SEN' : '【大→森】', 
+'T@DE' : '【大→德】', 
+'T@MINGYI' : '【大→明異】', 
+'YP-C' : '【原版道藏輯要】', 
+'T@B' : '【大→Ｂ】', 
+'T@A' : '【大→Ａ】', 
+'T@DUNYI' : '【大→敦乙】', 
+'T@NAN' : '【大→南】', 
+'T@JI' : '【大→久】', 
+'T@JIN' : '【大→金】', 
+'SBCK' : '【四部叢刊】', 
+'SBCK-zw' : '【四部叢刊-別】', 
+'T@SHENGYI' : '【大→聖乙】', 
+'T@JIA' : '【大→甲】', 
+'TKD' : '【高麗藏・東國影印版】', 
+'TK' : '【高麗藏・東國影印版】', 
+'T@RIGUANG' : '【大→日光】', 
+'T@BO' : '【大→博】', 
+'T@WAN' : '【大→万】', 
+'T@JIX' : '【大→己】', 
+'QISHA' : '【磧砂】', 
+'T@YI' : '【大→乙】', 
+'C' : '【中華大藏經】', 
+'G' : '【佛教大藏經】', 
+'T@SHENGBING' : '【大→聖丙】', 
+'T@DING' : '【大→丁】', 
+'S' : '【宋藏遺珍】', 
+'W' : '【藏外佛經】', 
+'T@LIUTONGBEN' : '【大→流通本】', 
+'T@GONG' : '【大→宮】', 
+'T@SONG' : '【大→宋】', 
+'T@DONG' : '【大→東】', 
+'T@ZHONG' : '【大→中】', 
+'T@NANZANG' : '【大→南藏】', 
+'CK-KZ' : '【重刊道藏輯要】', 
+'ZHWIKI' : '【維基文庫】', 
+'T@UNKNOWN' : '【大→unknown】', 
+'WYG' : '【四庫全書・文淵閣】', 
+'T@GONGYI' : '【大→宮乙】', 
+'Yan' : '【柳田版】', 
+'HFL' : '【正統道藏・涵芬樓版】', 
+'T@JIAXING' : '【大→嘉興】', 
+'T@LI' : '【大→麗】', 
+'T@BING' : '【大→丙】', 
+'T@XUZANG' : '【大→卍續】', 
+'master' : 'master', 
+'T@SHI' : '【大→石】', 
+'T@GAO' : '【大→高】', 
+'T@BEIZANG' : '【大→北藏】', 
+'F' : '【房山石徑】', 
+'T@SHENG' : '【大→聖】', 
+'J' : '【嘉興】', 
+'YAN' : '【柳田版】', 
+'T@JIAKAOWEI' : '【大→甲考偽】', 
+'T@TI' : '【大→醍】', 
+'T@LONG' : '【大→龍】', 
+'T@MING' : '【大→明】', 
+'T@FUYI' : '【大→福乙】', 
+'ZHW' : '【維基文庫】', 
+'T@F' : '【大→福】', 
+'DALI' : '【大曆】', 
+'T@NEI' : '【大→內】', 
+'T@HARA' : '【大→原】', 
+'T@SUO' : '【大→縮】', 
+'T@QISHA' : '【大→磧砂】', 
+'CBETA' : '【電子佛典集成】', 
+'T@YUAN' : '【大→元】', 
+'T@W' : '【大→戊】', 
+'A' : '【趙城金藏】', 
+'M' : '【卍正藏】', 
+'WX' : '【洪武南藏】', 
+'T@LIUBUBIE' : '【大→流布別本】', 
+'T@DUNFANG' : '【大→敦方】', 
+'T@SHIG' : '【大→獅谷】', 
+'T@LI-CBETA' : '【大→麗-CB】', 
+'T@BEI' : '【大→別】',
+"tls" : "【漢學文典】"};
 
 declare variable $config:txtsource-map := map{
 "KR3a0047" : "Kanseki Repository",

@@ -560,7 +560,7 @@ declare function tlslib:get-rating($txtid){
 : Lookup the title for a given textid
 : @param $txtid
 :)
-declare function tlslib:get-title($txtid as xs:string){
+declare function tlslib:get-title($txtid as xs:string?){
 let $title := string-join(collection($config:tls-texts-root) //tei:TEI[@xml:id=$txtid]//tei:titleStmt/tei:title/text(), "・")
 return $title
 };
@@ -703,7 +703,7 @@ declare function tlslib:has-edit-permission($text-id as xs:string) as xs:boolean
     true()
   else
    if (sm:id()//sm:real/sm:username/text() = "guest") then false () else 
-   if (sm:id()//sm:group = ("test")) then false() else 
+   if (sm:id()//sm:group = ("test", "tls-test")) then false() else 
     let $permissions := doc($config:tls-user-root || "tls-admin/permissions.xml")
     return $text-id and 
         sm:id()//sm:group = "tls-punc" and 
@@ -1037,13 +1037,16 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
       {(:  this is the same structure as the one display-seg will fill it 
       with selection for translation etc, we use this as a header line :)()}
        <div class="row">
-        <div class="{$zh-width}" id="toprow-1"><img class="icon state-{$state}"  src="{$config:circle}"/><span class="font-weight-bold">{$head}</span><span class="btn badge badge-light">line {$xpos} / {($xpos * 100) idiv $sc}%</span> 
+        <div class="col .no-gutters"><img class="icon state-{$state}"  src="{$config:circle}"/></div>
+        <div class="{$zh-width}" id="toprow-1"><span class="font-weight-bold">{$head}</span><span class="btn badge badge-light">line {$xpos} / {($xpos * 100) idiv $sc}%</span> 
         {if (string-length($pb/@facs) > 0) then 
-          <span class="btn badge badge-light ed-{data($pb/@ed)}" title="Click here to display a facsimile of this page\n {$pb/@xml:id}" onclick="get_facs_for_page('slot1', '{$fpref}{$pb/@facs}', '{data($pb/@ed)}')" >{data($pb/@ed)}:{data($pb/@n)}</span>
+        let $pg := substring-before(tokenize(data($pb/@facs), '/')[last()], '.')
+        return
+          <span class="btn badge badge-light ed-{data($pb/@ed)}" title="Click here to display a facsimile of this page &#10; {$pg}" onclick="get_facs_for_page('slot1', '{$fpref}{$pb/@facs}', '{data($pb/@ed)}')" >{$config:wits?(data($pb/@ed))}:{data($pb/@n)}</span>
          else <span title="No facsimile available" class="btn badge badge-light">{data($pb/@n)}</span>
          }
         <!-- zh --></div>
-        <div class="col-sm-5" id="top-slot1"><!-- tr -->
+        <div class="col-sm-4" id="top-slot1"><!-- tr -->
         {if ($show-transl) then tlslib:trsubmenu($model?textid, "slot1", $slot1-id, $tr) else ()}
         </div>
         <div class="col-sm-4" id="top-slot2">
@@ -1383,19 +1386,24 @@ declare function tlslib:display-seg($seg as node()*, $options as map(*) ) {
 (: normalize-space(string-join($seg/text(),'')) :)
 return
 (
-<div class="row {$mark}">{
+<div class="row {$mark}">
+<div class="col .no-gutters">
+{
 if($locked and $textid and tlslib:has-edit-permission($textid)) then 
   tlslib:format-button("display_punc_dialog('" || data($seg/@xml:id) || "')", "Add punctuation to this text segment", "octicons/svg/lock.svg", "", "", ("tls-editor", "tls-punc")) 
-else if ($seg//tei:pb) then 
- let $node := ($seg//tei:pb)[1]
+else (), if ($seg//tei:pb or local-name(($seg/preceding-sibling::*)[last()]) = ('lb', 'pb')) then 
+ let $node := ($seg//tei:pb | ($seg/preceding-sibling::tei:pb)[last()])[1]
  , $n := tokenize($node/@n, '-')[2]
  , $fpref :=  $config:ed-img-map?($node/@ed) 
+ , $pg := substring-before(tokenize(data($node/@facs), '/')[last()], '.')
  return
-<span title="Click here to display a facsimile of this page\n{data($node/@ed)}:{data($node/@n)}" onclick="get_facs_for_page('slot1', '{$fpref}{$node/@facs}', '{data($node/@ed)}')" class="btn badge badge-light text-muted ed-{data($node/@ed)}">{$n}</span>
+<span title="Click here to display a facsimile of this page &#10;{$config:wits?(data($node/@ed))}:{$pg}" onclick="get_facs_for_page('slot1', '{$fpref}{$node/@facs}', '{data($node/@ed)}')" class="btn badge badge-light text-muted ed-{data($node/@ed)}">{$n}</span>
 else "　"
 (: either within or without the segment, for the moment place it within :)
 (:, if ($seg/tei:c[@type='shifted']) then <span class="swxz">{data($seg/tei:c[@type='shifted']/@n)}</span> else ():)
-}<div class="{
+}
+</div>
+<div class="{
 if ($seg/@type='comm') then 'tls-comm ' else 
 if($locked) then 'locked ' else () }{
 if ($ann='false') then 'col-sm-4' else $options?zh-width} zh chn-font {$alpheios-class} {$markup-class}" lang="{$lang}" id="{$seg/@xml:id}" data-tei="{ util:node-id($seg) }">{
