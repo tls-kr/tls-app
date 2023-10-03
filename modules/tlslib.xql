@@ -910,8 +910,8 @@ declare function tlslib:trsubmenu($textid as xs:string, $slot as xs:string, $tri
         <a class="dropdown-item" id="sel{$slot}-{$i}" onclick="get_canvas_for_page('{$slot}', '{$k}')" href="#">Show Canvas</a>
          
         else
-         if ($k = "facs") then 
-        <a class="dropdown-item" id="sel{$slot}-{$i}" onclick="get_facs_for_page('{$slot}', '{$tr($k)[1]}', '{$tr($k)[2]}')" href="#">Facsimile {$tr($k)[2]}</a>
+         if (starts-with($k, "facs")) then 
+        <a class="dropdown-item" id="sel{$slot}-{$i}" onclick="get_facs_for_page('{$slot}', '{$tr($k)[1]}', '{$tr($k)[2]}', '{$tr($k)[3]}')" href="#">Facsimile {$config:wits?($tr($k)[2])}</a>
          
         else
          if ($tr($k)[5] = "Comments") then 
@@ -990,7 +990,7 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
       , $zh-width := 'col-sm-3'
       let $d := $targetseg/ancestor::tei:div[1],
       $state := if ($d/ancestor::tei:TEI/@state) then $d/ancestor::tei:TEI/@state else "yellow" ,
-      $pb := $targetseg/preceding::tei:pb[1] ,
+      $pb := ($targetseg/preceding::tei:pb)[last()] ,
       $facs := $pb/@facs,
       $fpref :=  $config:ed-img-map?($pb/@ed),
       $head := if ($d/tei:head[1]/tei:seg) then ( $d/tei:head[1]/tei:seg)/text() 
@@ -1005,7 +1005,11 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
       $show-variants := xs:boolean(1),
       $visit := tlslib:record-visit($targetseg),
       $tr := if ($show-transl) then 
-         if (string-length($facs) > 0) then map:merge((tlslib:get-translations($model?textid), map{"facs" : ($config:ed-img-map?($pb/@ed)||$facs, data($pb/@ed))})) 
+         if (string-length($facs) > 0) then map:merge((tlslib:get-translations($model?textid), 
+            for $edx in distinct-values($targetseg/ancestor::tei:div//tei:pb/@ed)
+            return
+            map:entry("facs_"||$edx, ("dummy", $edx, data($targetseg/@xml:id)) ))) 
+
          else tlslib:get-translations($model?textid)
          else map{},
       $slot1-id := tlslib:get-content-id($model?textid, 'slot1', $tr),
@@ -1042,7 +1046,7 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
         {if (string-length($pb/@facs) > 0) then 
         let $pg := substring-before(tokenize(data($pb/@facs), '/')[last()], '.')
         return
-          <span class="btn badge badge-light ed-{data($pb/@ed)}" title="Click here to display a facsimile of this page &#10; {$pg}" onclick="get_facs_for_page('slot1', '{$fpref}{$pb/@facs}', '{data($pb/@ed)}')" >{$config:wits?(data($pb/@ed))}:{data($pb/@n)}</span>
+          <span class="btn badge badge-light ed-{data($pb/@ed)}" title="Click here to display a facsimile of this page &#10; {$pg}" onclick="get_facs_for_page('slot1', '{$fpref}{$pb/@facs}', '{data($pb/@ed)}', '{data($targetseg/@xml:id)}')" >{$config:wits?(data($pb/@ed))}:{data($pb/@n)}</span>
          else <span title="No facsimile available" class="btn badge badge-light">{data($pb/@n)}</span>
          }
         <!-- zh --></div>
@@ -1397,7 +1401,7 @@ else (), if ($seg//tei:pb or local-name(($seg/preceding-sibling::*)[last()]) = (
  , $fpref :=  $config:ed-img-map?($node/@ed) 
  , $pg := substring-before(tokenize(data($node/@facs), '/')[last()], '.')
  return
-<span title="Click here to display a facsimile of this page &#10;{$config:wits?(data($node/@ed))}:{$pg}" onclick="get_facs_for_page('slot1', '{$fpref}{$node/@facs}', '{data($node/@ed)}')" class="btn badge badge-light text-muted ed-{data($node/@ed)}">{$n}</span>
+<span title="Click here to display a facsimile of this page &#10;{$config:wits?(data($node/@ed))}:{$pg}" onclick="get_facs_for_page('slot1', '{$fpref}{$node/@facs}', '{data($node/@ed)}', '{data($seg/@xml:id)}')" class="btn badge badge-light text-muted ed-{data($node/@ed)}">{$n}</span>
 else "　"
 (: either within or without the segment, for the moment place it within :)
 (:, if ($seg/tei:c[@type='shifted']) then <span class="swxz">{data($seg/tei:c[@type='shifted']/@n)}</span> else ():)
