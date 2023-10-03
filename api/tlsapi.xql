@@ -1378,17 +1378,35 @@ else ("Could not save bookmark. ", $docpath)
 declare function tlsapi:get-facs-for-page($map as map(*)){
  let $slot := $map?slot
  ,$textid := tokenize($map?location, "_")[1]
-(: ,$pb := collection($config:tls-texts-root)//tei:pb[@n=$map?pb]
- ,$fac := $pb/@facs:)
- ,$ed := $map?ed
- ,$img := $config:tls-facs-root || $map?pb
+ ,$ed := $map?pbed
+ ,$seg := collection($config:tls-texts-root)//tei:seg[@xml:id=$map?segid]
+ ,$pb := ($seg//tei:pb[@ed=$ed] | ($seg/preceding::tei:pb[@ed=$ed])[last()])[1]
+(: ,$fac := $pb/@facs:)
+ ,$img := $config:tls-facs-root || $config:ed-img-map?($ed) || $pb/@facs
  return 
- <div id="viewer-wrap-{$slot}" class="card ann-dialog" style="position: absolute; top: 50px; left: {$map?left}px; width: {$map?width}px; height: 50px;">
+ <div id="viewer-wrap-{$slot}" class="card ann-dialog" style="top: 50px; left: {$map?left}px; width: {$map?width}px; height: 50px;">
  <button type="button" class="close" onclick="hide_form('viewer-wrap-{$slot}')" aria-label="Close" title="Close"><img class="icon" src="resources/icons/open-iconic-master/svg/circle-x.svg"/></button>
- <span>Bla</span>
+    <span>{$config:wits?(data($ed))}</span>
+    <span id="current-page-{$slot}" style="display:None">{'pb_' || $ed || '_' || data($pb/@n)}</span>
+    <ul class="pagination">
+    {for $c in reverse(reverse(($pb/preceding::tei:pb[@ed=$ed]))[position()< 6])
+    let $n := tokenize(data($c/@n), '-')[last()]
+    , $cimg := $config:tls-facs-root || $config:ed-img-map?($ed) || $c/@facs
+    return
+    <li class="page-item"><small><a class="page-link" onclick="set_new_tileSources('{$slot}', 'pb_{$ed}_{data($c/@n)}', {{type : 'image', url : '{$cimg}'}})">{$n}</a></small></li>
+    }    
+    <li class="page-item"><small><strong><a class="page-link" onclick="set_new_tileSources('{$slot}', 'pb_{$ed}_{data($pb/@n)}', {{type : 'image', url : '{$img}'}})">{tokenize(data($pb/@n), '-')[last()]}</a></strong></small></li>
+    {for $c in ($pb/following::tei:pb[@ed=$ed])[position()< 6]
+    let $n := tokenize(data($c/@n), '-')[last()]
+    , $cimg := $config:tls-facs-root || $config:ed-img-map?($ed) || $c/@facs
+    return
+    <li class="page-item"><small><a class="page-link" onclick="set_new_tileSources('{$slot}', 'pb_{$ed}_{data($c/@n)}', {{type : 'image', url : '{$cimg}'}})">{$n}</a></small></li>
+    }
+    </ul>
+
  <div id="viewer{$slot}" class="card ann-dialog overflow-auto" style="top: 100px; left: {$map?left}px; width: {$map?width}px; height: {$map?height}px;">  
  <script type="text/javascript">
-    var viewer = OpenSeadragon({{
+    var viewer{$slot} = OpenSeadragon({{
      id: "viewer{$slot}", 
      prefixUrl: "resources/openseadragon-bin-4.1.0/images/", 
      tileSources: {{
@@ -1396,8 +1414,9 @@ declare function tlsapi:get-facs-for-page($map as map(*)){
         url: "{$img}",
         crossOriginPolicy : "Anonymous"
      }}
+    // , sequenceMode: true
     }});
-     viewer.addHandler('open', () => {{
+     viewer{$slot}.addHandler('open', () => {{
       let closeButton = new OpenSeadragon.Button({{
         tooltip: 'Close',
         srcRest: 'resources/icons/open-iconic-master/png/circle-x-6x.png',
@@ -1407,7 +1426,7 @@ declare function tlsapi:get-facs-for-page($map as map(*)){
         onClick: 'window.hide_form("viewer{$slot}")'
       }});
 
-      // viewer.addControl(closeButton.element, {{ anchor: OpenSeadragon.ControlAnchor.TOP_LEFT }});
+      // viewer{$slot}.addControl(closeButton.element, {{ anchor: OpenSeadragon.ControlAnchor.TOP_LEFT }});
     }});</script> 
  </div>
  </div>

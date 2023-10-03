@@ -379,19 +379,19 @@ function more_display_lines(lineid, tab){
 function get_canvas_for_page(slot, myid){
 }; 
  
-function get_facs_for_page(slot, myid, ed){
-  var location = $('#chunkcol-left').children('div').eq(0).children('div').eq(0).attr('id');
+function get_facs_for_page(slot, pbfacs, pbed, segid){
+  var location = $('#chunkcol-left').children('div').eq(1).children('div').eq(0).attr('id');
   var dw = document.documentElement.clientWidth;
   var dh = document.documentElement.clientHeight;
   var new_height = $('#chunkcol-left').outerHeight();
   var new_width = $("#top-"+slot).outerWidth();
   var new_left = $("#top-"+slot).position().left;
-  $(".ed-"+ed).show();
-  console.log(location, myid, new_left);
+  $(".ed-"+pbed).show();
+  console.log(location, pbed, new_left);
    $.ajax({
    type : "GET",
    dataType : "html",
-   url : "api/responder.xql?func=get-facs-for-page&location="+location+"&pb="+myid+"&slot="+slot+"&left="+new_left+"&width="+new_width+"&height="+new_height, 
+   url : "api/responder.xql?func=get-facs-for-page&location="+location+"&pb="+pbfacs+"&segid="+segid+"&pbed="+pbed+"&slot="+slot+"&left="+new_left+"&width="+new_width+"&height="+new_height, 
    success : function(resp){
    // xxx###
    $('#fac'+slot).html(resp);
@@ -404,6 +404,15 @@ function get_facs_for_page(slot, myid, ed){
    }
   });
   event.preventDefault()
+};
+
+function set_new_tileSources (slot, pb_ed_n, tileSources){
+    $('#current-page-'+slot).html(pb_ed_n)
+    if (slot === 'slot1'){
+     viewerslot1.open (tileSources);
+    } else {
+     viewerslot2.open (tileSources);        
+    }
 };
 
 // called ftom textview, toprow
