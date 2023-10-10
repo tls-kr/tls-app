@@ -438,8 +438,9 @@ for $seg in $dseg
       map:entry("#"||data($seg/@xml:id)||$cl, $tr))
 };
 
-declare function tlsapi:get-tr-for-page($loc as xs:string, $prec as xs:int, $foll as xs:int, $slot as xs:string, $content-id as xs:string){
-let $textid := tokenize($loc, "_")[1]
+declare function tlsapi:get-tr-for-page($loc_in as xs:string, $prec as xs:int, $foll as xs:int, $slot as xs:string, $content-id as xs:string){
+let $loc := replace($loc_in, "-swl", "")
+, $textid := tokenize($loc, "_")[1]
 , $cl := if ($slot = "slot1") then "-tr" else "-ex"
 , $edtp := if (contains($content-id, "_")) then xs:boolean(1) else xs:boolean(0)
 , $dseg := local:get-targetsegs($loc, $prec, $foll)
