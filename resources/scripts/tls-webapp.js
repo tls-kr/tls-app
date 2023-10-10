@@ -419,7 +419,7 @@ function set_new_tileSources (slot, pb_ed_n, tileSources){
 // slot is slot1 or slot2, type is 'transl' or 'comm', no is the item number in the list
 function get_tr_for_page(slot, myid){
 //  var location = window.location.search;
-  var location = $('#chunkcol-left').children('div').eq(0).children('div').eq(0).attr('id');
+  var location = $('#chunkcol-left').children('div').eq(1).children('div').eq(0).attr('id');
   var foll = $('#chunkcol-left').children('div').length / 2
    $.ajax({
    type : "GET",
