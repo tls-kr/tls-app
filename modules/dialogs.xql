@@ -808,7 +808,8 @@ declare function dialogs:pb-dialog($map as map(*)){
             <div class="col-md-5">{$map?sel}</div>
             </div>
             <div class="form row">
-            <div class="font-weight-bold mt-2 col-md-3">Select witness:</div>
+            <div class="col-md-3"></div>
+            <div class="font-weight-bold mt-2 col-md-2">Select witness:</div>
             <div class="form-group col-md-3"><select class="form-control" id="witness" name="witness">
                   {for $w in $wl
                     return
@@ -818,24 +819,24 @@ declare function dialogs:pb-dialog($map as map(*)){
                  </div>
              </div>     
             <div class="form row">
-            <div class="font-weight-bold mt-2 col-md-2">Page number:</div>
-            <div class="col-md-3">
+            <div class="col-md-3"><span>Preceding page:</span><br/>
              {for $w in $wl
                let $ed := data($w/@xml:id)
                let $pb := ($seg//tei:pb[@ed=$ed]|$seg/preceding::tei:pb[@ed=$ed])[last()]
                where exists($pb)
-               return <span><small>{$w/text()}:</small>{data($pb/@n)}</span>
+               return <span class="text-muted "><small>{$w/text()}:</small>{data($pb/@n)}<br/></span>
                }
             </div>
-            <div class="col-md-2">
+            <div class="font-weight-bold mt-2 col-md-2">Page number:</div>
+            <div class="col-md-3">
             <input id="page-num" class="form-control" required="true" value=""/>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-3"><span>Following page:</span><br/>
              {for $w in $wl
                let $ed := data($w/@xml:id)
                let $pb := ($seg//tei:pb[@ed=$ed]|$seg/following::tei:pb[@ed=$ed])[1]
                where exists($pb)
-               return <span><small>{$w/text()}:</small>{data($pb/@n)}</span>
+               return <span class="text-muted "><small>{$w/text()}:</small>{data($pb/@n)}<br/></span>
                }
             </div>
             </div>
