@@ -406,6 +406,11 @@ function get_facs_for_page(slot, pbfacs, pbed, segid){
   event.preventDefault()
 };
 
+function move_to_page(slot){
+    page = $('#current-page-'+slot).html()
+    alert(page)
+}
+
 function set_new_tileSources (slot, pb_ed_n, tileSources){
     $('#current-page-'+slot).html(pb_ed_n)
     if (slot === 'slot1'){
