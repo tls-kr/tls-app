@@ -408,11 +408,20 @@ function get_facs_for_page(slot, pbfacs, pbed, segid){
 
 function move_to_page(slot){
     page = $('#current-page-'+slot).html()
-    alert(page)
+    var location = $('#chunkcol-left').children('div').eq(1).children('div').eq(0).attr('id');
+    $.get("api/responder.xql?func=move-to-page&page="+page+"&location="+location,
+    function(resp){
+//      console.log(resp)
+      page_move(resp)    
+   })
+    
+//    alert(page)
 }
 
 function set_new_tileSources (slot, pb_ed_n, tileSources){
     $('#current-page-'+slot).html(pb_ed_n)
+    $('.page-link').removeClass('font-weight-bold')
+    $('#'+ pb_ed_n).addClass('font-weight-bold')
     if (slot === 'slot1'){
      viewerslot1.open (tileSources);
     } else {
@@ -910,7 +919,7 @@ function alt_name(sel){
     
 };
 
-// display the dialog in the right side of the screen
+// display the dialog (floater) in the right side of the screen
 function get_sw(sel, xid, line){
    var dw = document.documentElement.clientWidth;
    var dh = document.documentElement.clientHeight;

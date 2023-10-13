@@ -2066,7 +2066,7 @@ return
 </div>
 };
 
-(: This displays the list of words by concept in the right hand popup pane  :)
+(: This displays the list of words by concept in the right hand popup pane (floater)  :)
 declare function tlslib:get-sw($word as xs:string, $context as xs:string, $domain as xs:string, $leftword as xs:string) as item()* {
 let $w-context := ($context = "dic") or contains($context, "concept")
 , $coll := if ($domain = ("core", "undefined")) then "/concepts/" else "/domain/"||$domain

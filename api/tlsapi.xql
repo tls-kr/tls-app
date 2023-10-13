@@ -1374,6 +1374,15 @@ else ("Could not save bookmark. ", $docpath)
 
 (:  
  :)
+declare function tlsapi:move-to-page($map as map(*)){
+let $px := tokenize($map?page, '_')
+, $textid := tokenize($map?location, "_")[1]
+, $pb := collection($config:tls-texts-root)//tei:TEI[@xml:id=$textid]//tei:pb[@ed=$px[2] and @n = $px[3]]
+, $seg := ($pb/preceding::tei:seg|$pb/ancestor-or-self::tei:seg)[last()]
+return data($seg/@xml:id)
+};
+ 
+ 
 declare function local:pblink($slot, $ed, $node, $marker){
 let $segid := if ($marker = '&lt;') then data(reverse($node/preceding::tei:seg|$node/ancestor-or-self::tei:seg)[1]/@xml:id) 
   else data(($node/following::tei:seg)[1]/@xml:id)
@@ -1393,7 +1402,7 @@ declare function tlsapi:get-facs-for-page($map as map(*)){
  return 
  <div id="viewer-wrap-{$slot}" class="card ann-dialog" style="top: 50px; left: {$map?left}px; width: {$map?width}px; height: 50px;">
  <button type="button" class="close" onclick="hide_form('viewer-wrap-{$slot}')" aria-label="Close" title="Close"><img class="icon" src="resources/icons/open-iconic-master/svg/circle-x.svg"/></button>
-    <span>{$config:wits?(data($ed))}</span><span type="button" onclick="move_to_page('{$slot}')" aria-label="GoTo" title="Go to displayed page"><img class="icon" src="resources/icons/open-iconic-master/svg/circle-x.svg"/></span>
+    <span>{$config:wits?(data($ed))}</span><span type="button" onclick="move_to_page('{$slot}')" aria-label="GoTo" title="Go to displayed page"><img class="icon" src="resources/icons/open-iconic-master/svg/arrow-circle-bottom.svg"/></span>
     <span id="current-page-{$slot}" style="display:None">{'pb_' || $ed || '_' || data($pb/@n)}</span>
     <ul class="pagination">
     {local:pblink($slot, $ed, $p1, '&lt;')}    
@@ -1401,14 +1410,14 @@ declare function tlsapi:get-facs-for-page($map as map(*)){
     let $n := tokenize(data($c/@n), '-')[last()]
     , $cimg := $config:tls-facs-root || $config:ed-img-map?($ed) || $c/@facs
     return
-    <li class="page-item"><small><a class="page-link" onclick="set_new_tileSources('{$slot}', 'pb_{$ed}_{data($c/@n)}', {{type : 'image', url : '{$cimg}'}})">{$n}</a></small></li>
+    <li class="page-item"><small><a id="pb_{$ed}_{data($c/@n)}" class="page-link" onclick="set_new_tileSources('{$slot}', 'pb_{$ed}_{data($c/@n)}', {{type : 'image', url : '{$cimg}'}})">{$n}</a></small></li>
     }    
-    <li class="page-item"><small><strong><a class="page-link" onclick="set_new_tileSources('{$slot}', 'pb_{$ed}_{data($pb/@n)}', {{type : 'image', url : '{$img}'}})">{tokenize(data($pb/@n), '-')[last()]}</a></strong></small></li>
+    <li class="page-item"><small><a  id="pb_{$ed}_{data($pb/@n)}" class="page-link font-weight-bold" onclick="set_new_tileSources('{$slot}', 'pb_{$ed}_{data($pb/@n)}', {{type : 'image', url : '{$img}'}})">{tokenize(data($pb/@n), '-')[last()]}</a></small></li>
     {for $c in ($pb/following::tei:pb[@ed=$ed])[position()< 6]
     let $n := tokenize(data($c/@n), '-')[last()]
     , $cimg := $config:tls-facs-root || $config:ed-img-map?($ed) || $c/@facs
     return
-    <li class="page-item"><small><a class="page-link" onclick="set_new_tileSources('{$slot}', 'pb_{$ed}_{data($c/@n)}', {{type : 'image', url : '{$cimg}'}})">{$n}</a></small></li>
+    <li class="page-item"><small><a id="pb_{$ed}_{data($c/@n)}" class="page-link" onclick="set_new_tileSources('{$slot}', 'pb_{$ed}_{data($c/@n)}', {{type : 'image', url : '{$cimg}'}})">{$n}</a></small></li>
     }
     {local:pblink($slot, $ed, $p1, '&gt;')}
     </ul>
@@ -2067,9 +2076,14 @@ else
 
 declare function tlsapi:save-pb($map as map(*)){
 let $seg := collection($config:tls-texts)//tei:seg[@xml:id=$map?uid]
-, $pb := <pb xmlns="http://www.tei-c.org/ns/1.0" n="{$map?pb}" ed="{$map?wit}"/>
+, $cb := $seg/preceding::tei:cb[@ed=$map?wit and @n=$map?pb]
+, $pb := if ($cb) then 
+    <pb xmlns="http://www.tei-c.org/ns/1.0" n="{$map?pb}" ed="{$map?wit}" facs="{$cb/@facs}"/>
+    else
+    <pb xmlns="http://www.tei-c.org/ns/1.0" n="{$map?pb}" ed="{$map?wit}"/>    
 , $newseg := xed:insert-node-at($seg, xs:integer($map?pos), $pb)
-, $save := update replace $seg with $newseg 
+, $save := (update replace $seg with $newseg, 
+           if ($cb) then update delete $cb  else ())
 return "Success"
 };
 
