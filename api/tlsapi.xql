@@ -1374,7 +1374,12 @@ else ("Could not save bookmark. ", $docpath)
 
 (:  
  :)
-
+declare function local:pblink($slot, $ed, $node, $marker){
+let $segid := if ($marker = '&lt;') then data(reverse($node/preceding::tei:seg|$node/ancestor-or-self::tei:seg)[1]/@xml:id) 
+  else data(($node/following::tei:seg)[1]/@xml:id)
+return
+<li class="page-item"><small><a class="page-link" onclick="get_facs_for_page('{$slot}', '{$config:tls-facs-root || $config:ed-img-map?($ed) || $node/@facs}', '{$ed}', '{$segid}')">{$marker}</a></small></li>
+};
 
 declare function tlsapi:get-facs-for-page($map as map(*)){
  let $slot := $map?slot
@@ -1384,12 +1389,14 @@ declare function tlsapi:get-facs-for-page($map as map(*)){
  ,$pb := ($seg//tei:pb[@ed=$ed] | ($seg/preceding::tei:pb[@ed=$ed])[last()])[1]
 (: ,$fac := $pb/@facs:)
  ,$img := $config:tls-facs-root || $config:ed-img-map?($ed) || $pb/@facs
+ , $p1 := reverse($pb/preceding::tei:pb[@ed=$ed])[6]
  return 
  <div id="viewer-wrap-{$slot}" class="card ann-dialog" style="top: 50px; left: {$map?left}px; width: {$map?width}px; height: 50px;">
  <button type="button" class="close" onclick="hide_form('viewer-wrap-{$slot}')" aria-label="Close" title="Close"><img class="icon" src="resources/icons/open-iconic-master/svg/circle-x.svg"/></button>
-    <span>{$config:wits?(data($ed))}</span>
+    <span>{$config:wits?(data($ed))}</span><span type="button" onclick="move_to_page('{$slot}')" aria-label="GoTo" title="Go to displayed page"><img class="icon" src="resources/icons/open-iconic-master/svg/circle-x.svg"/></span>
     <span id="current-page-{$slot}" style="display:None">{'pb_' || $ed || '_' || data($pb/@n)}</span>
     <ul class="pagination">
+    {local:pblink($slot, $ed, $p1, '&lt;')}    
     {for $c in reverse(reverse(($pb/preceding::tei:pb[@ed=$ed]))[position()< 6])
     let $n := tokenize(data($c/@n), '-')[last()]
     , $cimg := $config:tls-facs-root || $config:ed-img-map?($ed) || $c/@facs
@@ -1403,6 +1410,7 @@ declare function tlsapi:get-facs-for-page($map as map(*)){
     return
     <li class="page-item"><small><a class="page-link" onclick="set_new_tileSources('{$slot}', 'pb_{$ed}_{data($c/@n)}', {{type : 'image', url : '{$cimg}'}})">{$n}</a></small></li>
     }
+    {local:pblink($slot, $ed, $p1, '&gt;')}
     </ul>
 
  <div id="viewer{$slot}" class="card ann-dialog overflow-auto" style="top: 100px; left: {$map?left}px; width: {$map?width}px; height: {$map?height}px;">  
