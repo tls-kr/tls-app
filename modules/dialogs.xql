@@ -818,11 +818,26 @@ declare function dialogs:pb-dialog($map as map(*)){
                  </div>
              </div>     
             <div class="form row">
-            <div class="font-weight-bold mt-2 col-md-3">Page number:</div>
+            <div class="font-weight-bold mt-2 col-md-2">Page number:</div>
             <div class="col-md-3">
+             {for $w in $wl
+               let $ed := data($w/@xml:id)
+               let $pb := ($seg//tei:pb[@ed=$ed]|$seg/preceding::tei:pb[@ed=$ed])[last()]
+               where exists($pb)
+               return <span><small>{$w/text()}:</small>{data($pb/@n)}</span>
+               }
+            </div>
+            <div class="col-md-2">
             <input id="page-num" class="form-control" required="true" value=""/>
             </div>
-            <div class="col-md-2"></div>
+            <div class="col-md-3">
+             {for $w in $wl
+               let $ed := data($w/@xml:id)
+               let $pb := ($seg//tei:pb[@ed=$ed]|$seg/following::tei:pb[@ed=$ed])[1]
+               where exists($pb)
+               return <span><small>{$w/text()}:</small>{data($pb/@n)}</span>
+               }
+            </div>
             </div>
             </div>
             else
