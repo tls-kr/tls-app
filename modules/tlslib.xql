@@ -1395,13 +1395,22 @@ return
 {
 if($locked and $textid and tlslib:has-edit-permission($textid)) then 
   tlslib:format-button("display_punc_dialog('" || data($seg/@xml:id) || "')", "Add punctuation to this text segment", "octicons/svg/lock.svg", "", "", ("tls-editor", "tls-punc")) 
-else (), if ($seg//tei:pb or local-name(($seg/preceding-sibling::*)[last()]) = ('lb', 'pb')) then 
+else (), 
+ if ($seg//tei:lb) then 
+  let $node := ($seg//tei:lb)[1]
+  , $n := if (contains($node/@n, "-")) then tokenize($node/@n, '-')[2] else $node/@n
+  return
+<span class="btn badge badge-light text-muted ed-{data($node/@ed)}">{data($n)}</span>
+else
+if ($seg//tei:pb or local-name(($seg/preceding-sibling::*)[last()]) = ('lb', 'pb')) then 
  let $node := ($seg//tei:pb | ($seg/preceding-sibling::tei:pb)[last()])[1]
  , $n := tokenize($node/@n, '-')[2]
  , $fpref :=  $config:ed-img-map?($node/@ed) 
  , $pg := substring-before(tokenize(data($node/@facs), '/')[last()], '.')
  return
+ if ($pg) then
 <span title="Click here to display a facsimile of this page &#10;{$config:wits?(data($node/@ed))}:{$pg}" onclick="get_facs_for_page('slot1', '{$fpref}{$node/@facs}', '{data($node/@ed)}', '{data($seg/@xml:id)}')" class="btn badge badge-light text-muted ed-{data($node/@ed)}">{$n}</span>
+else "　" 
 else "　"
 (: either within or without the segment, for the moment place it within :)
 (:, if ($seg/tei:c[@type='shifted']) then <span class="swxz">{data($seg/tei:c[@type='shifted']/@n)}</span> else ():)
