@@ -923,7 +923,7 @@ function alt_name(sel){
     
 };
 
-// display the dialog in the right side of the screen
+// display the dialog (floater) in the right side of the screen
 function get_sw(sel, xid, line){
    var dw = document.documentElement.clientWidth;
    var dh = document.documentElement.clientHeight;

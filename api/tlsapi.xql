@@ -2001,9 +2001,14 @@ else
 
 declare function tlsapi:save-pb($map as map(*)){
 let $seg := collection($config:tls-texts)//tei:seg[@xml:id=$map?uid]
-, $pb := <pb xmlns="http://www.tei-c.org/ns/1.0" n="{$map?pb}" ed="{$map?wit}"/>
+, $cb := $seg/preceding::tei:cb[@ed=$map?wit and @n=$map?pb]
+, $pb := if ($cb) then 
+    <pb xmlns="http://www.tei-c.org/ns/1.0" n="{$map?pb}" ed="{$map?wit}" facs="{$cb/@facs}"/>
+    else
+    <pb xmlns="http://www.tei-c.org/ns/1.0" n="{$map?pb}" ed="{$map?wit}"/>    
 , $newseg := xed:insert-node-at($seg, xs:integer($map?pos), $pb)
-, $save := update replace $seg with $newseg 
+, $save := (update replace $seg with $newseg, 
+           if ($cb) then update delete $cb  else ())
 return "Success"
 };
 
