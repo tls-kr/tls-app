@@ -36,8 +36,9 @@ declare function tu:html-file(){
 
 declare function tu:get-member-name($id){
 let $uid:= if (starts-with($id, "#")) then substring($id, 2) else $id
+, $name := doc($config:tls-data-root || "/vault/members.xml")//tei:person[@xml:id=$uid]//tei:persName/text() 
 return
-doc($config:tls-data-root || "/vault/members.xml")//tei:person[@xml:id=$uid]//tei:persName/text() 
+if (string-length($name) > 0) then $name else $uid
 };
 
 declare function tu:get-member-initials($id){

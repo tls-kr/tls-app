@@ -8,7 +8,9 @@ var lwobj = {};
 var lwpos = 0;
 $(function() {
     console.log( "ready!" );
-    $("#blue-eye").attr("title", "Press here to show annotations.");
+    try {
+     $("#blue-eye").attr("title", "Press here to show annotations.");
+    } catch (err) {}
     // this is for the taxchar editing
     try { 
     // it seems this does not work... but the uncaught error does not seem to matter...
@@ -69,7 +71,9 @@ function set_currentline(newid){
 var nl = "";
 $('#current-line').text("");
 if (newid === "mark"){
+    try {
     current_id = $(".mark:first > .zh").attr('id').split(".").join("\\.");
+    } catch (err) {}
 } else {
     current_id = newid.split(".").join("\\.")
     cp = $("#" + current_id).parent();
@@ -408,11 +412,20 @@ function get_facs_for_page(slot, pbfacs, pbed, segid){
 
 function move_to_page(slot){
     page = $('#current-page-'+slot).html()
-    alert(page)
+    var location = $('#chunkcol-left').children('div').eq(1).children('div').eq(0).attr('id');
+    $.get("api/responder.xql?func=move-to-page&page="+page+"&location="+location,
+    function(resp){
+//      console.log(resp)
+      page_move(resp)    
+   })
+    
+//    alert(page)
 }
 
 function set_new_tileSources (slot, pb_ed_n, tileSources){
     $('#current-page-'+slot).html(pb_ed_n)
+    $('.page-link').removeClass('font-weight-bold')
+    $('#'+ pb_ed_n).addClass('font-weight-bold')
     if (slot === 'slot1'){
      viewerslot1.open (tileSources);
     } else {
@@ -491,7 +504,7 @@ function reload_selector(slot, newid){
   $.ajax({
   type : "GET",
   dataType : "html",
-  url : "api/responder.xql"+location+"&slot="+slot+"&content-id="+newid+"&func=reload-selector", 
+  url : "api/responder.xql"+location+"&slot="+slot+"&content-id="+newid+"&func=ltr:reload-selector", 
   success : function(resp){
   $("#top-"+slot).html(resp)
   }

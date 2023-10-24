@@ -11,6 +11,10 @@ import module namespace wd="http://hxwd.org/wikidata" at "../modules/wikidata.xq
 import module namespace bib="http://hxwd.org/biblio" at "../modules/biblio.xql"; 
 import module namespace sgn="http://hxwd.org/signup" at "../modules/signup.xql"; 
 import module namespace txc="http://hxwd.org/text-crit" at "../modules/text-crit.xql";
+
+import module namespace ltr="http://hxwd.org/lib/translation" at "../modules/lib/translation.xqm";
+
+
 declare namespace output = "http://www.w3.org/2010/xslt-xquery-serialization";
 (:import module namespace console="http://exist-db.org/xquery/console";:)
 
@@ -43,7 +47,7 @@ return <li>{$h}:{request:get-header($h)}</li>
 }</ul>
 )
 else
-if (matches($func, "^(dialogs|tlslib|wd|bib|sgn|txc)")) then
+if (matches($func, "^(dialogs|tlslib|wd|bib|sgn|txc|ltr)")) then
  util:eval($func || "($resmap)" )
 else
  util:eval("tlsapi:" ||  $func || "($resmap)" )

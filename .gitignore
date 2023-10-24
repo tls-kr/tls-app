@@ -3,3 +3,4 @@ node_modules/
 .existdb.json
 *.code-workspace
 .xst.*
+cypress.env.json

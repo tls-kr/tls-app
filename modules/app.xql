@@ -34,6 +34,11 @@ import module namespace src="http://hxwd.org/search" at "search.xql";
 import module namespace sgn="http://hxwd.org/signup" at "signup.xql"; 
 import module namespace tu="http://hxwd.org/utils" at "tlsutils.xql";
 
+import module namespace lu="http://hxwd.org/lib/utils" at "lib/utils.xqm";
+import module namespace lmd="http://hxwd.org/lib/metadata" at "lib/metadata.xqm";
+import module namespace lus="http://hxwd.org/lib/user-settings" at "user-settings.xqm";
+
+
 declare variable $app:log := $config:tls-log-collection || "/app";
 
 declare variable $app:SESSION := "tls:results";
@@ -364,7 +369,7 @@ function app:tv-data($node as node()*, $model as map(*), $location as xs:string?
 {
    session:create(),
     let $textid := tlslib:get-textid($location)
-    , $title := tlslib:get-title($textid)
+    , $title := lu:get-title($textid)
     , $seg := tlslib:get-first-seg($location, $mode, $first)
     return
     map { "textid" : $textid, "title" : $title, "seg": $seg}
@@ -547,7 +552,7 @@ declare function app:textlist(){
         return
     <li class="list-group-item">{doc($config:tls-add-titles)//work[@krid=$bu]/title/text()} <small class="text-muted ml-2">{$bu}</small>
     <ul>{for $t in $text 
-        let $title := tlslib:get-title($t)
+        let $title := lu:get-title($t)
         order by $t 
     return
     <li><a href="textview.html?location={$t}">{$title}
@@ -1284,7 +1289,7 @@ return
                     <form action="search.html" class="form-inline my-2 my-lg-0" method="get">
                     <input type="hidden" name="textid" value="{request:get-parameter("textid", map:get($model, 'textid'))}"/>
 <!--                    <input type="hidden" name="filter" value="{request:get-parameter("filter", tu:get-setting('search-default', 'tls-internal:annotation'))}"/> -->
-                    <input id="query-inp" name="query" class="form-control mr-sm-2 chn-font" type="search" placeholder="Search" aria-label="Search" value="{if (string-length($query) > 0) then $query else ()}"/> <span class="mr-1">in</span> 
+                    <input id="query-inp" name="query" class="form-control w-50 mr-sm-2 chn-font" type="search" placeholder="Search" aria-label="Search" value="{if (string-length($query) > 0) then $query else ()}"/> <span class="mr-1">in</span> 
         <select class="form-control input-sm" name="search-type">
           {if (not($context = "bibliography")) then
           <option selected="true" value="{if ($context = "textview") then '5' else '1'}">{$config:search-map?1}</option>
@@ -1485,7 +1490,7 @@ declare
 function app:settings($node as node()*, $model as map(*))
 {
 let $user := sm:id()//sm:real/sm:username/text()
-, $settings := tlslib:get-settings()
+, $settings := lus:get-settings()
 , $px := doc($config:tls-data-root || "/vault/members.xml")//tei:person[@xml:id=$user]//tei:persName/text()
 return
 <div><h2>Settings for {$px}</h2>

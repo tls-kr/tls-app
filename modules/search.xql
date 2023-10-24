@@ -19,6 +19,11 @@ import module namespace log="http://hxwd.org/log" at "log.xql";
 import module namespace tu="http://hxwd.org/utils" at "tlsutils.xql";
 import module namespace dbu="http://exist-db.org/xquery/utility/db" at "db-utility.xqm";
 
+import module namespace lu="http://hxwd.org/lib/utils" at "lib/utils.xqm";
+import module namespace lmd="http://hxwd.org/lib/metadata" at "lib/metadata.xqm";
+import module namespace lus="http://hxwd.org/lib/user-settings" at "user-settings.xqm";
+
+
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
 
@@ -208,7 +213,7 @@ declare function src:ngram-query($queryStr as xs:string?, $mode as xs:string?, $
     let $dataroot := ($config:tls-data-root, $config:tls-texts-root, $config:tls-user-root)
     , $qs := tokenize($queryStr, "[\s;]")
     , $user := sm:id()//sm:real/sm:username/text()
-    , $sm := xs:int(tlslib:get-settings()//tls:item[@type="search-sortmax"]/@value)
+    , $sm := xs:int(lus:get-settings()//tls:item[@type="search-sortmax"]/@value)
     , $sortmax := if ($sm) then $sm else $src:sortmax
     , $ratings := doc($config:tls-user-root || $user || "/ratings.xml")//text
     , $user-dates-doc := $config:tls-user-root || $user || "/textdates.xml"
@@ -314,13 +319,13 @@ let $st :=  if (string-length($type) > 0) then map:get($config:search-map, $map?
 return
 (if ($map?search-type = $src:search-bib ) then () else
  if ($map?search-type = $src:ngtype) then (
- <h1>Searching in <strong>{if (count(map:keys($map?cat)) > 0) then string-join(for $c in map:keys($map?cat) return tlslib:cat-title($map?cat?($c)), " / ") else $st}</strong> for <mark class="chn-font">{$map?query}</mark></h1>
+ <h1>Searching in <strong>{if (count(map:keys($map?cat)) > 0) then string-join(for $c in map:keys($map?cat) return lmd:cat-title($map?cat?($c)), " / ") else $st}</strong> for <mark class="chn-font">{$map?query}</mark></h1>
 ) else
  if ($map?search-type = $src:textlist) then
    let $count := count($map?hits)
    return 
    if($count >0) then
-    <h1>Catalog  {if (count(map:keys($map?cat)) > 0) then "excerpt for subcategory " || string-join(for $c in map:keys($map?cat) return tlslib:cat-title($map?cat?($c)), " / ") else ()}
+    <h1>Catalog  {if (count(map:keys($map?cat)) > 0) then "excerpt for subcategory " || string-join(for $c in map:keys($map?cat) return lmd:cat-title($map?cat?($c)), " / ") else ()}
     <span>({$count} items)</span> </h1>
    else src:textlist-doc()
  else
@@ -337,7 +342,7 @@ function src:show-hits-h4($node as node()*, $model as map(*), $start as xs:int, 
 let $query := $model?query
   , $map := session:get-attribute($src:SESSION || ".types")
   , $cnt := if (string-length($type) > 0) then count(map:get($map, $type)) else count($model?hits)
-  , $sm := xs:int(tlslib:get-settings()//tls:item[@type="search-sortmax"]/@value)
+  , $sm := xs:int(lus:get-settings()//tls:item[@type="search-sortmax"]/@value)
   , $sortmax := if ($sm or $sm = 0) then $sm else $src:sortmax
 return
 (: if type = 10 do not display here :) 
@@ -356,7 +361,7 @@ if ($model?search-type = ($src:search-bib, $src:textlist)) then () else (
 declare function src:find-similar-segments($inp-seg){
  let $seg := typeswitch($inp-seg)
               case element(*) return $inp-seg
-              default return tlslib:get-seg($inp-seg)
+              default return lu:get-seg($inp-seg)
  let $s := string-join(for $t in $seg return $t/text())
  let $ng := for $i in 1 to string-length($s) 
              let $n := substring($s, $i, 2)
@@ -567,7 +572,7 @@ else ()
 
 (: convert the pruned category tree to HTML for jstree :)
 declare function src:facets-html($node, $map, $baseid, $url, $state){
-    let $co := xs:float(tlslib:get-settings()//tls:item[@type="search-cutoff"]/@value)
+    let $co := xs:float(lus:get-settings()//tls:item[@type="search-cutoff"]/@value)
     , $cutoff := if ($co) then $co else $src:cutoff[1]
   return
   <div  id="{$baseid}--chartree">
@@ -663,7 +668,7 @@ declare function src:facets($node as node()*, $model as map(*), $query as xs:str
  , $tabexists := try {collection($config:tls-data-root || "/notes/search/")//tei:div[@q=$query] } catch * {()}
  , $uuid := if ($tabexists) then ($tabexists/@xml:id)[1] else "uuid-" || util:uuid()
  , $coll := if ($tabexists) then () else try {dbu:ensure-collection($config:tls-data-root || "/notes/search/" || substring($uuid, 6, 1))} catch * {()}
- , $sset := tlslib:get-settings()//tls:section[@type="search"]
+ , $sset := lus:get-settings()//tls:section[@type="search"]
  , $rtype := if ($sset/tls:item[@type='search-ratio']) then $sset/tls:item[@type='search-ratio']/@value else "None"
 
  return
@@ -705,7 +710,7 @@ declare function src:facets($node as node()*, $model as map(*), $query as xs:str
             </div>
             </div>
             <p>{if (count($fkeys) > 0) then <span title="To release filters find 'Click here to display all matches' in the center of the page">Applied filters: <br/>
-            {string-join(for $f in $fkeys return tlslib:cat-title($model?cat?($f)), " / ")}
+            {string-join(for $f in $fkeys return lmd:cat-title($model?cat?($f)), " / ")}
             </span>
             else ()}</p>{
             for $g in $genres
@@ -808,7 +813,7 @@ function src:show-hits($node as node()*, $model as map(*), $start as xs:int, $ty
 {
 let $query := $model?query
     ,$iskanji := if (string-length($query)>0) then tlslib:iskanji($query) else ()
-    ,$title := if (string-length($textid) > 0) then tlslib:get-title($textid) else ()
+    ,$title := if (string-length($textid) > 0) then lu:get-title($textid) else ()
     (: no of results to display :)
     ,$resno := $model?resno
     ,$map := session:get-attribute($src:SESSION || ".types")
@@ -879,7 +884,7 @@ declare function src:show-catalog-results($map as map(*)){
         for $g in $grp
         order by $g
         return 
-         (<ul><span class="md-2 chn-font"><mark>{tlslib:cat-title($g)}</mark></span>
+         (<ul><span class="md-2 chn-font"><mark>{lmd:cat-title($g)}</mark></span>
          {
          for $t at $pos in $title 
          let $state := "closed"
@@ -984,9 +989,9 @@ declare function src:show-text-results($map as map(*)){
       $m1 := try { substring(($h/exist:match)[1]/text(), 1, 1) } catch * {"x"},
       $cseg := collection($config:tls-texts-root)//tei:seg[@xml:id=$loc],
 (:      $head :=  $cseg/ancestor::tei:div[1]/tei:head[1]/tei:seg/text() ,:)
-      $head :=  tlslib:get-metadata($cseg, "head"),
+      $head :=  lmd:get-metadata($cseg, "head"),
 (:      $title := $cseg/ancestor::tei:TEI//tei:titleStmt/tei:title/text(),:)
-      $title := tlslib:get-metadata($cseg, "title"),
+      $title := lmd:get-metadata($cseg, "title"),
 (:     at some point use this to select the translation the user prefers
       $tr := tlslib:get-translations($model?textid),
       $slot1-id := tlslib:get-content-id($model?textid, 'slot1', $tr),:)
@@ -996,7 +1001,7 @@ declare function src:show-text-results($map as map(*)){
       <tr>
         <td class="chn-font">{$c + $map?start -1}</td>
         <td><a href="textview.html?location={$loc}&amp;query={$map?query}">{$title, " / ", $head}</a>
-        <span class="btn badge badge-light " onclick="show_dialog('text-info', {{'textid': '{tlslib:get-metadata($cseg, 'textid')}'}})" title="Information about this text">
+        <span class="btn badge badge-light " onclick="show_dialog('text-info', {{'textid': '{lmd:get-metadata($cseg, 'textid')}'}})" title="Information about this text">
            <img class="icon "  src="resources/icons/octicons/svg/info.svg"/></span>
         </td>
         {if ($map?search-type = $src:search-trans) then  
@@ -1066,7 +1071,8 @@ declare function src:show-title-results ($map as map(*)){
       , $kid := data($w/@krid)
       , $tls := $w/@tls-added
       , $req := if ($w/@request) then <span id="{$kid}-req">　Requests: {count(tokenize($w/@request, ','))}</span> else ()
-      , $but := <button type="button" class="btn btn-primary btn-sm" onclick="text_request('{$kid}')">Request for TLS</button>
+      , $but := ()
+(:      , $but := <button type="button" class="btn btn-primary btn-sm" onclick="text_request('{$kid}')">Request for TLS</button>:)
       , $av := not($w/note) 
       order by $kid
       where string-length($kid) > 5

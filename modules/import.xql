@@ -20,6 +20,10 @@ import module namespace dbu="http://exist-db.org/xquery/utility/db" at "db-utili
 import module namespace log="http://hxwd.org/log" at "log.xql";
 import module namespace tu="http://hxwd.org/utils" at "tlsutils.xql";
 
+import module namespace lu="http://hxwd.org/lib/utils" at "lib/utils.xqm";
+import module namespace lmd="http://hxwd.org/lib/metadata" at "lib/metadata.xqm";
+
+
 declare variable $imp:ignore-elements := ("body", "docNumber", "juan", "jhead", "byline" ,"mulu") ;
 declare variable $imp:log := $config:tls-log-collection || "/import";
 declare variable $imp:perm := map{"owner" : "tls", "group":"tls-user", "mode":"rwxrwxr--"};
@@ -290,12 +294,12 @@ declare function imp:updateIdno($header as node(), $e){
     , $oldkno := $header//tei:edition/tei:idno[@type="kanripo"]
     , $oldcno := $header//tei:edition/tei:idno[@type="CBETA"]
     , $olddno := $header//tei:edition/tei:idno[@type="DILA"]
-    , $cat1 :=  if ($krid) then tlslib:checkCat($header, "kr-categories", substring($krid, 1, 4)) else 
+    , $cat1 :=  if ($krid) then lmd:checkCat($header, "kr-categories", substring($krid, 1, 4)) else 
         let $cat := doc($config:tls-texts-meta||"/taxonomy.xml")
         let $d := $cat//tei:catDesc[. = $e/category/text()]
-        return tlslib:checkCat($header, $d/parent::tei:category/@xml:id)
+        return lmd:checkCat($header, $d/parent::tei:category/@xml:id)
 
-    , $cat2 := tlslib:checkCat($header, "auth-cat", tokenize($cbid, "n")[1])
+    , $cat2 := lmd:checkCat($header, "auth-cat", tokenize($cbid, "n")[1])
     return
     (
     if ($oldkno) then
@@ -355,7 +359,7 @@ let $dna := if ($e/when/@not_after) then format-number(xs:int($e/when/@not_after
          else ()
 , $dyn := if ($e/dynasty) then 
             let $d := $cat//tei:catDesc[. = $e/dynasty/text()]
-            return tlslib:checkCat($doc, $d/parent::tei:category/@xml:id)
+            return lmd:checkCat($doc, $d/parent::tei:category/@xml:id)
           else ()
 , $cn := for $c in $e/contributors/name
          let $n := $c/text()
@@ -389,7 +393,7 @@ declare function imp:do-cbeta-conversion($cbid as xs:string){
  , $ext := imp:updateExtent($res2)
  , $idno := if ($entry) then imp:updateIdno($res2, $entry) else ()
  , $ent := if ($entry) then imp:process-entry($res2, $entry) else ()
- , $state := tlslib:checkCat($res2, "tls-state", "state-red")
+ , $state := lmd:checkCat($res2, "tls-state", "state-red")
 return $cbid
 };
 
@@ -430,7 +434,7 @@ let $text := $node//tei:text
 , $header := $doc//tei:teiHeader
 , $u1 := imp:updateExtent($header)
 , $u2 := imp:updateSegCount($header)
-, $u3 := tlslib:checkCat($header, tokenize($kid, "\d{2,4}")[1])
+, $u3 := lmd:checkCat($header, tokenize($kid, "\d{2,4}")[1])
 return $kid
 };
 
