@@ -10,7 +10,7 @@ declare option output:media-type "application/json";
 &synfunc="+synfunc_id+"&synfunc-val="+synfunc_val+"&semfeat="+semfeat_id+"
 &semfeat-val="+semfeat_val+"&guangyun="+guangyun_id+"&def="+def_val,
  :)
-import module namespace tlslib="http://hxwd.org/lib" at "../modules/tlslib.xql";
+import module namespace ltr="http://hxwd.org/lib/translation" at "../modules/lib/translation.xqm";
 
 let $bibl := request:get-parameter("bibl", "")
 , $trtitle := request:get-parameter("trtitle", "")
@@ -25,7 +25,7 @@ let $bibl := request:get-parameter("bibl", "")
 
 
 return
- if (string-length($trid) > 0) then 
- tlslib:update-tr-file($lang, $textid, $translator, $trtitle, $bibl, $vis, $copy, $type, $rel-id, $trid) else
- tlslib:store-new-translation($lang, $textid, $translator, $trtitle, $bibl, $vis, $copy, $type, $rel-id)
+ if (string-length($trid) > 0 and $trid != "xx") then 
+ ltr:update-tr-file($lang, $textid, $translator, $trtitle, $bibl, $vis, $copy, $type, $rel-id, $trid) else
+ ltr:store-new-translation($lang, $textid, $translator, $trtitle, $bibl, $vis, $copy, $type, $rel-id)
 

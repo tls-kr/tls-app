@@ -19,6 +19,9 @@ import module namespace templates="http://exist-db.org/xquery/templates" ;
 import module namespace http="http://expath.org/ns/http-client";
 import module namespace dbu="http://exist-db.org/xquery/utility/db" at "db-utility.xqm";
 
+import module namespace lu="http://hxwd.org/lib/utils" at "lib/utils.xqm";
+
+
 declare variable $bib:l2c := map{
   "Chinese" : "chi",
   "English" : "eng",
@@ -531,7 +534,7 @@ declare function bib:new-entry-dialog($map as map(*)){
     <div class="modal-dialog modal-lg" role="document">
         <form id="new-entry-form">
         <div class="modal-content">
-            <div class="modal-header"><h5><span>{if ($mods) then "Edit" else "Add new"}</span> bibliographic item {if (string-length($textid) > 0) then <span>for <span class="font-weight-bold">{tlslib:get-title($textid)}</span></span> else <span class="font-weight-bold">{$mods//mods:note[@type='bibliographic-reference']/text()}</span>}</h5>
+            <div class="modal-header"><h5><span>{if ($mods) then "Edit" else "Add new"}</span> bibliographic item {if (string-length($textid) > 0) then <span>for <span class="font-weight-bold">{lu:get-title($textid)}</span></span> else <span class="font-weight-bold">{$mods//mods:note[@type='bibliographic-reference']/text()}</span>}</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close" title="Close">x</button>
             </div>
             <div class="modal-body">

@@ -23,6 +23,13 @@ import module namespace imp="http://hxwd.org/xml-import" at "../modules/import.x
 import module namespace wd="http://hxwd.org/wikidata" at "../modules/wikidata.xql"; 
 import module namespace src="http://hxwd.org/search" at "../modules/search.xql";
 
+import module namespace lmd="http://hxwd.org/lib/metadata" at "../modules/lib/metadata.xqm";
+import module namespace ltr="http://hxwd.org/lib/translation" at "../modules/lib/translation.xqm";
+import module namespace lu="http://hxwd.org/lib/utils" at "../modules/lib/utils.xqm";
+import module namespace lrh="http://hxwd.org/lib/render-html" at "render-html.xqm";
+import module namespace lv="http://hxwd.org/lib/vault" at "vault.xqm";
+
+
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
 declare namespace tx = "http://exist-db.org/tls";
@@ -56,8 +63,8 @@ declare function tlsapi:make-attribution($line-id as xs:string, $sense-id as xs:
 let $line := collection($config:tls-texts-root)//tei:seg[@xml:id=$line-id],
 $textid := tokenize($line-id, "_")[1],
 (: we generally use the translation from slot1 :)
-$trm := tlslib:get-translations($textid),
-$trid := tlslib:get-content-id($textid, 'slot1', $trm),
+$trm := ltr:get-translations($textid),
+$trid := lrh:get-content-id($textid, 'slot1', $trm),
 $tr := $trm($trid)[1]//tei:seg[@corresp='#' || $line-id],
 $tr-resp := $trm($trid)[1]//tei:fileDesc//tei:editor[@role='translator']/text(),
 $title-en := $tr/ancestor::tei:TEI/tei:teiHeader/tei:fileDesc/tei:titleStmt/tei:title/text(),
@@ -107,7 +114,7 @@ return
 if ($seg/@state='locked') then "Line is locked.  Please add punctuation before attempting to attribute."
 else (
 let $docname :=  $textid || "-ann.xml"
- ,$cat := tlslib:checkCat($seg,  "swl") 
+ ,$cat := lmd:checkCat($seg,  "swl") 
 ,$newswl:=tlsapi:make-attribution($line-id, $sense-id, $user, $currentword, $pos)
 ,$targetdoc :=   if (doc-available(concat($targetcoll,"/",$docname))) then
                     doc(concat($targetcoll,"/", $docname)) else 
@@ -409,24 +416,6 @@ return
 </div>
 };
 
-(:~
-: This is called when a term is selected in the textview // get_sw in tls-app.js
-:)
-
-declare function local:get-targetsegs($loc as xs:string, $prec as xs:int, $foll as xs:int){
-    let $targetseg := if (contains($loc, '_')) then
-       collection($config:tls-texts-root)//tei:seg[@xml:id=$loc]
-     else
-      let $firstdiv := (collection($config:tls-texts-root)//tei:TEI[@xml:id=$loc]//tei:body/tei:div)[1]
-      return if ($firstdiv//tei:seg) then ($firstdiv//tei:seg)[1] else  ($firstdiv/following::tei:seg)[1] 
-
-    let $fseg := if ($foll > 0) then $targetseg/following::tei:seg[fn:position() < $foll] 
-        else (),
-      $pseg := if ($prec > 0) then $targetseg/preceding::tei:seg[fn:position() < $prec] 
-        else (),
-      $dseg := ($pseg, $targetseg, $fseg)
-return $dseg
-};
 
 (: retrieve the corresponding segs for other editions :)
 declare function local:get-krxsegs($loc as xs:string, $content-id as xs:string, $dseg as node()*){
@@ -438,31 +427,10 @@ for $seg in $dseg
       map:entry("#"||data($seg/@xml:id)||$cl, $tr))
 };
 
-declare function tlsapi:get-tr-for-page($loc_in as xs:string, $prec as xs:int, $foll as xs:int, $slot as xs:string, $content-id as xs:string){
-let $loc := replace($loc_in, "-swl", "")
-, $textid := tokenize($loc, "_")[1]
-, $cl := if ($slot = "slot1") then "-tr" else "-ex"
-, $edtp := if (contains($content-id, "_")) then xs:boolean(1) else xs:boolean(0)
-, $dseg := local:get-targetsegs($loc, $prec, $foll)
-, $ret := if ($edtp) then  
-      map:merge(for $seg in $dseg 
-       let $tr := krx:get-varseg-ed($seg/@xml:id, $content-id)
-       return 
-      map:entry("#"||data($seg/@xml:id)||$cl, $tr))
-  else
-   let $transl := tlslib:get-translations($textid),
-   $troot := $transl($content-id)[1] 
-   return
-   map:merge(for $seg in $dseg 
-     let $tr := $troot//tei:seg[@corresp="#"||$seg/@xml:id]/text()
-      return 
-      map:entry("#"||data($seg/@xml:id)||$cl, $tr))
- return $ret
-};
 
 (: this is abandoned as of 2021-10-12, we loop through the swl class on a page instead :)
 declare function tlsapi:get-swl-for-page($loc as xs:string, $prec as xs:int, $foll as xs:int){
-  let $dseg := local:get-targetsegs($loc, $prec, $foll)
+  let $dseg := lu:get-targetsegs($loc, $prec, $foll)
    for $d in $dseg
    let $link := "#" || data($d/@xml:id)
 return
@@ -821,7 +789,7 @@ return
   if (not($previous-action/tei:name/text() = $user)) then
   let $swl := collection($config:tls-data-root || "/notes")//tls:ann[@xml:id=$uuid],
   $cm := substring(string(current-date()), 1, 7),
-  $doc := tlslib:get-crypt-file("trans")
+  $doc := lv:get-crypt-file("trans")
   return 
   (update insert $swl into $doc//tei:p[@xml:id="del-" || $cm || "-start"],
    update delete $swl,
@@ -835,7 +803,7 @@ return
 
 declare function tlsapi:goto-translation-seg($map as map(*)){
  let $first := if ($map?dir = 'first') then true() else false()
- let $targetseg := try {tlslib:get-translation-seg($map?trid, $first)} catch * {()}
+ let $targetseg := try {ltr:get-translation-seg($map?trid, $first)} catch * {()}
  
  return 
   if (string-length($targetseg/@corresp) = 0) 
@@ -859,8 +827,8 @@ let $tru := collection($config:tls-user-root|| $user || "/translations")/tei:TEI
 , $ref := substring($trfile//tei:ref/@target, 2)
 , $segcount := count($trfile//tei:seg)
 let $textid := tokenize($loc, "_")[1],
-$title := tlslib:get-title($textid),
-$tr := tlslib:get-translations($textid)
+$title := lu:get-title($textid),
+$tr := ltr:get-translations($textid)
 , $type := $trfile/@type
 , $trlg := if ($trfile//tei:sourceDesc//tei:lang/@xml:lang) then data($trfile//tei:sourceDesc//tei:lang/@xml:lang) else "en"
 return
@@ -1169,8 +1137,8 @@ return
          update insert attribute modified {current-dateTime()} into $oldnode
          )
 
-, $upd := if ($type = 'note') then update insert $oldnode into (tlslib:get-crypt-file("rhetdev-notes")//tei:div/tei:p[last()])[1]
-  else update insert $oldnode into (tlslib:get-crypt-file("notes")//tei:div/tei:p[last()])[1]
+, $upd := if ($type = 'note') then update insert $oldnode into (lv:get-crypt-file("rhetdev-notes")//tei:div/tei:p[last()])[1]
+  else update insert $oldnode into (lv:get-crypt-file("notes")//tei:div/tei:p[last()])[1]
 , $save := update replace $oldnode with $node
 return
 "OK"
@@ -1192,7 +1160,7 @@ if ($txtid and tlslib:has-edit-permission($txtid)) then
   if ($node) then (
   update insert attribute modified {current-dateTime()} into $node,
   update insert attribute resp-change {"#" || $user} into $node,
-  update insert $node into (tlslib:get-crypt-file("text")//tei:div/tei:p[last()])[1],
+  update insert $node into (lv:get-crypt-file("text")//tei:div/tei:p[last()])[1],
   if (update replace $node[1] with $seg) then () else "Success. Updated text." 
   )
   else 
@@ -1213,7 +1181,7 @@ if ($txtid and tlslib:has-edit-permission($txtid)) then
   update insert attribute modified {current-dateTime()} into $node,
   update insert attribute resp-change {"#" || $user} into $node,
   update insert attribute change {"deletion"} into $node,
-  update insert $node into (tlslib:get-crypt-file("text")//tei:div/tei:p[last()])[1],
+  update insert $node into (lv:get-crypt-file("text")//tei:div/tei:p[last()])[1],
   if (update delete $node[1]) then () else "Success. Deleted line." 
   )
   else 
@@ -1227,47 +1195,14 @@ declare function tlsapi:morelines($map as map(*)){
   let $targetseg := collection($config:tls-texts-root)//tei:seg[@xml:id=$map?lineid]
   , $dseg := $targetseg/following::tei:seg[position()< 31]
   , $model := map{"textid" : tokenize($map?lineid, "_")[1]}
-  ,  $tr := tlslib:get-translations($model?textid)
-  ,  $slot1-id := tlslib:get-content-id($model?textid, 'slot1', $tr)
-  ,  $slot2-id := tlslib:get-content-id($model?textid, 'slot2', $tr)
+  ,  $tr := ltr:get-translations($model?textid)
+  ,  $slot1-id := lrh:get-content-id($model?textid, 'slot1', $tr)
+  ,  $slot2-id := lrh:get-content-id($model?textid, 'slot2', $tr)
 return
 (<div class="row" id="{$map?lineid}-{$map?cnt}"></div>,
 tlslib:chunkcol-left($dseg, $model, $tr, $slot1-id, $slot2-id, $map?lineid, xs:int($map?cnt)))
 };
 
-(:~
- : Save the translation (or comment)
- : 3/11: Get the file from the correct slot!
-:)
-declare function tlsapi:save-tr($trid as xs:string, $tr-to-save as xs:string, $lang as xs:string){
-let $user := sm:id()//sm:real/sm:username/text()
-let $id := substring($trid, 1, string-length($trid) -3)
-,$txtid := tokenize($id, "_")[1]
-,$tr := tlslib:get-translations($txtid)
-,$slot := if (ends-with($trid, '-tr')) then 'slot1' else 'slot2'
-,$content-id := tlslib:get-content-id($txtid, $slot, $tr)
-,$transl := $tr($content-id)[1]
-,$seg := <seg xmlns="http://www.tei-c.org/ns/1.0" corresp="#{$id}" xml:lang="{$lang}" resp="#{$user}" modified="{current-dateTime()}">{$tr-to-save}</seg>
-,$node := $transl//tei:seg[@corresp="#" || $id]
- 
-return
-if ($node) then (
- update insert attribute modified {current-dateTime()} into $node,
- update insert attribute resp-del {"#" || $user} into $node,
- update insert attribute src-id {$content-id} into $node,
- update insert $node into (tlslib:get-crypt-file("trans")//tei:div/tei:p[last()])[1],
-(: The return values are wrong: update always returns the empty sequence :)
- if (update replace $node[1] with $seg) then () else "Success. Updated translation." 
-)
-else 
-if ($transl//tei:p[@xml:id=concat($txtid, "-start")]) then 
-  update insert $seg  into $transl//tei:p[@xml:id=concat($txtid, "-start")] 
-else
-if ($transl) then
- (: mostly for existing translations.  Here we simple append it to the very end. :)
- update insert $seg  into ($transl//tei:p[last()])[1]
-else "Could not save translation.  Please create a translation file first."
-};
 
 declare function tlsapi:new-anonymous-translation(){
 ()
@@ -1330,7 +1265,7 @@ let $user := sm:id()//sm:real/sm:username/text()
 ,$docpath := $config:tls-user-root || $user|| "/bookmarks.xml"
 ,$txtid := tokenize($line-id, "_")[1]
 ,$juan := tlslib:get-juan($line-id)
-,$title := tlslib:get-title($txtid)
+,$title := lu:get-title($txtid)
 ,$uuid := "uuid-" || util:uuid() 
 ,$item := <item xmlns="http://www.tei-c.org/ns/1.0" modified="{current-dateTime()}" xml:id="{$uuid}"><ref target="#{$line-id}"><title>{$title}</title>:{$juan}</ref>
 <seg>{$line}</seg>
@@ -1450,16 +1385,6 @@ declare function tlsapi:get-facs-for-page($map as map(*)){
  </div>
 };
 
-
-declare function tlsapi:reload-selector($map as map(*)){
- let $group := sm:id()//sm:group
- let $slot := $map?slot
- ,$textid := tokenize($map?location, "_")[1]
- ,$tr := tlslib:get-translations($textid)
- ,$s := if ("tls-test" = $group) then  session:set-attribute($textid || "-" || $slot, $map?content-id) else tlslib:settings-save-slot($slot,$textid, $map?content-id)
- return
- tlslib:trsubmenu($textid, $slot, $map?content-id, $tr)
-};
 
 declare function tlsapi:save-new-concept($map as map(*)){
 let $ont-ant := if ($map?ont_ant) then 
@@ -1598,7 +1523,7 @@ return
   update insert attribute resp {"#"||$user} into $sfnode,
   update insert attribute modified {current-dateTime()} into $sfnode,
   update insert attribute rd-id {$map?id} into $sfnode,
-  update insert $sfnode into (tlslib:get-crypt-file("rhetdev-def")//tei:div/tei:p[last()])[1], 
+  update insert $sfnode into (lv:get-crypt-file("rhetdev-def")//tei:div/tei:p[last()])[1], 
   (: ok, now update :)
   update replace $sfnode with $def
  ) 
@@ -1654,7 +1579,7 @@ declare function tlsapi:quick-search($map as map(*)){
       else ()
 , $dispx := subsequence($hits, $map?start, $map?count)
 , $disp := util:expand($dispx)//exist:match/ancestor::tei:seg
-, $title := tlslib:get-title($map?textid)
+, $title := lu:get-title($map?textid)
 , $start := xs:int($map?start)
 , $count := xs:int($map?count)
 , $total := count($hits)
@@ -1738,7 +1663,7 @@ let $uuid := concat("uuid-", util:uuid())
     if (doc($config:tls-data-root ||"/notes/facts/"||$type ||".xml")) 
      then doc($config:tls-data-root ||"/notes/facts/"||$type ||".xml")//tls:span[position()=last()]
    else tlslib:get-obs-node($type)
-, $title := tlslib:get-title(tokenize($map?line_id, '_')[1])
+, $title := lu:get-title(tokenize($map?line_id, '_')[1])
 , $rdlnode := if ($type = 'rhetdev') then
 	<tls:span xmlns:tls="http://hxwd.org/ns/1.0" type="rdl" xml:id="{$uuid}" rhet-dev="{$map?rhet_dev}" rhet-dev-id="{$map?rhet_dev_id}" resp="#{$user}" modified="{current-dateTime()}">
 		<tls:text role="span-start">
@@ -1812,7 +1737,7 @@ else ()}
 declare function tlsapi:save-textcat($map as map(*)){
     let $head := collection($config:tls-texts-root)//tei:TEI[@xml:id=$map?textid]
     return
-    if (string-length($map?textcat)>0) then tlslib:checkCat($head, $map?textcat) else ()
+    if (string-length($map?textcat)>0) then lmd:checkCat($head, $map?textcat) else ()
 };
 
 declare function tlsapi:save-textdate($map as map(*)){
@@ -1822,11 +1747,11 @@ let $user := sm:id()//sm:real/sm:username/text()
       doc($config:tls-texts-meta  || "/textdates.xml")//data
     ,$node := $dates[@corresp="#" || $map?textid]
     ,$head := collection($config:tls-texts-root)//tei:TEI[@xml:id=$map?textid]
-    ,$savecat := if (string-length($map?datecat)>0) then tlslib:checkCat($head,  $map?datecat) else ()
+    ,$savecat := if (string-length($map?datecat)>0) then lmd:checkCat($head,  $map?datecat) else ()
     ,$na := if (string-length($map?na) > 0) then $map?na else $map?nb
     ,$pr := if ($map?prose ne "　") then $map?prose else if($na eq $map?nb) then $na else $map?nb || " to " || $na
     ,$nh := if (string-length($map?src) > 0) then <span id="textdate-note" class="text-muted"> {$map?src}</span> else ()
-    ,$tit := tlslib:get-title($map?textid)
+    ,$tit := lu:get-title($map?textid)
     ,$n := if (string-length($map?src) > 0) then <note>{$map?src}</note> else ()
     ,$nnode := <data resp="#{$user}" modified="{current-dateTime()}" notbefore="{$map?nb}" notafter="{$na}" corresp="#{$map?textid}" title="{$tit}">{$pr}{$n}</data>
     ,$upd :=
@@ -1862,7 +1787,7 @@ if ($node) then (
  update insert attribute modified {current-dateTime()} into $node,
  update insert attribute resp-change {"#" || $user} into $node,
  update rename $node/@xml:id as 'src-id',
- update insert $node following (tlslib:get-crypt-file($map?type)//tei:div[last()])[1],
+ update insert $node following (lv:get-crypt-file($map?type)//tei:div[last()])[1],
  update replace $updnode with $xml
 ) else (
  update insert $xml following ($doc/tei:div[1]/tei:div[last()])[1]

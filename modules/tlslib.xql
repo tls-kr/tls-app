@@ -16,6 +16,13 @@ import module namespace krx="http://hxwd.org/krx-utils" at "krx-utils.xql";
 import module namespace wd="http://hxwd.org/wikidata" at "wikidata.xql"; 
 import module namespace tu="http://hxwd.org/utils" at "tlsutils.xql";
 
+import module namespace ltr="http://hxwd.org/lib/translation" at "lib/translation.xqm";
+import module namespace lu="http://hxwd.org/lib/utils" at "lib/utils.xqm";
+import module namespace lmd="http://hxwd.org/lib/metadata" at "lib/metadata.xqm";
+import module namespace lrh="http://hxwd.org/lib/render-html" at "render-html.xqm";
+import module namespace lus="http://hxwd.org/lib/user-settings" at "user-settings.xqm";
+import module namespace lv="http://hxwd.org/lib/vault" at "vault.xqm";
+
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
 declare namespace  mods="http://www.loc.gov/mods/v3";
@@ -248,61 +255,7 @@ let $user := sm:id()//sm:real/sm:username/text()
 return $retmap
 };
 
-declare function tlslib:get-translation-file($trid as xs:string){
-let $user := sm:id()//sm:real/sm:username/text()
-let $tru := collection($config:tls-user-root|| $user || "/translations")/tei:TEI[@xml:id=$trid]
-, $trc := collection($config:tls-translation-root)//tei:TEI[@xml:id=$trid]
-, $trfile := if ($tru) then $tru else $trc
-return $trfile
-};
 
-declare function tlslib:get-translations($textid as xs:string){
-let $user := sm:id()//sm:real/sm:username/text()
-  (: this is trying to work around a bug in fn:collection 
-  TODO: This fails if the user is guest.  Make a guest collection /db/users/guest? No, guest can't access the translation
-  :)
-  , $t1 := collection($config:tls-user-root || $user || "/translations")//tei:bibl[@corresp="#"||$textid]/ancestor::tei:fileDesc//tei:editor[@role='translator' or @role='creator'] 
-  , $t2 := collection($config:tls-translation-root)//tei:bibl[@corresp="#"||$textid]/ancestor::tei:fileDesc//tei:editor[@role='translator' or @role='creator']
-  , $rn := collection($config:tls-data-root||"/notes/research")//tei:bibl[@corresp="#"||$textid]/ancestor::tei:fileDesc//tei:editor[@role='translator' or @role='creator']
-  , $t3 := if (exists($rn)) then $rn else 
-  (: create research notes file if necessary :)
-  let $tmp := tlslib:store-new-translation("en", $textid, "TLS Project", "Research Notes", "", "option4", "option2", "notes", "") 
-  return 
-    collection($config:tls-data-root||"/notes/research")//tei:bibl[@corresp="#"||$textid]/ancestor::tei:fileDesc//tei:editor[@role='translator' or @role='creator']   
- let $tr := map:merge((
-  for $ed in  ($t1, $t2, $t3)
-   let $t := $ed/ancestor::tei:TEI
-   , $tid := data($t/@xml:id)
-   , $type := if ($t/@type) then if ($t/@type = "transl") then "Translation" else 
-   if ($t/@type = "notes") then "Research Notes" else
-   "Comments" else "Translation"
-   , $lg := if ($type = "Translation") then
-       $t//tei:bibl[@corresp="#"||$textid]/following-sibling::tei:lang/text() 
-       else  
-       if ($t//tei:bibl[@corresp="#"||$textid]/following-sibling::tei:ref) then 
-        let $rel-tr:= substring($t//tei:bibl[@corresp="#"||$textid]/following-sibling::tei:ref/@target, 2) 
-        , $this-tr := ($t1, $t2)[ancestor::tei:TEI[@xml:id=$rel-tr]] 
-       return
-        "to transl. by " || $this-tr/text()
-       else "" 
-   , $lic := $t//tei:availability/@status
-   , $resp := if ($ed/text()) then $ed/text() else "anon"
-   return
-   map:entry($tid, ($t, $resp, if ($lg) then $lg else "en", if ($lic) then xs:int($lic) else 3, $type)),
-   (: now we look for variants :)
-   for $v in collection($config:tls-manifests)//mf:edition[starts-with(@id, $textid)]
-   for $ed in $v/ancestor::mf:editions//mf:edition
-    let $lang := data($ed/@language)
-    , $edid := data($ed/@id)
-    , $desc := $ed/mf:description/text()
-    , $etp := data($ed/@type)
-    where $lang = "lzh"
-   return
-   map:entry($edid, ($edid ||"::" || $desc, "x", $lang, 3, $etp))
-   ))
-   return $tr
-};
-  
 (: prepare the character taxonomy display :)
 declare function tlslib:proc-char($node as node(), $edit as xs:string?)
 { 
@@ -556,27 +509,6 @@ declare function tlslib:get-rating($txtid){
     if ($ratings[@id=$txtid]) then $ratings[@id=$txtid]/@rating else 0
 };
 
-(:~
-: Lookup the title for a given textid
-: @param $txtid
-:)
-declare function tlslib:get-title($txtid as xs:string?){
-let $title := string-join(collection($config:tls-texts-root) //tei:TEI[@xml:id=$txtid]//tei:titleStmt/tei:title/text(), "・")
-return $title
-};
-
-(:~
-: Get the document for a given textid
-: @param $txtid
-:)
-declare function tlslib:get-doc($txtid as xs:string){
-collection($config:tls-texts-root)//tei:TEI[@xml:id=$txtid]
-};
-
-declare function tlslib:get-seg($sid as xs:string){
-collection($config:tls-texts-root)//tei:seg[@xml:id=$sid]
-};
-
 
 (:~
 : Get the documents for a given cat
@@ -778,11 +710,6 @@ return
 }
 </span>
 };
-declare function tlslib:session-att($name, $default){
-   if (contains(session:get-attribute-names(),$name)) then 
-    session:get-attribute($name) else 
-    (session:set-attribute($name, $default), $default)
-};
 
 declare function tlslib:tv-header($node as node()*, $model as map(*)){
    session:create(),
@@ -859,91 +786,6 @@ declare function tlslib:generate-toc-correct($node){
  return tlslib:generate-toc($d)
 };
 
-declare function tlslib:get-content-id($textid as xs:string, $slot as xs:string, $tr as map(*)){
-   let $show-transl := not(contains(sm:id()//sm:group/text(), "guest")),
-   $slot-no := xs:int(substring-after($slot, 'slot')) - 1,
-   $usergroups := sm:id()//sm:group/text(),   
-   $select := for $t in map:keys($tr)
-        let $lic := $tr($t)[4]
-        where if ($show-transl) then $lic < 5 else $lic < 3
-        (: TODO in the future, maybe also consider the language :)
-        order by $lic ascending
-        return $t,
-   $content-id := if (("tls-test", "guest") = $usergroups) then 
-     tlslib:session-att($textid || "-" || $slot, $select[1 + $slot-no]) else
-        let $t1 := tlslib:get-settings()//tls:section[@type='slot-config']/tls:item[@textid=$textid and @slot=$slot]/@content
-        return
-        if ($t1) then data($t1)
-        else if (count($select) > $slot-no) then $select[1 + $slot-no] else "new-content"
-  return if (string-length($content-id) > 0) then $content-id else "new-content"
-};
-
-(:~
- Display a selection menu for translations and commentaries, given the current slot and type
- the map tr has five items : descheader, ?, lang, license, type
-:)
-declare function tlslib:trsubmenu($textid as xs:string, $slot as xs:string, $trid as xs:string, $tr as map(*)){
- let $edtps := ("documentary", "interpretative")
- let $keys := for $k in map:keys($tr)
-           let $tm := $tr($k)[5]
-           order by $tm
-           where not($k = ($trid, "content-id")) return $k
-    ,$type := if ($trid and map:contains($tr, $trid)) then $tr($trid)[5] else "Translation"       
- return
- <div class="btn-group" role="group" >
-   <button type="button" class="btn btn-secondary" onclick="goto_translation_seg('{$trid}', 'first')" title="Go to first translated line">←</button>
-   
-  <div class="dropdown" id="{$slot}" data-trid="{$trid}">
-            <button class="btn btn-secondary dropdown-toggle" type="button" id="ddm-{$slot}" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-            {if ($trid and map:contains($tr, $trid)) 
-            then ( if ($tr($trid)[5] = $edtps) then 
-             ("Edition " ||  substring-after($tr($trid)[1], "::") || " (" || $trid, substring($tr($trid)[5], 1, 3) || ")")
-            else
-            ($tr($trid)[5], 
-            if ($tr($trid)[5] = ("Comments")) then $tr($trid)[3] else  " by " ||  $tr($trid)[2])) 
-            else "Translation"} 
-            </button>
-    <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-        {  for $k at $i in $keys
-            return 
-         if ($k = "canvas") then 
-        <a class="dropdown-item" id="sel{$slot}-{$i}" onclick="get_canvas_for_page('{$slot}', '{$k}')" href="#">Show Canvas</a>
-         
-        else
-         if (starts-with($k, "facs")) then 
-        <a class="dropdown-item" id="sel{$slot}-{$i}" onclick="get_facs_for_page('{$slot}', '{$tr($k)[1]}', '{$tr($k)[2]}', '{$tr($k)[3]}')" href="#">Facsimile {$config:wits?($tr($k)[2])}</a>
-         
-        else
-         if ($tr($k)[5] = "Comments") then 
-        <a class="dropdown-item" id="sel{$slot}-{$i}" onclick="get_tr_for_page('{$slot}', '{$k}')" href="#">{$tr($k)[5] || " " }  {$tr($k)[3]}</a>
-(:        else
-        if ($tr($k)[5] = "Pastebox") then
-        <a class="dropdown-item" id="sel{$slot}-{$i}" onclick="display_pastebox('{$slot}', '{$k}')" href="#">Pastebox</a>:)
-        else
-        if ($tr($k)[5] = $edtps) then 
-        <a class="dropdown-item" id="sel{$slot}-{$i}" onclick="get_tr_for_page('{$slot}', '{$k}')" href="#">Edition {substring-after($tr($k)[1], "::")} ({$k}, {substring($tr($k)[5], 1, 3)} )</a>
-        else
-        <a class="dropdown-item" id="sel{$slot}-{$i}" onclick="get_tr_for_page('{$slot}', '{$k}')" href="#">{$tr($k)[5]} by {$tr($k)[2]}({$tr($k)[3]})</a>
-        }
-        {if ("tls-user" = sm:id()//sm:group) then
-        <a class="dropdown-item" onclick="new_translation('{$slot}')" href="#"> <button class="btn btn-warning" type="button">New translation / comments</button></a> else ()
-        }
-        {if (count($keys) = 0) then 
-         if (count(map:keys($tr)) > 0) then  
-        <a class="dropdown-item disabled" id="sel-no-trans" href="#">No other translation available</a>
-        else 
-        <a class="dropdown-item disabled" id="sel-no-trans" href="#">No translation available</a>
-        else ()
-        }
-  </div>
-  </div>
-   <button type="button" class="btn btn-secondary" title="More information" onclick="show_dialog('tr-info-dialog', {{'slot': '{$slot}', 'trid' : '{$trid}'}})">
-    <img class="icon"  src="resources/icons/octicons/svg/info.svg"/>
-   </button>
-   <button type="button" class="btn btn-secondary" onclick="goto_translation_seg('{$trid}', 'last')"  title="Go to last translated line">→</button>
-</div>
-};
-
 declare function tlslib:display-bibl($bibl as node()){
 <li><span class="font-weight-bold">{$bibl/tei:title/text()}</span>
 (<span><a class="badge" href="bibliography.html?uuid={replace($bibl/tei:ref/@target, '#', '')}">{$bibl/tei:ref}</a></span>)
@@ -1005,15 +847,15 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
       $show-variants := xs:boolean(1),
       $visit := tlslib:record-visit($targetseg),
       $tr := if ($show-transl) then 
-         if (string-length($facs) > 0) then map:merge((tlslib:get-translations($model?textid), 
+         if (string-length($facs) > 0) then map:merge((ltr:get-translations($model?textid), 
             for $edx in distinct-values($targetseg/ancestor::tei:div//tei:pb/@ed)
             return
             map:entry("facs_"||$edx, ("dummy", $edx, data($targetseg/@xml:id)) ))) 
 
-         else tlslib:get-translations($model?textid)
+         else ltr:get-translations($model?textid)
          else map{},
-      $slot1-id := tlslib:get-content-id($model?textid, 'slot1', $tr),
-      $slot2-id := tlslib:get-content-id($model?textid, 'slot2', $tr),
+      $slot1-id := lrh:get-content-id($model?textid, 'slot1', $tr),
+      $slot2-id := lrh:get-content-id($model?textid, 'slot2', $tr),
       $atypes := distinct-values(for $s in $dseg/@xml:id
         let $link := "#" || $s
         return
@@ -1051,10 +893,10 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
          }
         <!-- zh --></div>
         <div class="col-sm-4" id="top-slot1"><!-- tr -->
-        {if ($show-transl) then tlslib:trsubmenu($model?textid, "slot1", $slot1-id, $tr) else ()}
+        {if ($show-transl) then ltr:render-translation-submenu($model?textid, "slot1", $slot1-id, $tr) else ()}
         </div>
         <div class="col-sm-4" id="top-slot2">
-        {if ($show-transl) then tlslib:trsubmenu($model?textid, "slot2", $slot2-id, $tr) else ()}
+        {if ($show-transl) then ltr:render-translation-submenu($model?textid, "slot2", $slot2-id, $tr) else ()}
         </div>
         </div>
       </div>
@@ -1594,120 +1436,12 @@ else ()}
  : on visiting a page, record the visit in the history.xml file
 :)
 
-(: for a $hit, we find the value associated with the requested genre :)
- 
-declare function tlslib:get-metadata($hit, $field){
-    let $header := $hit/ancestor-or-self::tei:TEI/tei:teiHeader
-    return
-        switch ($field)
-            case "textid" return if ($hit/@textid) then ($hit/@textid) else $hit/ancestor-or-self::tei:TEI/@xml:id
-            case "title" return 
-                string-join((
-                    $header//tei:msDesc/tei:head, $header//tei:titleStmt/tei:title[@type = 'main'],
-                    $header//tei:titleStmt/tei:title
-                ), " - ")
-            case "tls-dates"
-            case "kr-categories"
-            case "tls-regions" return
-(:                let $res := for $t in $header//tei:textClass/tei:catRef[@scheme="#"||$field]/@target return if (starts-with($t, "#KR")) then substring($t, 2) else            :)
-                let $res := for $t in $header//tei:textClass/tei:catRef[@scheme="#"||$field]/@target return substring($t, 2)
-                return
-                if (string-length(string-join($res)) > 0) then $res else "notav"
-            case "extent" return
-                data($header//tei:extent/tei:measure[@unit="char"]/@quantity)
-            case "head" return
-                $hit/ancestor::tei:div[1]/tei:head[1]/tei:seg/text()
-            case "edition" return
-                let $textid := $hit/ancestor-or-self::tei:TEI/@xml:id
-                , $ab := doc($config:tls-texts-meta||"/chant-refs.xml")//ab[@refid=$textid]
-                return
-                if ($ab) then $ab/text()
-                 else
-                 if($header//tei:sourceDesc/tei:bibl) then 
-                  string-join((
-                    $header//tei:sourceDesc//tei:title[@level="s"]
-                  ), " - ")                
-                else
-                normalize-space(string-join($header//tei:sourceDesc//text(), ' '))
-            case "genre" return ()
-            default return ()
-};
-
-declare function tlslib:cat-title($cat){
-let $title := string-join(doc($config:tls-texts-taxonomy)//tei:category[@xml:id=$cat]/tei:catDesc/text(), ' - ')
-return
-if (string-length($title) > 0) then $title else "Not assigned"
-};
-
-declare function tlslib:delCat($node as node(), $catid as xs:string){
-    let $header := $node/ancestor-or-self::tei:TEI/tei:teiHeader
-    , $r := $header//tei:catRef[@target="#"||$catid]
-    return 
-      update delete $r
-};
-
-(: not checking for scheme here :)
-declare function tlslib:checkCat($node as node(), $scheme as xs:string, $catid as xs:string){
-    let $tax := doc($config:tls-texts-taxonomy)
-    let $catref := <catRef xmlns="http://www.tei-c.org/ns/1.0" scheme="#{$scheme}" target="#{$catid}"/>
-    , $tc := <textClass xmlns="http://www.tei-c.org/ns/1.0">{$catref}</textClass>
-    , $header := $node/ancestor-or-self::tei:TEI/tei:teiHeader
-    return
-    if ($header//tei:profileDesc) then
-        if ($header//tei:catRef[@target="#"||$catid]) then 
-            let $r := $header//tei:catRef[@target="#"||$catid]
-            , $s := substring($r/@scheme ,2)
-            return
-            if ($s = $scheme) then () else
-                update replace $r with $catref
-        else
-            if ($header//tei:textClass) then
-                update insert $catref into $header//tei:textClass
-            else
-                update insert $tc into $header//tei:profileDesc
-    else 
-        let $node := <profileDesc xmlns="http://www.tei-c.org/ns/1.0">{$tc}</profileDesc>
-        return
-            update insert $node following $header//tei:fileDesc 
-};
-
-
-(: category xml:ids have to be unique across the document, so I do not need to provide the scheme here :)
-declare function tlslib:checkCat($node as node(), $catid as xs:string){
-    let $nt  := ("kr-categories", "tls-dates", "tls-regions")
-    let $tax := doc($config:tls-texts-taxonomy)
-    , $scheme := $tax//tei:category[@xml:id=$catid]/ancestor::tei:category[parent::tei:taxonomy]/@xml:id
-    let $catref := <catRef xmlns="http://www.tei-c.org/ns/1.0" scheme="#{$scheme}" target="#{$catid}"/>
-    , $tc := <textClass xmlns="http://www.tei-c.org/ns/1.0">{$catref}</textClass>
-    , $header := $node/ancestor-or-self::tei:TEI/tei:teiHeader
-    return
-    if ($scheme) then
-    if ($header//tei:profileDesc) then
-        if ($header//tei:catRef[@target="#"||$catid] or ($scheme = $nt and $header//tei:catRef[@target="#"||$scheme])) then 
-            let $r := $header//tei:catRef[@target="#"||$catid]
-            , $s := substring($r/@scheme ,2)
-            return
-            if ($s = $scheme) then () else
-                update replace $r with $catref
-        else
-            if ($header//tei:textClass) then
-                update insert $catref into $header//tei:textClass
-            else
-                update insert $tc into $header//tei:profileDesc
-    else 
-        let $node := <profileDesc xmlns="http://www.tei-c.org/ns/1.0">{$tc}</profileDesc>
-        return
-            update insert $node following $header//tei:fileDesc 
-    else "Error: no valid scheme found for category: " || $catid
-};
-
-
 declare function tlslib:record-visit($targetseg as node()){
 let $user := sm:id()//sm:real/sm:username/text(),
 $groups := sm:get-user-groups($user),
 $doc := if ("guest" = $groups) then () else tlslib:get-visit-file(),
 $date := current-dateTime()
-, $textid := tlslib:get-metadata($targetseg, "textid")
+, $textid := lmd:get-metadata($targetseg, "textid")
 , $ex := $doc//tei:item[@xml:id=$textid]
 , $item := <item xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$textid}" modified="{current-dateTime()}"><ref target="#{$targetseg/@xml:id}">{$targetseg/text()}</ref></item>
 return 
@@ -1771,7 +1505,7 @@ declare function tlslib:recent-texts-list($num){
 subsequence( for $l in  tlslib:recent-visits()
   let $date := xs:dateTime($l/@modified)
   , $textid := $l/@xml:id
-  , $title := tlslib:get-title($textid)
+  , $title := lu:get-title($textid)
   , $target := substring($l/tei:ref/@target, 2)
   order by $date descending
   where not ($textid = $config:ignored-text-ids)
@@ -1780,53 +1514,10 @@ subsequence( for $l in  tlslib:recent-visits()
   , 1, $num)
 };
 
-declare function tlslib:get-crypt-file($type as xs:string){
-  let $cm := substring(string(current-date()), 1, 7),
-  $doc-name := if (string-length($type) > 0 ) then $type || "-" || $cm || ".xml" else $cm || ".xml",
-  $doc-path :=  $config:tls-data-root || "/vault/crypt/" || $doc-name,
-  $doc := if (not(doc-available($doc-path))) then 
-    let $res := 
-    xmldb:store($config:tls-data-root || "/vault/crypt/" , $doc-name, 
-<TEI xmlns="http://www.tei-c.org/ns/1.0" xml:id="del-{$type}-{$cm}-crypt">
-  <teiHeader>
-      <fileDesc>
-         <titleStmt>
-            <title>Recorded items for month {$cm}</title>
-         </titleStmt>
-         <publicationStmt>
-            <ab>published electronically as part of the TLS project at https://hxwd.org</ab>
-         </publicationStmt>
-         <sourceDesc>
-            <p>Created by members of the TLS project</p>
-         </sourceDesc>
-      </fileDesc>
-     <profileDesc>
-        <creation>Initially created: <date>{current-dateTime()}</date>.</creation>
-     </profileDesc>
-  </teiHeader>
-  <text>
-      <body>
-      <div><head>Items</head>
-      <p xml:id="del-{$cm}-start"></p>
-      </div>
-      </body>
-  </text>
-</TEI>)
-    return
-    (sm:chmod(xs:anyURI($res), "rw-rw-rw-"),
-     sm:chgrp(xs:anyURI($res), "tls-user"),
-(:     sm:chown(xs:anyURI($res), "tls"),:)
-    doc($res)
-    )
-    else
-    doc($doc-path)
-  return $doc
-};
-
 (: generic function to save the setting of $map?setting to $map?value :)
 
 declare function tlslib:save-setting($map as map(*)){
-let $doc := tlslib:get-settings()
+let $doc := lus:get-settings()
 return
 if ($doc) then 
 switch($map?setting)
@@ -1848,49 +1539,6 @@ default return ()
 else ()
 };
 
-(:~
- : saves the content-id of a content selected for a s slot for a text
-:)
-declare function tlslib:settings-save-slot($slot as xs:string, $textid as xs:string, $content-id as xs:string) {
-let $settings := tlslib:get-settings(),
-  $current-setting := $settings//tls:section[@type='slot-config']/tls:item[@textid=$textid and @slot=$slot] 
-let $proc := 
-if ($current-setting) then 
- (update value $current-setting/@content with $content-id,
- update value $current-setting/@modified with current-dateTime())
-else 
- let $newitem := <item xmlns="http://hxwd.org/ns/1.0" created="{current-dateTime()}" modified="{current-dateTime()}" slot="{$slot}" textid="{$textid}" content="{$content-id}"/>
- return
- update insert $newitem into $settings//tls:section[@type='slot-config']
- return
- (:  we return the content-id for the case where this is used in a then clause of if statement:)
- $content-id
-};
-(:~
- : this creates a new empty stub for various user settings (if necessary) and returns the doc
-:)
-declare function tlslib:get-settings() {
-let $user := sm:id()//sm:real/sm:username/text()
-, $filename := "settings.xml"
-,$docpath := $config:tls-user-root || $user || "/" || $filename
-let $doc := try{
-  if (not (doc-available($docpath))) then
-   doc(xmldb:store($config:tls-user-root || $user, $filename, 
-<settings xmlns="http://hxwd.org/ns/1.0" xml:id="{$user}-settings">
-<section type="bookmarks"></section>
-<section type="slot-config"></section>
-<section type="search"></section>
-</settings>)) 
- else doc($docpath) } catch * {()}
-return 
-if ($doc//tls:section[@type="search"]) then $doc
-else (
-try {
-update insert <section xmlns="http://hxwd.org/ns/1.0" type="search"></section> into $doc/tls:settings
-} catch * {()}, 
-$doc
-)
-};
 
 declare function tlslib:merge-sw-word($map as map(*)){
 let $sw := collection($config:tls-data-root||"/concepts")//tei:*[@xml:id=$map?wid]
@@ -1944,7 +1592,7 @@ declare function tlslib:move-entry-to-concept($map as map(*)){
  ,$resp-uuid := "uuid-" || util:uuid()       
  ,$user := sm:id()//sm:real/sm:username/text()
  ,$cm := substring(string(current-date()), 1, 7)
- ,$rdoc := tlslib:get-crypt-file("changes")
+ ,$rdoc := lv:get-crypt-file("changes")
  ,$rec := <respStmt xml:id="{$resp-uuid}" xmlns="http://www.tei-c.org/ns/1.0" resp="#{$user}"><name>{$user}</name><resp notBefore="{current-dateTime()}">started moving {$map?word} and {count($swl)} attribution(s) from 
  <ref corresp="#{$map?src-concept}">{$sc-name}</ref>to <ref corresp="#{$map?trg-concept}">{$tc-name}</ref>. </resp></respStmt>
  return
@@ -1990,7 +1638,7 @@ declare function tlslib:move-sw-to-concept($map as map(*)){
  ,$resp-uuid := "uuid-" || util:uuid()       
  ,$user := sm:id()//sm:real/sm:username/text()
  ,$cm := substring(string(current-date()), 1, 7)
- ,$rdoc := tlslib:get-crypt-file("changes")
+ ,$rdoc := lv:get-crypt-file("changes")
  ,$rec :=  <respStmt xml:id="{$resp-uuid}" xmlns="http://www.tei-c.org/ns/1.0" resp="#{$user}"><name>{$user}</name><resp notBefore="{current-dateTime()}">started moving SW {$scsw} of {$map?word} and {count($swl)} attribution(s) from 
  <ref corresp="#{$map?src-concept}">{$sc-name}</ref>to <ref corresp="#{$map?trg-concept}">{$tc-name}</ref>. </resp></respStmt>
  , $tce := <entry  xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$wid}">
@@ -2029,7 +1677,7 @@ declare function tlslib:move-sw-to-concept($map as map(*)){
 };
 
 declare function tlslib:move-done($map as map(*)){
-let $resp:=  tlslib:get-crypt-file("changes")//tei:respStmt[@xml:id=$map?uuid]/tei:resp
+let $resp:=  lv:get-crypt-file("changes")//tei:respStmt[@xml:id=$map?uuid]/tei:resp
 return
      update insert attribute notAfter {current-dateTime()} into $resp
 };
@@ -2045,8 +1693,8 @@ $pseg := $seg/preceding::tei:seg[fn:position() < $context],
 $fseg := $seg/following::tei:seg[fn:position() < $context],
 $dseg := ($pseg, $seg, $fseg),
 $textid := tokenize($loc, "_")[1],
-$tr := tlslib:get-translations($textid),
-$slot1 := if ($options?transl-id) then $options?transl-id else tlslib:get-settings()//tls:section[@type='slot-config']/tls:item[@textid=$textid and @slot='slot1']/@content,
+$tr := ltr:get-translations($textid),
+$slot1 := if ($options?transl-id) then $options?transl-id else lus:get-settings()//tls:section[@type='slot-config']/tls:item[@textid=$textid and @slot='slot1']/@content,
 $transl := if ($slot1) then $tr($slot1) else ()
 (:$transl := collection("/db/apps/tls-data")//tei:bibl[@corresp="#"||$textid]/ancestor::tei:fileDesc//tei:editor[@role='translator']:)
 return
@@ -2266,36 +1914,6 @@ return
 </ul>
 }
 </li>
-};
-
-declare function tlslib:get-translation-seg($transid as xs:string, $first as xs:boolean){
-let $doc := tlslib:get-translation-file($transid)
-, $segs := $doc//tei:seg
-, $firstseg := if ($first) 
-               then subsequence(for $s in $segs
-                let $id := tu:format-segid($s/@corresp)
-                order by $id ascending
-                return $s, 1, 1)
-               else subsequence(for $s in $segs
-                let $id := tu:format-segid($s/@corresp)
-                order by $id descending
-                return $s, 1, 1)
-  return $firstseg
-};
-
-declare function tlslib:get-translation-seg-by-time($transid as xs:string, $first as xs:boolean){
-let $doc := tlslib:get-translation-file($transid)
-, $segs := $doc//tei:seg
-, $firstseg := if ($first) 
-               then subsequence(for $s in $segs
-                let $id := xs:dateTime($s/@modified)
-                order by $id ascending
-                return $s, 1, 1)
-               else subsequence(for $s in $segs
-                let $id := xs:dateTime($s/@modified)
-                order by $id descending
-                return $s, 1, 1)
-  return $firstseg
 };
 
 
@@ -2833,51 +2451,13 @@ declare function tlslib:get-obs-node($type as xs:string){
   return $doc//tls:span[position()=last()]
 };
 
-declare function tlslib:display-row($map as map(*)){
-  <div class="row">
-    <div class="col-sm-1">{$map?col1}</div>
-    <div class="col-sm-4" title="{$map?col2-tit}"><span class="font-weight-bold float-right">{$map?col2}</span></div>
-    <div class="col-sm-7" title="{$map?col3-tit}"><span class="sm">{$map?col3}</span></div>　
-  </div>  
-};
-
-declare function tlslib:transinfo($trid){
-let $user := sm:id()//sm:real/sm:username/text()
-let $tru := collection($config:tls-user-root|| $user || "/translations")/tei:TEI[@xml:id=$trid]
-, $trc := collection($config:tls-translation-root)//tei:TEI[@xml:id=$trid]
-, $trfile := if ($tru) then $tru else $trc
-, $segs := $trfile//tei:seg
-, $trm := map:merge( for $s in $segs 
-           let $resp := replace(normalize-space($s/@resp), "#", "")
-           group by $resp
-           return 
-           map:entry($resp, count($s)))
-, $trs := <ul>{for $k in map:keys($trm)         
-           let $cnt := $trm?($k)
-           order by $cnt descending
-           return 
-           <li><b class="ml-2">{tu:get-member-name($k)}</b> <span class="ml-2">{$cnt}</span></li>}</ul>
-, $first := tlslib:get-translation-seg-by-time($trid, true())           
-, $last := tlslib:get-translation-seg-by-time($trid, false())           
-return
-<div class="col">{(
-  tlslib:display-row(map{"col2" : "Title", "col3" : tlslib:get-metadata($trfile, "title")})
-  ,tlslib:display-row(map{"col2" : "Who can see this?", "col3" : if ($tru) then "Visibily to current user only" else "Visible to TLS Project members"})
-  ,tlslib:display-row(map{"col2" : "Translated Lines", "col3" : count($segs)})
-  ,tlslib:display-row(map{"col2" : "Translators/Operators", 
-                      "col2-tit" : "This shows the person responsible in the system, not necessarily the original translator", 
-                      "col3" : $trs})
-  ,tlslib:display-row(map{"col2" : "Oldest line:", "col3" : <a href="textview.html?location={substring($first/@corresp, 2)}">{data($first/@modified)}</a>})
-  ,tlslib:display-row(map{"col2" : "Most recent line:", "col3" : <a href="textview.html?location={substring($last/@corresp, 2)}">{data($last/@modified)}</a>})
-)}</div>
-};
 
 declare function tlslib:textinfo($textid){
 let   $user := sm:id()//sm:real/sm:username/text(),
       $d := collection($config:tls-texts-root)//tei:TEI[@xml:id=$textid],
-      $cat := tlslib:get-metadata($d, "kr-categories"),
-      $datecat := tlslib:get-metadata($d, "tls-dates"),
-      $charcount := tlslib:get-metadata($d, "extent"),
+      $cat := lmd:get-metadata($d, "kr-categories"),
+      $datecat := lmd:get-metadata($d, "tls-dates"),
+      $charcount := lmd:get-metadata($d, "extent"),
       $dates := if (exists(doc($config:tls-user-root || $user || "/textdates.xml")//date)) then 
       doc($config:tls-user-root || $user || "/textdates.xml")//data else 
       doc($config:tls-texts-meta  || "/textdates.xml")//data,
@@ -2888,18 +2468,18 @@ return
          <div class="row">
            <div class="col-sm-1"/>
            <div class="col-sm-2"><span class="font-weight-bold float-right">Edition:</span></div>
-           <div class="col-sm-9"><span class="sm">{tlslib:get-metadata($d, "edition")}</span></div>　
+           <div class="col-sm-9"><span class="sm">{lmd:get-metadata($d, "edition")}</span></div>　
          </div>  
          <div class="row">
            <div class="col-sm-1"/>
            <div class="col-sm-2"><span class="font-weight-bold float-right">Catalog category:</span></div>
-           <div class="col-sm-9"><span class="sm" id="text-cat" data-text-cat="{$cat}">{tlslib:cat-title($cat)}</span>
+           <div class="col-sm-9"><span class="sm" id="text-cat" data-text-cat="{$cat}">{lmd:cat-title($cat)}</span>
            {if (sm:is-authenticated()) then <span class="badge badge-pill badge-light" onclick="edit_textcat('{$textid}')">Edit category</span> else ()} </div>　
          </div>  
          <div class="row">
            <div class="col-sm-1"/>
            <div class="col-sm-2"><span class="font-weight-bold float-right">Dates:</span></div>
-           <div class="col-sm-9"><span class="sm badge badge-pill" id="date-cat" data-date-cat="{$datecat}">{tlslib:cat-title($datecat)}</span>　{
+           <div class="col-sm-9"><span class="sm badge badge-pill" id="date-cat" data-date-cat="{$datecat}">{lmd:cat-title($datecat)}</span>　{
            if ($date) then 
             (<span id="textdate-outer"><span id="textdate" data-not-before="{$date/@notbefore}" data-not-after="{$date/@notafter}">{$date/text()}<span id="textdate-note" class="text-muted">{$date/note/text()}</span></span></span>,
             if (sm:is-authenticated()) then <span class="badge badge-pill badge-light" onclick="edit_textdate('{$textid}')">Edit date</span> else 
@@ -2927,7 +2507,7 @@ return
          <div class="row">
            <div class="col-sm-1"/>
            <div class="col-sm-2"><span class="font-weight-bold float-right">Wikidata:</span></div>
-           <div class="col-sm-9">{wd:display-qitems($textid, 'title', tlslib:get-title($textid))}</div>    
+           <div class="col-sm-9">{wd:display-qitems($textid, 'title', lu:get-title($textid))}</div>    
          </div>  
          <div class="row">
            <div class="col-sm-1"/>
@@ -2942,7 +2522,7 @@ return
              <span class="badge badge-pill badge-light">{data($r/@xml:id)}:{$r/text()}<br/></span>
              }</span>
            }</span>
-           { if (sm:is-authenticated()) then <a class="badge badge-pill badge-light"  href="search.html?query={tlslib:get-title($textid)}&amp;textid={$textid}&amp;search-type=10" title="Add new reference">Add reference to source or witness</a> else ()}</div>    
+           { if (sm:is-authenticated()) then <a class="badge badge-pill badge-light"  href="search.html?query={lu:get-title($textid)}&amp;textid={$textid}&amp;search-type=10" title="Add new reference">Add reference to source or witness</a> else ()}</div>    
          </div>  
       </div>
 };
@@ -2989,193 +2569,6 @@ for $s in subsequence($seq, 2)
   else ()}
   </tls:contents>
 }; 
-
-(: 2023-05-27 - store changes to existing trans file if $trid is not "" :)
-declare function tlslib:update-tr-file($lang as xs:string, $txtid as xs:string, $translator as xs:string, $trtitle as xs:string, $bibl as xs:string, $vis as xs:string, $copy as xs:string, $type as xs:string, $rel-id as xs:string, $trid as xs:string){
-let $user := sm:id()//sm:real/sm:username/text()
-let $tru := collection($config:tls-user-root|| $user || "/translations")/tei:TEI[@xml:id=$trid]
-, $trc := collection($config:tls-translation-root)//tei:TEI[@xml:id=$trid]
-, $trfile := if ($tru) then $tru else $trc
-, $fullname := sm:id()//sm:real/sm:fullname/text()
-, $buri := document-uri(root($trfile))
-, $oldvis := if ($tru) then "option3" else "option1"
-,$lg := $config:languages($lang)
-,$title := tlslib:get-title($txtid)
-,$trx := if (not($translator = "yy")) then $translator else if ($vis = "option3") then $fullname else "TLS Project"
-, $titlestmt :=if ($type = "transl") then 
-         <titleStmt xmlns="http://www.tei-c.org/ns/1.0">
-            {if (string-length($trtitle) > 0) then 
-            <title>{$trtitle}</title>
-            else
-            <title>Translation of {$title} into ({$lg})</title>}
-            <editor role="translator">{$trx}</editor>
-         </titleStmt>
-            else if ($type = "notes") then
-         <titleStmt xmlns="http://www.tei-c.org/ns/1.0">
-            <title>Research Notes for {$title}</title>
-            <editor role="creator">{$trx}</editor>
-         </titleStmt>
-            else
-         <titleStmt xmlns="http://www.tei-c.org/ns/1.0">
-            <title>Comments to {$title}</title>
-            <editor role="creator">{$trx}</editor>
-         </titleStmt>
-, $pubstmt := <publicationStmt xmlns="http://www.tei-c.org/ns/1.0">
-            <ab>published electronically as part of the TLS project at https://hxwd.org</ab>
-            {if ($copy = "option1") then 
-            <availability status="1"><ab>This work is in the public domain</ab></availability> 
-            else 
-             if ($copy = "option2") then
-            <availability status="2"><ab>This work has been licensed for use in the TLS</ab></availability> 
-            else 
-             if ($copy = "option3") then
-            <availability status="3">This work has not been licensed for use in the TLS</availability> 
-            else
-            <availability status="4">The copyright status of this work is unclear</availability> 
-            }
-         </publicationStmt>
-, $srcdesc :=<sourceDesc xmlns="http://www.tei-c.org/ns/1.0">
-            {if (not($bibl = "") or not ($trtitle = "")) then 
-            <bibl><title>{$trtitle}</title>{$bibl}</bibl> else 
-            <p>Created by members of the TLS project</p>}
-            
-            {if ($type="transl") then 
-             <ab>Translation of <bibl corresp="#{$txtid}">
-                  <title xml:lang="och">{$title}</title>
-               </bibl> into <lang xml:lang="{$lang}">{$lg}</lang>.</ab>
-             else 
-             <p>Comments and notes to <bibl corresp="#{$txtid}">
-                  <title xml:lang="och">{$title}</title>
-               </bibl>{if (string-length($rel-id) > 0) then ("for translation ", <ref target="#{$rel-id}"></ref>) else ()}.</p>
-             }
-         </sourceDesc>
-, $mod := <creation resp="#{$user}"  xmlns="http://www.tei-c.org/ns/1.0">Header modified: <date>{current-dateTime()}</date> by {$user}</creation>
-, $doupd := (
-    update replace $trfile//tei:titleStmt with $titlestmt,
-    update replace $trfile//tei:publicationStmt with $pubstmt,
-    update replace $trfile//tei:sourceDesc with $srcdesc,
-    update insert $mod into $trfile//tei:profileDesc
-    )
-, $move := if ($vis = $oldvis) then () else
-        let $resource := tokenize($buri, "/")[last()]
-        let $src-coll := substring-before($buri,$resource)
-        return
-        if ($vis = "option3") then 
-         let $trg-coll := $config:tls-user-root|| $user || "/translations"
-         return
-          xmldb:move($src-coll, $trg-coll, $resource) 
-        else 
-         let $trg-coll := $config:tls-translation-root || "/" || $lang
-         return
-          xmldb:move($src-coll, $trg-coll, $resource) 
-return ($vis, $oldvis, $trid)
-};
-
-(: 2022-02-21 - moved this from tlsapi to allow non-api use :)
-declare function tlslib:store-new-translation($lang as xs:string, $txtid as xs:string, $translator as xs:string, $trtitle as xs:string, $bibl as xs:string, $vis as xs:string, $copy as xs:string, $type as xs:string, $rel-id as xs:string){
-  let $user := sm:id()//sm:real/sm:username/text()
-  ,$fullname := sm:id()//sm:real/sm:fullname/text()
-  ,$uuid := util:uuid()
-  (: 2022-02-21 new option4 == store a Research Note file in /notes/research/ :)
-  ,$newid := if ($vis = "option4") then $txtid else $txtid || "-" || $lang || "-" || tokenize($uuid, "-")[1]
-  ,$lg := $config:languages($lang)
-  ,$title := tlslib:get-title($txtid)
-  ,$txt := collection($config:tls-texts-root)//tei:TEI[@xml:id=$txtid]
-   (: we don't want this to happen just when somebody visits a text :)
-  ,$cat := if ($vis = "option4") then () else tlslib:checkCat($txt,  "tr-" || $lang) 
-  ,$trcoll := if ($vis="option3") then $config:tls-user-root || $user || "/translations" 
-    else if ($vis = "option4") then $config:tls-data-root || "/notes/research" 
-    else $config:tls-translation-root || "/" || $lang
-  ,$trcollavailable := xmldb:collection-available($trcoll) or 
-   (if ($vis="option3") then
-    xmldb:create-collection($config:tls-user-root || $user, "translations")
-   else
-   (xmldb:create-collection($config:tls-translation-root, $lang),
-    sm:chmod(xs:anyURI($trcoll), "rwxrwxr--"),
-(:    sm:chown(xs:anyURI($trcoll), "tls"),:)
-    sm:chgrp(xs:anyURI($trcoll), "tls-user")
-    )
-  )
-  , $trx := if (not($translator = "yy")) then $translator else if ($vis = "option3") then $fullname else "TLS Project"
-  , $doc := 
-    doc(xmldb:store($trcoll, $newid || ".xml", 
-   <TEI xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$newid}" type="{$type}">
-  <teiHeader>
-      <fileDesc>
-            {if ($type = "transl") then 
-         <titleStmt>
-            {if (string-length($trtitle) > 0) then 
-            <title>{$trtitle}</title>
-            else
-            <title>Translation of {$title} into ({$lg})</title>}
-            <editor role="translator">{$trx}</editor>
-         </titleStmt>
-            else if ($type = "notes") then
-         <titleStmt>
-            <title>Research Notes for {$title}</title>
-            <editor role="creator">{$trx}</editor>
-         </titleStmt>
-            else
-         <titleStmt>
-            <title>Comments to {$title}</title>
-            <editor role="creator">{$trx}</editor>
-         </titleStmt>
-            }
-         <publicationStmt>
-            <ab>published electronically as part of the TLS project at https://hxwd.org</ab>
-            {if ($copy = "option1") then 
-            <availability status="1"><ab>This work is in the public domain</ab></availability> 
-            else 
-             if ($copy = "option2") then
-            <availability status="2"><ab>This work has been licensed for use in the TLS</ab></availability> 
-            else 
-             if ($copy = "option3") then
-            <availability status="3">This work has not been licensed for use in the TLS</availability> 
-            else
-            <availability status="4">The copyright status of this work is unclear</availability> 
-            }
-         </publicationStmt>
-         <sourceDesc>
-            {if (not($bibl = "") or not ($trtitle = "")) then 
-            <bibl><title>{$trtitle}</title>{$bibl}</bibl> else 
-            <p>Created by members of the TLS project</p>}
-            
-            {if ($type="transl") then 
-             <ab>Translation of <bibl corresp="#{$txtid}">
-                  <title xml:lang="och">{$title}</title>
-               </bibl> into <lang xml:lang="{$lang}">{$lg}</lang>.</ab>
-             else 
-             <p>Comments and notes to <bibl corresp="#{$txtid}">
-                  <title xml:lang="och">{$title}</title>
-               </bibl>{if (string-length($rel-id) > 0) then ("for translation ", <ref target="#{$rel-id}"></ref>) else ()}.</p>
-             }
-         </sourceDesc>
-      </fileDesc>
-     <profileDesc>
-        <creation resp="#{$user}">Initially created: <date>{current-dateTime()}</date> by {$user}</creation>
-     </profileDesc>
-  </teiHeader>
-  <text>
-      <body>
-      {if ($type = "transl") then 
-      <div><head>Translated parts</head><p xml:id="{$txtid}-start"></p></div>
-      else 
-      <div><head>Comments</head><p xml:id="{$txtid}-start"></p></div>
-      }
-      </body>
-  </text>
-</TEI>))
-return
-if (not($vis="option3")) then 
- let $uri := document-uri($doc)
- return
- (
-    sm:chmod(xs:anyURI($uri), "rwxrwxr--"),
-(:    sm:chown(xs:anyURI($uri), "tls"),:)
-    sm:chgrp(xs:anyURI($uri), "tls-user")
- )
- else ()
-};
 
 
 (: this is for the char editing :)

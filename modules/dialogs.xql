@@ -13,6 +13,11 @@ import module namespace tlslib="http://hxwd.org/lib" at "../modules/tlslib.xql";
 (: import module namespace tlsapi="http://hxwd.org/tlsapi" at "../api/tlsapi.xql"; :)
 import module namespace con='http://hxwd.org/con' at "../modules/concepts.xql"; 
 
+import module namespace lu="http://hxwd.org/lib/utils" at "lib/utils.xqm";
+import module namespace ltr="http://hxwd.org/lib/translation" at "lib/translation.xqm";
+import module namespace lus="http://hxwd.org/lib/user-settings" at "user-settings.xqm";
+
+
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
 declare namespace tx = "http://exist-db.org/tls";
@@ -42,7 +47,7 @@ declare variable $dialogs:lmap := map{
 };
 
 
-declare function local:modal-frame($name, $map){
+declare function dialogs:modal-frame($name, $map){
 <div id="{$name}" class="modal" tabindex="-1" role="dialog" style="display: none;">
     <div class="modal-dialog {$map?dsize}" role="document">
       <form id="{$name}-form">
@@ -84,13 +89,13 @@ declare function local:form-input-row($name, $map){
 declare function local:search-settings($name, $options){
 let $search-options := map{"search-sortmax": 5000, "search-cutoff" : 0.2, "search-ratio" : "None"}
 , $body := for $o in map:keys($search-options)  
-     let $sval:=tlslib:get-settings()//tls:item[@type=$o]/@value
+     let $sval:=lus:get-settings()//tls:item[@type=$o]/@value
      , $cval := if ($sval) then $sval else map:get($search-options, $o)
      return
      local:form-input-row($name, map{"input-id" : $o, "input-value" : $cval, "type" : "text"}) 
 , $buttons := ( <button type="button" class="btn btn-primary" onclick="update_setting('{$options?setting}', 'setting')">Save</button> )
 return
-      local:modal-frame($name, 
+      dialogs:modal-frame($name, 
       map{
         "dsize" : "", 
         "body":     $body, 
@@ -101,13 +106,12 @@ return
  
 };
 
-
 declare function local:tr-info-dialog($name, $options){
-let $body := tlslib:transinfo($options?trid)
+let $body := ltr:transinfo($options?trid)
 , $buttons := (if (sm:id()//sm:group/text() = ("tls-editor", "tls-admin")) then
                  <button type="button" class="btn btn-primary" onclick="display_tr_file_dialog('{$name}','{$options?slot}', '{$options?trid}')">Edit Translation Data</button> else () )
 return                 
-      local:modal-frame($name, 
+      dialogs:modal-frame($name, 
       map{
         "dsize" : "modal-lg", 
         "body": $body, 
@@ -116,6 +120,8 @@ return
         "title":  "Information about translation"
       })           
 };
+
+
 (: sth is not working here. :)
 declare function local:passwd-dialog($name, $options){
 let $body := (local:form-input-row($name, map{"input-id" : "password", "hint" : "Please enter the new password:", "type" : "password", "required" : true() })
@@ -123,7 +129,7 @@ let $body := (local:form-input-row($name, map{"input-id" : "password", "hint" : 
                  
 , $buttons := (<button type="button" class="btn btn-secondary" onclick="showhide_passwd('password,passwd-2')">Show/Hide</button>,<button type="button" class="btn btn-primary" onclick="change_passwd('{$options}')">Submit</button>,<input type="hidden" name="duration" value="P7D"/>, <input type="hidden" name="user" value="{$options}"/>)
 return                 
-      local:modal-frame($name, 
+      dialogs:modal-frame($name, 
       map{
         "dsize" : "", 
         "body": $body, 
@@ -134,7 +140,7 @@ return
 };
 
 declare function local:text-info($name, $options){
-  local:modal-frame($name, 
+  dialogs:modal-frame($name, 
       map{
         "body": tlslib:textinfo($options?textid), 
         "options" : $options,
@@ -147,7 +153,7 @@ declare function local:update-setting($name, $options){
 let $body := (local:form-input-row($name, map{"input-id" : "setting", "input-value": $options?value,  "hint" : $options?hint, "type" : "text", "required" : true()}) )
 , $buttons := ( <button type="button" class="btn btn-primary" onclick="update_setting('{$options?setting}', 'setting')">Save</button> )
 return                 
-      local:modal-frame($name, 
+      dialogs:modal-frame($name, 
       map{
         "dsize" : "", 
         "body": $body, 
@@ -162,7 +168,7 @@ declare function local:stub-dialog($name, $options){
 let $body := ()
 , $buttons := ( )
 return                 
-      local:modal-frame($name, 
+      dialogs:modal-frame($name, 
       map{
         "dsize" : "modal-lg", 
         "body": $body, 
@@ -538,7 +544,7 @@ return
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close" title="Close">x</button>
             </div>
             <div class="modal-body">
-            <h6 class="font-weight-bold">{$para?textid}: {tlslib:get-title($para?textid)}</h6>
+            <h6 class="font-weight-bold">{$para?textid}: {lu:get-title($para?textid)}</h6>
                 <small class="text-muted">A text date consists of the (1) lower (<span class="font-weight-bold">not-before</span>) and (2) upper limits (<span class="font-weight-bold">not-after</span>) as well as (3) a human readable form. (1) and (2) should be positive integers for AD years and negative integers for BC years.  <br/>In addition, we associate the text with a date-category in the <a href="documentation.html?section=taxonomy#tls-dates--head">date taxonomy</a>.</small>
                 <div id="input-cat-group">
                     <label for="select-date-cat"><strong>Date category:</strong> </label>
@@ -589,7 +595,7 @@ return
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close" title="Close">x</button>
             </div>
             <div class="modal-body">
-            <h6 class="font-weight-bold">{$para?textid}: {tlslib:get-title($para?textid)}</h6>
+            <h6 class="font-weight-bold">{$para?textid}: {lu:get-title($para?textid)}</h6>
                 <small class="text-muted">Position in the classified catalog</small>
                 <div id="input-cat-group">
                     <label for="input-nb"><strong>Catalog category:</strong> </label>
@@ -829,6 +835,14 @@ declare function dialogs:pb-dialog($map as map(*)){
             </div>
             <div class="font-weight-bold mt-2 col-md-2">Page number:</div>
             <div class="col-md-3">
+             {for $w in $wl
+               let $ed := data($w/@xml:id)
+               let $pb := ($seg//tei:pb[@ed=$ed]|$seg/preceding::tei:pb[@ed=$ed])[last()]
+               where exists($pb)
+               return <span><small>{$w/text()}:</small>{data($pb/@n)}</span>
+               }
+            </div>
+            <div class="col-md-2">
             <input id="page-num" class="form-control" required="true" value=""/>
             </div>
             <div class="col-md-3"><span>Following page:</span><br/>
@@ -859,9 +873,9 @@ declare function local:no-witness($textid as xs:string){
          <div class="modal-body">
             <h6><span class="bg-warning">Warning:</span>　<b>No textual witnesses defined</b></h6>
             <div class="form row">
-            <div class="col-md-12 mt-2"><p>To add page information or register variants carried by specific textual witnesses, the witnesses for a text need to make known to the system.  The list of witnesses is maintained as part of the text, {tlslib:get-title($textid)} in this case.</p>
+            <div class="col-md-12 mt-2"><p>To add page information or register variants carried by specific textual witnesses, the witnesses for a text need to make known to the system.  The list of witnesses is maintained as part of the text, {lu:get-title($textid)} in this case.</p>
             <p>Click on the following link to search the bibliography for textual witnesses.  If they are not yet found in the bibliography, you will be able to add a new item and then indicate this as a textual witness. </p>
-            <p><a class="badge badge-pill badge-light" title="Search bibliography" href="search.html?query={tlslib:get-title($textid)}&amp;textid={$textid}&amp;search-type=10">Search bibliography</a></p></div>
+            <p><a class="badge badge-pill badge-light" title="Search bibliography" href="search.html?query={lu:get-title($textid)}&amp;textid={$textid}&amp;search-type=10">Search bibliography</a></p></div>
             </div>
          </div>
 };
@@ -869,7 +883,7 @@ declare function local:no-witness($textid as xs:string){
 declare function dialogs:edit-app-dialog($map as map(*)){
 (: CBETA texts do not have a xml:id on app, so we are using the from attribute here :)
  let $app := if (string-length($map?appid) > 0) then 
-   let $doc := tlslib:get-doc($map?textid)
+   let $doc := lu:get-doc($map?textid)
    return $doc//tei:app[@from="#"||$map?appid] else ()
  let $seg := if ($app) then $app/ancestor::tei:TEI//tei:seg[tei:anchor[@xml:id = substring($app/@to, 2)]] else collection($config:tls-texts-root)//tei:seg[@xml:id=$map?uid]
  , $wl := $seg/ancestor::tei:TEI//tei:witness
