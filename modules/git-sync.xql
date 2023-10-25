@@ -19,7 +19,7 @@ declare variable $repo-name := $git-config//repo-name/text();
                               
 declare variable $git-log := $config:tls-log-collection || "/git";
 
-let $exempt := ("/db/apps/tls-app/modules/view.xql", "/db/apps/tls-app/controller.xql", "/db/apps/tls-app/api/responder.xql")
+let $exempt := ("/db/apps/tls-app/modules/view.xql", "/db/apps/tls-app/controller.xql", "/db/apps/tls-app/api/responder.xql", "/db/apps/tls-app/modules/signup.xql")
 let $data := request:get-data()
 let $file-data := ghx:execute-webhook($data, $exist-collection, $repo-name, "master",  $gitSecret, $gitKey)
 

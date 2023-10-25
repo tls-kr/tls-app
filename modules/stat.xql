@@ -161,10 +161,10 @@ local:translations()}
 </div>   
 )) 
  else doc($docpath)
-return 
-    (sm:chmod(xs:anyURI($docpath), "rw-rw-rw-"),
-     sm:chgrp(xs:anyURI($docpath), "tls-user"),
-     sm:chown(xs:anyURI($docpath), "tls"))
+return ()
+(:     (sm:chmod(xs:anyURI($docpath), "rw-rw-rw-"),
+       sm:chgrp(xs:anyURI($docpath), "tls-user"), 
+     sm:chown(xs:anyURI($docpath), "tls")) :)
 };
 
 (
