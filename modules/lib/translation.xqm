@@ -275,7 +275,7 @@ declare function ltr:format-translation-label($tr as map(*), $trid as xs:string)
 declare function ltr:render-translation-submenu($textid as xs:string, $slot as xs:string, $trid as xs:string, $tr as map(*)){
  let $keys := for $k in map:keys($tr)
            let $item-type := $tr($k)[$ltr:tr-map-indices?type-label]
-           , $date := lmd:get-metadata($tr($k)[$ltr:tr-map-indices?doc-node], "date")
+           , $date := lmd:get-metadata($tr($k)[$ltr:tr-map-indices?doc-node], "date")[1]
            order by $date ascending
            where not($k = ($trid, "content-id")) return $k
     ,$type := if ($trid and map:contains($tr, $trid)) then $tr($trid)[$ltr:tr-map-indices?type-label] else "Translation"       
@@ -372,9 +372,9 @@ let $translators := ltr:find-translators($textid)
        return
         "to transl. by " || $this-tr/text()
        else "" 
-   , $date := lmd:get-metadata($t, "date")
+   , $date := lmd:get-metadata($t, "date")[1]
    , $lic := lmd:get-metadata($t, "status")
-   , $resp := if ($ed/text()) then $ed/text() else "anon"
+   , $resp := if ($ed/text()) then replace($ed/text(), '\d{4}', '')=>normalize-space() else "anon"
    , $ddate := if ($date < "9999") then " ("||$date||") " else ""
    return
    map:entry($tid, ($t, $resp|| $ddate, if ($lg) then $lg else "en", if ($lic) then xs:int($lic) else 3, $type))   )

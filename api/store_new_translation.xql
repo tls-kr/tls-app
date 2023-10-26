@@ -26,6 +26,6 @@ let $bibl := request:get-parameter("bibl", "")
 
 return
  if (string-length($trid) > 0 and $trid != "xx") then 
- ltr:update-tr-file($lang, $textid, $translator, $trtitle, $bibl, $vis, $copy, $type, $rel-id, $trid) else
+ ltr:update-translation-file($lang, $textid, $translator, $trtitle, $bibl, $vis, $copy, $type, $rel-id, $trid) else
  ltr:store-new-translation($lang, $textid, $translator, $trtitle, $bibl, $vis, $copy, $type, $rel-id)
 
