@@ -3,7 +3,7 @@ xquery version "3.1";
 : This module provides the internal functions that do not directly control the 
 : template driven Web presentation
 : of the TLS. 
-
+: 
 : @author Christian Wittern  cwittern@yahoo.com
 : @version 1.0
 :)
