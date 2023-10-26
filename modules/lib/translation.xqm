@@ -25,7 +25,7 @@ declare namespace mf="http://kanripo.org/ns/KRX/Manifest/1.0";
 declare variable $ltr:translation-type-labels := map {
  "transl" : "Translation"
  , "notes" : "Research Notes"
- , "comments" : "Comments"
+ , "comment" : "Comments"
 };
 
 declare variable $ltr:tr-map-indices := map{
@@ -263,10 +263,12 @@ return
 };
 
 declare function ltr:format-translation-label($tr as map(*), $trid as xs:string){
- let $tr-label := string-join(($tr($trid)[$ltr:tr-map-indices?type-label] , " by " , 
+ let $type := $tr($trid)[$ltr:tr-map-indices?type-label]
+ let $tr-label := string-join(($type , " by " , 
                    $tr($trid)[$ltr:tr-map-indices?name-label],  " (" ,
                    $tr($trid)[$ltr:tr-map-indices?lang-label],  ")"))
- return $tr-label
+ return 
+ $tr-label
 };
 (:~
  Display a selection menu for translations and commentaries, given the current slot and type
@@ -374,7 +376,7 @@ let $translators := ltr:find-translators($textid)
        else "" 
    , $date := lmd:get-metadata($t, "date")[1]
    , $lic := lmd:get-metadata($t, "status")
-   , $resp := if ($ed/text()) then replace($ed/text(), '\d{4}', '')=>normalize-space() else "anon"
+   , $resp := if ($ed/text()) then replace(($ed/text())[1]=>string-join(''), '\d{4}', '')=>normalize-space() else "anon"
    , $ddate := if ($date < "9999") then " ("||$date||") " else ""
    return
    map:entry($tid, ($t, $resp|| $ddate, if ($lg) then $lg else "en", if ($lic) then xs:int($lic) else 3, $type))   )
