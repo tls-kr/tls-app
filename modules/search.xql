@@ -82,7 +82,7 @@ function src:query($node as node()*, $model as map(*), $query as xs:string?, $mo
        src:dic-query($query, $mode)
      case $src:search-trans return
       (: searching for word in translations :)
-       src:tr-query($query, $mode)
+       src:tr-query($query, $mode, $textid)
      case $src:search-titles return
       (: searching for word in titles :)
        src:title-query($query, $mode)
@@ -198,12 +198,15 @@ tlslib:get-sw($queryStr, "dic", "core", "")
 };
 
 (: query in translation :)
-declare function src:tr-query($queryStr as xs:string?, $mode as xs:string?)
+declare function src:tr-query($queryStr as xs:string?, $mode as xs:string?, $stextid as xs:string?)
 {
   let $user := sm:id()//sm:real/sm:username/text()
   let $dataroot := ($config:tls-translation-root, $config:tls-user-root || $user || "/translations")
   let $w := collection($dataroot)//tei:seg[contains(. , $queryStr)]
   for $a in $w
+  let $textid := tokenize(substring-before(tokenize(document-uri(root($a)), "/")[last()], ".xml"), "-")[1]
+  , $filter := if (string-length($stextid) > 0) then $textid = $stextid else true()
+  where $filter
   return $a
 };
 
@@ -320,6 +323,9 @@ return
 (if ($map?search-type = $src:search-bib ) then () else
  if ($map?search-type = $src:ngtype) then (
  <h1>Searching in <strong>{if (count(map:keys($map?cat)) > 0) then string-join(for $c in map:keys($map?cat) return lmd:cat-title($map?cat?($c)), " / ") else $st}</strong> for <mark class="chn-font">{$map?query}</mark></h1>
+) else
+ if ($map?search-type = $src:search-trans) then (
+ <h1>Searching in <strong>{$st}</strong>{if (string-length($map?textid) > 0) then " for " || lu:get-title($map?textid) else ()} for <mark class="chn-font">{$map?query} </mark> </h1>
 ) else
  if ($map?search-type = $src:textlist) then
    let $count := count($map?hits)
@@ -905,6 +911,8 @@ declare function src:show-catalog-results($map as map(*)){
 declare function src:search-top-menu($search-type, $query, $txtmatchcount, $title, $trmatch, $textid, $qc, $count, $mode) {
   switch($search-type)
 (:  case "8":)
+  case "3" return
+       (<a class="btn badge badge-light" href="search.html?query={$query}&amp;start=1&amp;search-type=3&amp;&amp;mode={$mode}">Click here to display all  matches</a>,<br/>)
   case "5" return
        (<a class="btn badge badge-light" href="search.html?query={$query}&amp;start=1&amp;search-type=1&amp;textid={$textid}&amp;mode={$mode}">Click here to display all  matches</a>,<br/>)
   case "8" return
