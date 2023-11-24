@@ -859,6 +859,7 @@ let $query := $model?query
        if ($mode = "rating") then 
     ("&#160;Sorting by text rating. " , <a class="btn badge badge-light" href="{$burl}&amp;start=1&amp;mode=date">Click here to sort by text date instead. </a> )
      else
+     if ($search-type = $src:search-trans) then () else 
     ("&#160;Sorting by text date. " , <a class="btn badge badge-light" href="{$burl}&amp;start=1&amp;mode=rating" title="{$rat}">Click here to sort your favorite texts first. </a>)}</p>
     , $nav := <nav aria-label="Page navigation">
   <ul class="pagination">
@@ -931,7 +932,7 @@ declare function src:search-top-menu($search-type, $query, $txtmatchcount, $titl
     (<a class="btn badge badge-light" href="search.html?query={$query}&amp;start=1&amp;search-type=5&amp;textid={$textid}&amp;mode={$mode}">Click here to display only {$txtmatchcount} matches in {$title}</a>,<br/>)
   else ()
   ), 
-  tlslib:linkheader($qc),
+  if ($search-type = "3") then () else tlslib:linkheader($qc),
    <br/>
      
 };

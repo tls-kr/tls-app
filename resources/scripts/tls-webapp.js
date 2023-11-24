@@ -276,7 +276,7 @@ function save_pastebox_line(){
     var remainingLines = lines.slice(1,).join('\n');
     // console.log('firstLine:',firstLine);
     $('#'+current_id+"-tr").html(firstLine);
-    thisid = current_id.replace("\\", "")
+    thisid = current_id.replaceAll("\\", "")
     save_tr(thisid+"-tr", firstLine, currentline);
     tab = parseInt($("#"+current_id+"-tr").attr("tabindex")) + 1;
     ntab = tab + 1
@@ -340,7 +340,7 @@ function display_pastebox(slot){
 function more_display_lines(lineid, tab){
   cnt = tab - 501;
   np = tab + 29;
-  thisid = lineid.replace("\\", "");
+  var thisid = lineid.replaceAll("\\", "");
       // avoid adding resp multiple times
   r1 = $("#"+lineid+'-'+cnt.toString()).attr("class");
   console.log("r1", r1, r1 != "row");
@@ -1897,7 +1897,8 @@ $( ".tr" ).keyup(function( event ) {
 
 // this does the actual save
 // the backend actually also saves the language, which defaults to "en", param is lang
-function save_tr (trid, tr, line){
+function save_tr (trid_in, tr, line){
+  var trid = trid_in.replaceAll("\\", "")
   $.ajax({
   type : "PUT",
   dataType : "html",
