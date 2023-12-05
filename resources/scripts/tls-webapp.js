@@ -557,17 +557,28 @@ function showhide(cl){
     $("."+cl).toggle()
 };
 
-//cw 2021-10-06
-function get_more_lines(){
-var csel = $("#select-end option:last").val();
+//cw 2021-10-06, revised 2023-12-04
+function get_more_lines(el, count){
+ var cnt = Number(count)
+ $('#' + el +' option[value="none"]').remove();
+ if (cnt < 0) { 
+  var csel = $('#'+el+' option:first').val();
+ } else {
+  var csel = $('#'+el+' option:last').val();
+ }
+ var len = $('#'+el+' option').length; 
 //console.log("len select-end: "+csel)
   $.ajax({
   type : "GET",
   dataType : "html",
-  url : "api/responder.xql?func=get-more-lines&line="+csel,
+  url : "api/responder.xql?func=get-more-lines&cnt="+count+"&len="+len+"&line="+csel,
   success : function(resp){
   console.log(resp)
-  $('#select-end').append(resp)
+  if (cnt <0) {
+     $('#'+el).prepend(resp)      
+  } else {
+     $('#'+el).append(resp)
+  }
   }
   });
 };
@@ -2105,7 +2116,7 @@ function add_rd_here(){
 };
 
 function save_rdl(word, lineid, line){
-  var end_val = $("#select-end" ).val();
+  var end_val = $("#select-end" ).val().split('#')[0];
   var end = $("#select-end option:selected" ).text();
   var rd = $("#select-rhetdev").val();
   var rdid = $("#rhetdev-id-span").text();
@@ -2348,9 +2359,10 @@ function quick_search(){
 function do_quick_search(start, count, stype, mode, target){
 //    var word = $("#swl-query-span").text();
     var word = $("input[name=query]").val();
+    var uuid = $("input[name=qs-uuid]").val();
     var textid = $("#swl-line-id-span" ).text().split("_")[0]
     console.log(textid)
-    $.get("api/responder.xql?func=quick-search&query="+word+"&start="+start+"&count="+count+"&mode="+mode+"&search-type="+stype+"&textid="+textid+"&target="+target, 
+    $.get("api/responder.xql?func=quick-search&query="+word+"&uuid="+uuid+"&start="+start+"&count="+count+"&mode="+mode+"&search-type="+stype+"&textid="+textid+"&target="+target, 
       "html", 
     function(resp){
          $('#swl-select').html(resp);
@@ -2811,15 +2823,80 @@ function bibref_attach(action){
 };
 
 
-function do_link_items(){
+function show_new_link_dialog(){
     var items = $('input[name=res-check]:checked').attr('id')
     var arr = [];
         $.each($("input[name='res-check']:checked"), function(){
                   arr.push($(this).attr('id'));
          });
-    alert("Your selected items are: " + arr.join(", "));
+//    alert("Your selected items are: " + arr.join(", "));
+   var word = $("input[name=query]").val();
+   var line_id = $("#swl-line-id-span").text();
+  if (arr.length > 0) { 
+  $.ajax({
+  type : "GET",
+  dataType : "html",  
+  url : "api/responder.xql?func=lli:new-link-dialog&line="+line_id+"&word="+word+"&items="+arr.join(","), 
+  success : function(resp){
+      $('#remoteDialog').html(resp);
+      $('#new-link-dialog').modal('show');
+  },
+  error : function(resp){
+   console.log(resp)
+   alert("PROBLEM"+resp);
+  }
+
+  }); 
+  }  
 //    alert(items)
 };
+
+function add_context_lines(el){
+  var sel = Number($('#'+el+ ' option:selected').val().split('#')[1]) 
+  var selarr = [];
+  $('#' + el +' option').each(function(){
+      var cval = Number($(this).val().split('#')[1]);
+      if (cval <= sel) {
+        selarr.push($(this).text());
+      } else {
+      }
+  });
+  $('#' + el.replace("select", "staging-area")).text(selarr.join(''))
+  //alert(sel + 'xx' + selarr.join(","))  
+};
+
+
+// save link items in the form
+// TODO make generic and merge with bib:new-entry
+function save_link_items(){
+  formData = $("#new-link-form").serialize()
+  var uuid = $("input[name=qs-uuid]").val();
+  var vis = $('input[name=visradio]:checked').val();
+  $.ajax({
+  type : "POST",
+  url : "api/responder.xql?func=lli:save-link-items&uuid="+uuid+"&vis="+vis,
+  data: formData,
+  success : function(resp){
+    if (resp.startsWith("Could not")) {
+    toastr.error(resp, "漢學文典 says:");
+/*    toastr.error("Could not save translation for "+line+".", "HXWD says:");        */
+    } else {
+    toastr.info("Modification saved.", "漢學文典 says:");
+    $('#new-link-dialog').modal('hide');
+    $('#remoteDialog').html('');
+    //window.location = 'bibliography.html?uuid='+uuid
+    dirty = false;
+    }
+  },
+  error : function(resp){
+  console.log(resp);
+    alert("PROBLEM: "+resp.statusText + "\n " + resp.responseText);
+  }
+  });    
+  
+};
+
+
 
 
 // add a url to a bibliographic item

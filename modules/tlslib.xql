@@ -410,6 +410,7 @@ if ($s > 0) then if ($s > 1) then <span> {$s} seconds </span> else <span> {$s} s
 : recurse through the supplied node (a tei:seg) and return only the top level text()
 : 2020-02-20: created this element because KR2m0054 has <note> elements in translation. 
 : @param $node a tei:seg node, typically
+: 2023-11-30:  copied this to render-html, so that it can be used in link-items.  What needs to be done is finalize the move (or move somewhere better) and update all references, then delete this here.
 :)
 declare function tlslib:proc-seg($node as node(), $options as map(*)){
  typeswitch ($node)
@@ -806,6 +807,9 @@ declare function tlslib:display-bibl($bibl as node()){
 declare function tlslib:next-n-segs($startseg as xs:string, $n as xs:int){
 let $targetseg := collection($config:tls-texts-root)//tei:seg[@xml:id=$startseg]
 return
+if ($n < 0) then
+$targetseg/preceding::tei:seg[fn:position() < abs($n)]
+else
 $targetseg/following::tei:seg[fn:position() < $n]
 };
 

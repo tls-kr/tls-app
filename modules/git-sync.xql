@@ -19,15 +19,20 @@ declare variable $repo-name := $git-config//repo-name/text();
                               
 declare variable $git-log := $config:tls-log-collection || "/git";
 
-let $exempt := ("/db/apps/tls-app/modules/view.xql", "/db/apps/tls-app/controller.xql", "/db/apps/tls-app/api/responder.xql", "/db/apps/tls-app/modules/signup.xql")
+let $exempt := ("/db/apps/tls-app/modules/view.xql", "/db/apps/tls-app/modules/git-sync.xql", "/db/apps/tls-app/controller.xql", 
+"/db/apps/tls-app/api/store_new_translation.xql",
+"/db/apps/tls-app/api/responder.xql", "/db/apps/tls-app/modules/signup.xql")
 let $data := request:get-data()
 let $file-data := ghx:execute-webhook($data, $exist-collection, $repo-name, "master",  $gitSecret, $gitKey)
 
 return 
 
 for $f in $file-data 
-let $perm :=  if ($f = $exempt) then () else ( sm:chown(xs:anyURI($f), "tls"),
+let $perm :=  if ($f = $exempt) then () else 
+( sm:chown(xs:anyURI($f), "tls"),
     sm:chgrp(xs:anyURI($f), "tls-user"),
+    if (contains($f, "/api/")) then 
+    sm:chmod(xs:anyURI($f), "rwxr-xr-x") else
     sm:chmod(xs:anyURI($f), "rw-rw-r--") )
 
 return log:info($git-log, $f)

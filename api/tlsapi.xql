@@ -1566,11 +1566,11 @@ else ()
 };
 
 declare function tlsapi:quick-search($map as map(*)){
-  let $cat := map:merge(for $c in tokenize($map?filter, ";") 
+ let $cat := map:merge(for $c in tokenize($map?filter, ";") 
                            let $ck := tokenize($c, ":")
                            return map:entry($ck[1], $ck[2]))
-
-  let $hits := 
+ let $uuid :=  if (starts-with($map?uuid, "uuid")) then $map?uuid else "uuid-" || util:uuid()
+ let $hits := 
       if ($map?target = 'texts') then
             let $res := src:ngram-query($map?query, $map?mode, $map?search-type, $map?textid, $cat)
             return $res?hits
@@ -1583,15 +1583,28 @@ declare function tlsapi:quick-search($map as map(*)){
 , $start := xs:int($map?start)
 , $count := xs:int($map?count)
 , $total := count($hits)
-, $prevp := if ($start = 1) then "" else 'do_quick_search('||$start||' - '||$count||', '||$count ||', '||$map?search-type||', "'||$map?mode||', '||$map?target||'")'
-, $nextp := if ($total < $start + $count) then "" else 'do_quick_search('||$start||' + '||$count||', '||$count ||', '||$map?search-type||', "'||$map?mode||', '||$map?target||'")'
+(: do_quick_search(1 + 25, 25, 5, "rating, texts") 
+function do_quick_search(start, count, stype, mode, target){
+:)
+, $prevp := if ($start = 1) then "" else 
+  let $ts := $start - $count 
+    return
+   ``[
+do_quick_search('`{$ts}`', '`{$count}`', '`{$map?search-type}`', '`{$map?mode}`', '`{$map?target}`')
+]``
+, $nextp := if ($total < $start + $count) then "" else 
+   let $ts := $start + $count
+   return
+   ``[
+do_quick_search('`{$ts}`', '`{$count}`', '`{$map?search-type}`', '`{$map?mode}`', '`{$map?target}`')
+]``
 , $qs := tokenize($map?query, "\s")
 , $q1 := substring($qs[1], 1, 1)
 
 return
 if ($map?target = 'wikidata') then $hits
 else
-<div><p><span class="font-weight-bold">{$start}</span> to <span class="font-weight-bold">{min(($start + $count -1, $total))}</span> of <span class="font-weight-bold">{$total}</span> <span class="font-weight-bold"> p</span> with <span class="font-weight-bold">{count($disp)}</span> hits  {if ($map?search-type eq "5") then "in "||$title else "in all texts" }. {
+<div><p><input type="hidden" name="qs-uuid" value="{$uuid}"/><span class="font-weight-bold">{$start}</span> to <span class="font-weight-bold">{min(($start + $count -1, $total))}</span> of <span class="font-weight-bold">{$total}</span> <span class="font-weight-bold"> p</span> with <span class="font-weight-bold">{count($disp)}</span> hits  {if ($map?search-type eq "5") then "in "||$title else "in all texts" }. {
 if ($map?search-type eq "5") then 
    (<button class="btn badge badge-light" onclick="do_quick_search(1, 25, 1, 'date', 'texts')">Search in all texts (by textdate)</button>,
    <button class="btn badge badge-light" onclick="do_quick_search(1, 25, 1, 'rating', 'texts')">Search in all texts (<span class="bold" style="color:red;">★</span> texts first)</button>) else 
@@ -1634,7 +1647,7 @@ for $sh in $h/preceding-sibling::tei:seg[position()<4] return tlslib:proc-seg($s
     <li class="page-item"><a class="page-link {if ($start = 1) then "disabled" else ()}" onclick="{$prevp}" href="#">&#171;</a></li>
     <li class="page-item"><a class="page-link" onclick="{$nextp}" href="#">&#187;</a></li>
     { if ("dba" = sm:id()//sm:group) then 
-    <li> <span class="btn" onclick="do_link_items()">Link selected items to this line</span></li>
+    <li> <span class="btn" onclick="show_new_link_dialog('{$uuid}')">Link selected items to this line</span></li>
     else ()
     }
   </ul>
@@ -1706,9 +1719,15 @@ $rdlnode
 };
 
 declare function tlsapi:get-more-lines($map as map(*)){
-let $ret := for $s in tlslib:next-n-segs($map?line, 20)
+let $cnt := xs:int($map?cnt)
+, $len := xs:int($map?len)
+, $start := abs($cnt) + $len
+let $ret := for $s at $pos in tlslib:next-n-segs($map?line, $cnt)
 return
-<option value="{$s/@xml:id}">{$s/text()}</option>
+if ($cnt < 0 ) then 
+<option value="{$s/@xml:id}#{$start - $pos}">{lrh:proc-seg($s, map{"punc" : true()})}</option>
+else 
+<option value="{$s/@xml:id}#{$len + $pos}">{lrh:proc-seg($s, map{"punc" : true()})}</option>
 return
 $ret
 };

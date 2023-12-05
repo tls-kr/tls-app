@@ -305,6 +305,7 @@ let $doc := doc("/db/groups/tls-editor/users/" || $map?uuid || ".xml")
 , $resp := if ($appr/@resp) then $appr/@resp || ";#" || $map?resp else "#" || $map?resp 
 , $u := if ($appr/@resp) then update delete $appr/@resp else () 
 , $u2 := update insert attribute resp {$resp} into $appr
+, $sss := sgn:check-approved()
 return
 "Success"
 };
@@ -321,7 +322,7 @@ let $m := $u/parent::more/ss/text()
 let $status :=  <verified status="processed"/>
 
 return
-if ($cnt > 1) then (
+if ($cnt > 0) then (
 sgn:create-user($m),
 update replace $u with $status,
 sgn:send-welcome-mail($user-id, $name, $uname)

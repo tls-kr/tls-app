@@ -21,7 +21,8 @@ import module namespace dbu="http://exist-db.org/xquery/utility/db" at "db-utili
 
 import module namespace lu="http://hxwd.org/lib/utils" at "lib/utils.xqm";
 import module namespace lmd="http://hxwd.org/lib/metadata" at "lib/metadata.xqm";
-import module namespace lus="http://hxwd.org/lib/user-settings" at "user-settings.xqm";
+import module namespace lus="http://hxwd.org/lib/user-settings" at "lib/user-settings.xqm";
+import module namespace lgrp="http://hxwd.org/lib/group-by" at "lib/group-by.xqm";
 
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
@@ -828,10 +829,14 @@ let $query := $model?query
     ,$q1 := substring($qs[1], 1, 1)
     ,$rat := "Go to the menu -> Browse -> Texts to rate your favorite texts."
     ,$burl := "search.html?query="||$query||"&amp;search-type="||$search-type || src:maybe-query("textid",$textid) || src:maybe-query("cat",$model?cat)
+    ,$hitcount := count($model?hits)
     ,$qc := for $c in string-to-codepoints($query) 
        where $c > 255
        return  codepoints-to-string($c)
     return
+    if ($mode = "group-by" (: or ($hitcount > 400 and $hitcount < 5000) :)   ) then 
+       src:show-group-by-results(map{"hits": $model?hits, "query": $model?query, "textid" : $textid})
+    else
     switch ($search-type)
     case $src:search-advanced return
        src:advanced-search($query, $mode)
@@ -840,7 +845,7 @@ let $query := $model?query
     case $src:search-titles return
       src:show-title-results(map{"hits": $model?hits, "query" : $query})
     case $src:search-tabulated return 
-      let $p := src:search-top-menu($search-type, $query, 0, "", 0, $textid, $qc, count($model?hits), $map?mode)
+      let $p := src:search-top-menu($search-type, $query, 0, "", 0, $textid, $qc, $hitcount, $map?mode)
       return
       src:show-tab-results(map{"p": $p, "hits" : $model?hits, "mode" : $map?mode, "query":$query}) 
     case $src:search-texts 
@@ -987,6 +992,15 @@ declare function src:show-field-results($map as map(*)){
 
 };
 
+declare function src:show-group-by-results($map as map(*)){
+  let $seq := for $ss in $map?hits return string-join($ss) => normalize-space() => replace(' ', '')
+  return
+<div>{$map?p}
+<div id="show-group-by-results">
+{lgrp:group-collocation($seq, map{"key" : $map?query, "textid" : $map?textid, "cutoff" : 5, "level" : 1, "max-level": 4, "cnt": 999999})}
+</div>
+</div>
+};
 
 declare function src:show-text-results($map as map(*)){
     <div>{$map?p}
