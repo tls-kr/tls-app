@@ -21,7 +21,8 @@ import module namespace dbu="http://exist-db.org/xquery/utility/db" at "db-utili
 
 import module namespace lu="http://hxwd.org/lib/utils" at "lib/utils.xqm";
 import module namespace lmd="http://hxwd.org/lib/metadata" at "lib/metadata.xqm";
-import module namespace lus="http://hxwd.org/lib/user-settings" at "user-settings.xqm";
+import module namespace lus="http://hxwd.org/lib/user-settings" at "lib/user-settings.xqm";
+import module namespace lgrp="http://hxwd.org/lib/group-by" at "lib/group-by.xqm";
 
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
@@ -82,7 +83,7 @@ function src:query($node as node()*, $model as map(*), $query as xs:string?, $mo
        src:dic-query($query, $mode)
      case $src:search-trans return
       (: searching for word in translations :)
-       src:tr-query($query, $mode)
+       src:tr-query($query, $mode, $textid)
      case $src:search-titles return
       (: searching for word in titles :)
        src:title-query($query, $mode)
@@ -198,12 +199,15 @@ tlslib:get-sw($queryStr, "dic", "core", "")
 };
 
 (: query in translation :)
-declare function src:tr-query($queryStr as xs:string?, $mode as xs:string?)
+declare function src:tr-query($queryStr as xs:string?, $mode as xs:string?, $stextid as xs:string?)
 {
   let $user := sm:id()//sm:real/sm:username/text()
   let $dataroot := ($config:tls-translation-root, $config:tls-user-root || $user || "/translations")
   let $w := collection($dataroot)//tei:seg[contains(. , $queryStr)]
   for $a in $w
+  let $textid := tokenize(substring-before(tokenize(document-uri(root($a)), "/")[last()], ".xml"), "-")[1]
+  , $filter := if (string-length($stextid) > 0) then $textid = $stextid else true()
+  where $filter
   return $a
 };
 
@@ -320,6 +324,9 @@ return
 (if ($map?search-type = $src:search-bib ) then () else
  if ($map?search-type = $src:ngtype) then (
  <h1>Searching in <strong>{if (count(map:keys($map?cat)) > 0) then string-join(for $c in map:keys($map?cat) return lmd:cat-title($map?cat?($c)), " / ") else $st}</strong> for <mark class="chn-font">{$map?query}</mark></h1>
+) else
+ if ($map?search-type = $src:search-trans) then (
+ <h1>Searching in <strong>{$st}</strong>{if (string-length($map?textid) > 0) then " for " || lu:get-title($map?textid) else ()} for <mark class="chn-font">{$map?query} </mark> </h1>
 ) else
  if ($map?search-type = $src:textlist) then
    let $count := count($map?hits)
@@ -822,10 +829,14 @@ let $query := $model?query
     ,$q1 := substring($qs[1], 1, 1)
     ,$rat := "Go to the menu -> Browse -> Texts to rate your favorite texts."
     ,$burl := "search.html?query="||$query||"&amp;search-type="||$search-type || src:maybe-query("textid",$textid) || src:maybe-query("cat",$model?cat)
+    ,$hitcount := count($model?hits)
     ,$qc := for $c in string-to-codepoints($query) 
        where $c > 255
        return  codepoints-to-string($c)
     return
+    if ($mode = "group-by" (: or ($hitcount > 400 and $hitcount < 5000) :)   ) then 
+       src:show-group-by-results(map{"hits": $model?hits, "query": $model?query, "textid" : $textid})
+    else
     switch ($search-type)
     case $src:search-advanced return
        src:advanced-search($query, $mode)
@@ -834,7 +845,7 @@ let $query := $model?query
     case $src:search-titles return
       src:show-title-results(map{"hits": $model?hits, "query" : $query})
     case $src:search-tabulated return 
-      let $p := src:search-top-menu($search-type, $query, 0, "", 0, $textid, $qc, count($model?hits), $map?mode)
+      let $p := src:search-top-menu($search-type, $query, 0, "", 0, $textid, $qc, $hitcount, $map?mode)
       return
       src:show-tab-results(map{"p": $p, "hits" : $model?hits, "mode" : $map?mode, "query":$query}) 
     case $src:search-texts 
@@ -853,6 +864,7 @@ let $query := $model?query
        if ($mode = "rating") then 
     ("&#160;Sorting by text rating. " , <a class="btn badge badge-light" href="{$burl}&amp;start=1&amp;mode=date">Click here to sort by text date instead. </a> )
      else
+     if ($search-type = $src:search-trans) then () else 
     ("&#160;Sorting by text date. " , <a class="btn badge badge-light" href="{$burl}&amp;start=1&amp;mode=rating" title="{$rat}">Click here to sort your favorite texts first. </a>)}</p>
     , $nav := <nav aria-label="Page navigation">
   <ul class="pagination">
@@ -905,6 +917,8 @@ declare function src:show-catalog-results($map as map(*)){
 declare function src:search-top-menu($search-type, $query, $txtmatchcount, $title, $trmatch, $textid, $qc, $count, $mode) {
   switch($search-type)
 (:  case "8":)
+  case "3" return
+       (<a class="btn badge badge-light" href="search.html?query={$query}&amp;start=1&amp;search-type=3&amp;&amp;mode={$mode}">Click here to display all  matches</a>,<br/>)
   case "5" return
        (<a class="btn badge badge-light" href="search.html?query={$query}&amp;start=1&amp;search-type=1&amp;textid={$textid}&amp;mode={$mode}">Click here to display all  matches</a>,<br/>)
   case "8" return
@@ -923,7 +937,7 @@ declare function src:search-top-menu($search-type, $query, $txtmatchcount, $titl
     (<a class="btn badge badge-light" href="search.html?query={$query}&amp;start=1&amp;search-type=5&amp;textid={$textid}&amp;mode={$mode}">Click here to display only {$txtmatchcount} matches in {$title}</a>,<br/>)
   else ()
   ), 
-  tlslib:linkheader($qc),
+  if ($search-type = "3") then () else tlslib:linkheader($qc),
    <br/>
      
 };
@@ -978,6 +992,15 @@ declare function src:show-field-results($map as map(*)){
 
 };
 
+declare function src:show-group-by-results($map as map(*)){
+  let $seq := for $ss in $map?hits return string-join($ss) => normalize-space() => replace(' ', '')
+  return
+<div>{$map?p}
+<div id="show-group-by-results">
+{lgrp:group-collocation($seq, map{"key" : $map?query, "textid" : $map?textid, "cutoff" : 5, "level" : 1, "max-level": 4, "cnt": 999999})}
+</div>
+</div>
+};
 
 declare function src:show-text-results($map as map(*)){
     <div>{$map?p}

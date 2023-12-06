@@ -49,3 +49,66 @@ declare function lrh:get-content-id($textid as xs:string, $slot as xs:string, $t
   return if (string-length($content-id) > 0) then $content-id else "new-content"
 };
 
+
+(:~
+: recurse through the supplied node (a tei:seg) and return only the top level text()
+: 2020-02-20: created this element because KR2m0054 has <note> elements in translation. 
+: @param $node a tei:seg node, typically
+:)
+declare function lrh:proc-seg($node as node(), $options as map(*)){
+ typeswitch ($node)
+ case element(tei:note) return ()
+(:     <small>{$node/text()}</small>:)
+  case element (tei:l) return ()
+  case element (tei:c) return 
+  if ($options?punc) then
+   if ($node/@type = "shifted") then 
+     <span class="swxz">{data($node/@n)}</span>
+     else
+   if ($node/@type = "swxz-uni") then 
+     <span class="swxz-uni">{data($node/@n)}</span>
+     else
+     data($node/@n)
+   else ()
+  case element (tei:g) return 
+   if ($node/@type = "SWXZ-PUA") then 
+     <span class="swxz-pua">{$node/text()}</span>
+     else
+   if ($node/@type = "shifted") then 
+     <span class="swxz">{data($node/@n)}</span>
+     else
+   if ($node/@type = "swxz-uni") then 
+     <span class="swxz-uni">{data($node/@n)}</span>
+   else
+     $node/text()
+  case element (tei:lb)  return <span title="{data($node/@ed)}:{data($node/@n)}" class="lb text-muted ed-{data($node/@ed)}"><img class="icon note-anchor" src="{$config:lb}"/></span>
+  case element (tei:pb)  return <span title="{data($node/@ed)}:{data($node/@n)}" class="lb text-muted ed-{data($node/@ed)}"><img class="icon note-anchor" src="{$config:lb}"/></span>
+  (: <span title="Click here to display a facsimile of this page\n{data($node/@ed)}:{data($node/@n)}" class="text-muted"><img class="icon note-anchor" onclick="get_facs_for_page('slot1', '{$node/@facs}')" src="{$config:pb}"/></span> :)
+  case element (tei:space)  return "　"
+  case element (exist:match) return <mark>{$node/text()}</mark>
+  case element (tei:anchor) return 
+    (: since I need it later, I will get it here, even if it might not get a result :)
+    let $app := $node/ancestor::tei:TEI//tei:app[@from="#"||$node/@xml:id]
+    let $t := if (starts-with($node/@xml:id, "xxnkr_note_mod")) then tu:cleanstring($node/ancestor::tei:TEI//tei:note[@target = "#"|| $node/@xml:id]//text()) else
+    if (starts-with($node/@xml:id, 'beg')) then 
+     if ($app) then
+       lrh:format-app($app) else ()
+    else
+      ()
+    return if ($t) then <span title="{$t}" class="text-muted"><img class="icon note-anchor" onclick="edit_app('{$options?textid}','{data($node/@xml:id)}')" src="{$config:circle}"/></span> else ()
+  case element(tei:seg) return (if (string-length($node/@n) > 0) then data($node/@n)||"　" else (), for $n in $node/node() return lrh:proc-seg($n, $options))
+  case attribute(*) return () 
+ default return $node    
+};
+
+(: format the app for display in the segment :)
+declare function lrh:format-app($app as node()){
+ let $lwit := $app/ancestor::tei:TEI//tei:witness[@xml:id=substring($app/tei:lem/@wit, 2)]/text()
+ let $lem :=  string-join($app/tei:lem//text(), ' ') || $lwit ||"；" 
+ , $t := string-join(for $r in $app/tei:rdg
+        let $wit := "【" || string-join(for $w in tokenize($r/@wit) return $app/ancestor::tei:TEI//tei:witness[@xml:id=substring($w, 2)]/text() , "，") ||  "】"
+        return $r/text() || $wit, "；")
+ , $note := if ($app/tei:note) then "&#xA;(Note: " || $app/tei:note/text() || ")&#xA;" || $app/tei:note/tei:bibl else () 
+  return $lem || $t || $note
+};
+
