@@ -21,7 +21,8 @@ import module namespace lu="http://hxwd.org/lib/utils" at "lib/utils.xqm";
 import module namespace lmd="http://hxwd.org/lib/metadata" at "lib/metadata.xqm";
 import module namespace lrh="http://hxwd.org/lib/render-html" at "render-html.xqm";
 import module namespace lus="http://hxwd.org/lib/user-settings" at "user-settings.xqm";
-import module namespace lv="http://hxwd.org/lib/vault" at "vault.xqm";
+import module namespace lv="http://hxwd.org/lib/vault" at "lib/vault.xqm";
+import module namespace lvs="http://hxwd.org/lib/visits" at "lib/visits.xqm";
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
@@ -685,7 +686,7 @@ return
 
 declare function tlslib:attention-needed(){
  let $ux := collection("/db/groups/tls-admin/new-users")//verified[@status='true']
- , $v := xs:dateTime(tlslib:visit-time("sgn:review"))
+ , $v := xs:dateTime(lvs:visit-time("sgn:review"))
  , $c := count(for $u in $ux
   let $m := xs:dateTime($u/tk/user/@time-stamp)
   where $m > $v
@@ -809,9 +810,9 @@ declare function tlslib:next-n-segs($startseg as xs:string, $n as xs:int){
 let $targetseg := collection($config:tls-texts-root)//tei:seg[@xml:id=$startseg]
 return
 if ($n < 0) then
-$targetseg/preceding::tei:seg[fn:position() < abs($n)]
+$targetseg/preceding::tei:seg[fn:position() <= abs($n)]
 else
-$targetseg/following::tei:seg[fn:position() < $n]
+$targetseg/following::tei:seg[fn:position() <= $n]
 };
 
 declare function tlslib:chunkcol-left($dseg, $model, $tr, $slot1-id, $slot2-id, $loc, $cnt){
@@ -819,6 +820,7 @@ declare function tlslib:chunkcol-left($dseg, $model, $tr, $slot1-id, $slot2-id, 
       return tlslib:display-seg($d, map:merge(($model, $tr, 
       map{'slot1': $slot1-id, 'slot2': $slot2-id, 
           'loc' : $loc, 
+          'zh-width' : 'col-sm-3',
           'pos' : $pos + $cnt, "ann" : "xfalse.x"})))
 };
 
@@ -850,7 +852,7 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
 (:      $model := if (string-length($model?textid) > 0) then $model else map:put($model, "textid", tokenize($targetseg, "_")[1]), :)
       $show-transl := not(contains(sm:id()//sm:group/text(), "guest")),
       $show-variants := xs:boolean(1),
-      $visit := tlslib:record-visit($targetseg),
+      $visit := lvs:record-visit($targetseg),
       $tr := if ($show-transl) then 
          if (string-length($facs) > 0) then map:merge((ltr:get-translations($model?textid), 
             for $edx in distinct-values($targetseg/ancestor::tei:div//tei:pb/@ed)
@@ -1437,77 +1439,8 @@ else ()}
 
 
 
-(: ~
- : on visiting a page, record the visit in the history.xml file
-:)
-
-declare function tlslib:record-visit($targetseg as node()){
-let $user := sm:id()//sm:real/sm:username/text(),
-$groups := sm:get-user-groups($user),
-$doc := if ("guest" = $groups) then () else tlslib:get-visit-file(),
-$date := current-dateTime()
-, $textid := lmd:get-metadata($targetseg, "textid")
-, $ex := $doc//tei:item[@xml:id=$textid]
-, $item := <item xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$textid}" modified="{current-dateTime()}"><ref target="#{$targetseg/@xml:id}">{$targetseg/text()}</ref></item>
-return 
-if ($ex) then 
-  update replace $ex with $item
-else
-  if ($doc) then
-     update insert $item  into $doc//tei:list[@xml:id="recent-start"]
-  else ()
-};
-
-declare function tlslib:get-visit-file(){
-  let $user := sm:id()//sm:real/sm:username/text(),
-  $doc-path := $config:tls-user-root|| $user || "/recent.xml",
-  $doc := if (not(doc-available($doc-path))) then 
-    doc(xmldb:store($config:tls-user-root|| $user,  "recent.xml",
-<TEI xmlns="http://www.tei-c.org/ns/1.0" xml:id="vis-{$user}">
-  <teiHeader>
-      <fileDesc>
-         <titleStmt>
-            <title>Visited texts for {$user}</title>
-         </titleStmt>
-         <publicationStmt>
-            <ab>published electronically as part of the TLS project at https://hxwd.org</ab>
-         </publicationStmt>
-         <sourceDesc>
-            <p>Created by members of the TLS project</p>
-         </sourceDesc>
-      </fileDesc>
-     <profileDesc>
-        <creation>Initially created: <date>{current-dateTime()}</date> for {$user}.</creation>
-     </profileDesc>
-  </teiHeader>
-  <text>
-      <body>
-      <div><head>Visited pages</head>
-      <list type="visits" xml:id="recent-start"></list>
-      </div>
-      </body>
-  </text>
-</TEI>))
-    else doc($doc-path)
-  return $doc
-};
-
-declare function tlslib:visit-time($textid as xs:string){
-  let $user := sm:id()//sm:real/sm:username/text(),
-  $doc := if ($user="guest") then () else doc($config:tls-user-root|| $user || "/recent.xml")
-  return
-  $doc//tei:list[@type="visits"]/tei:item[@xml:id=$textid]/@modified
-};
-
-declare function tlslib:recent-visits(){
-  let $user := sm:id()//sm:real/sm:username/text(),
-  $doc := if ($user="guest") then () else doc($config:tls-user-root|| $user || "/recent.xml")
-  return
-  $doc//tei:list[@type="visits"]/tei:item
-};
-
 declare function tlslib:recent-texts-list($num){
-subsequence( for $l in  tlslib:recent-visits()
+subsequence( for $l in  lvs:recent-visits()
   let $date := xs:dateTime($l/@modified)
   , $textid := $l/@xml:id
   , $title := lu:get-title($textid)

@@ -18,6 +18,7 @@ import module namespace lu="http://hxwd.org/lib/utils" at "utils.xqm";
 import module namespace lrh="http://hxwd.org/lib/render-html" at "render-html.xqm";
 import module namespace lv="http://hxwd.org/lib/vault" at "vault.xqm";
 import module namespace lus="http://hxwd.org/lib/user-settings" at "user-settings.xqm";
+import module namespace lvs="http://hxwd.org/lib/visits" at "visits.xqm";
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace mf="http://kanripo.org/ns/KRX/Manifest/1.0";
@@ -446,7 +447,7 @@ let $id := substring($trid, 1, string-length($trid) -3)
 ,$transl := $tr($content-id)[1]
 ,$seg := <seg xmlns="http://www.tei-c.org/ns/1.0" corresp="#{$id}" xml:lang="{$lang}" resp="#{$user}" modified="{current-dateTime()}">{$tr-to-save}</seg>
 ,$node := $transl//tei:seg[@corresp="#" || $id]
- 
+,$visit := lvs:record-visit(lu:get-seg($id))
 return
 if ($node) then (
  update insert attribute modified {current-dateTime()} into $node,
