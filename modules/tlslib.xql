@@ -802,6 +802,7 @@ declare function tlslib:display-bibl($bibl as node()){
 : @param $startseg xml:id of a tei:seg element
 : @param $n number of elements
 : this returns a sequence of nodes
+2023-12-05:  moving to lu module, sunsetting here.
 :)
 
 declare function tlslib:next-n-segs($startseg as xs:string, $n as xs:int){

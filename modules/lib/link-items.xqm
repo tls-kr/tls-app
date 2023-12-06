@@ -27,11 +27,12 @@ declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
 
 declare variable $lli:item-types := map{
- "aut" : "Author" ,
- "trl" : "Translator" ,
- "edi" : "Editor",
- "cmp" : "Compiler"  ,
- "com" : "Commentator" 
+ "1root" : "Root text" ,
+ "2comm" : "Commentary" ,
+ "3quot" : "Quotation",
+ "4source" : "Source",
+ "5gloss" : "Gloss",
+ "6note" : "Note"
 };
 
 declare function lli:format-items($seg-id as xs:string) {
@@ -94,10 +95,12 @@ declare function lli:new-link-dialog($map as map(*)){
 
             </div>
               <h6  class="font-weight-bold">Items</h6>
+              <div class="w-100 border border-secondary"/>
               {for $item at $pos in $items
                let $seg:= lu:get-seg($item)
               return
-             (<div class="form-row" id="role-group-{$pos}">
+             (
+             <div class="form-row" id="role-group-{$pos}">
               <div id="select-start-group" class="form-group col-md-4">
                 <label for="select-start-{$pos}" class="font-weight-bold">({$pos}) Select start (
                 <button class="btn badge badge-primary" type="button" onclick="get_more_lines('select-start-{$pos}', {0 - $context-lines})" title="Press here to add more lines">＞</button>):</label>
@@ -156,7 +159,8 @@ declare function lli:new-link-dialog($map as map(*)){
                <label for="item-note--{$pos}" class="font-weight-bold">Item note</label>
               <textarea name="item-note--{$pos}" class="form-control"></textarea> 
               </div>
-             </div>
+             </div>,
+             <div class="w-100 border border-secondary"/>
              )
              }
             <h6  class="font-weight-bold">General notes</h6>
@@ -218,13 +222,26 @@ declare function lli:save-link-items($map as map(*)){
               , $start := map:get($map, "select-start--" || $send)
               , $end := map:get($map, "select-end--" || $send)
               , $line := map:get($map, $item)
+              , $seg := lu:get-seg($line)
               , $baseline := $line = $map?line
+              , $pretext := let $n := xs:int(tokenize($start, '#')[2]) 
+                            return
+                            if ($n > 0) then lrh:multiple-segs($line, 0 - $n) else ()  
+              , $posttext := lrh:multiple-segs($line, xs:int(tokenize($end, '#')[2]))
+                    
               return
-              <tls:line xmlns:tls="http://hxwd.org/ns/1.0" start="{$start}" end="{$end}" line="{$line}" baseline="{$baseline}">{lrh:proc-seg(lu:get-seg($line), map{"punc" : true()})}</tls:line>
+              <tls:line xmlns:tls="http://hxwd.org/ns/1.0" 
+               textid="{lmd:get-metadata($seg, "textid")}" 
+               head="{lmd:get-metadata($seg, "title")} / {lmd:get-metadata($seg, "head")}" 
+               start="{$start}" 
+               end="{$end}" 
+               line="{$line}" 
+               baseline="{$baseline}">{$pretext}{lrh:proc-seg($seg, map{"punc" : true()})}{$posttext}</tls:line>
    
              
 return $lines 
 };
+
 
 declare function lli:get-links-file($uuid as xs:string, $public as xs:boolean){
 let $user := sm:id()//sm:real/sm:username/text()
