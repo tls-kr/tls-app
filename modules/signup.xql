@@ -20,6 +20,7 @@ import module namespace tlslib="http://hxwd.org/lib" at "tlslib.xql";
 import module namespace http="http://expath.org/ns/http-client";
 import module namespace mail="http://exist-db.org/xquery/mail";
 import module namespace templates="http://exist-db.org/xquery/templates" ;
+import module namespace lvs="http://hxwd.org/lib/visits" at "lib/visits.xqm";
 
 declare variable $sgn:userhome := "/db/users";
 
@@ -240,7 +241,7 @@ return
 
 declare function sgn:review(){
 let $reviewer := sm:id()//sm:real/sm:username/text()
-, $visit := tlslib:record-visit(<seg xmlns="http://www.tei-c.org/ns/1.0" textid="sgn:review" xml:id="sgn:review">{$reviewer}</seg>)
+, $visit := lvs:record-visit(<seg xmlns="http://www.tei-c.org/ns/1.0" textid="sgn:review" xml:id="sgn:review">{$reviewer}</seg>)
 return
 <div>
 <h3>Review of account requests</h3>

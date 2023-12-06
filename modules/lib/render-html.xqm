@@ -112,3 +112,9 @@ declare function lrh:format-app($app as node()){
   return $lem || $t || $note
 };
 
+declare function lrh:multiple-segs($seg, $n){
+    string-join(
+    for $s at $p in lu:next-n-segs($seg, $n)
+    return
+    lrh:proc-seg($s, map{"punc" : true()}) )
+};

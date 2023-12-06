@@ -35,6 +35,17 @@ declare function lu:get-seg($sid as xs:string){
 collection($config:tls-texts-root)//tei:seg[@xml:id=$sid]
 };
 
+declare function lu:next-n-segs($startseg as xs:string, $n as xs:int?){
+let $targetseg := collection($config:tls-texts-root)//tei:seg[@xml:id=$startseg]
+return
+if ($n < 0) then
+$targetseg/preceding::tei:seg[fn:position() <= abs($n)]
+else if ($n > 1) then
+$targetseg/following::tei:seg[fn:position() <= $n]
+else ()
+};
+
+
 declare function lu:can-create-translation-file(){
 "tls-user" = sm:id()//sm:group
 };
