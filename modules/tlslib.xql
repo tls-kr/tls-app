@@ -833,7 +833,8 @@ declare function tlslib:swl-form-dialog($context as xs:string, $model as map(*))
  <div class="card-body">
     <h5 class="card-title"><span id="new-att-title">{if (sm:is-authenticated()) then "New Attribution:" else "Existing SW for " }<strong class="ml-2 chn-font"><span id="swl-query-span">Word or char to annotate</span>:</strong></span>
 <span id="domain-lookup-mark">
-    <span class="badge badge-info ml-2" onclick="wikidata_search()" title="Click here for a quick search in WikiData"> WD </span>
+    <span class="badge badge-info ml-2" onclick="wikidata_search('wikidata')" title="Click here for a quick search in WikiData"> WD </span>
+    { if ("dba" = sm:id()//sm:group) then <span class="badge badge-info ml-2" onclick="wikidata_search('similar')" title="Search for similar lines"> 似 </span> else ()}
     <span>　　Lookup domain:<select id="domain-select" onChange="update_swlist()"><option value="core">Core</option>{for $d in xmldb:get-child-collections($config:tls-data-root||'/domain') return <option value="{$d}">{tlslib:capitalize-first($d)}</option>}</select></span>
     {if (1 = 2) then
     (: do not display for the time being  :) 

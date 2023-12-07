@@ -1578,6 +1578,8 @@ declare function tlsapi:quick-search($map as map(*)){
             return $res?hits
       else if ($map?target = 'wikidata') then 
             wd:search($map)
+      else if ($map?target = 'similar') then 
+            src:find-similar-segments($map?line)
       else ()
 , $dispx := subsequence($hits, $map?start, $map?count)
 , $disp := util:expand($dispx)//exist:match/ancestor::tei:seg
@@ -1604,7 +1606,7 @@ do_quick_search('`{$ts}`', '`{$count}`', '`{$map?search-type}`', '`{$map?mode}`'
 , $q1 := substring($qs[1], 1, 1)
 
 return
-if ($map?target = 'wikidata') then $hits
+if ($map?target = ('wikidata', 'similar')) then $hits
 else
 <div><p><input type="hidden" name="qs-uuid" value="{$uuid}"/><span class="font-weight-bold">{$start}</span> to <span class="font-weight-bold">{min(($start + $count -1, $total))}</span> of <span class="font-weight-bold">{$total}</span> <span class="font-weight-bold"> p</span> with <span class="font-weight-bold">{count($disp)}</span> hits  {if ($map?search-type eq "5") then "in "||$title else "in all texts" }. {
 if ($map?search-type eq "5") then 

@@ -2320,15 +2320,16 @@ function wikidata_search_again(){
 };
 
 // this function is called from the attribution floater, works similar to the quick search for texts
-function wikidata_search(){
+function wikidata_search(target){
    var start = 1;
    var count = 25;
    var stype = '5'; // search only this text
    var mode = 'rating';
-   var target = 'wikidata';
+//   var target = 'wikidata';
    $('#domain-lookup-mark').hide();
    do_quick_search(start, count, stype, mode, target);
 };
+
 
 // this gets called from the "Use" button, we now do the work:)
 function save_qitem(qitem,context,id,label){
@@ -2362,8 +2363,8 @@ function do_quick_search(start, count, stype, mode, target){
     var word = $("input[name=query]").val();
     var uuid = $("input[name=qs-uuid]").val();
     var textid = $("#swl-line-id-span" ).text().split("_")[0]
-    console.log(textid)
-    $.get("api/responder.xql?func=quick-search&query="+word+"&uuid="+uuid+"&start="+start+"&count="+count+"&mode="+mode+"&search-type="+stype+"&textid="+textid+"&target="+target, 
+    var lineid = $("#swl-line-id-span" ).text()
+    $.get("api/responder.xql?func=quick-search&query="+word+"&uuid="+uuid+"&start="+start+"&count="+count+"&mode="+mode+"&search-type="+stype+"&textid="+textid+"&target="+target+"&line="+lineid, 
       "html", 
     function(resp){
          $('#swl-select').html(resp);

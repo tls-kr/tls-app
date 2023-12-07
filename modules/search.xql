@@ -376,6 +376,9 @@ declare function src:find-similar-segments($inp-seg){
              where string-length($n) > 1
              return $n
  , $ns :=  count($ng) div 2
+ return
+ <div><p></p>
+ <ul>{
  for $q in $ng 
    for $r in collection($config:tls-texts-root)//tei:p[ngram:contains(.,$q)]
       for $sg in util:expand($r)//exist:match/ancestor::tei:seg
@@ -384,7 +387,11 @@ declare function src:find-similar-segments($inp-seg){
       group by $grp
       order by count($id) descending
       where count($id) > $ns and not($id = $seg/@xml:id)
-      return <m n="{count($id)}">{$grp}{$sg[1]}</m>
+      return <li data-n="{count($id)}" data-grp="{$grp}">{$sg[1]}</li>
+(:      return <m n="{count($id)}">{$grp}{$sg[1]}</m>:)
+}
+</ul>
+</div>
 };
 
 (: for a $hit, we find the value associated with the requested genre :)
