@@ -37,6 +37,8 @@ import module namespace tu="http://hxwd.org/utils" at "tlsutils.xql";
 import module namespace lu="http://hxwd.org/lib/utils" at "lib/utils.xqm";
 import module namespace lmd="http://hxwd.org/lib/metadata" at "lib/metadata.xqm";
 import module namespace lus="http://hxwd.org/lib/user-settings" at "user-settings.xqm";
+import module namespace lrh="http://hxwd.org/lib/render-html" at "lib/render-html.xqm";
+import module namespace lpm="http://hxwd.org/lib/permissions" at "lib/permissions.xqm";
 
 
 declare variable $app:log := $config:tls-log-collection || "/app";
@@ -230,7 +232,7 @@ function app:browse($node as node()*, $model as map(*), $type as xs:string?, $fi
         case  "concept" return <a href="concept.html?uuid={$id}">{$n}</a>
         case  "syllables" return <a href="syllables.html?uuid={$id}">{$n}</a>
         case  "rhet-dev" return <a href="rhet-dev.html?uuid={$id}">{$n}</a>
-        default return (tlslib:format-button("delete_sf('"||$id||"', '"||$type||"')", "Delete this " || lower-case($config:lmap($type||"1")) || ".", "open-iconic-master/svg/x.svg", "", "", "tls-editor"),
+        default return (lrh:format-button("delete_sf('"||$id||"', '"||$type||"')", "Delete this " || lower-case($config:lmap($type||"1")) || ".", "open-iconic-master/svg/x.svg", "", "", "tls-editor"),
         <a id="{$id}-abbr" onclick="show_use_of('{$type}', '{$id}')">{$n}</a>)
     }</td>
     <td><p id="{$id}-{if ($type = 'sem-feat') then 'sm' else if ($type = 'syn-func') then 'sf' else 'rd'}" class="sf" contenteditable="{$edit}">
@@ -1126,7 +1128,7 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
     <span id="{$entry-id}-{$pos}-py" title="Click here to change pinyin" onclick="assign_guangyun_dialog({{'zi':'{$zi}', 'wid':'{$entry-id}','py': '{normalize-space($l/text())}','concept' : '{$c/tei:head/text()}', 'concept_id' : '{$key}', 'pos':'{$pos}'}})">&#160;&#160;{
     if (string-length($px) = 0) then "Click here to add pinyin" else $px}</span>,
     if (count($e/tei:form) > 1) then 
-    tlslib:format-button("delete_zi_from_word('"|| $entry-id || "','" || $pos ||"','"|| $zi ||"')", "Delete " || $zi || " and pronounciation from this word.", "open-iconic-master/svg/x.svg", "", "", "tls-editor")
+    lrh:format-button("delete_zi_from_word('"|| $entry-id || "','" || $pos ||"','"|| $zi ||"')", "Delete " || $zi || " and pronounciation from this word.", "open-iconic-master/svg/x.svg", "", "", "tls-editor")
     else ()
     }
     </span>
@@ -1143,9 +1145,9 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
 
     <small>{"  " || $wc} {if ($wc = 1) then " Attribution" else " Attributions"}</small>
     {if ($wc = 0) then
-    tlslib:format-button("delete_word_from_concept('"|| $entry-id || "', 'word')", "Delete the word "|| $zi || ", including all syntactic words.", "open-iconic-master/svg/x.svg", "", "", "tls-editor") else 
+    lrh:format-button("delete_word_from_concept('"|| $entry-id || "', 'word')", "Delete the word "|| $zi || ", including all syntactic words.", "open-iconic-master/svg/x.svg", "", "", "tls-editor") else 
     (: move :)
-    tlslib:format-button("move_word('"|| $zi || "', '"|| $entry-id ||"', '"||$wc||"', 'word')", "Move the word "|| $zi || ", including all syntactic words to another concept.", "open-iconic-master/svg/move.svg", "", "", "tls-editor")
+    lrh:format-button("move_word('"|| $zi || "', '"|| $entry-id ||"', '"||$wc||"', 'word')", "Move the word "|| $zi || ", including all syntactic words to another concept.", "open-iconic-master/svg/move.svg", "", "", "tls-editor")
     }
     {wd:display-qitems($entry-id, 'concept', $zi)}
     </h5>
@@ -1281,7 +1283,7 @@ return
                         (tlslib:navbar-doc(),
                         tlslib:navbar-link())}
                         {if (not($testuser)) then tlslib:navbar-bookmarks() else ()}
-                        {if (tlslib:should-display-navbar-review($context, $model)) then tlslib:navbar-review($context) else ()}
+                        {if (lpm:should-display-navbar-review($context, $model)) then tlslib:navbar-review($context) else ()}
                         </ul>
                     <ul class="navbar-nav">
                     <li class="nav-item">
@@ -1510,7 +1512,7 @@ Dark theme
   order by $date descending
 
 return
-<li id="{$id}">{tlslib:format-button("delete_bm('"||$id||"')", "Delete this bookmark.", "open-iconic-master/svg/x.svg", "", "", "tls-user")}
+<li id="{$id}">{lrh:format-button("delete_bm('"||$id||"')", "Delete this bookmark.", "open-iconic-master/svg/x.svg", "", "", "tls-user")}
 <a href="textview.html?location={substring($segid, 2)}">{$b/tei:ref/tei:title/text()}: {$b/tei:seg}</a></li>
 }
 </ul>

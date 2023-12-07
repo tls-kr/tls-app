@@ -1,7 +1,7 @@
 xquery version "3.1";
 
 (:~
- : Library module for rendering html fragments
+ : Library module for user settings
  :
  : @author Christian Wittern
  : @date 2023-10-24

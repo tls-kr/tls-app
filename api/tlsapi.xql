@@ -28,6 +28,8 @@ import module namespace ltr="http://hxwd.org/lib/translation" at "../modules/lib
 import module namespace lu="http://hxwd.org/lib/utils" at "../modules/lib/utils.xqm";
 import module namespace lrh="http://hxwd.org/lib/render-html" at "render-html.xqm";
 import module namespace lv="http://hxwd.org/lib/vault" at "vault.xqm";
+import module namespace lpm="http://hxwd.org/lib/permissions" at "../modules/lib/permissions.xqm";
+import module namespace ltp="http://hxwd.org/lib/textpanel" at "../modules/lib/textpanel.xqm";
 
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
@@ -702,7 +704,7 @@ return
             <h6 class="font-weight-bold">Existing SWL <small>created by {$creator//tei:persName/text()}, {$date}</small></h6>
             <div class="card-text">{tlslib:format-swl($swl, map{'type': 'row', 'context' : 'review'})}</div>
             <h6 class="font-weight-bold mt-2">Context</h6>
-            {tlslib:get-text-preview($seg-id, map{"context" : 3, "format" : "plain"})}
+            {ltp:get-text-preview($seg-id, map{"context" : 3, "format" : "plain"})}
             <!--
             <h6 class="font-weight-bold mt-2">Other possibilities</h6>
             <div class="form-row">
@@ -1156,7 +1158,7 @@ let $user := sm:id()//sm:real/sm:username/text()
 ,$node := collection($config:tls-texts-root)//tei:seg[@xml:id=$id]
 ,$seg := <seg xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$id}" resp="#{$user}" modified="{current-dateTime()}">{$zh-to-save}</seg>
 return
-if ($txtid and tlslib:has-edit-permission($txtid)) then
+if ($txtid and lpm:has-edit-permission($txtid)) then
   if ($node) then (
   update insert attribute modified {current-dateTime()} into $node,
   update insert attribute resp-change {"#" || $user} into $node,
@@ -1176,7 +1178,7 @@ let $id := $map?id
 ,$node := collection($config:tls-texts-root)//tei:seg[@xml:id=$id]
 (: todo: check if this node has been referenced? :)
 return
-if ($txtid and tlslib:has-edit-permission($txtid)) then
+if ($txtid and lpm:has-edit-permission($txtid)) then
   if ($node) then (
   update insert attribute modified {current-dateTime()} into $node,
   update insert attribute resp-change {"#" || $user} into $node,
@@ -1200,7 +1202,7 @@ declare function tlsapi:morelines($map as map(*)){
   ,  $slot2-id := lrh:get-content-id($model?textid, 'slot2', $tr)
 return
 (<div class="row" id="{$map?lineid}-{$map?cnt}"></div>,
-tlslib:chunkcol-left($dseg, $model, $tr, $slot1-id, $slot2-id, $map?lineid, xs:int($map?cnt)))
+ltp:chunkcol-left($dseg, $model, $tr, $slot1-id, $slot2-id, $map?lineid, xs:int($map?cnt)))
 };
 
 
@@ -1635,10 +1637,10 @@ return
 <div class="col-md-1"><input class="form-check-input" type="checkbox" name="res-check" value="" id="res-{$loc}"/></div> else ()}
 <div class="col-md-3"><a href="textview.html?location={$loc}&amp;query={$map?query}">{$title, " / ", $head}</a></div>
 <div class="col-md-7">{ 
-for $sh in $h/preceding-sibling::tei:seg[position()<4] return tlslib:proc-seg($sh, map{"punc" : true(), "textid" : $textid}),
-        tlslib:proc-seg($h, map{"punc" : true(), "textid" : $textid}),
+for $sh in $h/preceding-sibling::tei:seg[position()<4] return lrh:proc-seg($sh, map{"punc" : true(), "textid" : $textid}),
+        lrh:proc-seg($h, map{"punc" : true(), "textid" : $textid}),
         (: this is a hack, it will probably show the most recent translation if there are more, but we want to make this predictable... :)
-        for $sh in $h/following-sibling::tei:seg[position()<4] return tlslib:proc-seg($sh, map{"punc" : true(), "textid" : $textid }),
+        for $sh in $h/following-sibling::tei:seg[position()<4] return lrh:proc-seg($sh, map{"punc" : true(), "textid" : $textid }),
         if ($tr) then (<br/>, $tr) else ()}</div>
 </div>
 }
@@ -1722,7 +1724,7 @@ declare function tlsapi:get-more-lines($map as map(*)){
 let $cnt := xs:int($map?cnt)
 , $len := xs:int($map?len)
 , $start := abs($cnt) + $len
-let $ret := for $s at $pos in tlslib:next-n-segs($map?line, $cnt)
+let $ret := for $s at $pos in lu:next-n-segs($map?line, $cnt)
 return
 if ($cnt < 0 ) then 
 <option value="{$s/@xml:id}#{$start - $pos}">{lrh:proc-seg($s, map{"punc" : true()})}</option>
@@ -1830,7 +1832,7 @@ let  $seg := collection($config:tls-texts-root)//tei:seg[@xml:id=$map?line_id]
 , $res := string-join(for $r at $pos in tokenize($new-seg, '\$') return $r || "$" || $pos || "$", '')
 , $str := analyze-string ($res, $config:seg-split-tokens)
 return
-if (not($txtid and tlslib:has-edit-permission($txtid))) then "Error: You do not have permission to update edit this text."
+if (not($txtid and lpm:has-edit-permission($txtid))) then "Error: You do not have permission to update edit this text."
 else if (not(tlslib:check-edited-seg-valid($new-seg, $seg))) then "Error: Text integrity check failed. Can not save edited text."
 else 
     let $seg-with-updated-type := 
@@ -1877,7 +1879,7 @@ let $segid := $map?line_id,
     $new-seg :=  $map?body,
     $seg := collection($config:tls-texts-root)//tei:seg[@xml:id=$segid]
 return
-    if (not($txtid and tlslib:has-edit-permission($txtid))) then "Error: You do not have permission to update edit this text."
+    if (not($txtid and lpm:has-edit-permission($txtid))) then "Error: You do not have permission to update edit this text."
     else if ($new-seg = ()) then "Error: Please use the function under 內部 to completely delete segment" 
     else if (not(tlslib:check-edited-seg-valid($new-seg, $seg))) then "Error: Text integrity check failed. Can not save edited text."
     else 

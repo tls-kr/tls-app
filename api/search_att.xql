@@ -5,6 +5,7 @@ declare namespace output = "http://www.w3.org/2010/xslt-xquery-serialization";
 import module namespace config="http://hxwd.org/config" at "../modules/config.xqm";
 import module namespace tlslib="http://hxwd.org/lib" at "../modules/tlslib.xql";
 import module namespace tlsapi="http://hxwd.org/tlsapi" at "tlsapi.xql";
+import module namespace tu="http://hxwd.org/utils" at "../modules/tlsutils.xql";
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
@@ -58,7 +59,7 @@ let $sense-id := request:get-parameter("sense-id", "uuid-20c9da30-27bc-4b0a-ab0a
          case "CH7" return 700
          case "CH8" return -200
          default return
-         if (string-length($dates[@corresp="#" || $textid]/@notafter) > 0) then tlslib:getdate($dates[@corresp="#" || $textid]) else 0
+         if (string-length($dates[@corresp="#" || $textid]/@notafter) > 0) then  tu:index-date($dates[@corresp="#" || $textid]) else 0
     
     order by $r descending
     (: I am ignoring all lines that have an attribution to this concept ...  :)

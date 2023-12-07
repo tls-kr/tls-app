@@ -345,6 +345,7 @@ function more_display_lines(lineid, tab){
   r1 = $("#"+lineid+'-'+cnt.toString()).attr("class");
   console.log("r1", r1, r1 != "row");
   if (r1 != "row"){ 
+  toastr.info("Requesting more text lines, please wait a moment.", "HXWD says:")          
   $.ajax({
   type : "GET",
   dataType : "html",

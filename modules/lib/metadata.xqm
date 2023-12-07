@@ -25,7 +25,7 @@ declare function lmd:get-metadata($hit, $field){
                 string-join((
                     $header//tei:msDesc/tei:head, $header//tei:titleStmt/tei:title[@type = 'main'],
                     $header//tei:titleStmt/tei:title
-                ), " - ")
+                ), " - ") => normalize-space()
             case "date" return
                   let $sourcedesc-date := analyze-string(string-join($header//tei:sourceDesc//tei:bibl//text(), ''), "\d{4}")//fn:match/text()
                   return 
@@ -45,7 +45,7 @@ declare function lmd:get-metadata($hit, $field){
             case "extent" return
                 data($header//tei:extent/tei:measure[@unit="char"]/@quantity)
             case "head" return
-                $hit/ancestor::tei:div[1]/tei:head[1]/tei:seg/text()
+                $hit/ancestor::tei:div[1]/tei:head[1]/tei:seg/text() => string-join() => normalize-space()
             case "edition" return
                 let $textid := $hit/ancestor-or-self::tei:TEI/@xml:id
                 , $ab := doc($config:tls-texts-meta||"/chant-refs.xml")//ab[@refid=$textid]

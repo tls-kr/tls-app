@@ -16,6 +16,8 @@ import module namespace con='http://hxwd.org/con' at "../modules/concepts.xql";
 import module namespace lu="http://hxwd.org/lib/utils" at "lib/utils.xqm";
 import module namespace ltr="http://hxwd.org/lib/translation" at "lib/translation.xqm";
 import module namespace lus="http://hxwd.org/lib/user-settings" at "user-settings.xqm";
+import module namespace ltp="http://hxwd.org/lib/textpanel" at "lib/textpanel.xqm";
+import module namespace lrh="http://hxwd.org/lib/render-html" at "lib/render-html.xqm";
 
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
@@ -216,7 +218,7 @@ declare function dialogs:add-rd-dialog($options as map(*)){
                 <button class="btn badge badge-primary" type="button" onclick="get_more_lines('select-end', 20)" title="Press here to add more lines">＞</button>):</label>
                  <select class="form-control chn-font" id="select-end">
                    <option value="{$options?line-id}">{$options?line}</option>
-                  {for $s at $pos in tlslib:next-n-segs($options?line-id, 20)
+                  {for $s at $pos in lu:next-n-segs($options?line-id, 20)
                     return
                     <option value="{$s/@xml:id}#{$pos}">{$s/text()}</option>
                    } 
@@ -362,7 +364,7 @@ declare function dialogs:review-swl-dialog($uuid as xs:string){
             <h6 class="font-weight-bold">Existing SWL <small>created by {$creator//tei:persName/text()}, {$date}</small></h6>
             <div class="card-text">{tlslib:format-swl($swl, map{'type': 'row', 'context' : 'review'})}</div>
             <h6 class="font-weight-bold mt-2">Context</h6>
-            {tlslib:get-text-preview($seg-id, map{"context" : 3, "format" : "plain"})}
+            {ltp:get-text-preview($seg-id, map{"context" : 3, "format" : "plain"})}
             <!--
             <h6 class="font-weight-bold mt-2">Other possibilities</h6>
             <div class="form-row">
@@ -1122,9 +1124,9 @@ declare function dialogs:pastebox($map as map(*)) as node(){
 
 declare function dialogs:add-parallel($options as map(*)){
  let $reltypes := collection($config:tls-data-root)//tei:TEI[@xml:id="word-relations"]//tei:body/tei:div[@type='word-rel-type']
- ,$line := tlslib:proc-seg(collection($config:tls-texts-root)//tei:seg[@xml:id=$options?line-id], map{"punc" : false()})
- ,$next := tlslib:next-n-segs($options?line-id, 6)
- ,$nc := string-to-codepoints(tlslib:proc-seg($next[1], map{"punc" : false()}))
+ ,$line := lrh:proc-seg(collection($config:tls-texts-root)//tei:seg[@xml:id=$options?line-id], map{"punc" : false()})
+ ,$next := lu:next-n-segs($options?line-id, 6)
+ ,$nc := string-to-codepoints(lrh:proc-seg($next[1], map{"punc" : false()}))
  return
  <div id="add-parallel-dialog" class="modal" tabindex="-1" role="dialog" style="display: none;">
     <div class="modal-dialog modal-lg" role="document">
@@ -1154,9 +1156,9 @@ declare function dialogs:add-parallel($options as map(*)){
                   {for $s at $pos in $next
                     return
                     if ($pos = 1) then
-                    <option value="{$s/@xml:id}" selected="true">{tlslib:proc-seg($s, map{"punc" : false()})}</option>
+                    <option value="{$s/@xml:id}" selected="true">{lrh:proc-seg($s, map{"punc" : false()})}</option>
                     else
-                    <option value="{$s/@xml:id}">{tlslib:proc-seg($s, map{"punc" : false()})}</option>
+                    <option value="{$s/@xml:id}">{lrh:proc-seg($s, map{"punc" : false()})}</option>
                    } 
                  </select>                 
              </div>

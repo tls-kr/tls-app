@@ -13,8 +13,6 @@ import module namespace tu="http://hxwd.org/utils" at "../tlsutils.xql";
 
 
 import module namespace config="http://hxwd.org/config" at "../config.xqm";
-import module namespace tlslib="http://hxwd.org/lib" at "../tlslib.xql";
-
 
 import module namespace lmd="http://hxwd.org/lib/metadata" at "metadata.xqm";
 import module namespace lu="http://hxwd.org/lib/utils" at "utils.xqm";
@@ -106,7 +104,7 @@ declare function lli:new-link-dialog($map as map(*)){
                 <button class="btn badge badge-primary" type="button" onclick="get_more_lines('select-start-{$pos}', {0 - $context-lines})" title="Press here to add more lines">＞</button>):</label>
                  <select class="form-control chn-font" id="select-start-{$pos}" name="select-start--{$pos}" onchange="add_context_lines('select-start-{$pos}')">
                  <option value="none">　</option>
-                  {for $s at $p in tlslib:next-n-segs($item, 0 - $context-lines )
+                  {for $s at $p in lu:next-n-segs($item, 0 - $context-lines )
                     return
                     <option value="{$s/@xml:id}#{$context-lines - $p}">{lrh:proc-seg($s, map{"punc" : true()})}</option>
                    } 
@@ -122,7 +120,7 @@ declare function lli:new-link-dialog($map as map(*)){
                 <button class="btn badge badge-primary" type="button" onclick="get_more_lines('select-end-{$pos}', {$context-lines})" title="Press here to add more lines">＞</button>):</label>
                  <select class="form-control chn-font" id="select-end-{$pos}" name="select-end--{$pos}" onchange="add_context_lines('select-end-{$pos}')">
                  <option value="none">　</option>
-                  {for $s at $p in tlslib:next-n-segs($item, $context-lines)
+                  {for $s at $p in lu:next-n-segs($item, $context-lines)
                     return
                     <option value="{$s/@xml:id}#{$p}" >{lrh:proc-seg($s, map{"punc" : true()})}</option>
                    } 
@@ -208,15 +206,19 @@ declare function lli:new-link-dialog($map as map(*)){
 declare function lli:save-link-items($map as map(*)){
  let $uuid :=  if (starts-with($map?uuid, "uuid")) then $map?uuid else "uuid-" || util:uuid()
  , $public := $map?vis = "option1" 
- , $doc := doc(lli:get-links-file($uuid, $public))
+ , $doc := lli:get-links-file($uuid, $public)
  (: now we have the template, see what we need to add :)
  , $items := for $l in map:keys($map) 
-   where starts-with($l, "item--")
-   order by $l
-   return $l
+     where starts-with($l, "item--")
+     order by $l
+     return $l
  , $head := if (string-length(string-join($doc/tei:head)) > 0) then () else
             if (string-length($map?head) = 0) then () else
             <head xmlns="http://www.tei-c.org/ns/1.0">{$map?head}</head>
+ , $note := if (string-length(map:get($map, "input-notes")) = 0) then () else
+             <note xmlns="http://www.tei-c.org/ns/1.0">{map:get($map, "input-notes")}</note> 
+ , $comment := if (string-length(map:get($map, "comment")) = 0) then () else
+             <def xmlns="http://www.tei-c.org/ns/1.0" >{map:get($map, "comment")}</def> 
   , $lines := for $item in $items 
               let $send := substring-after($item, "--")
               , $start := map:get($map, "select-start--" || $send)
@@ -226,9 +228,10 @@ declare function lli:save-link-items($map as map(*)){
               , $baseline := $line = $map?line
               , $pretext := let $n := xs:int(tokenize($start, '#')[2]) 
                             return
-                            if ($n > 0) then lrh:multiple-segs($line, 0 - $n) else ()  
+              if ($n > 0) then lrh:multiple-segs($line, 0 - $n) else ()  
               , $posttext := lrh:multiple-segs($line, xs:int(tokenize($end, '#')[2]))
-                    
+              , $item-note := if (string-length(map:get($map, "item-note--" || $send)) = 0) then () else
+                             <note xmlns="http://www.tei-c.org/ns/1.0">{map:get($map, "item-note--" || $send)}</note> 
               return
               <tls:line xmlns:tls="http://hxwd.org/ns/1.0" 
                textid="{lmd:get-metadata($seg, "textid")}" 
@@ -236,10 +239,19 @@ declare function lli:save-link-items($map as map(*)){
                start="{$start}" 
                end="{$end}" 
                line="{$line}" 
-               baseline="{$baseline}">{$pretext}{lrh:proc-seg($seg, map{"punc" : true()})}{$posttext}</tls:line>
+               role="{map:get($map, "select-role--" || $send)}"
+               baseline="{$baseline}">{$pretext}{string-join(lrh:proc-seg($seg, map{"punc" : true()}))}{$posttext}{$item-note}</tls:line>
    
              
-return $lines 
+return 
+if ($doc) then
+  (update insert $lines into $doc//tls:lineGroup,
+  if ($head) then 
+   update replace $doc/tei:head with $head else (),
+  if ($note) then 
+   update replace $doc/tei:note with $note else ()
+  )
+ else $lines 
 };
 
 
@@ -259,13 +271,13 @@ let $template :=
     </tls:lineGroup>
     <tls:metadata resp="#{$user}" created="{current-dateTime()}">
         <respStmt>
-            <resp>added</resp>
+            <resp>created</resp>
             <name notBefore="{current-dateTime()}">{$user}</name>
         </respStmt>
     </tls:metadata>
 </tls:linkList>
 
-return xmldb:store($links-collection, $uuid || ".xml", $template)
+return doc(xmldb:store($links-collection, $uuid || ".xml", $template))
 
 };
             
@@ -275,4 +287,12 @@ let $f := substring(substring-after($uuid, "uuid-"), 1, 1)
 return dbu:ensure-collection($col)
 };
 
+
+declare function lli:get-linked-items($user, $seg-id){
+let $linked-items := (collection($config:tls-links-root)|collection($config:tls-user-root || $user || "/notes/links"))//tls:line[@line=$seg-id]/parent::tls:lineGroup
+return
+if ($linked-items) then
+<div class="">{$linked-items}</div>
+else ()
+};
             
