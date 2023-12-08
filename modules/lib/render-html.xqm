@@ -118,3 +118,31 @@ declare function lrh:multiple-segs($seg, $n){
     return
     lrh:proc-seg($s, map{"punc" : true()}) )
 };
+
+(: button, mostly at the right side, in which case class will be "close" :)
+declare function lrh:format-button($onclick as xs:string, $title as xs:string, $icon as xs:string, $style as xs:string, $class as xs:string, $groups as xs:string+){
+ let $usergroups := sm:id()//sm:group/text()
+ return
+ if (contains($usergroups, $groups)) then
+ if (string-length($style) > 0) then
+   <button type="button" class="btn {$class}" onclick="{$onclick}"
+   title="{$title}">
+    {if (ends-with($icon, ".svg")) then 
+    <img class="icon" style="width:12px;height:15px;top:0;align:top" src="resources/icons/{$icon}"/>
+    else 
+    <small><span class="initialism" >{$icon}</span></small>}
+   </button>
+ else 
+   <button type="button" class="btn {$class}" onclick="{$onclick}"
+    title="{$title}">
+    {if (ends-with($icon, ".svg")) then 
+     <img class="icon"  src="resources/icons/{$icon}"/>
+    else 
+    <span>{$icon}</span>}
+   </button>
+ else ()
+};
+
+declare function lrh:format-button-common($onclick as xs:string, $title as xs:string, $icon as xs:string){
+  lrh:format-button($onclick, $title, $icon, "", "close", "tls-user")
+};

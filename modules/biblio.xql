@@ -18,6 +18,7 @@ import module namespace tlslib="http://hxwd.org/lib" at "tlslib.xql";
 import module namespace templates="http://exist-db.org/xquery/templates" ;
 import module namespace http="http://expath.org/ns/http-client";
 import module namespace dbu="http://exist-db.org/xquery/utility/db" at "db-utility.xqm";
+import module namespace lrh="http://hxwd.org/lib/render-html" at "lib/render-html.xqm";
 
 import module namespace lu="http://hxwd.org/lib/utils" at "lib/utils.xqm";
 
@@ -261,7 +262,7 @@ return
 <li><span class="font-weight-bold">{string-join(for $n in $m//mods:name return bib:display-author($n), '; ')}</span>　<a href="bibliography.html?uuid={$m/@ID}{if (string-length($textid)>0)then '&amp;textid='||$textid else ()}">{string-join($m//mods:title/text(), " ")}, {$m//mods:dateIssued/text()}　</a>   
 <span class="badge badge-light">{$m//mods:note[@type='ref-usage']}</span>
   {if (contains($usergroups, "tls-editor" )) then 
-    tlslib:format-button("delete_swl('bib', '" || data($m/@ID) || "')", "Immediately delete this reference", "open-iconic-master/svg/x.svg", "small", "close", "tls-editor")
+    lrh:format-button("delete_swl('bib', '" || data($m/@ID) || "')", "Immediately delete this reference", "open-iconic-master/svg/x.svg", "small", "close", "tls-editor")
    else ()}{if ($mode eq "topic") then 
    <p class="text-muted">{string-join(for $t in $m//mods:topic return $t, "; ")}</p> else
    <p class="text-muted">{$m/mods:note[@type='general']/text()}</p>}</li>

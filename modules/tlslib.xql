@@ -19,10 +19,13 @@ import module namespace tu="http://hxwd.org/utils" at "tlsutils.xql";
 import module namespace ltr="http://hxwd.org/lib/translation" at "lib/translation.xqm";
 import module namespace lu="http://hxwd.org/lib/utils" at "lib/utils.xqm";
 import module namespace lmd="http://hxwd.org/lib/metadata" at "lib/metadata.xqm";
-import module namespace lrh="http://hxwd.org/lib/render-html" at "render-html.xqm";
+import module namespace lrh="http://hxwd.org/lib/render-html" at "lib/render-html.xqm";
 import module namespace lus="http://hxwd.org/lib/user-settings" at "user-settings.xqm";
 import module namespace lv="http://hxwd.org/lib/vault" at "lib/vault.xqm";
 import module namespace lvs="http://hxwd.org/lib/visits" at "lib/visits.xqm";
+import module namespace lli="http://hxwd.org/lib/link-items" at "lib/link-items.xqm";
+import module namespace lpm="http://hxwd.org/lib/permissions" at "lib/permissions.xqm";
+import module namespace ltp="http://hxwd.org/lib/textpanel" at "lib/textpanel.xqm";
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
@@ -324,33 +327,6 @@ typeswitch ($node)
   <not-handled>{$node}</not-handled>
 };
    
-(: button, mostly at the right side, in which case class will be "close" :)
-declare function tlslib:format-button($onclick as xs:string, $title as xs:string, $icon as xs:string, $style as xs:string, $class as xs:string, $groups as xs:string+){
- let $usergroups := sm:id()//sm:group/text()
- return
- if (contains($usergroups, $groups)) then
- if (string-length($style) > 0) then
-   <button type="button" class="btn {$class}" onclick="{$onclick}"
-   title="{$title}">
-    {if (ends-with($icon, ".svg")) then 
-    <img class="icon" style="width:12px;height:15px;top:0;align:top" src="resources/icons/{$icon}"/>
-    else 
-    <small><span class="initialism" >{$icon}</span></small>}
-   </button>
- else 
-   <button type="button" class="btn {$class}" onclick="{$onclick}"
-    title="{$title}">
-    {if (ends-with($icon, ".svg")) then 
-     <img class="icon"  src="resources/icons/{$icon}"/>
-    else 
-    <span>{$icon}</span>}
-   </button>
- else ()
-};
-
-declare function tlslib:format-button-common($onclick as xs:string, $title as xs:string, $icon as xs:string){
-  tlslib:format-button($onclick, $title, $icon, "", "close", "tls-user")
-};
 
 declare function tlslib:get-concept-id($str as xs:string){
 let $concept := replace($str, "_", " ")
@@ -405,58 +381,6 @@ if ($s > 0) then if ($s > 1) then <span> {$s} seconds </span> else <span> {$s} s
 )
 }
 </span>
-};
-
-(:~
-: recurse through the supplied node (a tei:seg) and return only the top level text()
-: 2020-02-20: created this element because KR2m0054 has <note> elements in translation. 
-: @param $node a tei:seg node, typically
-: 2023-11-30:  copied this to render-html, so that it can be used in link-items.  What needs to be done is finalize the move (or move somewhere better) and update all references, then delete this here.
-:)
-declare function tlslib:proc-seg($node as node(), $options as map(*)){
- typeswitch ($node)
- case element(tei:note) return ()
-(:     <small>{$node/text()}</small>:)
-  case element (tei:l) return ()
-  case element (tei:c) return 
-  if ($options?punc) then
-   if ($node/@type = "shifted") then 
-     <span class="swxz">{data($node/@n)}</span>
-     else
-   if ($node/@type = "swxz-uni") then 
-     <span class="swxz-uni">{data($node/@n)}</span>
-     else
-     data($node/@n)
-   else ()
-  case element (tei:g) return 
-   if ($node/@type = "SWXZ-PUA") then 
-     <span class="swxz-pua">{$node/text()}</span>
-     else
-   if ($node/@type = "shifted") then 
-     <span class="swxz">{data($node/@n)}</span>
-     else
-   if ($node/@type = "swxz-uni") then 
-     <span class="swxz-uni">{data($node/@n)}</span>
-   else
-     $node/text()
-  case element (tei:lb)  return <span title="{data($node/@ed)}:{data($node/@n)}" class="lb text-muted ed-{data($node/@ed)}"><img class="icon note-anchor" src="{$config:lb}"/></span>
-  case element (tei:pb)  return <span title="{data($node/@ed)}:{data($node/@n)}" class="lb text-muted ed-{data($node/@ed)}"><img class="icon note-anchor" src="{$config:lb}"/></span>
-  (: <span title="Click here to display a facsimile of this page\n{data($node/@ed)}:{data($node/@n)}" class="text-muted"><img class="icon note-anchor" onclick="get_facs_for_page('slot1', '{$node/@facs}')" src="{$config:pb}"/></span> :)
-  case element (tei:space)  return "　"
-  case element (exist:match) return <mark>{$node/text()}</mark>
-  case element (tei:anchor) return 
-    (: since I need it later, I will get it here, even if it might not get a result :)
-    let $app := $node/ancestor::tei:TEI//tei:app[@from="#"||$node/@xml:id]
-    let $t := if (starts-with($node/@xml:id, "xxnkr_note_mod")) then tu:cleanstring($node/ancestor::tei:TEI//tei:note[@target = "#"|| $node/@xml:id]//text()) else
-    if (starts-with($node/@xml:id, 'beg')) then 
-     if ($app) then
-       tlslib:format-app($app) else ()
-    else
-      ()
-    return if ($t) then <span title="{$t}" class="text-muted"><img class="icon note-anchor" onclick="edit_app('{$options?textid}','{data($node/@xml:id)}')" src="{$config:circle}"/></span> else ()
-  case element(tei:seg) return (if (string-length($node/@n) > 0) then data($node/@n)||"　" else (), for $n in $node/node() return tlslib:proc-seg($n, $options))
-  case attribute(*) return () 
- default return $node    
 };
 
 (: format the app for display in the segment :)
@@ -630,25 +554,6 @@ return
 ) 
 };
 
-(: Checks whether the currently logged in user has editing permission for a specific text. Users have editing permission if they are
-   a member of the "tls-editor" or "tls-adming" group, or are a member of the "tls-punc" group, and have explicit permission to edit $text-id. :)
-declare function tlslib:has-edit-permission($text-id as xs:string) as xs:boolean {
-  if (sm:id()//sm:group = ("tls-editor", "tls-admin")) then
-    true()
-  else
-   if (sm:id()//sm:real/sm:username/text() = "guest") then false () else 
-   if (sm:id()//sm:group = ("test", "tls-test")) then false() else 
-    let $permissions := doc($config:tls-user-root || "tls-admin/permissions.xml")
-    return $text-id and 
-        sm:id()//sm:group = "tls-punc" and 
-        $permissions//tls:text-permissions[@text-id = $text-id]/tls:allow-review[@user-id = sm:id()//sm:username/text()]
-};
-
-(: Returns whether the 內部 should be displayed for a user. It is always shown when they are member of the "tls-editor" group, otherwise,
-   it is shown in the textview context when a user has permission to edit that particular text. :)
-declare function tlslib:should-display-navbar-review($context as xs:string, $model as map(*)) as xs:boolean {
-  sm:id()//sm:group = "tls-editor" or ($context = "textview" and $model("textid") and tlslib:has-edit-permission($model("textid")))
-};
 
 (:     
      :)
@@ -798,31 +703,6 @@ declare function tlslib:display-bibl($bibl as node()){
 </li>
 };
 
-(:~
-: get the following n segs starting at the seg with the xml:id startseg 
-: @param $startseg xml:id of a tei:seg element
-: @param $n number of elements
-: this returns a sequence of nodes
-2023-12-05:  moving to lu module, sunsetting here.
-:)
-
-declare function tlslib:next-n-segs($startseg as xs:string, $n as xs:int){
-let $targetseg := collection($config:tls-texts-root)//tei:seg[@xml:id=$startseg]
-return
-if ($n < 0) then
-$targetseg/preceding::tei:seg[fn:position() <= abs($n)]
-else
-$targetseg/following::tei:seg[fn:position() <= $n]
-};
-
-declare function tlslib:chunkcol-left($dseg, $model, $tr, $slot1-id, $slot2-id, $loc, $cnt){
-      for $d at $pos in $dseg 
-      return tlslib:display-seg($d, map:merge(($model, $tr, 
-      map{'slot1': $slot1-id, 'slot2': $slot2-id, 
-          'loc' : $loc, 
-          'zh-width' : 'col-sm-3',
-          'pos' : $pos + $cnt, "ann" : "xfalse.x"})))
-};
 
 (:~
 : display a chunk of text, surrounding the $targetsec
@@ -855,7 +735,7 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
       $visit := lvs:record-visit($targetseg),
       $tr := if ($show-transl) then 
          if (string-length($facs) > 0) then map:merge((ltr:get-translations($model?textid), 
-            for $edx in distinct-values($targetseg/ancestor::tei:div//tei:pb/@ed)
+            for $edx in distinct-values(for $lpb in $targetseg/ancestor::tei:div//tei:pb where string-length($lpb/@facs) > 0 return $lpb/@ed)
             return
             map:entry("facs_"||$edx, ("dummy", $edx, data($targetseg/@xml:id)) ))) 
 
@@ -908,7 +788,7 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
         </div>
       </div>
       <div id="chunkcol-left" class="col-sm-12">
-      {tlslib:chunkcol-left($dseg, map:put($model, "zh-width", $zh-width), $tr, $slot1-id, $slot2-id, data($targetseg/@xml:id), 0)}
+      {ltp:chunkcol-left($dseg, map:put($model, "zh-width", $zh-width), $tr, $slot1-id, $slot2-id, data($targetseg/@xml:id), 0)}
       </div>
       <div id="chunkcol-right" class="col-sm-0">
       {tlslib:swl-form-dialog('textview', $model)}
@@ -953,7 +833,8 @@ declare function tlslib:swl-form-dialog($context as xs:string, $model as map(*))
  <div class="card-body">
     <h5 class="card-title"><span id="new-att-title">{if (sm:is-authenticated()) then "New Attribution:" else "Existing SW for " }<strong class="ml-2 chn-font"><span id="swl-query-span">Word or char to annotate</span>:</strong></span>
 <span id="domain-lookup-mark">
-    <span class="badge badge-info ml-2" onclick="wikidata_search()" title="Click here for a quick search in WikiData"> WD </span>
+    <span class="badge badge-info ml-2" onclick="wikidata_search('wikidata')" title="Click here for a quick search in WikiData"> WD </span>
+    { if (lpm:can-search-similar-lines()) then <span class="badge badge-info ml-2" onclick="wikidata_search('similar')" title="Search for similar lines"> 似 </span> else ()}
     <span>　　Lookup domain:<select id="domain-select" onChange="update_swlist()"><option value="core">Core</option>{for $d in xmldb:get-child-collections($config:tls-data-root||'/domain') return <option value="{$d}">{tlslib:capitalize-first($d)}</option>}</select></span>
     {if (1 = 2) then
     (: do not display for the time being  :) 
@@ -968,18 +849,18 @@ declare function tlslib:swl-form-dialog($context as xs:string, $model as map(*))
     <button type="button" class="close" onclick="hide_new_att()" aria-label="Close" title="Close"><img class="icon" src="resources/icons/open-iconic-master/svg/circle-x.svg"/></button>
     </h5>
     <h6 class="text-muted">At:  <span id="swl-line-id-span" class="ml-2">Id of line</span>&#160;
-    {tlslib:format-button-common("bookmark_this_line()","Bookmark this location", "open-iconic-master/svg/bookmark.svg"), 
-     if ($model("textid") and tlslib:has-edit-permission($model("textid"))) then 
-      tlslib:format-button("display_punc_dialog('x-get-line-id')", "Edit properties of this text segment", "octicons/svg/lock.svg", "", "close", ("tls-editor", "tls-punc"))
+    {lrh:format-button-common("bookmark_this_line()","Bookmark this location", "open-iconic-master/svg/bookmark.svg"), 
+     if ($model("textid") and lpm:has-edit-permission($model("textid"))) then 
+      lrh:format-button("display_punc_dialog('x-get-line-id')", "Edit properties of this text segment", "octicons/svg/lock.svg", "", "close", ("tls-editor", "tls-punc"))
      else (),
-      tlslib:format-button("display_named_dialog('x-get-line-id', 'pb-dialog')", "Add page break of a witness edition before selected character", "octicons/svg/milestone.svg", "", "close", ("tls-editor", "tls-punc")),
-      tlslib:format-button("display_named_dialog('x-get-line-id', 'edit-app-dialog')", "Add content of variant edition for selected character", "octicons/svg/note.svg", "", "close", ("tls-editor", "tls-punc"))
+      lrh:format-button("display_named_dialog('x-get-line-id', 'pb-dialog')", "Add page break of a witness edition before selected character", "octicons/svg/milestone.svg", "", "close", ("tls-editor", "tls-punc")),
+      lrh:format-button("display_named_dialog('x-get-line-id', 'edit-app-dialog')", "Add content of variant edition for selected character", "octicons/svg/note.svg", "", "close", ("tls-editor", "tls-punc"))
       
      }</h6>
     <h6 class="text-muted">Line: <span id="swl-line-text-span" class="ml-2 chn-font">Text of line</span>
-    {tlslib:format-button-common("add_rd_here()","Add observation (regarding a text segment) starting on this line", "octicons/svg/comment.svg")}
+    {lrh:format-button-common("add_rd_here()","Add observation (regarding a text segment) starting on this line", "octicons/svg/comment.svg")}
     </h6>
-    <!--  {tlslib:format-button-common("add_parallel()","Add word relations starting on this line", "對")} -->
+    <!--  {lrh:format-button-common("add_parallel()","Add word relations starting on this line", "對")} -->
     <div class="card-text">
        
         <p> { if (sm:is-authenticated() and not(contains(sm:id()//sm:group, 'tls-test'))) then <span id="new-att-detail">
@@ -1085,17 +966,17 @@ if ("tls-editor"=sm:get-user-groups($user) and $node/@xml:id) then
   if (not($context='review')) then
    (
    (: not as button, but because of the title string open-iconic-master/svg/person.svg :)
-   tlslib:format-button("null()", "Resp: " || $resp[1] , $resp[2], "small", "close", "tls-user"),
+   lrh:format-button("null()", "Resp: " || $resp[1] , $resp[2], "small", "close", "tls-user"),
    (: for my own swls: delete, otherwise approve :)
    if (($user = $creator-id) or contains($usergroups, "tls-editor" )) then 
-    tlslib:format-button("delete_swl('swl', '" || data($node/@xml:id) || "')", "Immediately delete this SWL for "||$zi[1], "open-iconic-master/svg/x.svg", "small", "close", "tls-editor")
+    lrh:format-button("delete_swl('swl', '" || data($node/@xml:id) || "')", "Immediately delete this SWL for "||$zi[1], "open-iconic-master/svg/x.svg", "small", "close", "tls-editor")
    else (),
-   tlslib:format-button("incr_rating('swl', '" || data($node/@xml:id) || "')", $marktext, "open-iconic-master/svg/star.svg", "small", "close", "tls-editor"),
+   lrh:format-button("incr_rating('swl', '" || data($node/@xml:id) || "')", $marktext, "open-iconic-master/svg/star.svg", "small", "close", "tls-editor"),
    if (not ($user = $creator-id)) then
    (
 <span class="rp-5">
-{tlslib:format-button("review_swl_dialog('" || data($node/@xml:id) || "')", "Review the SWL for " || $zi[1], "octicons/svg/unverified.svg", "small", "close", "tls-editor")}&#160;&#160;</span>,   
-    tlslib:format-button("save_swl_review('" || data($node/@xml:id) || "')", "Approve the SWL for " || $zi, "octicons/svg/thumbsup.svg", "small", "close", "tls-editor")
+{lrh:format-button("review_swl_dialog('" || data($node/@xml:id) || "')", "Review the SWL for " || $zi[1], "octicons/svg/unverified.svg", "small", "close", "tls-editor")}&#160;&#160;</span>,   
+    lrh:format-button("save_swl_review('" || data($node/@xml:id) || "')", "Approve the SWL for " || $zi, "octicons/svg/thumbsup.svg", "small", "close", "tls-editor")
     ) else ()
   ) else ()
 )
@@ -1109,7 +990,7 @@ else if ($anntype eq "drug") then
  <div class="col-sm-6">{$node/text()}, Q:{data($node/@quantity)}, FL:{data($node/@flavor)}
  {
    if (($user = $creator-id) or contains($usergroups, "tls-editor" )) then 
-    tlslib:format-button("delete_swl('drug', '" || data($node/@xml:id) || "')", "Immediately delete the observation "||data($node/text()), "open-iconic-master/svg/x.svg", "small", "close", "tls-editor")
+    lrh:format-button("delete_swl('drug', '" || data($node/@xml:id) || "')", "Immediately delete the observation "||data($node/text()), "open-iconic-master/svg/x.svg", "small", "close", "tls-editor")
    else ()
 }
 </div>
@@ -1138,7 +1019,7 @@ return
  )}
 {
    if (($user = $creator-id) or contains($usergroups, "tls-editor" )) then 
-    tlslib:format-button("delete_swl('rdl', '" || data($node/@xml:id) || "')", "Immediately delete the observation "||data($node/@rhet-dev), "open-iconic-master/svg/x.svg", "small", "close", "tls-editor")
+    lrh:format-button("delete_swl('rdl', '" || data($node/@xml:id) || "')", "Immediately delete the observation "||data($node/@rhet-dev), "open-iconic-master/svg/x.svg", "small", "close", "tls-editor")
    else ()
 }
  </div>
@@ -1199,132 +1080,6 @@ return
     $targetseg
 };
 
-
-(:~
-: displays a tei:seg element, that is, a line of text, including associated items like translation and swl
-: @param $seg the tei:seg to display
-: @param $options  a map of additional options, for example 
-:         {"ann" : true } for the display of annotations,
-:        {"loc" : "<@xml:id of a tei:seg>"} the id of a line to be highlighted in the display
-: @see tlslib:format-swl(), which is used for displaying the swl
-: called from tlsapi:get-text-preview($loc as xs:string, map)
-: 
-:)
-
-declare function tlslib:display-seg($seg as node()*, $options as map(*) ) {
- let $user := sm:id()//sm:real/sm:username/text(),
- $usergroups := sm:get-user-groups($user),
- $show-transl := not(contains(sm:id()//sm:group/text(), "guest")),
- $testuser := contains(sm:id()//sm:group, ('tls-test', 'guest'))
- let $link := concat('#', $seg/@xml:id),
-  (: we are displaying in a reduced context, only 2 rows  :)
-  $ann := lower-case(map:get($options, "ann")),
-  $loc := map:get($options, "loc"),
-  $locked := $seg/@state = 'locked',
-  $textid := string($seg/ancestor::tei:TEI/@xml:id),
-  $mark := if (data($seg/@xml:id) = $loc) then "mark" else ()
-  ,$lang := 'zho'
-  ,$alpheios-class := if ($user = 'test2') then 'alpheios-enabled' else ''
-  ,$markup-class := "tei-" || local-name($seg/parent::*)
-  ,$slot1 := if ($show-transl) then 
-     if (map:contains($options, "transl")) then $options?transl
-     else map:get($options, $options?slot1)[1] else ()
-  ,$slot2 := if ($show-transl and not($ann = 'false')) then map:get($options, $options?slot2)[1] else ()
-  (: check if transl + comment are related, if yes than do not manipulate tab-index :)
-  (: if tei:TEI, then we have a translation, otherwise a variant :)
-  , $px1 := typeswitch ($slot1) case element(tei:TEI) return  replace(($slot1//tei:seg[@corresp="#"||$seg/@xml:id]/@resp)[1], '#', '') default return () 
-  ,$resp1 := if ($px1) then "Resp: "||tu:get-member-name($px1) else ()
-  , $px2 :=  typeswitch ($slot2) case element(tei:TEI) return replace(($slot2//tei:seg[@corresp="#"||$seg/@xml:id]/@resp)[1], '#', '') default return () 
-  ,$resp2 :=  if ($px2) then "Resp: "||doc($config:tls-data-root || "/vault/members.xml")//tei:person[@xml:id=$px2]//tei:persName/text() else () 
-(: normalize-space(string-join($seg/text(),'')) :)
-return
-(
-<div class="row {$mark}">
-<div class="col .no-gutters">
-{
-if($locked and $textid and tlslib:has-edit-permission($textid)) then 
-  tlslib:format-button("display_punc_dialog('" || data($seg/@xml:id) || "')", "Add punctuation to this text segment", "octicons/svg/lock.svg", "", "", ("tls-editor", "tls-punc")) 
-else (), 
- if ($seg//tei:lb) then 
-  let $node := ($seg//tei:lb)[1]
-  , $n := if (contains($node/@n, "-")) then tokenize($node/@n, '-')[2] else $node/@n
-  return
-<span class="btn badge badge-light text-muted ed-{data($node/@ed)}">{data($n)}</span>
-else
-if ($seg//tei:pb or local-name(($seg/preceding-sibling::*)[last()]) = ('lb', 'pb')) then 
- let $node := ($seg//tei:pb | ($seg/preceding-sibling::tei:pb)[last()])[1]
- , $n := tokenize($node/@n, '-')[2]
- , $fpref :=  $config:ed-img-map?($node/@ed) 
- , $pg := substring-before(tokenize(data($node/@facs), '/')[last()], '.')
- return
- if ($pg) then
-<span title="Click here to display a facsimile of this page &#10;{$config:wits?(data($node/@ed))}:{$pg}" onclick="get_facs_for_page('slot1', '{$fpref}{$node/@facs}', '{data($node/@ed)}', '{data($seg/@xml:id)}')" class="btn badge badge-light text-muted ed-{data($node/@ed)}">{$n}</span>
-else "　" 
-else "　"
-(: either within or without the segment, for the moment place it within :)
-(:, if ($seg/tei:c[@type='shifted']) then <span class="swxz">{data($seg/tei:c[@type='shifted']/@n)}</span> else ():)
-}
-</div>
-<div class="{
-if ($seg/@type='comm') then 'tls-comm ' else 
-if($locked) then 'locked ' else () }{
-if ($ann='false') then 'col-sm-4' else $options?zh-width} zh chn-font {$alpheios-class} {$markup-class}" lang="{$lang}" id="{$seg/@xml:id}" data-tei="{ util:node-id($seg) }">{
-tlslib:proc-seg($seg, map{"punc" : true(), "textid" : $textid})
-}{(:if (exists($seg/tei:anchor/@xml:id)) then <span title="{normalize-space(string-join($seg/ancestor::tei:div//tei:note[tei:ptr/@target='#'||$seg/tei:anchor/@xml:id]/text()))}" >●</span> else ():) ()}</div>　
-<div class="col-sm-4 tr" title="{$resp1}" lang="en-GB" tabindex="{$options('pos')+500}" id="{$seg/@xml:id}-tr" contenteditable="{if (not($testuser) and not($locked)) then 'true' else 'false'}">{typeswitch ($slot1) 
-case element(tei:TEI) return  $slot1//tei:seg[@corresp="#"||$seg/@xml:id]//text()
-default return (krx:get-varseg-ed($seg/@xml:id, substring-before($slot1, "::")))
-}</div>
- {if ($ann = 'false') then () else 
- (: using en-GB for now, need to get that from translation in the future...  :)
-  <div class="col-sm-4 tr" title="{$resp2}" lang="en-GB" tabindex="{$options('pos')+1000}" id="{$seg/@xml:id}-ex" contenteditable="{if (not($testuser) and not($locked)) then 'true' else 'false'}">
-  {typeswitch ($slot2) 
-case element(tei:TEI) return $slot2//tei:seg[@corresp="#"||$seg/@xml:id]//text()  
-default return
-
-(krx:get-varseg-ed($seg/@xml:id, substring-before($slot2, "::")))
-
-}
-  </div>}
-</div>,
-<div class="row swl collapse" data-toggle="collapse">
-<div class="col-sm-10 swlid" id="{$seg/@xml:id}-swl">
-{if (starts-with($ann, "false")) then () else 
-for $swl in collection($config:tls-data-root|| "/notes")//tls:srcline[@target=$link]
-let $pos := if (string-length($swl/@pos) > 0 and not($swl/@pos = 'undefined')) then xs:int(tokenize($swl/@pos)[1]) else 0
-order by $pos
-return
-if ($swl/ancestor::tls:ann) then ()
-(:tlslib:format-swl($swl/ancestor::tls:ann, map{'type' : 'row'}):)
-else 
-<div class="row bg-light ">
-<div class="col-sm-1">Rhet:</div>
-<div class="col-sm-4"><a href="rhet-dev.html?uuid={$swl/ancestor::tls:span/@rhet-dev-id}">{data($swl/ancestor::tls:span/@rhet-dev)}</a>
-{
-let $creator-id := substring($swl/ancestor::tls:span/@resp, 2)
-return
-   if (($user = $creator-id) or contains($usergroups, "tls-editor" )) then 
-    tlslib:format-button("delete_swl('rdl', '" || data($swl/ancestor::tls:span/@xml:id) || "')", "Immediately delete the attribution of rhetorical device "||data($swl/ancestor::tls:span/@rhet-dev), "open-iconic-master/svg/x.svg", "small", "close", "tls-editor")
-   else ()
-}
-</div>
-</div>
-}
-</div>
-<div class="col-sm-2"></div>
-</div>,
-if (local-name(($seg/following::tei:*)[1]) = 'figure') then
- let $img := ($seg/following::tei:*)[1]
- let $fig:= "../tls-texts/img/" || $img/tei:graphic/@facs
- , $tit := $img/tei:graphic/@n
- return
-<div class="row">
-<span title="{$tit}"><img src="{$fig}"/></span>
-</div>
-else ()
-)
-};
-
  (:~ 
  : called from function tlsapi:show-use-of($uid as xs:string, $type as xs:string), which is called via XHR from concept.html and char.html through 
  : tls-app.js -> show_use_of(type, uid) 
@@ -1360,10 +1115,10 @@ declare function tlslib:display-sense($sw as node(), $count as xs:int, $display-
       <img class="icon-small" src="resources/icons/open-iconic-master/svg/magnifying-glass.svg"/>
       </button> else (),
       if ($count = 0) then
-      tlslib:format-button("delete_word_from_concept('"|| $id || "')", "Delete the syntactic word "|| $sf || ".", "open-iconic-master/svg/x.svg", "", "", "tls-editor") else 
+      lrh:format-button("delete_word_from_concept('"|| $id || "')", "Delete the syntactic word "|| $sf || ".", "open-iconic-master/svg/x.svg", "", "", "tls-editor") else 
       if ($count > 0) then (
-      tlslib:format-button("move_word('"|| $char || "', '"|| $id ||"', '"||$count||"')", "Move the SW  '"|| $sf || "' including "|| $count ||"attribution(s) to a different concept.", "open-iconic-master/svg/move.svg", "", "", "tls-editor") ,      
-      tlslib:format-button("merge_word('"|| $sf || "', '"|| $id ||"', '"||$count||"')", "Delete the SW '"|| $sf || "' and merge "|| $count ||"attribution(s) to a different SW.", "open-iconic-master/svg/wrench.svg", "", "", "tls-editor")       
+      lrh:format-button("move_word('"|| $char || "', '"|| $id ||"', '"||$count||"')", "Move the SW  '"|| $sf || "' including "|| $count ||"attribution(s) to a different concept.", "open-iconic-master/svg/move.svg", "", "", "tls-editor") ,      
+      lrh:format-button("merge_word('"|| $sf || "', '"|| $id ||"', '"||$count||"')", "Delete the SW '"|| $sf || "' and merge "|| $count ||"attribution(s) to a different SW.", "open-iconic-master/svg/wrench.svg", "", "", "tls-editor")       
       )
       else ()
       }
@@ -1422,15 +1177,15 @@ return
 <div class="col-sm-7"><span>{$tr/text()}</span>
 {if ((sm:has-access(document-uri(fn:root($a)), "w") and $a/@xml:id) and not(contains(sm:id()//sm:group, 'tls-test'))) then 
 (
-(:   tlslib:format-button("null()", "Resp: " || $resp , "open-iconic-master/svg/person.svg", "small", "close", "tls-user"),:)
+(:   lrh:format-button("null()", "Resp: " || $resp , "open-iconic-master/svg/person.svg", "small", "close", "tls-user"),:)
  if ($resp) then 
-   tlslib:format-button("null()", "Resp: " || $resp[1] , $resp[2], "small", "close", "tls-user") else (),
+   lrh:format-button("null()", "Resp: " || $resp[1] , $resp[2], "small", "close", "tls-user") else (),
 
-(:tlslib:format-button("review_swl_dialog('" || data($a/@xml:id) || "')", "Review this attribution", "octicons/svg/unverified.svg", "small", "close", "tls-editor"),:)
-tlslib:format-button("incr_rating('swl', '" || data($a/@xml:id) || "')", "Mark this attribution as prototypical", "open-iconic-master/svg/star.svg", "small", "close", "tls-editor"),
-tlslib:format-button("delete_swl('swl', '" || data($a/@xml:id) || "')", "Delete this attribution", "open-iconic-master/svg/x.svg", "small", "close", "tls-editor"),
+(:lrh:format-button("review_swl_dialog('" || data($a/@xml:id) || "')", "Review this attribution", "octicons/svg/unverified.svg", "small", "close", "tls-editor"),:)
+lrh:format-button("incr_rating('swl', '" || data($a/@xml:id) || "')", "Mark this attribution as prototypical", "open-iconic-master/svg/star.svg", "small", "close", "tls-editor"),
+lrh:format-button("delete_swl('swl', '" || data($a/@xml:id) || "')", "Delete this attribution", "open-iconic-master/svg/x.svg", "small", "close", "tls-editor"),
  if (not ($user = substring($a/tls:metadata/@resp, 2))) then
-    tlslib:format-button("save_swl_review('" || data($a/@xml:id) || "')", "Approve the SWL", "octicons/svg/thumbsup.svg", "small", "close", "tls-editor") else ()
+    lrh:format-button("save_swl_review('" || data($a/@xml:id) || "')", "Approve the SWL", "octicons/svg/thumbsup.svg", "small", "close", "tls-editor") else ()
 )
 else ()}
 </div>
@@ -1621,45 +1376,6 @@ return
 };
 
 
-declare function tlslib:get-text-preview($loc as xs:string, $options as map(*)){
-
-let $seg := collection($config:tls-texts-root)//tei:seg[@xml:id = $loc],
-$context := if($options?context) then $options?context else 5,
-$format := if($options?format) then $options?format else 'tooltip',
-$title := $seg/ancestor::tei:TEI//tei:titleStmt/tei:title/text(),
-$pseg := $seg/preceding::tei:seg[fn:position() < $context],
-$fseg := $seg/following::tei:seg[fn:position() < $context],
-$dseg := ($pseg, $seg, $fseg),
-$textid := tokenize($loc, "_")[1],
-$tr := ltr:get-translations($textid),
-$slot1 := if ($options?transl-id) then $options?transl-id else lus:get-settings()//tls:section[@type='slot-config']/tls:item[@textid=$textid and @slot='slot1']/@content,
-$transl := if ($slot1) then $tr($slot1) else ()
-(:$transl := collection("/db/apps/tls-data")//tei:bibl[@corresp="#"||$textid]/ancestor::tei:fileDesc//tei:editor[@role='translator']:)
-return
-if ($format = 'tooltip') then
-<div class="popover" role="tooltip">
-<div class="arrow"></div>
-<h3 class="popover-header">
-<a href="textview.html?location={$loc}">{$title}</a></h3>
-<div class="popover-body">
-    {
-for $d in $dseg 
-return 
-    (: we hardcode the translation slot to 1; need to make sure that 1 always has the one we want :)
-    tlslib:display-seg($d, map{"transl" : $transl[1], "ann": "false", "loc": $loc})
-    }
-</div>
-</div>
-else 
-<div class="col">
-    {
-for $d in $dseg 
-return 
-    (: we hardcode the translation slot to 1; need to make sure that 1 always has the one we want :)
-    tlslib:display-seg($d, map{"transl" : $transl[1], "ann": "false", "loc": $loc})
-    }
-</div>
-};
 
 (: This displays the list of words by concept in the right hand popup pane (floater)  :)
 declare function tlslib:get-sw($word as xs:string, $context as xs:string, $domain as xs:string, $leftword as xs:string) as item()* {
@@ -2198,7 +1914,7 @@ return
   <div class="col-sm-2"><span title="Click here to confirm the current pinyin assignments" onclick="assign_guangyun_dialog({{'zi':'{$g}', 'wid':'','py': '{$py}', 'type' : 'read-only', 'pos' : '{$pos}'}})">{$py}</span></div>  
   <div class="col-sm-3"><span id="gloss-{$pos}" title="Click here to add/change gloss" onclick="update_gloss_dialog({{'zi':'{$g}', 'py': '{$py}', 'uuid': '{$r/@xml:id}',  'pos' : '{$pos}'}})">No gloss</span></div>
   <div class="col-sm-3" title="{$created}">created by {$un}&#160;</div>
-  <div class="col-sm-2">{tlslib:format-button("delete_pron('" || data($r/@xml:id) || "')", "Immediately delete pronounciation "||$py||" for "||$g, "open-iconic-master/svg/x.svg", "", "close", "tls-editor")}</div>
+  <div class="col-sm-2">{lrh:format-button("delete_pron('" || data($r/@xml:id) || "')", "Immediately delete pronounciation "||$py||" for "||$g, "open-iconic-master/svg/x.svg", "", "close", "tls-editor")}</div>
   </div>,
 ()
 }
@@ -2790,9 +2506,9 @@ for $r in subsequence($rels//tei:div[@type='word-rel'], $start, $cnt)
  , $lnk := if (string-length($lwn/@line-id) > 0) then ($lwn/@line-id)[1] else if (string-length($rwn/@line-id) > 0) then ($rwn/@line-id)[1] else ()
  return 
   (:delete :)
-  (tlslib:format-button("delete_word_relation('"|| $tid || "')", "Delete this word relation.", "open-iconic-master/svg/x.svg", "", "", "tls-editor")
+  (lrh:format-button("delete_word_relation('"|| $tid || "')", "Delete this word relation.", "open-iconic-master/svg/x.svg", "", "", "tls-editor")
 ,     (: move :)
-    tlslib:format-button("change_word_rel('"|| $tid || "')", "Change the type of word relation for this attribution.", "open-iconic-master/svg/move.svg", "", "", "tls-editor")  
+    lrh:format-button("change_word_rel('"|| $tid || "')", "Change the type of word relation for this attribution.", "open-iconic-master/svg/move.svg", "", "", "tls-editor")  
 ,if (string-length($ll) > 0) then 
   ($ll, " / ", $rl ,  "(", if (string-length($lnk) > 0) then 
    <a href="textview.html?location={$lnk}">{$txt}{xs:int(tokenize(tokenize($lnk, "_")[3], "-")[1])}</a>
