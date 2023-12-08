@@ -24,6 +24,7 @@ import module namespace lmd="http://hxwd.org/lib/metadata" at "lib/metadata.xqm"
 import module namespace lus="http://hxwd.org/lib/user-settings" at "lib/user-settings.xqm";
 import module namespace lgrp="http://hxwd.org/lib/group-by" at "lib/group-by.xqm";
 import module namespace lrh="http://hxwd.org/lib/render-html" at "lib/render-html.xqm";
+import module namespace lpm="http://hxwd.org/lib/permissions" at "lib/permissions.xqm";
 
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
@@ -367,6 +368,7 @@ if ($model?search-type = ($src:search-bib, $src:textlist)) then () else (
 
 
 declare function src:find-similar-segments($inp-seg){
+ let $uuid :=  "uuid-" || util:uuid()
  let $seg := typeswitch($inp-seg)
               case element(*) return $inp-seg
               default return lu:get-seg($inp-seg)
@@ -376,10 +378,7 @@ declare function src:find-similar-segments($inp-seg){
              where string-length($n) > 1
              return $n
  , $ns :=  count($ng) div 2
- return
- <div><p></p>
- <ul>{
- for $q in $ng 
+ , $ret1 :=  for $q in $ng 
    for $r in collection($config:tls-texts-root)//tei:p[ngram:contains(.,$q)]
       for $sg in util:expand($r)//exist:match/ancestor::tei:seg
         let $id := $sg/@xml:id
@@ -387,11 +386,53 @@ declare function src:find-similar-segments($inp-seg){
       group by $grp
       order by count($id) descending
       where count($id) > $ns and not($id = $seg/@xml:id)
-      return <li data-n="{count($id)}" data-grp="{$grp}">{$sg[1]}</li>
-(:      return <m n="{count($id)}">{$grp}{$sg[1]}</m>:)
-}
-</ul>
-</div>
+      return $sg[1]
+ return
+ <ul>{(
+ for $rs at $pos in $ret1 
+   let $text := string-join($rs//text())
+   group by $text
+   let $cnt := count($rs)
+   order by $cnt descending
+ return 
+  if ($cnt > 1) then
+  <li cnt="{$cnt}" t="{$text}">{$text}
+  <button title="Click to show" class="btn badge badge-light" type="button" 
+      data-toggle="collapse" data-target="#list-{$pos[1]}">{$cnt}</button>
+      <ul class="collapse"  id="list-{$pos[1]}">{
+          src:show-result-segs(
+           for $r in $rs
+           let $o := data($r/@xml:id)
+           order by $o
+           return $r, "list")}</ul></li>
+ else 
+ src:show-result-segs($rs, "list")
+ , if (lpm:can-use-linked-items()) then 
+ <li> <span class="btn" onclick="show_new_link_dialog('{$uuid}')">Link selected items to this line</span></li> else ()
+ )}</ul>
+};
+
+declare function src:show-result-segs($segs as node()*, $type as xs:string){
+ for $seg in $segs
+    let $cseg := collection($config:tls-texts-root)//tei:seg[@xml:id=$seg/@xml:id]
+    let $title := lmd:get-metadata($cseg, "title")
+    , $head := lmd:get-metadata($cseg, "head")
+    , $textid := lmd:get-metadata($cseg, "textid")
+    , $tr := collection($config:tls-translation-root)//tei:seg[@corresp="#"||$cseg/@xml:id]
+    , $dsegs := (lu:next-n-segs($cseg/@xml:id, -5), $cseg, lu:next-n-segs($cseg/@xml:id, 5))
+    return
+    if ($type = 'list') then
+    <li>{ if (lpm:can-use-linked-items()) then 
+<input class="form-check-input" type="checkbox" name="res-check" value="" id="res-{$cseg/@xml:id}"/> else ()}<strong><a href="textview.html?location={$cseg/@xml:id}">{$title}・{$head}</a>　</strong>
+    {    
+    for $s at $pos in $dsegs
+    return
+    if ($s/@xml:id = $cseg/@xml:id) then
+    <mark>{lrh:proc-seg($s, map{"punc" : true()})}</mark>
+    else
+    lrh:proc-seg($s, map{"punc" : true()})
+    }</li>
+    else ()
 };
 
 (: for a $hit, we find the value associated with the requested genre :)

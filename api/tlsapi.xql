@@ -1621,21 +1621,21 @@ else ()
 }</p>
 {
 for $h at $n in $disp
-    let $loc := $h/@xml:id,
-    $cseg := collection($config:tls-texts-root)//tei:seg[@xml:id=$loc],
-    $head :=  $cseg/ancestor::tei:div[1]/tei:head[1]//text(),    
-    $title := $cseg/ancestor::tei:TEI//tei:titleStmt/tei:title/text(),
-    $textid := tlslib:get-textid($loc),
-    $tr := collection($config:tls-translation-root)//tei:seg[@corresp="#"||$loc]
+    let $loc := $h/@xml:id
+    ,$cseg := collection($config:tls-texts-root)//tei:seg[@xml:id=$loc]
+    ,$head :=  $cseg/ancestor::tei:div[1]/tei:head[1]//text()    
+    ,$title := $cseg/ancestor::tei:TEI//tei:titleStmt/tei:title/text()
+    ,$textid := tlslib:get-textid($loc)
+    ,$tr := collection($config:tls-translation-root)//tei:seg[@corresp="#"||$loc]
     ,$m1 := substring(($h/exist:match)[1]/text(), 1, 1)
-    , $col1 :=  if ("dba" = sm:id()//sm:group) then "col-md-1" else "col-md-2"
+    ,$col1 :=  if (lpm:can-use-linked-items()) then "col-md-1" else "col-md-2"
     where $m1 = $q1
 (:  :)
 
 return
 <div class="row">
 <div class="{$col1}">{xs:int($map?start)+$n - 1}</div>
-{ if ("dba" = sm:id()//sm:group) then 
+{ if (lpm:can-use-linked-items()) then 
 <div class="col-md-1"><input class="form-check-input" type="checkbox" name="res-check" value="" id="res-{$loc}"/></div> else ()}
 <div class="col-md-3"><a href="textview.html?location={$loc}&amp;query={$map?query}">{$title, " / ", $head}</a></div>
 <div class="col-md-7">{ 
@@ -1650,7 +1650,7 @@ for $sh in $h/preceding-sibling::tei:seg[position()<4] return lrh:proc-seg($sh, 
   <ul class="pagination">
     <li class="page-item"><a class="page-link {if ($start = 1) then "disabled" else ()}" onclick="{$prevp}" href="#">&#171;</a></li>
     <li class="page-item"><a class="page-link" onclick="{$nextp}" href="#">&#187;</a></li>
-    { if ("dba" = sm:id()//sm:group) then 
+    { if (lpm:can-use-linked-items()) then 
     <li> <span class="btn" onclick="show_new_link_dialog('{$uuid}')">Link selected items to this line</span></li>
     else ()
     }

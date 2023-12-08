@@ -39,3 +39,11 @@ declare function lpm:has-edit-permission($text-id as xs:string) as xs:boolean {
 declare function lpm:should-display-navbar-review($context as xs:string, $model as map(*)) as xs:boolean {
   sm:id()//sm:group = "tls-editor" or ($context = "textview" and $model("textid") and lpm:has-edit-permission($model("textid")))
 };
+
+declare function lpm:can-use-linked-items(){
+ "dba" = sm:id()//sm:group
+};
+
+declare function lpm:can-search-similar-lines(){
+ "dba" = sm:id()//sm:group
+};
