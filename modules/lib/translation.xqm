@@ -387,7 +387,6 @@ let $translators := ltr:find-translators($textid)
 declare function ltr:get-tr-for-page($loc_in as xs:string, $prec as xs:int, $foll as xs:int, $slot as xs:string, $content-id as xs:string){
 let $loc := replace($loc_in, "-swl", "")
 , $textid := tokenize($loc, "_")[1]
-, $cl := if ($slot = "slot1") then "-tr" else "-ex"
 , $edtp := if (contains($content-id, "_")) then xs:boolean(1) else xs:boolean(0)
 , $dseg := lu:get-targetsegs($loc, $prec, $foll)
 , $ret :=  let $transl := ltr:get-translations($textid),
@@ -396,7 +395,7 @@ let $loc := replace($loc_in, "-swl", "")
    map:merge(for $seg in $dseg 
      let $tr := $troot//tei:seg[@corresp="#"||$seg/@xml:id]/text()
       return 
-      map:entry("#"||data($seg/@xml:id)||$cl, $tr))
+      map:entry("#"||data($seg/@xml:id)||"-"||$slot, $tr))
  return $ret
 };
   
@@ -439,10 +438,10 @@ let $doc := ltr:get-translation-file($transid)
 :)
 declare function ltr:save-tr($trid as xs:string, $tr-to-save as xs:string, $lang as xs:string){
 let $user := sm:id()//sm:real/sm:username/text()
-let $id := substring($trid, 1, string-length($trid) -3)
+let $id := substring-before($trid, '-slot')
 ,$txtid := tokenize($id, "_")[1]
 ,$tr := ltr:get-translations($txtid)
-,$slot := if (ends-with($trid, '-tr')) then 'slot1' else 'slot2'
+,$slot := 'slot' || substring-after($trid, 'slot')
 ,$content-id := lrh:get-content-id($txtid, $slot, $tr)
 ,$transl := $tr($content-id)[1]
 ,$seg := <seg xmlns="http://www.tei-c.org/ns/1.0" corresp="#{$id}" xml:lang="{$lang}" resp="#{$user}" modified="{current-dateTime()}">{$tr-to-save}</seg>

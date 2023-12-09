@@ -29,6 +29,44 @@ import module namespace ltr="http://hxwd.org/lib/translation" at "translation.xq
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
 
+declare function ltp:get-text-preview($loc as xs:string, $options as map(*)){
+
+let $seg := collection($config:tls-texts-root)//tei:seg[@xml:id = $loc],
+$context := if($options?context) then $options?context else 5,
+$format := if($options?format) then $options?format else 'tooltip',
+$title := $seg/ancestor::tei:TEI//tei:titleStmt/tei:title/text(),
+$pseg := $seg/preceding::tei:seg[fn:position() < $context],
+$fseg := $seg/following::tei:seg[fn:position() < $context],
+$dseg := ($pseg, $seg, $fseg),
+$textid := tokenize($loc, "_")[1],
+$tr := ltr:get-translations($textid),
+$slot1 := if ($options?transl-id) then $options?transl-id else lus:get-settings()//tls:section[@type='slot-config']/tls:item[@textid=$textid and @slot='slot1']/@content,
+$transl := if ($slot1) then $tr($slot1) else ()
+return
+if ($format = 'tooltip') then
+<div class="popover" role="tooltip">
+<div class="arrow"></div>
+<h3 class="popover-header">
+<a href="textview.html?location={$loc}">{$title}</a></h3>
+<div class="popover-body">
+    {
+for $d in $dseg 
+return 
+    (: we hardcode the translation slot to 1; need to make sure that 1 always has the one we want :)
+    ltp:display-seg($d, map{"transl" : $transl[1], "ann": "false", "loc": $loc})
+    }
+</div>
+</div>
+else 
+<div class="col">
+    {
+for $d in $dseg 
+return 
+    (: we hardcode the translation slot to 1; need to make sure that 1 always has the one we want :)
+    ltp:display-seg($d, map{"transl" : $transl[1], "ann": "false", "loc": $loc})
+    }
+</div>
+};
 
 
 declare function ltp:show-textpanel($seg as node(), $map as map(*)){
@@ -36,21 +74,22 @@ declare function ltp:show-textpanel($seg as node(), $map as map(*)){
 };
 
 declare function ltp:display-seg($seg as node()*, $options as map(*) ) {
- let $user := sm:id()//sm:real/sm:username/text(),
- $usergroups := sm:get-user-groups($user),
- $show-transl := not(contains(sm:id()//sm:group/text(), "guest")),
- $testuser := contains(sm:id()//sm:group, ('tls-test', 'guest'))
- let $link := concat('#', $seg/@xml:id),
+ let $user := sm:id()//sm:real/sm:username/text()
+ ,$usergroups := sm:get-user-groups($user)
+ ,$colums := if (string-length($options?columns)>0) then xs:int($options?columns) else 2 
+ ,$show-transl := not(contains(sm:id()//sm:group/text(), "guest"))
+ ,$testuser := lpm:is-testuser() 
+ ,$link := concat('#', $seg/@xml:id)
   (: we are displaying in a reduced context, only 2 rows  :)
-  $ann := lower-case(map:get($options, "ann")),
-  $loc := map:get($options, "loc"),
-  $locked := $seg/@state = 'locked',
-  $textid := string($seg/ancestor::tei:TEI/@xml:id),
-  $mark := if (data($seg/@xml:id) = $loc) then "mark" else ()
-  ,$lang := 'zho'
-  ,$alpheios-class := if ($user = 'test2') then 'alpheios-enabled' else ''
-  ,$markup-class := "tei-" || local-name($seg/parent::*)
-  ,$slot1 := if ($show-transl) then 
+ ,$ann := lower-case(map:get($options, "ann"))
+ ,$loc := map:get($options, "loc")
+ ,$locked := $seg/@state = 'locked'
+ ,$textid := lmd:get-metadata($seg, "textid")
+ ,$mark := if (data($seg/@xml:id) = $loc) then "mark" else ()
+ ,$lang := 'zho'
+ ,$alpheios-class := if ($user = 'test2') then 'alpheios-enabled' else ''
+ ,$markup-class := "tei-" || local-name($seg/parent::*)
+ ,$slot1 := if (lpm:should-show-translation()) then 
      if (map:contains($options, "transl")) then $options?transl
      else map:get($options, $options?slot1)[1] else ()
   ,$slot2 := if ($show-transl and not($ann = 'false')) then map:get($options, $options?slot2)[1] else ()
@@ -72,8 +111,20 @@ return
 lrh:proc-seg($seg, map{"punc" : true(), "textid" : $textid})
 }
 </div>　
-{ltp:left-panel-row($slot1, map{"seg" : $seg, "ann" : $ann, "resp": $resp1, "ex": "tr", "tabindex" : $options('pos')+ 500, "editable" : $editable, "user" : $user })}
-{ltp:left-panel-row($slot2, map{"seg" : $seg, "ann" : $ann, "resp": $resp2, "ex": "ex", "tabindex" : $options('pos')+1000, "editable" : $editable, "user" : $user })}
+{
+for $i in (1 to $colums)
+ let $slot := if (lpm:should-show-translation()) then 
+     if (map:contains($options, "transl")) then $options?transl
+     else map:get($options, map:get($options, 'slot'||$i))[1] else ()
+ , $resp := 
+      let $px := typeswitch ($slot) case element(tei:TEI) return  replace(($slot//tei:seg[@corresp="#"||$seg/@xml:id]/@resp)[1], '#', '') default return ()   
+      return
+      if ($px) then "Resp: "||tu:get-member-name($px) else ()
+ return
+
+ltp:left-panel-row($slot, map{"seg" : $seg, "ann" : $ann, "resp": $resp, "ex": "slot"||$i, "tabindex" : $options('pos')+ (500*$i), "editable" : $editable, "user" : $user })
+
+}
 </div>,
 <div class="row swl collapse" data-toggle="collapse">
 <div class="col-sm-10 swlid" id="{$seg/@xml:id}-swl">
@@ -166,42 +217,3 @@ declare function ltp:chunkcol-left($dseg, $model, $tr, $slot1-id, $slot2-id, $lo
 };
 
 
-declare function ltp:get-text-preview($loc as xs:string, $options as map(*)){
-
-let $seg := collection($config:tls-texts-root)//tei:seg[@xml:id = $loc],
-$context := if($options?context) then $options?context else 5,
-$format := if($options?format) then $options?format else 'tooltip',
-$title := $seg/ancestor::tei:TEI//tei:titleStmt/tei:title/text(),
-$pseg := $seg/preceding::tei:seg[fn:position() < $context],
-$fseg := $seg/following::tei:seg[fn:position() < $context],
-$dseg := ($pseg, $seg, $fseg),
-$textid := tokenize($loc, "_")[1],
-$tr := ltr:get-translations($textid),
-$slot1 := if ($options?transl-id) then $options?transl-id else lus:get-settings()//tls:section[@type='slot-config']/tls:item[@textid=$textid and @slot='slot1']/@content,
-$transl := if ($slot1) then $tr($slot1) else ()
-(:$transl := collection("/db/apps/tls-data")//tei:bibl[@corresp="#"||$textid]/ancestor::tei:fileDesc//tei:editor[@role='translator']:)
-return
-if ($format = 'tooltip') then
-<div class="popover" role="tooltip">
-<div class="arrow"></div>
-<h3 class="popover-header">
-<a href="textview.html?location={$loc}">{$title}</a></h3>
-<div class="popover-body">
-    {
-for $d in $dseg 
-return 
-    (: we hardcode the translation slot to 1; need to make sure that 1 always has the one we want :)
-    ltp:display-seg($d, map{"transl" : $transl[1], "ann": "false", "loc": $loc})
-    }
-</div>
-</div>
-else 
-<div class="col">
-    {
-for $d in $dseg 
-return 
-    (: we hardcode the translation slot to 1; need to make sure that 1 always has the one we want :)
-    ltp:display-seg($d, map{"transl" : $transl[1], "ann": "false", "loc": $loc})
-    }
-</div>
-};
