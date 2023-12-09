@@ -56,60 +56,24 @@ declare function ltp:display-seg($seg as node()*, $options as map(*) ) {
   ,$slot2 := if ($show-transl and not($ann = 'false')) then map:get($options, $options?slot2)[1] else ()
   (: check if transl + comment are related, if yes than do not manipulate tab-index :)
   (: if tei:TEI, then we have a translation, otherwise a variant :)
-  , $px1 := typeswitch ($slot1) case element(tei:TEI) return  replace(($slot1//tei:seg[@corresp="#"||$seg/@xml:id]/@resp)[1], '#', '') default return () 
+  ,$px1 := typeswitch ($slot1) case element(tei:TEI) return  replace(($slot1//tei:seg[@corresp="#"||$seg/@xml:id]/@resp)[1], '#', '') default return () 
   ,$resp1 := if ($px1) then "Resp: "||tu:get-member-name($px1) else ()
-  , $px2 :=  typeswitch ($slot2) case element(tei:TEI) return replace(($slot2//tei:seg[@corresp="#"||$seg/@xml:id]/@resp)[1], '#', '') default return () 
+  ,$px2 :=  typeswitch ($slot2) case element(tei:TEI) return replace(($slot2//tei:seg[@corresp="#"||$seg/@xml:id]/@resp)[1], '#', '') default return () 
   ,$resp2 :=  if ($px2) then "Resp: "||doc($config:tls-data-root || "/vault/members.xml")//tei:person[@xml:id=$px2]//tei:persName/text() else () 
-(: normalize-space(string-join($seg/text(),'')) :)
+  ,$editable := if (not($testuser) and not($locked) ) then 'true' else 'false'
+  ,$zhclass := if ($seg/@type='comm') then 'tls-comm ' else 
+                  if($locked) then 'locked ' else () 
+               || (if ($ann='false') then 'col-sm-4 ' else $options?zh-width) || " zh chn-font " || $alpheios-class || " " || $markup-class             
 return
 (
 <div class="row {$mark}">
-<div class="col .no-gutters">
-{
-if($locked and $textid and lpm:has-edit-permission($textid)) then 
-  lrh:format-button("display_punc_dialog('" || data($seg/@xml:id) || "')", "Add punctuation to this text segment", "octicons/svg/lock.svg", "", "", ("tls-editor", "tls-punc")) 
-else (), 
- if ($seg//tei:lb) then 
-  let $node := ($seg//tei:lb)[1]
-  , $n := if (contains($node/@n, "-")) then tokenize($node/@n, '-')[2] else $node/@n
-  return
-<span class="btn badge badge-light text-muted ed-{data($node/@ed)}">{data($n)}</span>
-else
-if ($seg//tei:pb or local-name(($seg/preceding-sibling::*)[last()]) = ('lb', 'pb')) then 
- let $node := ($seg//tei:pb | ($seg/preceding-sibling::tei:pb)[last()])[1]
- , $n := tokenize($node/@n, '-')[2]
- , $fpref :=  $config:ed-img-map?($node/@ed) 
- , $pg := substring-before(tokenize(data($node/@facs), '/')[last()], '.')
- return
- if ($pg) then
-<span title="Click here to display a facsimile of this page &#10;{$config:wits?(data($node/@ed))}:{$pg}" onclick="get_facs_for_page('slot1', '{$fpref}{$node/@facs}', '{data($node/@ed)}', '{data($seg/@xml:id)}')" class="btn badge badge-light text-muted ed-{data($node/@ed)}">{$n}</span>
-else "　" 
-else "　"
-(: either within or without the segment, for the moment place it within :)
-(:, if ($seg/tei:c[@type='shifted']) then <span class="swxz">{data($seg/tei:c[@type='shifted']/@n)}</span> else ():)
-}
-</div>
-<div class="{
-if ($seg/@type='comm') then 'tls-comm ' else 
-if($locked) then 'locked ' else () }{
-if ($ann='false') then 'col-sm-4' else $options?zh-width} zh chn-font {$alpheios-class} {$markup-class}" lang="{$lang}" id="{$seg/@xml:id}" data-tei="{ util:node-id($seg) }">{
+{ltp:zero-panel-row(map{"locked" : $locked, "textid" : $textid, "seg" : $seg}) }
+<div class="{$zhclass}" lang="{$lang}" id="{$seg/@xml:id}" data-tei="{ util:node-id($seg) }">{
 lrh:proc-seg($seg, map{"punc" : true(), "textid" : $textid})
-}{(:if (exists($seg/tei:anchor/@xml:id)) then <span title="{normalize-space(string-join($seg/ancestor::tei:div//tei:note[tei:ptr/@target='#'||$seg/tei:anchor/@xml:id]/text()))}" >●</span> else ():) ()}</div>　
-<div class="col-sm-4 tr" title="{$resp1}" lang="en-GB" tabindex="{$options('pos')+500}" id="{$seg/@xml:id}-tr" contenteditable="{if (not($testuser) and not($locked)) then 'true' else 'false'}">{typeswitch ($slot1) 
-case element(tei:TEI) return  $slot1//tei:seg[@corresp="#"||$seg/@xml:id]//text()
-default return (krx:get-varseg-ed($seg/@xml:id, substring-before($slot1, "::")))
-}</div>
- {if ($ann = 'false') then () else 
- (: using en-GB for now, need to get that from translation in the future...  :)
-  <div class="col-sm-4" title="{$resp2}" lang="en-GB" >
-  {typeswitch ($slot2) 
-case element(tei:TEI) return (if ($slot2/@type='notes') then lli:get-linked-items($user, $seg/@xml:id) else (),<div class="tr" tabindex="{$options('pos')+1000}" id="{$seg/@xml:id}-ex" contenteditable="{if (not($testuser) and not($locked)) then 'true' else 'false'}">{$slot2//tei:seg[@corresp="#"||$seg/@xml:id]//text()}</div>  )
-default return
-
-(krx:get-varseg-ed($seg/@xml:id, substring-before($slot2, "::")))
-
 }
-  </div>}
+</div>　
+{ltp:left-panel-row($slot1, map{"seg" : $seg, "ann" : $ann, "resp": $resp1, "ex": "tr", "tabindex" : $options('pos')+ 500, "editable" : $editable, "user" : $user })}
+{ltp:left-panel-row($slot2, map{"seg" : $seg, "ann" : $ann, "resp": $resp2, "ex": "ex", "tabindex" : $options('pos')+1000, "editable" : $editable, "user" : $user })}
 </div>,
 <div class="row swl collapse" data-toggle="collapse">
 <div class="col-sm-10 swlid" id="{$seg/@xml:id}-swl">
@@ -148,6 +112,49 @@ if (local-name(($seg/following::tei:*)[1]) = 'figure') then
 else ()
 )
 };
+
+declare function ltp:zero-panel-row($map){
+<div class="col .no-gutters">
+{
+if($map?locked and $map?textid and lpm:has-edit-permission($map?textid)) then 
+  lrh:format-button("display_punc_dialog('" || data($map?seg/@xml:id) || "')", "Add punctuation to this text segment", "octicons/svg/lock.svg", "", "", ("tls-editor", "tls-punc")) 
+else (), 
+ if ($map?seg//tei:lb) then 
+  let $node := ($map?seg//tei:lb)[1]
+  , $n := if (contains($node/@n, "-")) then tokenize($node/@n, '-')[2] else $node/@n
+  return
+<span class="btn badge badge-light text-muted ed-{data($node/@ed)}">{data($n)}</span>
+else
+if ($map?seg//tei:pb or local-name(($map?seg/preceding-sibling::*)[last()]) = ('lb', 'pb')) then 
+ let $node := ($map?seg//tei:pb | ($map?seg/preceding-sibling::tei:pb)[last()])[1]
+ , $n := tokenize($node/@n, '-')[2]
+ , $fpref :=  $config:ed-img-map?($node/@ed) 
+ , $pg := substring-before(tokenize(data($node/@facs), '/')[last()], '.')
+ return
+ if ($pg) then
+<span title="Click here to display a facsimile of this page &#10;{$config:wits?(data($node/@ed))}:{$pg}" onclick="get_facs_for_page('slot1', '{$fpref}{$node/@facs}', '{data($node/@ed)}', '{data($map?seg/@xml:id)}')" class="btn badge badge-light text-muted ed-{data($node/@ed)}">{$n}</span>
+else "　" 
+else "　"
+}
+</div>
+};
+
+declare function ltp:left-panel-row($node, $map){
+if ($map?ann = 'false') then () else 
+ (: using en-GB for now, need to get that from translation in the future...  :)
+<div class="col-sm-4" title="{$map?resp}" lang="en-GB" >
+  {typeswitch ($node) 
+case element(tei:TEI) return (if ($node/@type='notes') then 
+      lli:get-linked-items($map?user, $map?seg/@xml:id) else (),
+      <div class="tr" tabindex="{$map?tabindex}" id="{$map?seg/@xml:id}-{$map?ex}" contenteditable="{$map?editable}">{$node//tei:seg[@corresp="#"||$map?seg/@xml:id]//text()}</div>  )
+default return
+
+(krx:get-varseg-ed($map?seg/@xml:id, substring-before($node, "::")))
+
+}
+</div>
+};
+
 
 declare function ltp:chunkcol-left($dseg, $model, $tr, $slot1-id, $slot2-id, $loc, $cnt){
       for $d at $pos in $dseg 
