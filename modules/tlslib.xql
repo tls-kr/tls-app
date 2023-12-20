@@ -1179,7 +1179,7 @@ return
 {if ((sm:has-access(document-uri(fn:root($a)), "w") and $a/@xml:id) and not(contains(sm:id()//sm:group, 'tls-test'))) then 
 (
 (:   lrh:format-button("null()", "Resp: " || $resp , "open-iconic-master/svg/person.svg", "small", "close", "tls-user"),:)
- if ($resp) then 
+ if ($resp[1]) then 
    lrh:format-button("null()", "Resp: " || $resp[1] , $resp[2], "small", "close", "tls-user") else (),
 
 (:lrh:format-button("review_swl_dialog('" || data($a/@xml:id) || "')", "Review this attribution", "octicons/svg/unverified.svg", "small", "close", "tls-editor"),:)

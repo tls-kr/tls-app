@@ -29,6 +29,14 @@ import module namespace ltr="http://hxwd.org/lib/translation" at "translation.xq
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
 
+declare variable $ltp:panel-matrix := map{
+                 0: ("col-sm-11"),
+                 1: ("col-sm-5", "col-sm-6"),
+                 2: ("col-sm-3", "col-sm-4", "col-sm-4"),
+                 3: ("col-sm-3", "col-sm-3", "col-sm-3", "col-sm-2"),
+                 4: ("col-sm-2", "col-sm-3", "col-sm-2", "col-sm-2", "col-sm-2")
+};
+
 declare function ltp:get-text-preview($loc as xs:string, $options as map(*)){
 
 let $seg := collection($config:tls-texts-root)//tei:seg[@xml:id = $loc],
@@ -77,15 +85,16 @@ declare function ltp:display-seg($seg as node()*, $options as map(*) ) {
  let $user := sm:id()//sm:real/sm:username/text()
  ,$usergroups := sm:get-user-groups($user)
  ,$colums := if (string-length($options?columns)>0) then xs:int($options?columns) else 2 
+ ,$segid := data($seg/@xml:id)
  ,$show-transl := not(contains(sm:id()//sm:group/text(), "guest"))
  ,$testuser := lpm:is-testuser() 
- ,$link := concat('#', $seg/@xml:id)
+ ,$link := concat('#', $segid)
   (: we are displaying in a reduced context, only 2 rows  :)
  ,$ann := lower-case(map:get($options, "ann"))
  ,$loc := map:get($options, "loc")
  ,$locked := $seg/@state = 'locked'
  ,$textid := lmd:get-metadata($seg, "textid")
- ,$mark := if (data($seg/@xml:id) = $loc) then "mark" else ()
+ ,$mark := if ($segid = $loc) then "mark" else ()
  ,$lang := 'zho'
  ,$alpheios-class := if ($user = 'test2') then 'alpheios-enabled' else ''
  ,$markup-class := "tei-" || local-name($seg/parent::*)
@@ -95,19 +104,19 @@ declare function ltp:display-seg($seg as node()*, $options as map(*) ) {
   ,$slot2 := if ($show-transl and not($ann = 'false')) then map:get($options, $options?slot2)[1] else ()
   (: check if transl + comment are related, if yes than do not manipulate tab-index :)
   (: if tei:TEI, then we have a translation, otherwise a variant :)
-  ,$px1 := typeswitch ($slot1) case element(tei:TEI) return  replace(($slot1//tei:seg[@corresp="#"||$seg/@xml:id]/@resp)[1], '#', '') default return () 
+  ,$px1 := typeswitch ($slot1) case element(tei:TEI) return  replace(($slot1//tei:seg[@corresp="#"||$segid]/@resp)[1], '#', '') default return () 
   ,$resp1 := if ($px1) then "Resp: "||tu:get-member-name($px1) else ()
-  ,$px2 :=  typeswitch ($slot2) case element(tei:TEI) return replace(($slot2//tei:seg[@corresp="#"||$seg/@xml:id]/@resp)[1], '#', '') default return () 
+  ,$px2 :=  typeswitch ($slot2) case element(tei:TEI) return replace(($slot2//tei:seg[@corresp="#"||$segid]/@resp)[1], '#', '') default return () 
   ,$resp2 :=  if ($px2) then "Resp: "||doc($config:tls-data-root || "/vault/members.xml")//tei:person[@xml:id=$px2]//tei:persName/text() else () 
   ,$editable := if (not($testuser) and not($locked) ) then 'true' else 'false'
   ,$zhclass := if ($seg/@type='comm') then 'tls-comm ' else 
                   if($locked) then 'locked ' else () 
-               || (if ($ann='false') then 'col-sm-4 ' else $options?zh-width) || " zh chn-font " || $alpheios-class || " " || $markup-class             
+               || $ltp:panel-matrix?($colums)[1] || " zh chn-font " || $alpheios-class || " " || $markup-class             
 return
 (
 <div class="row {$mark}">
 {ltp:zero-panel-row(map{"locked" : $locked, "textid" : $textid, "seg" : $seg}) }
-<div class="{$zhclass}" lang="{$lang}" id="{$seg/@xml:id}" data-tei="{ util:node-id($seg) }">{
+<div class="{$zhclass}" lang="{$lang}" id="{$segid}" data-tei="{ util:node-id($seg) }">{
 lrh:proc-seg($seg, map{"punc" : true(), "textid" : $textid})
 }
 </div>　
@@ -116,16 +125,37 @@ for $i in (1 to $colums)
  let $slot := if (lpm:should-show-translation()) then 
      if (map:contains($options, "transl")) then $options?transl
      else map:get($options, map:get($options, 'slot'||$i))[1] else ()
- , $resp := 
-      let $px := typeswitch ($slot) case element(tei:TEI) return  replace(($slot//tei:seg[@corresp="#"||$seg/@xml:id]/@resp)[1], '#', '') default return ()   
-      return
-      if ($px) then "Resp: "||tu:get-member-name($px) else ()
+ , $px := typeswitch ($slot) case element(tei:TEI) return  replace(($slot//tei:seg[@corresp="#"||$segid]/@resp)[1], '#', '') default return "chris"  
+ , $resp := if ($px) then "Resp: "||doc($config:tls-data-root || "/vault/members.xml")//tei:person[@xml:id=$px]//tei:persName/text() else $px
  return
 
-ltp:left-panel-row($slot, map{"seg" : $seg, "ann" : $ann, "resp": $resp, "ex": "slot"||$i, "tabindex" : $options('pos')+ (500*$i), "editable" : $editable, "user" : $user })
+ltp:left-panel-row($slot, map{"seg" : $seg, "col-class" : $ltp:panel-matrix?($colums)[$i + 1],  "ann" : $ann, "resp": $px||$resp, "ex": "slot"||$i, "tabindex" : $options('pos')+ (500*$i), "editable" : $editable, "user" : $user, "trans-lang" : "en-GB" })
 
 }
 </div>,
+ltp:swl-rows($seg)
+,
+if (local-name(($seg/following::tei:*)[1]) = 'figure') then
+ let $img := ($seg/following::tei:*)[1]
+ let $fig:= "../tls-texts/img/" || $img/tei:graphic/@facs
+ , $tit := $img/tei:graphic/@n
+ return
+<div class="row">
+<span title="{$tit}"><img src="{$fig}"/></span>
+</div>
+else ()
+)
+};
+
+declare function ltp:swl-rows($seg){
+<div class="row swl collapse" data-toggle="collapse">
+<div class="col-sm-3">　</div>
+<div class="col-sm-7 swlid" id="{$seg/@xml:id}-swl"></div>
+<div class="col-sm-2">　</div>
+</div>};
+
+(: this code has been moved to XHR, calling api/show_swl_for_line.xql; kept here just in case... :)
+declare function ltp:swl-rows-old-code($seg){
 <div class="row swl collapse" data-toggle="collapse">
 <div class="col-sm-10 swlid" id="{$seg/@xml:id}-swl">
 {if (starts-with($ann, "false")) then () else 
@@ -151,17 +181,7 @@ return
 }
 </div>
 <div class="col-sm-2"></div>
-</div>,
-if (local-name(($seg/following::tei:*)[1]) = 'figure') then
- let $img := ($seg/following::tei:*)[1]
- let $fig:= "../tls-texts/img/" || $img/tei:graphic/@facs
- , $tit := $img/tei:graphic/@n
- return
-<div class="row">
-<span title="{$tit}"><img src="{$fig}"/></span>
 </div>
-else ()
-)
 };
 
 declare function ltp:zero-panel-row($map){
@@ -193,7 +213,7 @@ else "　"
 declare function ltp:left-panel-row($node, $map){
 if ($map?ann = 'false') then () else 
  (: using en-GB for now, need to get that from translation in the future...  :)
-<div class="col-sm-4" title="{$map?resp}" lang="en-GB" >
+<div class="{$map?col-class}" title="{$map?resp}" lang="{$map?trans-lang}" >
   {typeswitch ($node) 
 case element(tei:TEI) return (if ($node/@type='notes') then 
       lli:get-linked-items($map?user, $map?seg/@xml:id) else (),
