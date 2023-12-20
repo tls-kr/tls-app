@@ -717,6 +717,7 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
       $pseg := if ($prec > 0) then $targetseg/preceding::tei:seg[fn:position() < $prec] 
         else ()
       , $zh-width := 'col-sm-3'
+      , $colums := if (string-length($model?columns)>0) then xs:int($model?columns) else 2 
       let $d := $targetseg/ancestor::tei:div[1],
       $state := if ($d/ancestor::tei:TEI/@state) then $d/ancestor::tei:TEI/@state else "yellow" ,
       $pb := ($targetseg/preceding::tei:pb)[last()] ,
@@ -730,10 +731,10 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
 (:      $title := $model('title')/text(),:)
       $dseg := ($pseg, $targetseg, $fseg),
 (:      $model := if (string-length($model?textid) > 0) then $model else map:put($model, "textid", tokenize($targetseg, "_")[1]), :)
-      $show-transl := not(contains(sm:id()//sm:group/text(), "guest")),
+      $show-transl := lpm:should-show-translation(),
       $show-variants := xs:boolean(1),
       $visit := lvs:record-visit($targetseg),
-      $tr := if ($show-transl) then 
+      $tr := if (lpm:should-show-translation()) then 
          if (string-length($facs) > 0) then map:merge((ltr:get-translations($model?textid), 
             for $edx in distinct-values(for $lpb in $targetseg/ancestor::tei:div//tei:pb where string-length($lpb/@facs) > 0 return $lpb/@ed)
             return
@@ -779,12 +780,12 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
          else <span title="No facsimile available" class="btn badge badge-light">{data($pb/@n)}</span>
          }
         <!-- zh --></div>
-        <div class="col-sm-4" id="top-slot1"><!-- tr -->
-        {if ($show-transl) then ltr:render-translation-submenu($model?textid, "slot1", $slot1-id, $tr) else ()}
+        {for $i in (1 to $colums)
+        return 
+        <div class="col-sm-4" id="top-slot{$i}"><!-- tr -->
+        {if ($show-transl) then ltr:render-translation-submenu($model?textid, "slot"||$i, lrh:get-content-id($model?textid, 'slot'||$i, $tr) , $tr) else ()}
         </div>
-        <div class="col-sm-4" id="top-slot2">
-        {if ($show-transl) then ltr:render-translation-submenu($model?textid, "slot2", $slot2-id, $tr) else ()}
-        </div>
+        }
         </div>
       </div>
       <div id="chunkcol-left" class="col-sm-12">
@@ -1178,7 +1179,7 @@ return
 {if ((sm:has-access(document-uri(fn:root($a)), "w") and $a/@xml:id) and not(contains(sm:id()//sm:group, 'tls-test'))) then 
 (
 (:   lrh:format-button("null()", "Resp: " || $resp , "open-iconic-master/svg/person.svg", "small", "close", "tls-user"),:)
- if ($resp) then 
+ if ($resp[1]) then 
    lrh:format-button("null()", "Resp: " || $resp[1] , $resp[2], "small", "close", "tls-user") else (),
 
 (:lrh:format-button("review_swl_dialog('" || data($a/@xml:id) || "')", "Review this attribution", "octicons/svg/unverified.svg", "small", "close", "tls-editor"),:)

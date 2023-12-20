@@ -388,7 +388,7 @@ declare function src:find-similar-segments($inp-seg){
       where count($id) > $ns and not($id = $seg/@xml:id)
       return $sg[1]
  return
- <ul>{(
+ <ul><li>Total:<span class="btn badge badge-light">{count($ret1)}</span></li>{(
  for $rs at $pos in $ret1 
    let $text := string-join($rs//text())
    group by $text

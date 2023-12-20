@@ -47,3 +47,11 @@ declare function lpm:can-use-linked-items(){
 declare function lpm:can-search-similar-lines(){
  "dba" = sm:id()//sm:group
 };
+
+declare function lpm:is-testuser(){
+contains(sm:id()//sm:group, ('tls-test', 'guest'))
+};
+
+declare function lpm:should-show-translation(){
+not(contains(sm:id()//sm:group/text(), "guest"))
+};

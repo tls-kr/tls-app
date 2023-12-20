@@ -56,10 +56,10 @@ x.Selector.getSelected = function() {
 function get_text_line(tabidx){
     var nid = "" 
     try {
-      tid = $("[tabindex='" + tabidx.toString() + "']").attr('id').replace('-tr', '').split(".").join("\\.");
+      tid = $("[tabindex='" + tabidx.toString() + "']").attr('id').replace(/-slot.|-tr|-ex/, '').split(".").join("\\.");
     } catch (err) {
       ntab = tabidx - 1
-      nid = $("[tabindex='" + ntab.toString() + "']").attr('id').replace('-tr', '').split(".").join("\\.");
+      nid = $("[tabindex='" + ntab.toString() + "']").attr('id').replace(/-slot.|-tr|-ex/, '').split(".").join("\\.");
       more_display_lines(nid, tabidx );                
       return $("#" + nid).text();
     }
@@ -80,10 +80,10 @@ if (newid === "mark"){
     $(".mark:first").removeClass("mark");
     cp.addClass("mark")
 }   
- tab = parseInt($("#"+current_id+"-tr").attr("tabindex")) + 1;
+ tab = parseInt($("#"+current_id+"-slot1").attr("tabindex")) + 1;
  currentline = $("#" + current_id).text();
     try {
-      tid = $("[tabindex='" + tab.toString() + "']").attr('id').replace('-tr', '').split(".").join("\\.");
+      tid = $("[tabindex='" + tab.toString() + "']").attr('id').replace(/-slot.|-tr|-ex/, '').split(".").join("\\.");
       nl = $("#" + tid).text();
     } catch (err) {
     }
@@ -275,21 +275,21 @@ function save_pastebox_line(){
     var firstLine=lines[0];
     var remainingLines = lines.slice(1,).join('\n');
     // console.log('firstLine:',firstLine);
-    $('#'+current_id+"-tr").html(firstLine);
+    $('#'+current_id+"-slot1").html(firstLine);
     thisid = current_id.replaceAll("\\", "")
-    save_tr(thisid+"-tr", firstLine, currentline);
-    tab = parseInt($("#"+current_id+"-tr").attr("tabindex")) + 1;
+    save_tr(thisid+"-slot1", firstLine, currentline);
+    tab = parseInt($("#"+current_id+"-slot1").attr("tabindex")) + 1;
     ntab = tab + 1
     // console.log("Tab: ", "[tabindex='" + tab.toString() + "']")
     $('#input-pastebox').val(remainingLines);
     window.localStorage.setItem('pastebox', remainingLines);
     // cf https://stackoverflow.com/questions/51933513/jquery-usage-of-done-then-and-when-for-making-ajax-requests-in-a-giv
     $.when(get_text_line(ntab)).then(function (r){
-       tid = $("[tabindex='" + ntab.toString() + "']").attr('id').replace('-tr', '').split(".").join("\\.");
+       tid = $("[tabindex='" + ntab.toString() + "']").attr('id').replace(/-slot.|-tr|-ex/, '').split(".").join("\\.");
        nl = $("#" + tid).text();
        set_keyup ();
        // console.log("when:r", r, nl);
-       nextid = $("[tabindex='" + tab.toString() + "']").attr('id').replace('-tr', '');
+       nextid = $("[tabindex='" + tab.toString() + "']").attr('id').replace(/-slot.|-tr|-ex/, '');
        set_currentline(nextid)
        $('#current-line').html('<span class="font-weight-bold">'+currentline+'</span>'+nl);
     }, function (r){
@@ -353,11 +353,7 @@ function more_display_lines(lineid, tab){
   success : function(resp){
       $("#"+lineid+"-swl").parent().after(resp);
       console.log("LID", lineid);
-      // nextid = $("[tabindex='" + tab.toString() + "']").attr('id').replace('-tr', '');
-      // set_currentline(nextid)
-//      $('#current-line').text(currentline)
-      // $('#current-line').html('<span class="font-weight-bold">'+currentline+'</span>')
-      npid = $("[tabindex='" + np.toString() + "']").attr('id').replace('-tr', '')
+      npid = $("[tabindex='" + np.toString() + "']").attr('id').replace(/-slot.|-tr|-ex/, '')
       $('#nextpagebutton').on('click', function()
         {page_move(npid+'&amp;prec=1&amp;foll=29');}
         )
@@ -369,11 +365,11 @@ function more_display_lines(lineid, tab){
 
 /*
       set_keyup ()
-      nextid = $("[tabindex='" + tab.toString() + "']").attr('id').replace('-tr', '');
+      nextid = $("[tabindex='" + tab.toString() + "']").attr('id').replace(/-slot.|-tr|-ex/, '');
       set_currentline(nextid)
 //      $('#current-line').text(currentline)
       $('#current-line').html('<span class="font-weight-bold">'+currentline+'</span>')
-      npid = $("[tabindex='" + np.toString() + "']").attr('id').replace('-tr', '')
+      npid = $("[tabindex='" + np.toString() + "']").attr('id').replace(/-slot.|-tr|-ex/, '')
       $('#nextpagebutton').on('click', function()
         {page_move(npid+'&amp;prec=1&amp;foll=29');}
         )
@@ -1764,18 +1760,15 @@ function save_note (trid, tr){
 function set_keyup (){
 $(".tr").click(function (event) {
     var trid = $(this).attr('id');
-    var lineid = trid.replace('-tr', '').replace('-ex', '');
+    var lineid = trid.replace(/-slot.|-tr|-ex/,'')
     var line = document.getElementById( lineid ).innerText;
     set_currentline(lineid)
 });
 
 $( ".tr" ).blur(function (event) {
     var trid = $(this).attr('id');
-//    var lineid = trid.slice(0, -3);
-    var lineid = trid.replace('-tr', '').replace('-ex', '');
+    var lineid = trid.replace(/-slot.|-tr|-ex/,'')
     var line = document.getElementById( lineid ).innerText;
-//    currentline = trid;
-//    $('#current-line').text(line)
     var tr = $(this).text()
     var lang = $(this).attr('lang');
     console.log("blur", $(this).data('before') , "h", tr)
@@ -1802,7 +1795,7 @@ $( ".tr" ).keyup(function( event ) {
 }).keydown(function( event ) {
     var trid = $(this).attr('id');
 //    var lineid = trid.slice(0, -3);
-    var lineid = trid.replace('-tr', '').replace('-ex', '');
+    var lineid = trid.replace(/-slot.|-tr|-ex/, '');
     var line = document.getElementById( lineid ).innerText;
     var lang = $(this).attr('lang');
     dirty = true;
@@ -1872,7 +1865,7 @@ $( ".tr" ).keyup(function( event ) {
   // we save the translation on either tab or enter
   if ( event.which == 9 ) {
     var trid = $(this).attr('id');
-    var lineid = trid.replace('-tr', '').replace('-ex', '');
+    var lineid = trid.replace(/-slot.|-tr|-ex/,'')
     var line = document.getElementById( lineid ).innerText;
     var tr = $(this).text()
     var lang = $(this).attr('lang');
@@ -1889,8 +1882,7 @@ $( ".tr" ).keyup(function( event ) {
   }
   if ( event.which == 13 ) {
     var trid = $(this).attr('id');
-//    var lineid = trid.slice(0, -3);
-    var lineid = trid.replace('-tr', '').replace('-ex', '');
+    var lineid = trid.replace(/-slot.|-tr|-ex/,'')
     var line = document.getElementById( lineid ).innerText;
     var tr = $(this).text()
     event.preventDefault();
