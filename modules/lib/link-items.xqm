@@ -287,12 +287,22 @@ let $f := substring(substring-after($uuid, "uuid-"), 1, 1)
 return dbu:ensure-collection($col)
 };
 
+declare function lli:format-linked-line($line){
+let $head := data($line/@head)
+, $seg := data($line/@line)
+return
+<li><a href="textview.html?location={$seg}">{$head}</a>:{$line/text()}</li>
+};
 
 declare function lli:get-linked-items($user, $seg-id){
 let $linked-items := (collection($config:tls-links-root)|collection($config:tls-user-root || $user || "/notes/links"))//tls:line[@line=$seg-id]/parent::tls:lineGroup
 return
 if ($linked-items) then
-<div class="">{$linked-items}</div>
+<div class="">{for $line in $linked-items/tls:line
+let $s := $line/@line
+where $s != $seg-id
+return lli:format-linked-line($line)
+}</div>
 else ()
 };
             
