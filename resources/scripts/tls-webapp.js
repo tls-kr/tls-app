@@ -381,7 +381,7 @@ function get_canvas_for_page(slot, myid){
 }; 
  
 function get_facs_for_page(slot, pbfacs, pbed, segid){
-  var location = $('#chunkcol-left').children('div').eq(1).children('div').eq(0).attr('id');
+  var location = $('#chunkcol-left').children('div').eq(0).children('div').eq(0).attr('id');
   var dw = document.documentElement.clientWidth;
   var dh = document.documentElement.clientHeight;
   var new_height = $('#chunkcol-left').outerHeight();
@@ -409,7 +409,7 @@ function get_facs_for_page(slot, pbfacs, pbed, segid){
 
 function move_to_page(slot){
     page = $('#current-page-'+slot).html()
-    var location = $('#chunkcol-left').children('div').eq(1).children('div').eq(0).attr('id');
+    var location = $('#chunkcol-left').children('div').eq(0).children('div').eq(1).attr('id');
     $.get("api/responder.xql?func=move-to-page&page="+page+"&location="+location,
     function(resp){
 //      console.log(resp)
@@ -434,7 +434,7 @@ function set_new_tileSources (slot, pb_ed_n, tileSources){
 // slot is slot1 or slot2, type is 'transl' or 'comm', no is the item number in the list
 function get_tr_for_page(slot, myid){
 //  var location = window.location.search;
-  var location = $('#chunkcol-left').children('div').eq(1).children('div').eq(0).attr('id');
+  var location = $('#chunkcol-left').children('div').eq(0).children('div').eq(1).attr('id');
   var foll = $('#chunkcol-left').children('div').length / 2
    $.ajax({
    type : "GET",
