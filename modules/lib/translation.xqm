@@ -231,7 +231,6 @@ if (not($vis="option3")) then
  else ()
 };
 
-
 declare function ltr:transinfo($trid){
 let $user := sm:id()//sm:real/sm:username/text()
 let $tru := collection($config:tls-user-root|| $user || "/translations")/tei:TEI[@xml:id=$trid]
@@ -271,6 +270,16 @@ declare function ltr:format-translation-label($tr as map(*), $trid as xs:string)
  return 
  $tr-label
 };
+
+declare function ltr:translation-cit-from-id($trid){
+let $trfile := ltr:get-translation-file($trid)
+, $title := lmd:get-metadata($trfile, 'title')
+, $resp := lmd:get-metadata($trfile, 'resp')
+, $date := lmd:get-metadata($trfile, "date")[1]
+return
+ $resp || "(" || $date || ")" 
+};
+
 (:~
  Display a selection menu for translations and commentaries, given the current slot and type
   the value of map $tr is a sequence of five items : root-node of translation, label, language, license code, item type, formated for label
@@ -414,6 +423,13 @@ let $doc := ltr:get-translation-file($transid)
                 return $s, 1, 1)
   return $firstseg
 };
+
+declare function ltr:get-translation-seg-by-id($transid as xs:string, $seg-id as xs:string){
+let $doc := ltr:get-translation-file($transid)
+, $seg := $doc//tei:seg[@corresp='#'||$seg-id]
+  return $seg
+};
+
 
 declare function ltr:get-translation-seg-by-time($transid as xs:string, $first as xs:boolean){
 let $doc := ltr:get-translation-file($transid)

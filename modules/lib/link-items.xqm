@@ -298,7 +298,7 @@ declare function lli:get-linked-items($user, $seg-id){
 let $linked-items := (collection($config:tls-links-root)|collection($config:tls-user-root || $user || "/notes/links"))//tls:line[@line=$seg-id]/parent::tls:lineGroup
 return
 if ($linked-items) then
-<div class="">{for $line in $linked-items/tls:line
+<div class="" data-uuid="{$linked-items/parent::tls:linkList/@xml:id}">{for $line in $linked-items/tls:line
 let $s := $line/@line
 where $s != $seg-id
 return lli:format-linked-line($line)

@@ -69,6 +69,13 @@ declare function lu:get-targetsegs($loc as xs:string, $prec as xs:int, $foll as 
 return $dseg
 };
 
+declare function lu:get-seg-sequence-by-id($start-seg-id, $end-seg-id){
+let $coll := collection($config:tls-texts-root)
+let $start-seg := $coll//tei:seg[@xml:id = $start-seg-id]
+, $end-seg := $coll//tei:seg[@xml:id = $end-seg-id]
+return
+ ($start-seg , $start-seg/following::tei:seg intersect $end-seg/preceding::tei:seg , $end-seg)
+};
 
 declare function lu:session-att($name, $default){
    if (contains(session:get-attribute-names(),$name)) then 

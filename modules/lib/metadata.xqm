@@ -61,7 +61,7 @@ declare function lmd:get-metadata($hit, $field){
             case "status" return
                  data($header//tei:availability/@status)
             case "resp" return
-                 ()
+                 $header//tei:editor[@role='translator' or @role='creator']
             case "genre" return ()
             default return ()
 };
