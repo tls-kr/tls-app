@@ -45,7 +45,12 @@ declare function lmd:get-metadata($hit, $field){
             case "extent" return
                 data($header//tei:extent/tei:measure[@unit="char"]/@quantity)
             case "head" return
+                let $h := 
                 $hit/ancestor::tei:div[1]/tei:head[1]/tei:seg/text() => string-join() => normalize-space()
+            return
+              if (contains($h, "***")) then 
+                ($hit/preceding::tei:head[not(contains(.,'***'))])[last()]//text() => string-join() => normalize-space()
+              else $h
             case "edition" return
                 let $textid := $hit/ancestor-or-self::tei:TEI/@xml:id
                 , $ab := doc($config:tls-texts-meta||"/chant-refs.xml")//ab[@refid=$textid]

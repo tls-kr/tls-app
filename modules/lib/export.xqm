@@ -29,10 +29,13 @@ declare function lxp:process-segs($map){
  return
  (
  for $seg in $segs
- let $s := lrh:proc-seg($seg, map{})
- , $t := ltr:get-translation-seg-by-id($map?trans-id , $seg/@xml:id)
+ let $s := string-join(lrh:proc-seg($seg, map{'punc' : 'yes'}) ) => normalize-space()
+ , $t := ltr:get-translation-seg-by-id($map?trans-id , $seg/@xml:id)[1]
  return $map?format-function($s, $t, map{}) 
- , "&#10;" || ltr:translation-cit-from-id($map?trans-id)
+ , "&#10;[[https://hxwd.org/textview.html?location=" || $map?start-seg-id || "][" || lmd:get-metadata($segs[1], "title") || "/" || lmd:get-metadata($segs[1], "head") || "]]"
+ , "" || ltr:translation-cit-from-id($map?trans-id)
+ , "&#10;"
+ , "&#10;"
  )
 };
 
