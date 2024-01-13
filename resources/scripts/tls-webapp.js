@@ -1002,11 +1002,12 @@ function get_sw(sel, xid, line){
   }
   });
   } else {
+      var slot1 = $("#slot1").attr('data-trid')
       console.log("No selection, show variants?");
       $.ajax({
       type : "GET",
       dataType : "html",
-      url : "api/responder.xql?func=tlslib:get-related&line="+line+"&seg="+xid, 
+      url : "api/responder.xql?func=ltr:get-other-translations&line="+line+"&seg="+xid+"&slot1="+slot1, 
       success : function(resp){
       $('#swl-select').html(resp)
       $('#new-att-detail').html("");

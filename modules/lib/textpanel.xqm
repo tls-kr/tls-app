@@ -115,7 +115,9 @@ declare function ltp:display-seg($seg as node()*, $options as map(*) ) {
 return
 (
 <div class="row {$mark}">
-{ltp:zero-panel-row(map{"locked" : $locked, "textid" : $textid, "seg" : $seg}) }
+{ltp:zero-panel-row(map{"locked" : $locked, "textid" : $textid, "seg" : $seg
+(:, "tr" : if (lpm:has-edit-permission($textid)) then try {for $t in ltr:find-translators($textid) return $t/ancestor::tei:TEI } catch * {()} else ():)
+}) }
 <div class="{$zhclass}" lang="{$lang}" id="{$segid}" data-tei="{ util:node-id($seg) }">{
 lrh:proc-seg($seg, map{"punc" : true(), "textid" : $textid})
 }
@@ -186,7 +188,9 @@ return
 
 declare function ltp:zero-panel-row($map){
 <div class="col .no-gutters">
-{
+{ (
+if (count($map?tr) > 0) then <span>{count($map?tr//tei:seg[@corresp = "#" || $map?seg/@xml:id])}</span> else (),
+
 if($map?locked and $map?textid and lpm:has-edit-permission($map?textid)) then 
   lrh:format-button("display_punc_dialog('" || data($map?seg/@xml:id) || "')", "Add punctuation to this text segment", "octicons/svg/lock.svg", "", "", ("tls-editor", "tls-punc")) 
 else (), 
@@ -206,6 +210,7 @@ if ($map?seg//tei:pb or local-name(($map?seg/preceding-sibling::*)[last()]) = ('
 <span title="Click here to display a facsimile of this page &#10;{$config:wits?(data($node/@ed))}:{$pg}" onclick="get_facs_for_page('slot1', '{$fpref}{$node/@facs}', '{data($node/@ed)}', '{data($map?seg/@xml:id)}')" class="btn badge badge-light text-muted ed-{data($node/@ed)}">{$n}</span>
 else "　" 
 else "　"
+)
 }
 </div>
 };
