@@ -1623,8 +1623,8 @@ else ()
 for $h at $n in $disp
     let $loc := $h/@xml:id
     ,$cseg := collection($config:tls-texts-root)//tei:seg[@xml:id=$loc]
-    ,$head :=  $cseg/ancestor::tei:div[1]/tei:head[1]//text()    
-    ,$title := $cseg/ancestor::tei:TEI//tei:titleStmt/tei:title/text()
+    ,$head :=  lmd:get-metadata($cseg, "head")
+    ,$title := lmd:get-metadata($cseg, "title")
     ,$textid := tlslib:get-textid($loc)
     ,$tr := collection($config:tls-translation-root)//tei:seg[@corresp="#"||$loc]
     ,$m1 := substring(($h/exist:match)[1]/text(), 1, 1)

@@ -368,6 +368,30 @@ return
    value is a sequence of five items : root-node of translation, label, language, license code, item type, formated for label
 :)
 
+declare function ltr:get-other-translations($map as map(*)){
+let $line := $map?line
+, $sid := $map?seg
+, $slot1-id := $map?slot1
+, $textid := tokenize($sid, "_")[1]
+, $tr := for $t in ltr:find-translators($textid) return $t/ancestor::tei:TEI
+return
+<li class="mb-3"><span class="font-weight-bold">Translations of this line:</span>
+<ul>
+{for $ts in $tr//tei:seg[@corresp="#"||$sid]
+let $trid := lmd:get-metadata($ts, "textid")
+, $date := lmd:get-metadata($ts, "date")
+order by $date
+return
+<li><span class="text-muted">{lmd:get-metadata($ts, "title")} by {lmd:get-metadata($ts, "resp")} ({$date})</span>
+<button class="btn badge badge-secondary ml-2" type="button" title="Display this translation in slot 1" onclick="get_tr_for_page('slot1', '{$trid}')" href="#">1</button>
+<button class="btn badge badge-secondary ml-2" type="button" title="Display this translation in slot 2" onclick="get_tr_for_page('slot2', '{$trid}')" href="#">2</button>
+<p class="font-weight-bold">{$ts/text()}</p>
+</li>
+}
+</ul>
+</li>
+};
+
 declare function ltr:get-translations($textid as xs:string){
 let $translators := ltr:find-translators($textid) 
  let $tr := map:merge(
