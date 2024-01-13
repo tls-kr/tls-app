@@ -589,7 +589,7 @@ function app:char-info($node as node()*, $model as map(*), $char as xs:string?, 
     let $char := if (string-length($char)> 0) then $char else ($n//tei:head)[1]/text()
     , $h := string-join(distinct-values($n/tei:head/text()), ' / ')
     , $char-id := tokenize($n/@xml:id)[1]  
-    , $sw := doc($config:tls-texts-root || "/KR/KR1/KR1j/KR1j0018.xml")//tei:p[ngram:wildcard-contains(., $char || ".?】")]
+    , $sw := doc($config:tls-texts-root || "/KR/KR1/KR1j/KR1j0018.xml")//tei:p[ngram:wildcard-contains(., "【" || $char || ".?】")]
     , $crit := for $p in collection($config:tls-data-root||"/concepts")//tei:div[@type="old-chinese-criteria" and contains(., ""|| $char)] return $p
     , $word-rel := doc($config:tls-data-root || "/core/word-relations.xml")//tei:div[@type='word-rel' and .//tei:item[contains(., $char)]]
     return
@@ -597,11 +597,12 @@ function app:char-info($node as node()*, $model as map(*), $char as xs:string?, 
     <div class="card-header">
     <h4 class="card-title">Additional information about {$char}</h4>
     <p><a href="textview.html?location={($sw/tei:seg)[1]/@xml:id}">說文解字</a>: {$sw//text()}</p>
-    {if ($word-rel) then 
-    <p class="ml-4">{tlslib:display-word-rel($word-rel, $char, "")}</p> else ()
-    ,if ($crit) then <p class="ml-4"><ul><span class="font-weight-bold">Criteria</span>{for $c in $crit return 
+    {
+    if ($crit) then <p class="ml-4"><ul><span class="font-weight-bold">Criteria</span>{for $c in $crit return 
     <li><span><a href="concept.html?uuid={$c/ancestor::tei:div[@type='concept']/@xml:id}">{$c/ancestor::tei:div[@type='concept']/tei:head/text()}</a><br/>{$c}</span></li>
     }</ul></p> else ()
+    ,if ($word-rel) then 
+    <p class="ml-4">{tlslib:display-word-rel($word-rel, $char, "")}</p> else ()
     }
     </div>
     </div>
