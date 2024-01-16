@@ -44,6 +44,16 @@ let $tru := collection($config:tls-user-root|| $user || "/translations")/tei:TEI
 return $trfile
 };
 
+declare function ltr:delete-translation($map as map(*)){
+let $target := ltr:get-translation-file($map?trid)
+return 
+ if ($target) then
+ xmldb:remove(util:collection-name($target), util:document-name($target))
+ else 
+   "Translation not found."
+};
+
+
 (: 2023-05-27 - store changes to existing trans file if $trid is not "" :)
 declare function ltr:update-translation-file($lang as xs:string, $txtid as xs:string, $translator as xs:string, $trtitle as xs:string, $bibl as xs:string, $vis as xs:string, $copy as xs:string, $type as xs:string, $rel-id as xs:string, $trid as xs:string){
 let $user := sm:id()//sm:real/sm:username/text()
@@ -334,7 +344,13 @@ declare function ltr:render-translation-submenu($textid as xs:string, $slot as x
 </div>
 };
 
-
+declare function ltr:get-tr-collections(){
+let $user := sm:id()//sm:real/sm:username/text()
+, $t1 := collection($config:tls-user-root || $user || "/translations")
+, $t2 := collection($config:tls-translation-root)
+, $rn := collection($config:tls-data-root||"/notes/research")
+return ($t1, $t2, $rn)
+};
 
 declare function ltr:find-translators($textid as xs:string){
 let $user := sm:id()//sm:real/sm:username/text()
@@ -379,7 +395,7 @@ return
 <ul>
 {for $ts in $tr//tei:seg[@corresp="#"||$sid]
 let $trid := lmd:get-metadata($ts, "textid")
-, $date := lmd:get-metadata($ts, "date")
+, $date := lmd:get-metadata($ts, "date")[1]
 order by $date
 return
 <li><span class="text-muted">{lmd:get-metadata($ts, "title")} by {lmd:get-metadata($ts, "resp")} ({$date})</span>

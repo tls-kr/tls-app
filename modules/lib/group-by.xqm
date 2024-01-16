@@ -41,8 +41,8 @@ declare function local:proc-ul($node as node(), $map as map(*)){
    , $key := data($node/@key)
    , $search-type := if (string-length($map?textid) > 0) then 5 else 1
    return 
-   if ($sum > 0 and $sum != xs:int($node/@data-cnt)) then
-   <li type="other" >{$sum}: <a href="search.html?query={$key}&amp;textid={data($node/@textid)}&amp;search-type={$search-type}&amp;mode=other">{$key} : other</a></li>
+   if ($sum > 0 and $sum != xs:int($node/@data-cnt)) then   ()
+(:   <li type="other" ><a href="search.html?query={$key}&amp;textid={data($node/@textid)}&amp;search-type={$search-type}&amp;mode=other">other</a></li>:)
    else ()
  }
  case element (li) return
@@ -58,7 +58,7 @@ declare function lgrp:group-collocation($seq as xs:string* , $options as map(*))
   , $res :=
   <ul key="{$s}" textid="{$options?textid}" data-cnt="{$options?cnt}">
   {
-  for $t in $seq
+  for $t at $pos in $seq
   for $a in tail(tokenize($t, $s))
   let $g := substring($a, 1, 1)
   let $key := $s||$g
@@ -70,8 +70,10 @@ declare function lgrp:group-collocation($seq as xs:string* , $options as map(*))
 (:    let $key := $s||$g:)
     let $search-type := if (string-length($options?textid) > 0) then 5 else 1
     return
-    <li data-cnt="{$cnt}">{$cnt}: <a href="search.html?query={$key}&amp;textid={$options?textid}&amp;search-type={$search-type}">{$key}</a>
-    {lgrp:group-collocation($t, map{"key" : $key, "cutoff" : $options?cutoff, "textid" : $options?textid, "level" : $options?level + 1, "max-level" : $options?max-level, "cnt" : $cnt})}
+    <li data-cnt="{$cnt}">|<a href="search.html?query={$key}&amp;textid={$options?textid}&amp;search-type={$search-type}">{$key}</a>|{$cnt}|
+    <button title="click to reveal" class="btn badge badge-light" type="button" data-toggle="collapse" data-target="#{$key}--{$options?level}">{$cnt}</button>
+    <ul id="{$key}--{$options?level}" class="collapse">
+    {lgrp:group-collocation($t, map{"key" : $key, "cutoff" : $options?cutoff, "textid" : $options?textid, "level" : $options?level + 1, "max-level" : $options?max-level, "cnt" : $cnt, "pos" : $pos})}</ul>
     </li>
   else  
   <li type="other" key="{$options?key}">{$cnt}</li>

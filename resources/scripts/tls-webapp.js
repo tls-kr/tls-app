@@ -2978,12 +2978,34 @@ function display_tr_file_dialog(dialog_name, slot, trid){
   url : "api/new_translation.xql"+location+"&slot="+slot+"&trid="+trid, 
   success : function(resp){
     $('#remoteDialog').html(resp);
-    $('#new-translation-dialog').modal('show');
-  
+    $('#new-translation-dialog').modal('show');  
   }
   });
-    
 };
+
+
+//delete translation file
+function delete_tr_file(dialog_name, slot, trid){
+  var strconfirm = confirm("Do you really want to delete this translation?")
+  if (strconfirm == true){
+  $('#'+dialog_name).modal('hide');
+  $.ajax({
+  type : "GET",
+  dataType : "html",  
+  url : "api/responder.xql?func=ltr:delete-translation&trid=" + trid, 
+  success : function(resp){
+     if (resp.startsWith("Translation")) {
+      toast.error(resp, "HXWD says:")
+     } else {
+      toastr.info("Translation has been deleted.", "HXWD says:");
+     }
+  }
+  });
+  reload_selector(slot, "");
+  }  
+}
+
+
 
 // display dialog for pb
 // fname is the name of the function in dialogs, has to be the same as the ID of the remote dialog returned by that function
