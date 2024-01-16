@@ -44,6 +44,10 @@ declare function lpm:can-use-linked-items(){
  "dba" = sm:id()//sm:group
 };
 
+declare function lpm:can-delete-translations(){
+ ("dba", "tls-editor") = sm:id()//sm:group
+};
+
 declare function lpm:can-search-similar-lines(){
  "dba" = sm:id()//sm:group
 };

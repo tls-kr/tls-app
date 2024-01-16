@@ -18,6 +18,7 @@ import module namespace ltr="http://hxwd.org/lib/translation" at "lib/translatio
 import module namespace lus="http://hxwd.org/lib/user-settings" at "user-settings.xqm";
 import module namespace ltp="http://hxwd.org/lib/textpanel" at "lib/textpanel.xqm";
 import module namespace lrh="http://hxwd.org/lib/render-html" at "lib/render-html.xqm";
+import module namespace lpm="http://hxwd.org/lib/permissions" at "lib/permissions.xqm";
 
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
@@ -111,7 +112,10 @@ return
 declare function local:tr-info-dialog($name, $options){
 let $body := ltr:transinfo($options?trid)
 , $buttons := (if (sm:id()//sm:group/text() = ("tls-editor", "tls-admin")) then
-                 <button type="button" class="btn btn-primary" onclick="display_tr_file_dialog('{$name}','{$options?slot}', '{$options?trid}')">Edit Translation Data</button> else () )
+                 <button type="button" class="btn btn-primary" onclick="display_tr_file_dialog('{$name}','{$options?slot}', '{$options?trid}')">Edit Translation Data</button> else (),
+               if (lpm:can-delete-translations()) then
+<button type="button" class="btn btn-danger" onclick="delete_tr_file('{$name}','{$options?slot}', '{$options?trid}')">Delete translation</button>
+         else ())
 return                 
       dialogs:modal-frame($name, 
       map{
