@@ -1457,7 +1457,7 @@ function app:footer($node as node()*, $model as map(*)){
             <div class="container">
                 <span id="copyright"/>
                     <p>Copyright TLS Project 2023, licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/" title="Creative Commons Attribution-ShareAlike 4.0 International License">CC BY SA</a> license (except some translations)</p>
-                <p>Developed at the <strong>Center for Informatics in East-Asian Studies, Institute for Research in Humanities, Kyoto University</strong>, with support from the 
+                <p>Developed at the <strong>Center for Innovative Informatics of the Humanities, Institute for Research in Humanities, Kyoto University</strong>, with support from the 
                 <strong>Dean for Research, Department of East Asian Studies</strong>, and
                 <strong>Program in East Asian Studies, Princeton University</strong>.</p>    
                 <p>Development supported by the <strong>sin-aps</strong> research group at <strong>Friedrich-Alexander-Universität Erlangen Nürnberg</strong>, with financial support from the <strong>Alexander von Humboldt Foundation</strong>.  </p>

@@ -430,7 +430,7 @@ for $seg in $dseg
 };
 
 
-(: this is abandoned as of 2021-10-12, we loop through the swl class on a page instead :)
+(: this is abandoned as of 2021-10-12, we loop through the swl class on a page instead, see show_swl_for_line :)
 declare function tlsapi:get-swl-for-page($loc as xs:string, $prec as xs:int, $foll as xs:int){
   let $dseg := lu:get-targetsegs($loc, $prec, $foll)
    for $d in $dseg
