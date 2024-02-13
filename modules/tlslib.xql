@@ -837,7 +837,7 @@ declare function tlslib:swl-form-dialog($context as xs:string, $model as map(*))
     <span class="badge badge-info ml-2" onclick="wikidata_search('wikidata')" title="Click here for a quick search in WikiData"> WD </span>
     { if (lpm:can-search-similar-lines()) then <span class="badge badge-info ml-2" onclick="wikidata_search('similar')" title="Search for similar lines"> 似 </span> else ()}
     <span>　　Lookup domain:<select id="domain-select" onChange="update_swlist()"><option value="core">Core</option>{for $d in xmldb:get-child-collections($config:tls-data-root||'/domain') return <option value="{$d}">{tlslib:capitalize-first($d)}</option>}</select></span>
-    {if (1 = 2) then
+    {if (1 = 1) then
     (: do not display for the time being  :) 
     <span>　　<span class="btn badge badge-light" type="button" data-toggle="collapse" data-target="#mark-buttons" >Mark</span>
 
@@ -956,10 +956,10 @@ else ()}
 </div>
 <div class="col-sm-3"><a href="concept.html?concept={$concept}#{$w/@xml:id}" title="{$cdef}">{$concept}</a></div>
 <div class="col-sm-6">
-<span><a href="browse.html?type=syn-func&amp;id={data($sf/@corresp)}">{$sf/text()}</a>&#160;</span>
+<span><a href="browse.html?type=syn-func&amp;id={data($sf/@corresp)}">{($sf)[1]/text()}</a>&#160;</span>
 {if ($sm) then 
-<span><a href="browse.html?type=sem-feat&amp;id={$sm/@corresp}">{$sm/text()}</a>&#160;</span> else ()}
-{$def}
+<span><a href="browse.html?type=sem-feat&amp;id={$sm/@corresp}">{($sm)[1]/text()}</a>&#160;</span> else ()}
+{($def)[1]}
 {
 if ("tls-editor"=sm:get-user-groups($user) and $node/@xml:id) then 
 (

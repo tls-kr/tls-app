@@ -80,17 +80,18 @@ declare function lrh:proc-seg($node as node(), $options as map(*)){
      else
    if ($node/@type = "swxz-uni") then 
      <span class="swxz-uni">{data($node/@n)}</span>
-   else
+   else 
      $node/text()
   case element (tei:lb)  return <span title="{data($node/@ed)}:{data($node/@n)}" class="lb text-muted ed-{data($node/@ed)}"><img class="icon note-anchor" src="{$config:lb}"/></span>
   case element (tei:pb)  return <span title="{data($node/@ed)}:{data($node/@n)}" class="lb text-muted ed-{data($node/@ed)}"><img class="icon note-anchor" src="{$config:lb}"/></span>
   (: <span title="Click here to display a facsimile of this page\n{data($node/@ed)}:{data($node/@n)}" class="text-muted"><img class="icon note-anchor" onclick="get_facs_for_page('slot1', '{$node/@facs}')" src="{$config:pb}"/></span> :)
   case element (tei:space)  return "　"
   case element (exist:match) return <mark>{$node/text()}</mark>
+  case element (tei:hi) return <span class="{if ($node/@rend = 'red') then 'bcj' else ()}" style="color:{$node/@rend}">{$node/text()}</span>
   case element (tei:anchor) return 
     (: since I need it later, I will get it here, even if it might not get a result :)
     let $app := $node/ancestor::tei:TEI//tei:app[@from="#"||$node/@xml:id]
-    let $t := if (starts-with($node/@xml:id, "xxnkr_note_mod")) then tu:cleanstring($node/ancestor::tei:TEI//tei:note[@target = "#"|| $node/@xml:id]//text()) else
+    let $t := if (starts-with($node/@xml:id, "xxnkr_note_mod")) then lrh:format-note($node/ancestor::tei:TEI//tei:note[@target = "#"|| $node/@xml:id]) else
     if (starts-with($node/@xml:id, 'beg')) then 
      if ($app) then
        lrh:format-app($app) else ()
@@ -101,6 +102,18 @@ declare function lrh:proc-seg($node as node(), $options as map(*)){
   case attribute(*) return () 
  default return $node    
 };
+
+declare function lrh:format-note($note){
+string-join(
+for $node in $note/node()
+ return
+ typeswitch ($node)
+ case text() return $node
+ case element(tei:c) return
+  data($node/@n) 
+ default return $node
+ ) => normalize-space()
+ };
 
 (: format the app for display in the segment :)
 declare function lrh:format-app($app as node()){

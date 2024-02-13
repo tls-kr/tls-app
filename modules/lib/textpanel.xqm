@@ -109,16 +109,15 @@ declare function ltp:display-seg($seg as node()*, $options as map(*) ) {
   ,$px2 :=  typeswitch ($slot2) case element(tei:TEI) return replace(($slot2//tei:seg[@corresp="#"||$segid]/@resp)[1], '#', '') default return () 
   ,$resp2 :=  if ($px2) then "Resp: "||doc($config:tls-data-root || "/vault/members.xml")//tei:person[@xml:id=$px2]//tei:persName/text() else () 
   ,$editable := if (not($testuser) and not($locked) ) then 'true' else 'false'
-  ,$zhclass := if ($seg/@type='comm') then 'tls-comm ' else 
-                  if($locked) then 'locked ' else () 
-               || $ltp:panel-matrix?($colums)[1] || " zh chn-font " || $alpheios-class || " " || $markup-class             
+  ,$zhclass := 
+                $ltp:panel-matrix?($colums)[1] || " zh chn-font " || $alpheios-class || " " || $markup-class             
 return
 (
 <div class="row {$mark}">
 {ltp:zero-panel-row(map{"locked" : $locked, "textid" : $textid, "seg" : $seg
 (:, "tr" : if (lpm:has-edit-permission($textid)) then try {for $t in ltr:find-translators($textid) return $t/ancestor::tei:TEI } catch * {()} else ():)
 }) }
-<div class="{$zhclass}" lang="{$lang}" id="{$segid}" data-tei="{ util:node-id($seg) }">{
+<div class="{$zhclass}{if ($seg/@type='comm') then ' tls-comm' else if($locked) then 'locked' else '' }" style="{if ($seg/@type='bcj') then 'color:red' else ()}" lang="{$lang}" id="{$segid}" data-tei="{ util:node-id($seg) }">{
 lrh:proc-seg($seg, map{"punc" : true(), "textid" : $textid})
 }
 </div>　

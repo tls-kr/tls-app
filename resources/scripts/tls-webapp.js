@@ -1081,7 +1081,7 @@ $('.zh').bind('touchend', function(){
     $(this).mouseup();
 });
 
-
+// 　
 // here we bind the mouseup event of all elements with the class "zh" to this
 // anonymous function, get the selected stuff from the x.Selector and proceed
 // to show the stuff
@@ -1093,8 +1093,18 @@ $( ".zh" )
   // this used to be id.toString() instead of getAttribute("xml:id"), but due to the astral bug, I have now the tei:seg element to deal with, thus retrieving xml:id
 //  const xid = sel.anchorNode.parentNode.getAttribute("xml:id");
   // 2021-04-22 temporarily changin this back
-  var xid = sel.anchorNode.parentNode.id.toString();
-  const line = sel.anchorNode.parentNode.innerText;
+  var in_id = sel.anchorNode.parentNode.id.toString();
+  if (in_id.length > 0) {
+      var xid = in_id
+  }  else {
+      var xid = sel.anchorNode.parentNode.parentNode.id.toString()
+  }
+  console.log("XID", xid);
+  if (sel.anchorNode.parentNode === 'div') {
+     var line = sel.anchorNode.parentNode.innerText.trim().replace(' ','');
+  } else { 
+     var line = sel.anchorNode.parentNode.parentNode.innerText.trim().replace(' ','');
+  }
   if (sel.rangeCount > 1) {
   var storedSelections = [];
   for (var i = 0; i < sel.rangeCount; i++) {
@@ -1102,7 +1112,7 @@ $( ".zh" )
   }
   t = storedSelections.join(";");
   } else {
-  t = sel.toString()    
+  t = sel.toString().replace(' ','');    
   }  
   get_sw(t, xid, line)
    // this is to activate the click on the text line to get the context
