@@ -82,3 +82,17 @@ declare function lu:session-att($name, $default){
     session:get-attribute($name) else 
     (session:set-attribute($name, $default), $default)
 };
+
+
+(: 
+xquery version "3.1";
+
+let $start-time := util:system-time()
+let $query-needing-measurement := (: insert query or function call here :)
+let $end-time := util:system-time()
+let $duration := $end-time - $start-time
+let $seconds := $duration div xs:dayTimeDuration("PT1S")
+return
+    "Query completed in " || $seconds || "s."
+:)
+

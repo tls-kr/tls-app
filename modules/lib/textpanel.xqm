@@ -25,9 +25,12 @@ import module namespace dbu="http://exist-db.org/xquery/utility/db" at "../db-ut
 import module namespace lpm="http://hxwd.org/lib/permissions" at "permissions.xqm";
 import module namespace lli="http://hxwd.org/lib/link-items" at "link-items.xqm";
 import module namespace ltr="http://hxwd.org/lib/translation" at "translation.xqm";
+import module namespace log="http://hxwd.org/log" at "../log.xql";
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
+
+declare variable $ltp:log := $config:tls-log-collection || "/tlslib";
 
 declare variable $ltp:panel-matrix := map{
                  0: ("col-sm-11"),
@@ -82,6 +85,7 @@ declare function ltp:show-textpanel($seg as node(), $map as map(*)){
 };
 
 declare function ltp:display-seg($seg as node()*, $options as map(*) ) {
+ let $log := log:info($ltp:log, "entering display-seg for " || $seg/@xml:id)
  let $user := sm:id()//sm:real/sm:username/text()
  ,$usergroups := sm:get-user-groups($user)
  ,$colums := if (string-length($options?columns)>0) then xs:int($options?columns) else 2 
@@ -110,16 +114,19 @@ declare function ltp:display-seg($seg as node()*, $options as map(*) ) {
   ,$resp2 :=  if ($px2) then "Resp: "||doc($config:tls-data-root || "/vault/members.xml")//tei:person[@xml:id=$px2]//tei:persName/text() else () 
   ,$editable := if (not($testuser) and not($locked) ) then 'true' else 'false'
   ,$zhclass := 
-                $ltp:panel-matrix?($colums)[1] || " zh chn-font " || $alpheios-class || " " || $markup-class             
+                $ltp:panel-matrix?($colums)[1] || " zh chn-font " || $alpheios-class || " " || $markup-class     
+   let $log := log:info($ltp:log, "starting display-seg for " || $seg/@xml:id)
+              
 return
 (
 <div class="row {$mark}">
 {ltp:zero-panel-row(map{"locked" : $locked, "textid" : $textid, "seg" : $seg
 (:, "tr" : if (lpm:has-edit-permission($textid)) then try {for $t in ltr:find-translators($textid) return $t/ancestor::tei:TEI } catch * {()} else ():)
 }) }
-<div class="{$zhclass}{if ($seg/@type='comm') then ' tls-comm' else if($locked) then 'locked' else '' }" style="{if ($seg/@type='bcj') then 'color:red' else ()}" lang="{$lang}" id="{$segid}" data-tei="{ util:node-id($seg) }">{
+<div class="{$zhclass}{if ($seg/@type='comm') then ' tls-comm' else if($locked) then 'locked' else '' }" style="{if ($seg/@type='bcj') then 'color:red' else ()}" lang="{$lang}" id="{$segid}" >{
 lrh:proc-seg($seg, map{"punc" : true(), "textid" : $textid})
 }
+<!-- data-tei="{ util:node-id($seg) }" -->
 </div>　
 {
 for $i in (1 to $colums)
@@ -128,9 +135,11 @@ for $i in (1 to $colums)
      else map:get($options, map:get($options, 'slot'||$i))[1] else ()
  , $px := typeswitch ($slot) case element(tei:TEI) return  replace(($slot//tei:seg[@corresp="#"||$segid]/@resp)[1], '#', '') default return "chris"  
  , $resp := if ($px) then "Resp: "||doc($config:tls-data-root || "/vault/members.xml")//tei:person[@xml:id=$px]//tei:persName/text() else $px
+  let $log := log:info($ltp:log, "entering left-panel-row for " || $seg/@xml:id)
+
  return
 
-ltp:left-panel-row($slot, map{"seg" : $seg, "col-class" : $ltp:panel-matrix?($colums)[$i + 1],  "ann" : $ann, "resp": $px||$resp, "ex": "slot"||$i, "tabindex" : $options('pos')+ (500*$i), "editable" : $editable, "user" : $user, "trans-lang" : "en-GB" })
+ltp:right-panel-row($slot, map{"seg" : $seg, "col-class" : $ltp:panel-matrix?($colums)[$i + 1],  "ann" : $ann, "resp": $px||$resp, "ex": "slot"||$i, "tabindex" : $options('pos')+ (500*$i), "editable" : $editable, "user" : $user, "trans-lang" : "en-GB" })
 
 }
 </div>,
@@ -214,7 +223,7 @@ else "　"
 </div>
 };
 
-declare function ltp:left-panel-row($node, $map){
+declare function ltp:right-panel-row($node, $map){
 if ($map?ann = 'false') then () else 
  (: using en-GB for now, need to get that from translation in the future...  :)
 <div class="{$map?col-class}" title="{$map?resp}" lang="{$map?trans-lang}" >
@@ -233,6 +242,7 @@ default return
 
 declare function ltp:chunkcol-left($dseg, $model, $tr, $slot1-id, $slot2-id, $loc, $cnt){
       for $d at $pos in $dseg 
+(:      let $log := log:info($ltp:log, "chunkcol-left, $d " || $pos):)
       return ltp:display-seg($d, map:merge(($model, $tr, 
       map{'slot1': $slot1-id, 'slot2': $slot2-id, 
           'loc' : $loc, 
