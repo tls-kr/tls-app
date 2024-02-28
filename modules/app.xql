@@ -41,7 +41,7 @@ import module namespace lrh="http://hxwd.org/lib/render-html" at "lib/render-htm
 import module namespace lpm="http://hxwd.org/lib/permissions" at "lib/permissions.xqm";
 
 
-declare variable $app:log := $config:tls-log-collection || "/app";
+declare variable $app:log := $config:tls-log-collection || "/tlslib";
 
 declare variable $app:SESSION := "tls:results";
 
@@ -371,7 +371,7 @@ function app:tv-data($node as node()*, $model as map(*), $location as xs:string?
 {
    session:create(),
     let $textid := tlslib:get-textid($location)
-    , $title := lu:get-title($textid)
+    , $title :=  lu:get-title($textid)
     , $seg := tlslib:get-first-seg($location, $mode, $first)
     return
     map { "textid" : $textid, "title" : $title, "seg": $seg}
@@ -401,14 +401,27 @@ function app:textview($node as node()*, $model as map(*), $location as xs:string
 (:    , $dispseg := tlslib:get-first-seg($location, $mode, $first):)
     , $dispseg := $model("seg")
 (:    , $l := log:info($app:log, "Loading; $model keys: " || $message):)
-    return
+let $start-time := util:system-time()
+let $query-needing-measurement := (: insert query or function call here :)
+
     (session:create(),
+    
     if (string-length($location) > 0) then 
       try {tlslib:display-chunk($dispseg, $model, $prec, $foll)} catch * {"An error occurred, can't display text. Code:" || count($dispseg) || " (dispseg)" }      
     else 
     app:textlist()
     
     )
+let $end-time := util:system-time()
+let $duration := $end-time - $start-time
+let $seconds := $duration div xs:dayTimeDuration("PT1S")
+    
+return
+(
+    $query-needing-measurement,
+(:    "Query completed in " || $seconds || "s.",:)
+    log:info($app:log, "Query completed in " || $seconds || "s.")    
+)    
 };
 
 (: 2023-05-12 - now using search.html?query=&search-type=12 , this will be phased out.  :) 
@@ -1278,7 +1291,7 @@ return
                                 <a class="dropdown-item" href="browse.html?type=biblio">Bibliography</a>
                             </div>                            
                         </li>
-                        {if ($context = ("textview", "lineview")) then
+                        {if ($context = ("textview", "lineview")) then 
                         tlslib:tv-header($node, $model)
                         else 
                         (tlslib:navbar-doc(),

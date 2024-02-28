@@ -26,15 +26,23 @@ declare function lmd:get-metadata($hit, $field){
                     $header//tei:msDesc/tei:head, $header//tei:titleStmt/tei:title[@type = 'main'],
                     $header//tei:titleStmt/tei:title
                 ), " - ") => normalize-space()
+            case "date-node" return
+                  ($header//tei:profileDesc/tei:creation)[1]/tei:date
             case "date" return
-                  let $sourcedesc-date := analyze-string(string-join($header//tei:sourceDesc//tei:bibl//text(), ''), "\d{4}")//fn:match/text()
-                  return 
+                 let $creation-date := $header//tei:profileDesc/tei:creation[1]/tei:date
+                      , $notbefore := xs:int($creation-date/@notBefore)
+                      , $notafter := xs:int($creation-date/@notAfter)
+                      , $index-date := ($notbefore + $notafter) idiv 2
+                      return
+                       if ($creation-date) then $index-date else 
+                 let $sourcedesc-date := analyze-string(string-join($header//tei:sourceDesc//tei:bibl//text(), ''), "\d{4}")//fn:match/text()
+                 return 
                     if ($sourcedesc-date) then 
                       $sourcedesc-date 
                     else
-                      let $creation-date := substring(($header//tei:profileDesc/tei:creation)[1]/tei:date, 1, 4)
-                      return
-                       if ($creation-date) then $creation-date else "9999" 
+                        let $orig-date := data($header//tei:publicationStmt//tei:origDate/@to)
+                        return if ($orig-date) then $orig-date else
+                          "9999" 
             case "tls-dates"
             case "kr-categories"
             case "tls-regions" return
@@ -74,7 +82,7 @@ declare function lmd:get-metadata($hit, $field){
 declare function lmd:cat-title($cat){
 let $title := string-join(doc($config:tls-texts-taxonomy)//tei:category[@xml:id=$cat]/tei:catDesc/text(), ' - ')
 return
-if (string-length($title) > 0) then $title else "Not assigned"
+if (string-length($title) > 0) then $title else "(Category not assigned)"
 };
 
 declare function lmd:delCat($node as node(), $catid as xs:string){

@@ -68,9 +68,12 @@ $textid := tokenize($line-id, "_")[1],
 $trm := ltr:get-translations($textid),
 $trid := lrh:get-content-id($textid, 'slot1', $trm),
 $tr := $trm($trid)[1]//tei:seg[@corresp='#' || $line-id],
-$tr-resp := $trm($trid)[1]//tei:fileDesc//tei:editor[@role='translator']/text(),
-$title-en := $tr/ancestor::tei:TEI/tei:teiHeader/tei:fileDesc/tei:titleStmt/tei:title/text(),
-$title := $line/ancestor::tei:TEI/tei:teiHeader/tei:fileDesc/tei:titleStmt/tei:title/text(),
+(:$tr-resp := $trm($trid)[1]//tei:fileDesc//tei:editor[@role='translator']/text(),:)
+(:$title-en := $tr/ancestor::tei:TEI/tei:teiHeader/tei:fileDesc/tei:titleStmt/tei:title/text(),:)
+(:$title := $line/ancestor::tei:TEI/tei:teiHeader/tei:fileDesc/tei:titleStmt/tei:title/text(),:)
+$tr-resp := lmd:get-metadata($tr, "resp"),
+$title-en := lmd:get-metadata($tr, "title"),
+$title := lmd:get-metadata($line, "title"),
 $sense := collection($config:tls-data-root)//tei:sense[@xml:id=$sense-id],
 $concept := $sense/ancestor::tei:div/tei:head/text(),
 $concept-id := $sense/ancestor::tei:div/@xml:id, 
@@ -116,7 +119,7 @@ return
 if ($seg/@state='locked') then "Line is locked.  Please add punctuation before attempting to attribute."
 else (
 let $docname :=  $textid || "-ann.xml"
- ,$cat := lmd:checkCat($seg,  "swl") 
+ ,$cat := try{lmd:checkCat($seg,  "swl")} catch * {()} 
 ,$newswl:=tlsapi:make-attribution($line-id, $sense-id, $user, $currentword, $pos)
 ,$targetdoc :=   if (doc-available(concat($targetcoll,"/",$docname))) then
                     doc(concat($targetcoll,"/", $docname)) else 

@@ -27,12 +27,16 @@ import module namespace lli="http://hxwd.org/lib/link-items" at "lib/link-items.
 import module namespace lpm="http://hxwd.org/lib/permissions" at "lib/permissions.xqm";
 import module namespace ltp="http://hxwd.org/lib/textpanel" at "lib/textpanel.xqm";
 
+import module namespace log="http://hxwd.org/log" at "log.xql";
+
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
 declare namespace  mods="http://www.loc.gov/mods/v3";
 
 declare namespace mf="http://kanripo.org/ns/KRX/Manifest/1.0";
 declare namespace tx="http://exist-db.org/tls";
+
+declare variable $tlslib:log := $config:tls-log-collection || "/tlslib";
 
 
 (: quick fix, this needs to be made user-extensible :)
@@ -712,6 +716,7 @@ declare function tlslib:display-bibl($bibl as node()){
 display $prec and $foll preceding and following segments of a given seg :)
 
 declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $prec as xs:int?, $foll as xs:int?){
+      let $log := log:info($tlslib:log, "starting display-chunk for "|| $targetseg/@xml:id)
       let $fseg := if ($foll > 0) then $targetseg/following::tei:seg[fn:position() < $foll] 
         else (),
       $pseg := if ($prec > 0) then $targetseg/preceding::tei:seg[fn:position() < $prec] 
@@ -730,6 +735,8 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
       $xpos := index-of($d//tei:seg/@xml:id, $targetseg/@xml:id),
 (:      $title := $model('title')/text(),:)
       $dseg := ($pseg, $targetseg, $fseg),
+      $log := log:info($tlslib:log, "assembled dseg"),
+
 (:      $model := if (string-length($model?textid) > 0) then $model else map:put($model, "textid", tokenize($targetseg, "_")[1]), :)
       $show-transl := lpm:should-show-translation(),
       $show-variants := xs:boolean(1),
@@ -750,11 +757,13 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
         for $node in (collection($config:tls-data-root|| "/notes")//tls:ann[.//tls:srcline[@target=$link]] | collection($config:tls-data-root|| "/notes")//tls:span[.//tls:srcline[@target=$link]] ) return 
         (: need to special case the legacy type ann=swl :)
         if (local-name($node)='ann') then "nswl" else data($node/@type))
+      ,$log := log:info($tlslib:log, "ready to go")
     return
       (
       <div id="chunkrow" class="row">
       <div id="srcref" class="col-sm-12 collapse" data-toggle="collapse">
       {tlslib:textinfo($model?textid)}
+      {log:info($tlslib:log, "textinfo done")}
       </div>
       <!-- here is where we select what kind of annotation to display -->
       {if (count($atypes) > 1) then 
@@ -789,7 +798,9 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
         </div>
       </div>
       <div id="chunkcol-left" class="col-sm-12">
+      {log:info($tlslib:log, "starting chunkcol-left")}
       {ltp:chunkcol-left($dseg, map:put($model, "zh-width", $zh-width), $tr, $slot1-id, $slot2-id, data($targetseg/@xml:id), 0)}
+      {log:info($tlslib:log, "done chunkcol-left")}
       </div>
       <div id="chunkcol-right" class="col-sm-0">
       {tlslib:swl-form-dialog('textview', $model)}
@@ -820,7 +831,8 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
        </div> 
         {wd:quick-search-form('title')}
       </div>
-      )
+    ,log:info($tlslib:log, "done")
+)
 
 };
 
@@ -915,7 +927,10 @@ declare function tlslib:format-swl($node as node(), $options as map(*)){
 let $user := sm:id()//sm:real/sm:username/text(),
 $usergroups := sm:get-user-groups($user),
 (: already used swl as a class, so need a different one here; for others we want the type given in the source :)
-$anntype := if (local-name($node)='ann') then "nswl" else if (local-name($node)='drug') then "drug" else data($node/@type),
+$anntype := if (local-name($node)='ann') then "nswl" else 
+               if (local-name($node)='drug') then "drug" else
+               if (local-name($node)='item') then "wrl"
+               else data($node/@type),
 $type := $options?type,
 $context := $options?context
 let $concept := data($node/@concept),
@@ -942,6 +957,14 @@ $zi := string-join($node/tei:form/tei:orth/text(), "/")
 :)
 return
 if ($type = "row") then
+if ($anntype = "wrl") then 
+<div class="row {$bg} {$anntype}">
+<div class="col-sm-1"><span class="{$anntype}-col">●</span></div>
+<div class="col-sm-2"><span>{$node/text()}</span></div>
+<div class="col-sm-3"><a href="concept.html?concept={$concept}{$node/@corresp}" title="{$cdef}">{$concept}</a></div>
+<div class="col-sm-6"><span>WR: {data($node/@p)}</span></div>
+</div>
+else
 if ($anntype eq "nswl") then
 <div class="row {$bg} {$anntype}">
 {if (not($context = 'review')) then 
@@ -1445,6 +1468,7 @@ $resp := tu:get-member-initials($wx/ancestor::tei:entry/@resp),
 $wid := $wx/ancestor::tei:entry/@xml:id,
 $syn := $wx/ancestor::tei:div[@xml:id = $id]//tei:div[@type="old-chinese-criteria"]//tei:p,
 $py := for $pp in $wx/ancestor::tei:entry/tei:form[tei:orth[.=$zi]]/tei:pron[@xml:lang="zh-Latn-x-pinyin"] return normalize-space($pp),
+$global-def := $wx/ancestor::tei:entry/tei:def,
 $esc := replace($concept[1], "'", "\\'")
 return
 <li class="mb-3 chn-font">
@@ -1490,7 +1514,14 @@ return
 <li>{$l}</li>
 }
 </ul>
-<ul class="list-unstyled collapse" id="{$wid}-concept" style="swl-bullet">{for $s in $wx/ancestor::tei:entry/tei:sense
+<ul class="list-unstyled collapse" id="{$wid}-concept" style="swl-bullet">
+{ if ($global-def) then
+<li>
+{$global-def}
+</li>
+else ()
+}
+{for $s in $wx/ancestor::tei:entry/tei:sense
 let $sf := ($s//tls:syn-func)[1],
 $sfid := substring(($sf/@corresp), 2),
 $sm := $s//tls:sem-feat/text(),
@@ -2116,7 +2147,8 @@ let   $user := sm:id()//sm:real/sm:username/text(),
       $dates := if (exists(doc($config:tls-user-root || $user || "/textdates.xml")//date)) then 
       doc($config:tls-user-root || $user || "/textdates.xml")//data else 
       doc($config:tls-texts-meta  || "/textdates.xml")//data,
-      $date := $dates[@corresp="#" || $textid],
+      $mdate := <date>{lmd:get-metadata($d, "date")}</date>,
+      $date := if ($mdate) then $mdate else $dates[@corresp="#" || $textid],
       $loewe := doc($config:tls-data-root||"/bibliography/loewe-ect.xml")//tei:bibl[tei:ref[@target = "#"||$textid]]
 return
       <div class="col">
@@ -2136,10 +2168,12 @@ return
            <div class="col-sm-2"><span class="font-weight-bold float-right">Dates:</span></div>
            <div class="col-sm-9"><span class="sm badge badge-pill" id="date-cat" data-date-cat="{$datecat}">{lmd:cat-title($datecat)}</span>　{
            if ($date) then 
-            (<span id="textdate-outer"><span id="textdate" data-not-before="{$date/@notbefore}" data-not-after="{$date/@notafter}">{$date/text()}<span id="textdate-note" class="text-muted">{$date/note/text()}</span></span></span>,
+            (<span id="textdate-outer"><span id="textdate" data-not-before="{$date/@notBefore}" data-not-after="{$date/@notAfter}">{$date/text()}<span id="textdate-note" class="text-muted">{$date/note/text()}</span></span></span>,
             if (sm:is-authenticated()) then <span class="badge badge-pill badge-light" onclick="edit_textdate('{$textid}')">Edit date</span> else 
-            ()) 
-           else if (sm:is-authenticated()) then (<span id="textdate-outer"><span id="textdate">　</span></span>,<span class="badge badge-pill badge-light" onclick="edit_textdate('{$textid}')">Add date</span>) else 
+            ()
+            ) 
+           else
+           if (sm:is-authenticated()) then (<span id="textdate-outer"><span id="textdate">　</span></span>,<span class="badge badge-pill badge-light" onclick="edit_textdate('{$textid}')">Add date</span>) else 
             "　"}　</div>
          </div>
          <div class="row">

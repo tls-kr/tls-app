@@ -16,6 +16,6 @@ import module namespace config="http://hxwd.org/config" at "../modules/config.xq
 let $line-id := request:get-parameter("line", "xx"),
  $link := concat('#', $line-id)
 
-for $swl in (collection($config:tls-data-root|| "/notes")//tls:ann[.//tls:srcline[@target=$link]] | collection($config:tls-data-root|| "/notes")//tls:span[.//tls:srcline[@target=$link]] | collection($config:tls-data-root|| "/notes")//tls:drug[@target=$link] )
+for $swl in (collection($config:tls-data-root|| "/notes")//tls:ann[.//tls:srcline[@target=$link]] | collection($config:tls-data-root|| "/notes")//tls:span[.//tls:srcline[@target=$link]] | collection($config:tls-data-root|| "/notes")//tls:drug[@target=$link] | doc($config:tls-data-root || "/core/word-relations.xml")//tei:item[@line-id=$line-id])
 return
 tlslib:format-swl($swl, map{"type" :"row", "line-id": $line-id})

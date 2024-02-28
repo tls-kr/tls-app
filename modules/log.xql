@@ -12,6 +12,7 @@ Based on code by Adam Retter on the exist slack channel
 :)
 module namespace log="http://hxwd.org/log";
 import module namespace dbu="http://exist-db.org/xquery/utility/db" at "db-utility.xqm";
+import module namespace lpm="http://hxwd.org/lib/permissions" at "lib/permissions.xqm"; 
 
 (:~
  : TRACE log level.
@@ -104,12 +105,14 @@ declare function log:error($log-collection as xs:string, $message as xs:string) 
  : @error log:ERROR_INVALID_LEVEL if an invalid level is requested.
  :)
 declare function log:message($log-collection as xs:string, $level as xs:integer, $message as xs:string) as empty-sequence() {
+  if (lpm:can-write-debug-log()) then 
   let $status-string := log:get-level-string($level)
   let $timestamp := util:system-dateTime()
   let $log-file-path := log:get-or-create-log-file($log-collection, $timestamp)
   let $log := fn:doc($log-file-path)/log
   return
     update insert <entry level="{$status-string}" timestamp="{$timestamp}">{$message}</entry> into $log
+  else ()
 };
 
 (:~

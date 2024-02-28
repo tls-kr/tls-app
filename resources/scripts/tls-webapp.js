@@ -1100,11 +1100,12 @@ $( ".zh" )
       var xid = sel.anchorNode.parentNode.parentNode.id.toString()
   }
   console.log("XID", xid);
-  if (sel.anchorNode.parentNode === 'div') {
+//  if (sel.anchorNode.parentNode === 'div') {
      var line = sel.anchorNode.parentNode.innerText.trim().replace(' ','');
-  } else { 
-     var line = sel.anchorNode.parentNode.parentNode.innerText.trim().replace(' ','');
-  }
+//  } else { 
+//     var line = sel.anchorNode.parentNode.parentNode.innerText.trim().replace(' ','');
+//  }
+  console.log("LINE", line);
   if (sel.rangeCount > 1) {
   var storedSelections = [];
   for (var i = 0; i < sel.rangeCount; i++) {
