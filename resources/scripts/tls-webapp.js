@@ -176,11 +176,13 @@ function delete_word_relation(wrid){
      dataType : "html",  
      url : "api/responder.xql?func=delete-word-relation&wrid="+ wrid, 
      success : function(resp){
-     if (resp.length > 2){
-         toastr.info(resp, "HXWD says:");     
+     if (resp.startsWith("Error")){
+         toastr.error(resp, "HXWD says:");     
      } else {
          $('#'+wrid).html("");
-         toastr.info("Word relation has been deleted.", "漢學文典 says:");     
+        var line_id = resp.replace(/"/g, '')
+        show_swls_for_line(line_id);      
+        toastr.info("Word relation has been deleted.", "漢學文典 says:");     
      }
    }
   })  

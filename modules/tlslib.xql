@@ -934,7 +934,9 @@ $anntype := if (local-name($node)='ann') then "nswl" else
 $type := $options?type,
 $context := $options?context
 let $concept := data($node/@concept),
-$creator-id := substring($node/tls:metadata/@resp, 2),
+$creator-id := if ($node/tls:metadata/@resp) then
+ substring($node/tls:metadata/@resp, 2) else 
+ substring($node/ancestor::tei:div[@type='word-rel-ref']/@resp, 2)  ,
 $zi := string-join($node/tei:form/tei:orth/text(), "/")
 (: 2021-03-17 we ignore the pinyin from SWL, retrieve the one from concept below as $cpy :)
 (:$py := $node/tei:form[1]/tei:pron[starts-with(@xml:lang, 'zh-Latn')][1]/text(),:)
@@ -953,6 +955,7 @@ $zi := string-join($node/tei:form/tei:orth/text(), "/")
 , $bg := if ($exemplum > 0) then "protypical-"||$exemplum else "bg-light"
 , $marktext := if ($exemplum = 0) then "Mark this attribution as prototypical" else "Currently marked as prototypical "||$exemplum ||". Increase up to 3 then reset."
 , $resp := tu:get-member-initials($creator-id)
+, $wr-rel :=  $node/ancestor::tei:div[@type='word-rel-ref']
 (:$pos := concat($sf, if ($sm) then (" ", $sm) else "")
 :)
 return
@@ -962,7 +965,33 @@ if ($anntype = "wrl") then
 <div class="col-sm-1"><span class="{$anntype}-col">●</span></div>
 <div class="col-sm-2"><span>{$node/text()}</span></div>
 <div class="col-sm-3"><a href="concept.html?concept={$concept}{$node/@corresp}" title="{$cdef}">{$concept}</a></div>
-<div class="col-sm-6"><span>WR: {data($node/@p)}</span></div>
+<div class="col-sm-6"><span>WR: {$wr-rel/ancestor::tei:div[@type='word-rel-type']/tei:head/text()} /  {data($node/@p)}</span>
+{ (: buttons start -- put them in extra function, together with the other version below! :)
+if ("tls-editor"=sm:get-user-groups($user) and $wr-rel/@xml:id) then 
+(
+ (: for reviews, we display the buttons in tlslib:show-att-display, so we do not need them here :)
+  if (not($context='review')) then
+   (
+   (: not as button, but because of the title string open-iconic-master/svg/person.svg :)
+   lrh:format-button("null()", "Resp: " || $resp[1] , $resp[2], "small", "close", "tls-user"),
+   (: for my own swls: delete, otherwise approve :)
+   if (($user = $creator-id) or contains($usergroups, "tls-editor" )) then 
+    lrh:format-button("delete_word_relation('" || data($wr-rel/@xml:id) || "')", "Immediately delete this WR", "open-iconic-master/svg/x.svg", "small", "close", "tls-editor")
+   else ()
+  (:  ,   
+   lrh:format-button("incr_rating('swl', '" || data($wr-rel/@xml:id) || "')", $marktext, "open-iconic-master/svg/star.svg", "small", "close", "tls-editor"),
+   if (not ($user = $creator-id)) then
+   (   
+    lrh:format-button("save_swl_review('" || data($wr-rel/@xml:id) || "')", "Approve the SWL for " || $zi, "octicons/svg/thumbsup.svg", "small", "close", "tls-editor")
+    ) else ()
+  :) 
+  ) else ()
+)
+else ()
+(: buttons end :)
+}
+
+</div>
 </div>
 else
 if ($anntype eq "nswl") then

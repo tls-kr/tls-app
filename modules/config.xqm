@@ -116,7 +116,10 @@ declare variable $config:languages := map{
 "la" : "Latin",
 "ogr" : "Old Greek",
 "ja" : "Japanese",
-"ja-ku" : "Japanese Kundoku"
+"ja-ku" : "Japanese Kundoku",
+"sk" : "Slovak",
+"da" : "Danish",
+"nn" : "Norwegian Nynorsk"
 };
 
 declare variable $config:search-map := map{

@@ -29,6 +29,11 @@ declare function lmd:get-metadata($hit, $field){
             case "date-node" return
                   ($header//tei:profileDesc/tei:creation)[1]/tei:date
             case "date" return
+                 let $sourcedesc-date := analyze-string(string-join($header//tei:sourceDesc//tei:bibl//text(), ''), "\d{4}")//fn:match/text()
+                 return 
+                    if ($sourcedesc-date) then 
+                      $sourcedesc-date 
+                    else
                  let $creation-date := $header//tei:profileDesc/tei:creation[1]/tei:date
                       , $notbefore := xs:int($creation-date/@notBefore)
                       , $notafter := xs:int($creation-date/@notAfter)
