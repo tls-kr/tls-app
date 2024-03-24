@@ -35,6 +35,10 @@ span.lb{
     display : none;
 }
 
+.table-hr {
+    border-bottom: 1px solid #000;
+}
+
 .ed-SBCK {
      background-color: rgba(186, 245, 240, 0.25);       
 }

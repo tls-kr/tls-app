@@ -1965,15 +1965,14 @@ else "Error: Word relation type not found."
 (: wrid points to a div of the type word-rel-ref, thus  :)
 declare function tlsapi:delete-word-relation($map as map(*)){
 let $node := collection($config:tls-data-root)//tei:TEI[@xml:id="word-relations"]//tei:body//tei:div[@xml:id=$map?wrid]
-, $line := for $l in $node//tei:item/@line-id return data($l)
+, $line := distinct-values(for $l in $node//tei:item/@line-id return data($l))
 return
 if ($node) then 
 (
  update delete $node,
-(:$node,:)
- $line[1]
+ "[" || string-join(for $l in $line return '"' || $l || '"', ",") || "]"
 )
-else "Error: Word relation not found."
+else '["Error: Word relation not found."]'
 };
 
 (:
