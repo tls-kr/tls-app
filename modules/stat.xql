@@ -10,6 +10,8 @@ xquery version "3.1";
 
 import module namespace config="http://hxwd.org/config" at "config.xqm";
 import module namespace tlslib="http://hxwd.org/lib" at "tlslib.xql";
+import module namespace ltr="http://hxwd.org/lib/translation" at "lib/translation.xqm";
+import module namespace lu="http://hxwd.org/lib/utils" at "lib/utils.xqm";
 import module namespace sgn="http://hxwd.org/signup" at "signup.xql";
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
@@ -22,11 +24,12 @@ $translations := for $d in collection($config:tls-translation-root)
     $tsrc := substring($d//tei:sourceDesc//tei:bibl/@corresp, 2),
     $title := $d//tei:titleStmt
     group by $tsrc
+    let $txtid := data($tsrc[1])
     order by sum($tlc) descending
-    return <tr>
+    return <tr class="table-hr">
     <td>{sum($tlc)}</td>
-    <td>{data($tsrc[1])}</td>
-    <td>{$d[1]//tei:sourceDesc//tei:bibl/tei:title/text()}</td>
+    <td>{$txtid}</td>
+    <td>{lu:get-title($txtid)}</td>
     <td><ul>
     {
     for $t in $d 
@@ -35,7 +38,7 @@ $translations := for $d in collection($config:tls-translation-root)
     return
     <li>
         {if ($lc > 0) then
-    <a href="textview.html?location={tlslib:get-translation-seg($t//tei:TEI/@xml:id, true())}">{$t//tei:titleStmt/tei:title/text()} // by  {$t//tei:titleStmt/tei:editor/text()} (<span>{$lc}</span> lines)</a>
+    <a href="textview.html?location={substring(ltr:get-translation-seg($t//tei:TEI/@xml:id, true())/@corresp, 2)}">{$t//tei:titleStmt/tei:title/text()} // by  {$t//tei:titleStmt/tei:editor/text()} (<span>{$lc}</span> lines)</a>
     else 
     <span>{$t//tei:titleStmt/tei:title/text()} // by  {$t//tei:titleStmt/tei:editor/text()} ({$lc} lines)</span>        
         }

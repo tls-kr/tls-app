@@ -173,15 +173,17 @@ function save_wr(obj){
 function delete_word_relation(wrid){
     $.ajax({
      type : "GET",
-     dataType : "html",  
+     dataType : "json",  
      url : "api/responder.xql?func=delete-word-relation&wrid="+ wrid, 
      success : function(resp){
-     if (resp.startsWith("Error")){
+     if (resp[0].startsWith("Error")){
          toastr.error(resp, "HXWD says:");     
      } else {
          $('#'+wrid).html("");
-        var line_id = resp.replace(/"/g, '')
-        show_swls_for_line(line_id);      
+        resp.forEach((el)=> {
+         line_id = el.replace(/"/g, '')
+         show_swls_for_line(line_id);
+        })
         toastr.info("Word relation has been deleted.", "漢學文典 says:");     
      }
    }
