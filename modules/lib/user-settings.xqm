@@ -47,6 +47,10 @@ $doc
 )
 };
 
+declare function lus:get-slot1-id($textid as xs:string){
+let $settings := lus:get-settings()
+return data($settings//tls:item[@textid=$textid and @slot='slot1']/@content)
+};
 
 (:~
  : saves the content-id of a content selected for a s slot for a text

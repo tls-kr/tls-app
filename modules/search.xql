@@ -418,7 +418,6 @@ declare function src:show-result-segs($segs as node()*, $type as xs:string){
     let $title := lmd:get-metadata($cseg, "title")
     , $head := lmd:get-metadata($cseg, "head")
     , $textid := lmd:get-metadata($cseg, "textid")
-    , $tr := collection($config:tls-translation-root)//tei:seg[@corresp="#"||$cseg/@xml:id]
     , $dsegs := (lu:next-n-segs($cseg/@xml:id, -5), $cseg, lu:next-n-segs($cseg/@xml:id, 5))
     return
     if ($type = 'list') then
@@ -1057,17 +1056,14 @@ declare function src:show-text-results($map as map(*)){
     <table class="table">
     {for $hx at $c in subsequence($map?hits, $map?start, $map?resno)
       for $h in if ($map?search-type=$src:search-trans) then $hx else try { util:expand($hx)//exist:match/ancestor::tei:seg } catch * {"x"}
-      let $loc := if ($map?search-type=$src:search-trans) then substring($h/@corresp,2) else $h/@xml:id,
-      $m1 := try { substring(($h/exist:match)[1]/text(), 1, 1) } catch * {"x"},
-      $cseg := collection($config:tls-texts-root)//tei:seg[@xml:id=$loc],
-(:      $head :=  $cseg/ancestor::tei:div[1]/tei:head[1]/tei:seg/text() ,:)
-      $head :=  lmd:get-metadata($cseg, "head"),
-(:      $title := $cseg/ancestor::tei:TEI//tei:titleStmt/tei:title/text(),:)
-      $title := lmd:get-metadata($cseg, "title"),
-(:     at some point use this to select the translation the user prefers
-      $tr := tlslib:get-translations($model?textid),
-      $slot1-id := tlslib:get-content-id($model?textid, 'slot1', $tr),:)
-      $tr := collection($config:tls-translation-root)//tei:seg[@corresp="#"||$h/@xml:id]
+      let $loc := if ($map?search-type=$src:search-trans) then substring($h/@corresp,2) else $h/@xml:id
+      , $m1 := try { substring(($h/exist:match)[1]/text(), 1, 1) } catch * {"x"}
+      , $cseg := collection($config:tls-texts-root)//tei:seg[@xml:id=$loc]
+      , $head :=  lmd:get-metadata($cseg, "head")
+      , $title := lmd:get-metadata($cseg, "title")
+      , $textid := lmd:get-metadata($cseg, "textid")
+      , $trid := lus:get-slot1-id($textid)
+      , $tr := collection($config:tls-translation-root)//tei:TEI[@xml:id=$trid]//tei:seg[@corresp="#"||$h/@xml:id]
       where if ($map?search-type=$src:search-trans) then $m1 = $m1 else $m1 = $map?q1
     return
       <tr>
