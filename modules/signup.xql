@@ -21,6 +21,7 @@ import module namespace http="http://expath.org/ns/http-client";
 import module namespace mail="http://exist-db.org/xquery/mail";
 import module namespace templates="http://exist-db.org/xquery/templates" ;
 import module namespace lvs="http://hxwd.org/lib/visits" at "lib/visits.xqm";
+import module namespace lpm="http://hxwd.org/lib/permissions" at "lib/permissions.xqm";
 
 declare variable $sgn:userhome := "/db/users";
 
@@ -289,7 +290,11 @@ return
 <span>{$doc//url}</span>
 </div>
 <div class="col-md-2"> 
-<button type="button" class="btn btn-primary" onclick="sgn_approve('{$m}', '{$reviewer}')">Approve</button><br/>
+<button type="button" class="btn btn-primary" onclick="sgn_approve('{$m}', '{$reviewer}')">Approve</button>
+{if (lpm:can-delete-applications()) then (
+<button type="button" class="btn btn-danger" onclick="sgn_approve('{$m}',
+'DELETE')">Delete</button>) else ()}
+<br/>
 <span>Votes: {count(distinct-values(tokenize($doc//approved/@resp, ";")))}</span>
 </div>
 <hr/>
@@ -303,7 +308,15 @@ return
 declare function sgn:approve($map as map(*)){
 let $doc := doc("/db/groups/tls-editor/users/" || $map?uuid || ".xml")
 , $appr := $doc//approved
-, $resp := if ($appr/@resp) then $appr/@resp || ";#" || $map?resp else "#" || $map?resp 
+  return
+  if ($map?resp = 'DELETE') then 
+  (: need to put this on record somewhere :)
+  try {(
+   xmldb:remove("/db/groups/tls-admin/new-users", $map?uuid || ".xml")  
+   ,xmldb:remove("/db/groups/tls-editor/users/", $map?uuid || ".xml")
+   )} catch * {()}
+   else 
+ let $resp := if ($appr/@resp) then $appr/@resp || ";#" || $map?resp else "#" || $map?resp 
 , $u := if ($appr/@resp) then update delete $appr/@resp else () 
 , $u2 := update insert attribute resp {$resp} into $appr
 , $sss := sgn:check-approved()
@@ -334,6 +347,7 @@ declare function sgn:create-user($uuid as xs:string){
     let $doc := doc("/db/groups/tls-admin/new-users/" || $uuid|| ".xml")
     let $user := $doc/user
     let $username := $user//name/text(),
+    $checkuser := if (string-length($user) != string-length(replace($user, '[^A-Za-z]', ''))) then "Wrong" else "OK",
     $fullName := $user//fullName/text(),
     $description := $user//description/text(),
     $password := $user//password/text(),
@@ -345,7 +359,7 @@ declare function sgn:create-user($uuid as xs:string){
              return sm:group-exists($g) or sm:create-group($g),
     $home := xmldb:collection-available($sgn:userhome) or xmldb:create-collection("/db", "users"),
     $usercoll := $sgn:userhome || "/" || $username,
-    $res := (
+    $res := if ($checkuser = 'OK') then (
         sm:user-exists($username) or            
         sm:create-account($username, $password, $primary-group, $groups, $fullName, $description),
         if($disabled)then
@@ -356,7 +370,7 @@ declare function sgn:create-user($uuid as xs:string){
         sm:chmod(xs:anyURI($usercoll), "rwxrwxr--"),
         sm:chgrp(xs:anyURI($usercoll), "tls-user"),
         sm:chown(xs:anyURI($usercoll), $username) 
-        )
+        ) else ()
     return
         $username
 

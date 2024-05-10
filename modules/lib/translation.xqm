@@ -19,6 +19,7 @@ import module namespace lrh="http://hxwd.org/lib/render-html" at "render-html.xq
 import module namespace lv="http://hxwd.org/lib/vault" at "vault.xqm";
 import module namespace lus="http://hxwd.org/lib/user-settings" at "user-settings.xqm";
 import module namespace lvs="http://hxwd.org/lib/visits" at "visits.xqm";
+import module namespace lpm="http://hxwd.org/lib/permissions" at "permissions.xqm";
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace mf="http://kanripo.org/ns/KRX/Manifest/1.0";
@@ -305,9 +306,15 @@ declare function ltr:render-translation-submenu($textid as xs:string, $slot as x
  <div id="translation-headerline-{$slot}" class="btn-group" role="group" >
   <button type="button" class="btn btn-secondary" onclick="goto_translation_seg('{$trid}', 'first')" title="Go to first translated line">←</button> 
    <div class="dropdown" id="{$slot}" data-trid="{$trid}">
-            <button class="btn btn-secondary dropdown-toggle" type="button" id="ddm-{$slot}" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-            {if ($tr($trid)[$ltr:tr-map-indices?type-label]) then ltr:format-translation-label($tr, $trid) else "No translation available"}
-            </button>
+        {let $label := if ($tr($trid)[$ltr:tr-map-indices?type-label]) then 
+                       ltr:format-translation-label($tr, $trid) else "No translation available"
+            return
+            (<button class="btn btn-secondary dropdown-toggle" type="button" id="ddm-{$slot}" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            {$label}
+            </button>,
+            if (lpm:can-use-ai() and contains($label, 'Translation by TLS Project')) then <button type="button" class="btn btn-primary" title="Get translation draft" onclick="get_tr_for_page('{$slot}', '{$trid}', '{$tr($trid)[$ltr:tr-map-indices?lang-label]}')">AI</button> else ()
+            )
+         }   
     <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
         {  for $k at $i in $keys
             return 
@@ -322,7 +329,9 @@ declare function ltr:render-translation-submenu($textid as xs:string, $slot as x
          if ($tr($k)[$ltr:tr-map-indices?type-label] = "Comments") then 
         <a class="dropdown-item" id="sel{$slot}-{$i}" onclick="get_tr_for_page('{$slot}', '{$k}')" href="#">{$tr($k)[$ltr:tr-map-indices?type-label] || " " }  {$tr($k)[$ltr:tr-map-indices?lang-label]}</a>
         else
-        <a class="dropdown-item" id="sel{$slot}-{$i}" onclick="get_tr_for_page('{$slot}', '{$k}')" href="#">{ltr:format-translation-label($tr, $k)}</a>
+        let $label := ltr:format-translation-label($tr, $k)
+        return
+        <a class="dropdown-item" id="sel{$slot}-{$i}" onclick="get_tr_for_page('{$slot}', '{$k}')" href="#">{$label}</a>
         }
         {if (lu:can-create-translation-file()) then
         <a class="dropdown-item" onclick="new_translation('{$slot}')" href="#"> <button class="btn btn-warning" type="button">New translation / comments</button></a> 
@@ -492,8 +501,14 @@ let $doc := ltr:get-translation-file($transid)
  : Save the translation (or comment)
  : 3/11: Get the file from the correct slot!
 :)
+
 declare function ltr:save-tr($trid as xs:string, $tr-to-save as xs:string, $lang as xs:string){
 let $user := sm:id()//sm:real/sm:username/text()
+return
+ ltr:save-tr($trid, $tr-to-save, $lang, $user)
+};
+
+declare function ltr:save-tr($trid as xs:string, $tr-to-save as xs:string, $lang as xs:string, $user as xs:string){
 let $id := substring-before($trid, '-slot')
 ,$txtid := tokenize($id, "_")[1]
 ,$tr := ltr:get-translations($txtid)
