@@ -39,7 +39,7 @@ let $sense-id := request:get-parameter("sense-id", "uuid-20c9da30-27bc-4b0a-ab0a
     let $target := $line/@xml:id,
     $locs := substring-before(tokenize(substring-before($target, "."), "_")[last()], "-"),
     $textid := tokenize($target, "_")[1],
-    $loc := if (string-length($locs) > 0) then xs:int($locs) else $locs, 
+    $loc := try {if (string-length($locs) > 0) then xs:int($locs) else $locs, 
     $tr := collection($config:tls-translation-root)//tei:seg[@corresp="#" || $target]
 (:    ,$atts := for $a in $ann 
                where $a = "#" || $target

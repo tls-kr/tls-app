@@ -126,7 +126,7 @@ declare variable $config:search-map := map{
 "1" : "texts",
 "2" : "dictionary",
 "3" : "translations",
-"4" : "fields",
+"4" : "everything",
 "5" : "one text only",
 "6" : "lines with translation",
 "7" : "titles",

@@ -248,7 +248,10 @@ return
 <h3>Review of account requests</h3>
 <p>Please review the information and if you approve of granting access to the TLS, please click on approve. Every member of the group tls-editor has one vote.</p>
 <div class="row">
-<div class="col-md-2"> 
+<div class="col-md-1"> 
+<span class="font-weight-bold">Full Name</span>
+</div>
+<div class="col-md-1"> 
 <span class="font-weight-bold">Name</span>
 </div>
 <div class="col-md-2"> 
@@ -271,11 +274,15 @@ return
 for $u in collection("/db/groups/tls-admin/new-users")//verified[@status='true']
 let $m := $u/parent::more/ss/text()
 , $name := $u/ancestor::user//fullName/text()
+, $sname := $u/ancestor::user//name/text()
 , $doc := doc("/db/groups/tls-editor/users/" || $m || ".xml")
 return
 <div class="row" id="{$m}">
-<div class="col-md-2 "> 
+<div class="col-md-1 "> 
 <span>{$name}</span>
+</div>
+<div class="col-md-1"> 
+<span>{$sname}</span>
 </div>
 <div class="col-md-2"> 
 <span>{$doc//area}</span>
