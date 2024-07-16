@@ -57,6 +57,8 @@ declare function lrh:get-content-id($textid as xs:string, $slot as xs:string, $t
 : @param $node a tei:seg node, typically
 :)
 declare function lrh:proc-seg($node as node(), $options as map(*)){
+ let $lpb := if ($options?lpb) then $options?lpb else true()
+ return
  typeswitch ($node)
  case element(tei:note) return ()
 (:     <small>{$node/text()}</small>:)
@@ -82,8 +84,13 @@ declare function lrh:proc-seg($node as node(), $options as map(*)){
      <span class="swxz-uni">{data($node/@n)}</span>
    else 
      $node/text()
-  case element (tei:lb)  return <span title="{data($node/@ed)}:{data($node/@n)}" class="lb text-muted ed-{data($node/@ed)}"><img class="icon note-anchor" src="{$config:lb}"/></span>
-  case element (tei:pb)  return <span title="{data($node/@ed)}:{data($node/@n)}" class="lb text-muted ed-{data($node/@ed)}"><img class="icon note-anchor" src="{$config:lb}"/></span>
+  case element (tei:lb)  return 
+   if ($lpb) then    
+   <span title="{data($node/@ed)}:{data($node/@n)}" class="lb text-muted ed-{data($node/@ed)}"><img class="icon note-anchor" src="{$config:lb}"/></span> else ()
+  case element (tei:pb)  return 
+   if ($lpb) then    
+  <span title="{data($node/@ed)}:{data($node/@n)}" class="lb text-muted ed-{data($node/@ed)}"><img class="icon note-anchor" src="{$config:lb}"/></span>
+   else ()
   (: <span title="Click here to display a facsimile of this page\n{data($node/@ed)}:{data($node/@n)}" class="text-muted"><img class="icon note-anchor" onclick="get_facs_for_page('slot1', '{$node/@facs}')" src="{$config:pb}"/></span> :)
   case element (tei:space)  return "　"
   case element (exist:match) return <mark>{$node/text()}</mark>
@@ -131,6 +138,16 @@ declare function lrh:multiple-segs($seg, $n){
     for $s at $p in lu:next-n-segs($seg, $n)
     return
     lrh:proc-seg($s, map{"punc" : true()}) )
+};
+
+declare function lrh:multiple-segs-plain($loc as xs:string, $prec as xs:int, $foll as xs:int){
+let $dseg := lu:get-targetsegs($loc, $prec, $foll)
+return
+string-join(
+  for $s at $p in $dseg
+  return
+  normalize-space(string-join( lrh:proc-seg($s, map{"punc" : true(), "lpb" : false()}), ''))
+, '\n')
 };
 
 (: button, mostly at the right side, in which case class will be "close" :)

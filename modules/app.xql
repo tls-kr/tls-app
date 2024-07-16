@@ -602,7 +602,7 @@ function app:char-info($node as node()*, $model as map(*), $char as xs:string?, 
     let $char := if (string-length($char)> 0) then $char else ($n//tei:head)[1]/text()
     , $h := string-join(distinct-values($n/tei:head/text()), ' / ')
     , $char-id := tokenize($n/@xml:id)[1]  
-    , $sw := doc($config:tls-texts-root || "/KR/KR1/KR1j/KR1j0018.xml")//tei:p[ngram:wildcard-contains(., "【" || $char || ".?】")]
+    , $sw := doc($config:tls-texts-root || "/KR/KR1/KR1j/KR1j0018.xml")//tei:p[ngram:wildcard-contains(., "【" || $char || ".?】")][1]
     , $crit := for $p in collection($config:tls-data-root||"/concepts")//tei:div[@type="old-chinese-criteria" and contains(., ""|| $char)] return $p
     , $word-rel := doc($config:tls-data-root || "/core/word-relations.xml")//tei:div[@type='word-rel' and .//tei:item[contains(., $char)]]
     return
@@ -944,7 +944,7 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
      else
        (collection($config:tls-data-root || "/concepts") | collection($config:tls-data-root || "/domain"))//tei:div[tei:head[. = $concept]],
     $key := $c/@xml:id,
-    $edit := if (sm:id()//sm:groups/sm:group[. = "tls-editor"]) then 'true' else 'false',
+    $edit := if (sm:id()//sm:groups/sm:group[. = "tls-editor"]) then 'false' else 'false',
     $show := if (string-length($ontshow) > 0) then " show" else "",
     $tr := $c//tei:list[@type="translations"]//tei:item
     let $ann := for $c in collection($config:tls-data-root||"/notes")//tls:ann[@concept-id=$key]

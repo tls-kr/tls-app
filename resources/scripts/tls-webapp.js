@@ -1,3 +1,4 @@
+// var containsJapanese = string.match(/[\u3400-\u9FBF]/);
 var dirty = false;
 var cancelmove = false;
 var currentline = "";
@@ -436,14 +437,14 @@ function set_new_tileSources (slot, pb_ed_n, tileSources){
 
 // called ftom textview, toprow
 // slot is slot1 or slot2, type is 'transl' or 'comm', no is the item number in the list
-function get_tr_for_page(slot, myid){
+function get_tr_for_page(slot, myid, ai){
 //  var location = window.location.search;
   var location = $('#chunkcol-left').children('div').eq(0).children('div').eq(1).attr('id');
   var foll = $('#chunkcol-left').children('div').length / 2
    $.ajax({
    type : "GET",
    dataType : "html",
-   url : "api/get_tr_for_page.xql?location="+location+"&prec=0&foll="+foll+"&slot="+slot+"&content-id="+myid, 
+   url : "api/get_tr_for_page.xql?location="+location+"&prec=0&foll="+foll+"&slot="+slot+"&content-id="+myid+"&ai="+ai, 
    success : function(resp){
     var obj = JSON.parse(resp);
     for (var prop in obj) {
@@ -453,6 +454,10 @@ function get_tr_for_page(slot, myid){
     reload_selector(slot, myid);   
    }
   });
+  if (ai = 'undefined') {
+  } else {
+  toastr.info("Translation draft requested. Please wait a moment.", "HXWD says:")        
+  }
 };
 // called from tranlation dropdown in toprow
 // slot is slot1 or slot2, 
