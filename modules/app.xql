@@ -944,7 +944,7 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
      else
        (collection($config:tls-data-root || "/concepts") | collection($config:tls-data-root || "/domain"))//tei:div[tei:head[. = $concept]],
     $key := $c/@xml:id,
-    $edit := if (sm:id()//sm:groups/sm:group[. = "tls-editor"]) then 'true' else 'false',
+    $edit := if (sm:id()//sm:groups/sm:group[. = "tls-editor"]) then 'false' else 'false',
     $show := if (string-length($ontshow) > 0) then " show" else "",
     $tr := $c//tei:list[@type="translations"]//tei:item
     let $ann := for $c in collection($config:tls-data-root||"/notes")//tls:ann[@concept-id=$key]
