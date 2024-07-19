@@ -425,7 +425,7 @@ declare function bib:fix-mods($m as node()){
 let $usage := count(collection($config:tls-data-root)//tei:ref[@target="#"||$m/@ID] )
 let $fix := (
 for $t in $m//mods:title
- let $val := if (tlslib:mostly-kanji($t)) then "Hant" else "Latn"
+ let $val := if (lu:mostly-kanji($t)) then "Hant" else "Latn"
  , $ti := $t/parent::mods:titleInfo
  return
  if ($ti/@script) then
@@ -441,7 +441,7 @@ for $t in $m//mods:title
  else ()
 
 ,for $t in $m//mods:namePart
- let $val := if (tlslib:mostly-kanji($t)) then "Hant" else "Latn"
+ let $val := if (lu:mostly-kanji($t)) then "Hant" else "Latn"
  , $ti := $t
  return
  if ($ti/@script) then

@@ -25,6 +25,7 @@ import module namespace lus="http://hxwd.org/lib/user-settings" at "lib/user-set
 import module namespace lgrp="http://hxwd.org/lib/group-by" at "lib/group-by.xqm";
 import module namespace lrh="http://hxwd.org/lib/render-html" at "lib/render-html.xqm";
 import module namespace lpm="http://hxwd.org/lib/permissions" at "lib/permissions.xqm";
+import module namespace lsf="http://hxwd.org/lib/syn-func" at "lib/syn-func.xqm";
 
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
@@ -197,7 +198,7 @@ else
 (: query in dictionary :)
 declare function src:dic-query($queryStr as xs:string?, $mode as xs:string?)
 {
-tlslib:get-sw($queryStr, "dic", "core", "")
+lsf:get-sw($queryStr, "dic", "core", "")
 };
 
 (: query in translation :)
@@ -867,7 +868,7 @@ declare
 function src:show-hits($node as node()*, $model as map(*), $start as xs:int, $type as xs:string, $mode as xs:string, $search-type as xs:string, $textid as xs:string?, $filter as xs:string?)
 {
 let $query := $model?query
-    ,$iskanji := if (string-length($query)>0) then tlslib:iskanji($query) else ()
+    ,$iskanji := if (string-length($query)>0) then lu:iskanji($query) else ()
     ,$title := if (string-length($textid) > 0) then lu:get-title($textid) else ()
     (: no of results to display :)
     ,$resno := $model?resno

@@ -15,6 +15,7 @@ import module namespace config="http://hxwd.org/config" at "config.xqm";
 import module namespace app="http://hxwd.org/app" at "app.xql";
 import module namespace src="http://hxwd.org/search" at "search.xql";
 import module namespace sgn="http://hxwd.org/signup" at "signup.xql";
+import module namespace lsf="http://hxwd.org/lib/syn-func" at "lib/syn-func.xqm";
 
 declare namespace output = "http://www.w3.org/2010/xslt-xquery-serialization";
 

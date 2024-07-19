@@ -333,7 +333,16 @@
 						"schema": {
 							"type": "string"
 					     },
-					     "example" : "KR5c0123"
+					     "example" : "KR5c0126"
+					},
+					{
+						"name": "location",
+						"in": "query",
+						"description": "Location to display.",
+						"schema": {
+							"type": "string"
+					     },
+					     "example" : "KR5c0126_tls_006-7a.8"
 					},
 					{
 						"name": "start",
@@ -352,16 +361,6 @@
 							"type": "string",
 							"default": "50"
 					     }
-					},
-					{
-						"name": "view",
-						"in": "query",
-						"schema": {
-							"type": "string",
-							"enum": ["page", "div", "single"]
-						},
-						"example": "div",
-						"description": "The view type used by the main view which displays the document, e.g. 'page' or 'div'. This has an influence on the generated links, which need to differ when linking to a page rather than a section."
 					}
 				],
 				"responses": {

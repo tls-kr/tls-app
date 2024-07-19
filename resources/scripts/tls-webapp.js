@@ -2110,6 +2110,19 @@ function add_parallel(){
   });
 };
 
+// 
+function toggle_list_display(){
+  $.ajax({
+  type : "PUT",
+  url : "api/responder.xql?func=lus:toggle-list-display",
+  success : function(resp){
+    toastr.info("List display option changed.", "HXWD says:");
+    update_swlist()
+  }
+  }
+  )
+  
+};
 
 // stub for comment  2020-02-23, called from app:swl-form-dialog
 // use this for RD instead 2021-09-21, called from tlslib:swl-form-dialog

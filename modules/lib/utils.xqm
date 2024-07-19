@@ -14,6 +14,48 @@ import module namespace config="http://hxwd.org/config" at "../config.xqm";
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 
+(: gradient of colors, colors are given as rgb sequences in dec :)
+
+declare function lu:get-gradient($start-color, $end-color, $max, $count){
+  let $m := $count div $max
+  return
+  if ($m > 0.5) then
+   (61, 99, 127)
+   else if ($m > 0.2) then
+   (197, 200, 127)
+   else if ($m > 0.1) then
+   (172, 228, 127)
+(:  for $i in (1, 2, 3)   return string(($count div $max)  * $start-color[$i] + (1 - ($count div $max)  * $end-color[$i])):)
+  else (255,255,255) 
+};
+
+(:~
+: check if a string consists completely of kanji
+: @param $string  a string to be tested
+:)
+
+declare function lu:iskanji($string as xs:string) as xs:boolean {
+let $kanji := '&#x3400;-&#x4DFF;&#x4e00;-&#x9FFF;&#xF900;-&#xFAFF;&#xFE30;-&#xFE4F;&#x00020000;-&#x0002A6DF;&#x0002A700;-&#x0002B73F;&#x0002B740;-&#x0002B81F;&#x0002B820;-&#x0002F7FF;',
+$pua := '&#xE000;-&#xF8FF;&#x000F0000;-&#x000FFFFD;&#x00100000;-&#x0010FFFD;'
+return 
+matches(replace($string, '\s', ''), concat("^[", $kanji, $pua, "]+$" ))
+};
+
+(: check if most characters are kanji :)
+declare function lu:mostly-kanji($string as xs:string) as xs:boolean {
+if (string-length($string) > 0) then
+let $q := sum(for $s in string-to-codepoints($string)
+    return
+    if ($s > 500) then 1 else 0 )
+return
+if ($q div string-length($string) > 0.5) then xs:boolean("1") else xs:boolean(0)
+else xs:boolean(0)
+};
+
+
+
+
+
 (:~
 : Lookup the title for a given textid
 : @param $txtid

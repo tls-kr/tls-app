@@ -11,6 +11,7 @@ import module namespace wd="http://hxwd.org/wikidata" at "../modules/wikidata.xq
 import module namespace bib="http://hxwd.org/biblio" at "../modules/biblio.xql"; 
 import module namespace sgn="http://hxwd.org/signup" at "../modules/signup.xql"; 
 import module namespace txc="http://hxwd.org/text-crit" at "../modules/text-crit.xql";
+import module namespace lus="http://hxwd.org/lib/user-settings" at "../modules/lib/user-settings.xqm";
 
 import module namespace ltr="http://hxwd.org/lib/translation" at "../modules/lib/translation.xqm";
 import module namespace lli="http://hxwd.org/lib/link-items" at "../modules/lib/link-items.xqm";
@@ -47,7 +48,7 @@ return <li>{$h}:{request:get-header($h)}</li>
 }</ul>
 )
 else
-if (matches($func, "^(dialogs|tlslib|wd|bib|sgn|txc|ltr|lli)")) then
+if (matches($func, "^(dialogs|tlslib|wd|bib|sgn|txc|ltr|lli|lus)")) then
  util:eval($func || "($resmap)" )
 else
  util:eval("tlsapi:" ||  $func || "($resmap)" )
