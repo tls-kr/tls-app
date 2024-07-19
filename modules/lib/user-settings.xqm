@@ -47,6 +47,34 @@ $doc
 )
 };
 
+(:  by-concept , by-syn-func :)
+declare function lus:toggle-list-display($map as map(*)){
+let $pref := lus:get-sf-display-setting()
+return 
+ if ($pref = 'by-concept') then 
+   lus:set-sf-display-setting('by-syn-func')
+ else
+   lus:set-sf-display-setting('by-concept')
+};
+
+declare function lus:get-sf-display-setting(){
+let $settings := lus:get-settings()
+, $preference := data($settings//tls:section[@type='sf-display']/@content)
+return 
+ if ($preference) then $preference else 'by-concept'
+};
+
+declare function lus:set-sf-display-setting($preference as xs:string){
+let $settings := lus:get-settings()
+, $node := <section xmlns="http://hxwd.org/ns/1.0" type="sf-display" content="{$preference}"/>, $oldnode := $settings//tls:section[@type='sf-display']
+return 
+ if ($oldnode) then 
+   update replace $oldnode with $node
+ else 
+update insert $node 
+       into  $settings/tls:settings
+};
+
 declare function lus:get-slot1-id($textid as xs:string){
 let $settings := lus:get-settings()
 return data($settings//tls:item[@textid=$textid and @slot='slot1']/@content)

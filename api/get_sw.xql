@@ -5,7 +5,7 @@ declare namespace output = "http://www.w3.org/2010/xslt-xquery-serialization";
 declare option output:media-type "text/html";
 
 (:import module namespace tlsapi="http://hxwd.org/tlsapi" at "tlsapi.xql";:)
-import module namespace tlslib="http://hxwd.org/lib" at "../modules/tlslib.xql";
+import module namespace lsf="http://hxwd.org/lib/syn-func" at "../modules/lib/syn-func.xqm";
 
 
 let $word := request:get-parameter("word", "xx"),
@@ -14,4 +14,4 @@ $context := request:get-parameter("context", "xx")
 ,$leftword := request:get-parameter("leftword", "")
 return
 
-tlslib:get-sw($word, $context, $domain, $leftword)
+lsf:get-sw-dispatch($word, $context, $domain, $leftword)

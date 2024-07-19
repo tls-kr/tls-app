@@ -30,6 +30,7 @@ import module namespace lrh="http://hxwd.org/lib/render-html" at "render-html.xq
 import module namespace lv="http://hxwd.org/lib/vault" at "vault.xqm";
 import module namespace lpm="http://hxwd.org/lib/permissions" at "../modules/lib/permissions.xqm";
 import module namespace ltp="http://hxwd.org/lib/textpanel" at "../modules/lib/textpanel.xqm";
+import module namespace lsf="http://hxwd.org/lib/syn-func" at "../modules/lib/syn-func.xqm";
 
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
@@ -359,7 +360,7 @@ declare function tlsapi:get-sf($senseid as xs:string, $type as xs:string){
 let $sense := collection($config:tls-data-root)//tei:sense[@xml:id=$senseid]
 ,$synfunc-id := if ($type = 'syn-func') then data($sense/tei:gramGrp/tls:syn-func/@corresp)=>substring(2) 
    else data($sense/tei:gramGrp/tls:sem-feat/@corresp)=>substring(2)
-,$sfdef := tlslib:get-sf-def($synfunc-id, $type)
+,$sfdef := lsf:get-sf-def($synfunc-id, $type)
 ,$para := map{
 "def" : $sense/tei:def/text(),
 "type" : $type,
@@ -1035,7 +1036,7 @@ return
 
 if (count($res) > 0) then
 (<li>Found {count($res)} attributions</li>, 
-for $r in subsequence($res, 1, 10)
+for $r in subsequence($res, 1, 30)
   let $sw := $r/ancestor::tei:sense
   , $cr := $sw/@corresp
   group by $cr
