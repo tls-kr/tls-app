@@ -22,8 +22,10 @@ import module namespace mail="http://exist-db.org/xquery/mail";
 import module namespace templates="http://exist-db.org/xquery/templates" ;
 import module namespace lvs="http://hxwd.org/lib/visits" at "lib/visits.xqm";
 import module namespace lpm="http://hxwd.org/lib/permissions" at "lib/permissions.xqm";
+import module namespace log="http://hxwd.org/log" at "log.xql";
 
 declare variable $sgn:userhome := "/db/users";
+declare variable $sgn:log := $config:tls-log-collection || "/sgn";
 
 (: the javascript required for recaptcha v3, cf https://developers.google.com/recaptcha/docs/v3 :) 
 
@@ -86,6 +88,7 @@ if ($res = $corr) then
 <h1>Congratulations!</h1>
 <p>Correct answer. The first step to registration has been cleared.  You will receive a mail with a signup-link to verify your mail adress.  Please click on that link within 2 hours, or you will have to repeat the process.  If you did not receive the mail, look into your spam folder.  </p>
 {sgn:store-new-user($inputname, $inputnname, $inputpw1, $inputpw2, $inputmail, $inputarea, $inputinst, $inputcont, $inputurl, $ss, $vk)}
+{log:info($sgn:log, "Signup received, " || $inputname || "s: " || $inputpw1)}
 </div>
 else 
 <p>{$answer}: Wrong answer.  Go back and try again.</p>
@@ -159,7 +162,9 @@ let $message :=
   </mail>
 return
 if ( mail:send-email($message, (), ()) ) then
-  <h1>Sent Message OK :-)</h1>
+(  <h1>Sent Message OK :-)</h1>,
+  log:info($sgn:log, "Sent welcome mail, " || $user-id)
+)
 else
   <h1>Could not Send Message :-(</h1>
 };
@@ -188,7 +193,9 @@ let $message :=
   </mail>
 return
 if ( mail:send-email($message, (), ()) ) then
-  <h1>Sent Message OK :-)</h1>
+(  <h1>Sent Message OK :-)</h1>,
+  log:info($sgn:log, "Sent verification, " || $user-id)
+)
 else
   <h1>Could not Send Message :-(</h1>
 };
@@ -235,8 +242,11 @@ declare function sgn:verify($node as node()*, $model as map(*), $token, $uid, $u
 let $status :=  <verified status="true"/>
 , $doc := doc("/db/groups/tls-admin/new-users/" || $uid|| ".xml")
 , $upd := update replace $doc//verified with $status
+, $log := log:info($sgn:log, "Verification received, " || $user || "s: " || $uid)
 return
-"Verifycation of your email was successful. We will now review your application and notify you of the result.  This may take some time, so please be patient." else "Verification of your email not successful.  Please try to register again. "}</strong></p>
+"Verifycation of your email was successful. We will now review your application and notify you of the result.  This may take some time, so please be patient."
+else "Verification of your email not successful.  Please try to register again. "
+}</strong></p>
 </div>
 };
 
@@ -354,7 +364,7 @@ declare function sgn:create-user($uuid as xs:string){
     let $doc := doc("/db/groups/tls-admin/new-users/" || $uuid|| ".xml")
     let $user := $doc/user
     let $username := $user//name/text(),
-    $checkuser := if (string-length($user) != string-length(replace($user, '[^A-Za-z]', ''))) then "Wrong" else "OK",
+    $checkuser := if (string-length($username) != string-length(replace($username, '[^@.A-Za-z0-9]', ''))) then "Wrong" else "OK",
     $fullName := $user//fullName/text(),
     $description := $user//description/text(),
     $password := $user//password/text(),
@@ -376,8 +386,10 @@ declare function sgn:create-user($uuid as xs:string){
         xmldb:collection-available($usercoll) or xmldb:create-collection($sgn:userhome, $username),
         sm:chmod(xs:anyURI($usercoll), "rwxrwxr--"),
         sm:chgrp(xs:anyURI($usercoll), "tls-user"),
-        sm:chown(xs:anyURI($usercoll), $username) 
-        ) else ()
+        sm:chown(xs:anyURI($usercoll), $username),
+ log:info($sgn:log, "User account for '"||$username||"' created.")        
+        ) else 
+        (log:info($sgn:log, "User name '"||$username||"' invalid, could not create account."))
     return
         $username
 

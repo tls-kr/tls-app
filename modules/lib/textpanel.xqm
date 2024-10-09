@@ -31,6 +31,14 @@ declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
 
 declare variable $ltp:log := $config:tls-log-collection || "/tlslib";
+(: for debugging, leave this here ftm  :)
+declare variable $ltp:panel-matrix-orig := map{
+                 0: ("col-sm-11"),
+                 1: ("col-sm-5", "col-sm-6"),
+                 2: ("col-sm-3", "col-sm-4", "col-sm-4"),
+                 3: ("col-sm-3", "col-sm-3", "col-sm-3", "col-sm-2"),
+                 4: ("col-sm-2", "col-sm-3", "col-sm-2", "col-sm-2", "col-sm-2")
+};
 
 declare variable $ltp:panel-matrix := map{
                  0: ("col-sm-11"),
@@ -246,7 +254,7 @@ declare function ltp:chunkcol-left($dseg, $model, $tr, $slot1-id, $slot2-id, $lo
       return ltp:display-seg($d, map:merge(($model, $tr, 
       map{'slot1': $slot1-id, 'slot2': $slot2-id, 
           'loc' : $loc, 
-          'zh-width' : 'col-sm-3',
+          'zh-width' : 'col-sm-3', 
           'pos' : $pos + $cnt, "ann" : "xfalse.x"})))
 };
 

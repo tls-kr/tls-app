@@ -198,7 +198,7 @@ else
 (: query in dictionary :)
 declare function src:dic-query($queryStr as xs:string?, $mode as xs:string?)
 {
-lsf:get-sw($queryStr, "dic", "core", "")
+lsf:get-sw-by-concept($queryStr, "dic", "core", "")
 };
 
 (: query in translation :)
