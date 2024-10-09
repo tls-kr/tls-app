@@ -13,6 +13,9 @@ import module namespace lu="http://hxwd.org/lib/utils" at "utils.xqm";
 import module namespace tu="http://hxwd.org/utils" at "../tlsutils.xql";
 import module namespace lus="http://hxwd.org/lib/user-settings" at "user-settings.xqm";
 
+import module namespace lrh="http://hxwd.org/lib/render-html" at "render-html.xqm";
+
+
 import module namespace templates="http://exist-db.org/xquery/templates" ;
 
 import module namespace wd="http://hxwd.org/wikidata" at "../wikidata.xql"; 
@@ -107,7 +110,7 @@ let $ws := if ($w-context) then
       $sm := $w//tls:sem-feat/text(),
       $smid := substring($sm/@corresp, 2)
 return
-(:1    2     3     4          5           6     7      8    9      10    11    12 :)
+(:1    2     3     4          5           6     7      8    9      10    11    12    13:)
 [$zi, $py, $wid, $concept, $concept-id, $sfs, $sfid, $sm, $smid, $sid, $def, $atts, $w/@resp]
 };
 
@@ -115,6 +118,56 @@ return
 #5220DD
 blue #17224D, #17C6E9
 :)
+
+declare function lsf:display-sense($sw as node(), $count as xs:int, $display-word as xs:boolean){
+    let $id := if ($sw/@xml:id) then data($sw/@xml:id) else substring($sw/@corresp, 2),
+    $sf := ($sw//tls:syn-func/text())[1],
+    $sm := $sw//tls:sem-feat/text(),
+    $user := sm:id()//sm:real/sm:username/text(),
+    $def := $sw//tei:def/text(),
+    $char := $sw/preceding-sibling::tei:form[1]/tei:orth/text()
+    , $resp := tu:get-member-initials($sw/@resp)
+    return
+    <li id="{$id}">
+    {if ($display-word) then <span class="ml-2">{$char}</span> else ()}
+    <span id="sw-{$id}" class="font-weight-bold">{$sf}</span>
+    <em class="ml-2">{$sm}</em> 
+    <span class="ml-2">{$def}</span>
+    {if ($resp) then 
+    <small><span class="ml-2 btn badge-secondary" title="{$resp[1]} - {$sw/@tls:created}">{$resp[2]}</span></small> else ()}
+     <button class="btn badge badge-light ml-2" type="button" 
+     data-toggle="collapse" data-target="#{$id}-resp" onclick="show_att('{$id}')">
+          {if ($count > -1) then $count else ()}
+          {if ($count = 1) then " Attribution" else  " Attributions" }
+      </button>
+     {if ($user = "guest") then () else 
+      if ($count != -1 and not($display-word)) then
+     <button title="Search for this word" class="btn badge btn-outline-success ml-2" type="button" 
+     data-toggle="collapse" data-target="#{$id}-resp1" onclick="search_and_att('{$id}')">
+      <img class="icon-small" src="resources/icons/open-iconic-master/svg/magnifying-glass.svg"/>
+      </button> else (),
+      if ($count = 0) then
+      lrh:format-button("delete_word_from_concept('"|| $id || "')", "Delete the syntactic word "|| $sf || ".", "open-iconic-master/svg/x.svg", "", "", "tls-editor") else 
+      if ($count > 0) then (
+      lrh:format-button("move_word('"|| $char || "', '"|| $id ||"', '"||$count||"')", "Move the SW  '"|| $sf || "' including "|| $count ||"attribution(s) to a different concept.", "open-iconic-master/svg/move.svg", "", "", "tls-editor") ,      
+      lrh:format-button("merge_word('"|| $sf || "', '"|| $id ||"', '"||$count||"')", "Delete the SW '"|| $sf || "' and merge "|| $count ||"attribution(s) to a different SW.", "open-iconic-master/svg/wrench.svg", "", "", "tls-editor")       
+      )
+      else ()
+      }
+      <div id="{$id}-resp" class="collapse container"></div>
+      <div id="{$id}-resp1" class="collapse container"></div>
+    </li>
+ 
+ };
+
+
+
+declare function lsf:format-grouping-item($map){
+<span style="{$map?style}"><strong title="{$map?title}"><a href="syn-func.html?uuid={$map?uuid}">{$map?item}</a></strong>
+<!--<span class="text-muted" title="there are a total of {sum($w?12)} attribution">{sum($w?12)}</span> -->
+<button title="There are a total of {$map?sum} attributions in {$map?count} syntactic words. Click to reveal" class="btn badge badge-light" type="button" 
+data-toggle="collapse" data-target="#{$map?uuid}-synfunc">{$map?count}</button></span>
+};
 
 (: This displays the list of words by syn-func in the right hand popup pane (floater)  :)
 declare function lsf:get-sw-by-syn-func($word as xs:string, $context as xs:string, $domain as xs:string, $leftword as xs:string) as item()* {
@@ -135,14 +188,14 @@ for $w in $list
                 "background: rgb(" || string-join($g, ',') ||"); color:white;" 
                 else 
                 ""} catch * {()}
-  order by $sfs
+  ,$map := map{'style' : $style, 'title' : lsf:get-sf-def($w[1]?7, 'syn-func'), 'uuid' : $w[1]?7, 'item' : $sfs, 'sum' : sum($w?12), 'count' : count($w)}
+  order by $sfs  
 return
+<li>{lsf:format-grouping-item($map)}
+<ul class="collapse" id="{$w[1]?7}-synfunc">
+{lsf:display-sense($sfs/ancestor::tei:sense, -1, false())}
 
-<li><span style="{$style}"><strong title="{lsf:get-sf-def($w[1]?7, 'syn-func')}"><a href="syn-func.html?uuid={$w[1]?7}">{$sfs}</a></strong>
-<!--<span class="text-muted" title="there are a total of {sum($w?12)} attribution">{sum($w?12)}</span> -->
-<button title="There are a total of {sum($w?12)} attributions in {count($w)} syntactic words. Click to reveal" class="btn badge badge-light" type="button" 
-data-toggle="collapse" data-target="#{$w[1]?7}-synfunc">{count($w)}</button></span> 
-<ul class="collapse" id="{$w[1]?7}-synfunc">{
+{
 for $s at $pos in $w
 let $def := $s?11
 let $sf := ($s?6)[1],

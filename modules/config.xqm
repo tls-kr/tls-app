@@ -110,6 +110,7 @@ declare variable $config:languages := map{
 "zh" : "Chinese",
 "de" : "German",
 "fr" : "French",
+"cs" : "Czech",
 "ru" : "Russian",
 "ko" : "Korean",
 "it" : "Italian",

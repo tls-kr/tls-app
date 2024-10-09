@@ -759,6 +759,7 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
          else <span title="No facsimile available" class="btn badge badge-light">{data($pb/@n)}</span>
          }
         <!-- zh --></div>
+        <!-- 2024-09-06 this is rubbish, this needs also to be moved to textpanel and not hardcode the width -->
         {for $i in (1 to $colums)
         return 
         <div class="col-sm-4" id="top-slot{$i}"><!-- tr -->
@@ -1888,7 +1889,7 @@ declare function tlslib:linkheader($qc) {
      (:    var url = "http://www.kaom.net/z_hmy_zidian88.php?word={string-join($qc, '')}&mode=word&bianti=no&page=no"
  :)
      <span>{" 詞典: ",
-     <a class="btn badge badge-light chn-font" target="dict" title="Search {$qc} in HY dictionary (External link)" style="background-color:paleturquoise" href="http://www.kaom.net/z_hmy_zidian88.php?word={string-join($qc, '')}&amp;mode=word&amp;bianti=no&amp;page=no">{$qc}</a>
+     <a class="btn badge badge-light chn-font" target="dict" title="Search {$qc} in HY dictionary (External link)" style="background-color:paleturquoise" href="http://www.kaom.net/hemoye/z_hmy_zidian88.php?word={string-join($qc, '')}&amp;mode=word&amp;bianti=no&amp;page=no">{$qc}</a>
      }　</span>
      
      ,
@@ -1904,7 +1905,7 @@ declare function tlslib:guoxuedashi($c as xs:string){
 
 declare function tlslib:guguolin($qc){
     for $c at $pos in $qc return
-<form class="btn badge badge-light chn-font"  name="guguolin" target="dict" action="http://www.kaom.net/z_hmy_zidian8.php" method="post" title="訓詁工具書查詢 {$c} (External link)" >
+<form class="btn badge badge-light chn-font"  name="guguolin" target="dict" action="http://www.kaom.net/hemoye/z_hmy_zidian8.php" method="post" title="訓詁工具書查詢 {$c} (External link)" >
   {if ($pos = 1) then "字書：" else ()}
   <input type="hidden" name="word" id="word" value="{$c}="/>
   <input type="hidden" name="mode" id="mode" value="word" />

@@ -1589,7 +1589,7 @@ function app:dialogs($node as node()*, $model as map(*))
                             </div>
                         </div>
                         <div class="modal-footer">
-                            <button class="btn btn-primary" onclick="dologin()">Login</button>
+                            <button name="login-button" class="btn btn-primary" onclick="dologin()">Login</button>
                         </div>
                         <input type="hidden" name="duration" value="P7D"/>
                 </div>

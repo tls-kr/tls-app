@@ -953,7 +953,7 @@ function get_sw(sel, xid, line){
    var pos = Math.min.apply(Math, r);
    var len = Math.max.apply(Math, r);
    console.log("selection: ", sel, pos);
-   var url = "http://www.kaom.net/z_hmy_zidian88.php?"+"word="+encodeURI(sel)+"&mode=word&bianti=no&page=no";
+   var url = "http://www.kaom.net/hemoye/z_hmy_zidian88.php?"+"word="+encodeURI(sel)+"&mode=word&bianti=no&page=no";
    // this needs to produce the form link for the lookup
 /*   字書：
 <form class="btn badge badge-light" name="guguolin" target="dict" action="http://www.kaom.net/z_hmy_zidian8.php" method="post" title="訓詁工具書查詢 法 (External link)"><input type="hidden" name="word" id="word" value="法="><input type="hidden" name="mode" id="mode" value="word"><input type="hidden" name="bianti" id="bianti" value="no"><input type="hidden" name="page" id="page" value="no"><button class="btn badge badge-light" type="submit" style="background-color:paleturquoise">法</button></form>
