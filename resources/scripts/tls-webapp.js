@@ -27,7 +27,7 @@ $(function() {
     }
 } finally {}    
     set_keyup ();
-    set_currentline("mark")
+    set_currentline("mark");
     var pbx = window.localStorage.getItem('display-pastebox');
     if (pbx) {
         display_pastebox(pbx);
@@ -57,6 +57,10 @@ x.Selector.getSelected = function() {
     return t;
 };
 
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 function get_text_line(tabidx){
     var nid = "" 
     try {
@@ -85,8 +89,8 @@ if (newid === "mark"){
     cp.addClass("mark")
 }   
  tab = parseInt($("#"+current_id+"-slot1").attr("tabindex")) + 1;
- currentline = $("#" + current_id).text();
     try {
+      currentline = $('#' + current_id).text();
       tid = $("[tabindex='" + tab.toString() + "']").attr('id').replace(/-slot.|-tr|-ex/, '').split(".").join("\\.");
       nl = $("#" + tid).text();
     } catch (err) {
@@ -232,6 +236,9 @@ function krx_itemcount(){
   dataType : "json",
   url : "krx/itemcount"+location, 
   success : function(resp){
+    console.log("here");
+    sleep(3000);
+    console.log(resp);
     $('#krx_search').html(resp);
   }
   });

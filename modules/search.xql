@@ -27,6 +27,8 @@ import module namespace lrh="http://hxwd.org/lib/render-html" at "lib/render-htm
 import module namespace lpm="http://hxwd.org/lib/permissions" at "lib/permissions.xqm";
 import module namespace lsf="http://hxwd.org/lib/syn-func" at "lib/syn-func.xqm";
 
+import module namespace roaster="http://e-editiones.org/roaster";
+
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
@@ -55,6 +57,25 @@ declare variable $src:sortmax := 5000;
 declare variable $src:cutoff := (0.2, 0.3, 0.5);
 declare variable $src:rtype := map{"None" : "None", "chars" : "Matches / Total Characters (MF/ICF)", "segs" : "Matches / Segments (MF/ISF)" };
 
+declare function src:itemcount($request as map(*)){
+    try {
+        let $s-time := util:system-dateTime()
+        let $query as xs:string := $request?parameters?query
+        , $mode as xs:string := $request?parameters?mode
+        , $search-type as xs:string := $request?parameters?search-type
+        , $textid as xs:string := $request?parameters?textid
+        , $filter as xs:string := $request?parameters?filter
+        , $cat := map{}
+        , $hits := src:ngram-query($query, $mode, $search-type, $textid, $cat)
+        return
+        <span>{" 漢リポ: ",
+     <a class="btn badge badge-light chn-font" target="kanripo" title="Search {$query} in Kanseki Repository" style="background-color:paleturquoise" onclick="krx_items()">{$query}:{count($hits?all-hits)}</a>
+     }</span>
+    }
+    catch * {
+        roaster:response(400, map { "error": $err:description })        
+    }
+};
 
 (: search related functions :)
 (:~

@@ -185,208 +185,113 @@
                 "security": [{ "cookieAuth": [] }]
             }
         },
-"/index.html": {
-			"get": {
-				"summary": "Retrieve index page",
-				"description": "Retrieve an HTML page expanded through eXist templating. This is used to load the top-level HTML pages, e.g. `index.html`.",
-				"tags": ["view"],
-				"operationId": "av:html",
-				"x-error-handler": "av:handle-error",
-				"responses": {
-					"200": {
-						"description": "HTML of the page",
-						"content": {
-							"text/html": {
-								"schema": {
-									"type": "string"
-								}
-							}
-						}
-					},
-					"404": {
-						"description": "The document was not found",
-						"content": {
-							"text/html": {
-								"schema": {
-									"type": "string"
-								}
-							}
-						}
-					}
-				}
-	           }			
-},
-"/{file}.html": {
-			"get": {
-				"summary": "Retrieve HTML page",
-				"description": "Retrieve an HTML page expanded through eXist templating. This is used to load the top-level HTML pages, e.g. `index.html`.",
-				"tags": ["view"],
-				"operationId": "av:html",
-				"x-error-handler": "av:handle-error",
-				"parameters": [
-					{
-						"name": "file",
-						"in": "path",
-						"required": true,
-						"schema": {
-							"type": "string"
-						}
-					},
-					{
-						"name": "prec",
-						"in": "query",
-						"description": "Numper of preceding segments.",
-						"schema": {
-							"type": "string",
-							"default": "2"
-						}
-					},
-					{
-						"name": "foll",
-						"in": "query",
-						"description": "Numper of following segments.",
-						"schema": {
-							"type": "string",
-							"default": "30"
-						}
-					},
-					{
-						"name": "first",
-						"in": "query",
-						"description": "Show the first segment.",
-						"schema": {
-							"type": "string",
-							"default": "false"
-						}
-					},
-					{
-						"name": "bychar",
-						"in": "query",
-						"description": "For concept.",
-						"schema": {
-							"type": "integer",
-							"default": 0
-						}
-					},
-					{
-						"name": "char",
-						"in": "query",
-						"description": "Character to show.",
-						"schema": {
-							"type": "string"
-					     }
-					},
-					{
-						"name": "uuid",
-						"in": "query",
-						"description": "ID of the entity to show.",
-						"schema": {
-							"type": "string"
-					     }
-					},
-					{
-						"name": "query",
-						"in": "query",
-						"description": "Search term",
-						"schema": {
-							"type": "string"
-					     }
-					},
-					{
-						"name": "issue",
-						"in": "query",
-						"description": "Type of issue in reviews.",
-						"schema": {
-							"type": "string"
-					     }
-					},
-					{
-						"name": "type",
-						"in": "query",
-						"description": "Type of search.",
-						"schema": {
-							"type": "string"
-					     }
-					},
-					{
-						"name": "search-type",
-						"in": "query",
-						"description": "Type of search.",
-						"schema": {
-							"type": "string",
-							"default": "1"
-					     }
-					},
-					{
-						"name": "mode",
-						"in": "query",
-						"description": "Sort mode for the search results.",
-						"schema": {
-							"type": "string",
-							"enum": ["date", "rating"]
-					     }
-					},
-					{
-						"name": "textid",
-						"in": "query",
-						"description": "Internal ID of the text.",
-						"schema": {
-							"type": "string"
-					     },
-					     "example" : "KR5c0126"
-					},
-					{
-						"name": "location",
-						"in": "query",
-						"description": "Location to display.",
-						"schema": {
-							"type": "string"
-					     },
-					     "example" : "KR5c0126_tls_006-7a.8"
-					},
-					{
-						"name": "start",
-						"in": "query",
-						"description": "First item to display in the search results.",
-						"schema": {
-							"type": "string",
-							"default": "1"
-					     }
-					},
-					{
-						"name": "resno",
-						"in": "query",
-						"description": "Number of items to display in the search results.",
-						"schema": {
-							"type": "string",
-							"default": "50"
-					     }
-					}
-				],
-				"responses": {
-					"200": {
-						"description": "HTML of the page",
-						"content": {
-							"text/html": {
-								"schema": {
-									"type": "string"
-								}
-							}
-						}
-					},
-					"404": {
-						"description": "The document was not found",
-						"content": {
-							"text/html": {
-								"schema": {
-									"type": "string"
-								}
-							}
-						}
-					}
-				}
-			}
-		},
+
+    "/krxitemcount": {
+      "get": {
+        "summary": "Count the hits in a search",
+        "operationId": "src:itemcount",
+        "description": "Returns an HTML fragment with the item count. For compatibility, the same parameters as in search are allowed, all except query will be ignored.",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "query",
+            "schema": {
+              "type": "string",
+              "default": "君子"
+            },
+            "required": true,
+            "description": "The search term to search for."
+          },
+          {
+            "in": "query",
+            "name": "start",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default" : 1
+            },
+            "required": false,
+            "description": "The starting index of items."
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": "50"
+            },
+            "required": false,
+            "description": "The number of items"
+          },
+          {
+            "in": "query",
+            "name": "search-type",
+            "schema": {
+              "type": "string",
+              "enum": ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"],
+              "default": "1"
+            },
+            "required": false,
+            "description": "Search types: \n - `1`: search texts\n - `2`: search dictionary\n - `3`: search translations\n - `4`: search everyting\n - `5` search only one text\n - `6`: search translated lines\n - `7`: search titles\n - `8`: tabulate search results by text\n - `9`: advanced search\n - `10`: search bibliography\n - `11`: search notes\n - `12`: display list of texts"
+          },
+          {
+            "in": "query",
+            "name": "mode",
+            "schema": {
+              "type": "string",
+              "enum": ["date", "date-desc", "rating"],
+              "default": "date"
+            },
+            "required": false,
+            "description": "Sort modes : \n - `date`: order by text date (ascending)\n - `date-desc`: order by text date (descending)\n - `rating`: order by text rating"
+          },
+          {
+            "in": "query",
+            "name": "textid",
+            "schema": {
+              "type": "string",
+              "default" : ""
+            },
+            "required": false,
+            "description": "The textid of the requested text."
+          },
+          {
+            "in": "query",
+            "name": "filter",
+            "schema": {
+              "type": "string",
+              "default" : ""
+            },
+            "required": false,
+            "description": "The filter category to be applied."
+          }
+        ],
+        "responses": {
+          "200": {
+            "headers" : {"encoding" : "contentType: application/xml; charset=utf-8"},
+            "description": "A successful response with HTML content.",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string",
+                  "example": "<span id=\"krx-search\">漢リポ: <a class=\"btn badge badge-light chn-font\" target=\"kanripo\" title=\"Search 君子 in Kanseki Repository\" style=\"background-color:paleturquoise\" href=\"krx/items?query=君子\">君子</a></span>"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request, invalid query parameters."
+          },
+          "500": {
+            "description": "Server error."
+          }
+        }
+      }
+    },
+
+
 		"/api/parameters": {
             "get": {
                 "description": "Parameters in URL and header (GET)",
