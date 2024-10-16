@@ -32,6 +32,9 @@ $(function() {
     if (pbx) {
         display_pastebox(pbx);
     }
+    // only relevant for search pages
+    krx_itemcount();
+    // only relevant for textview pages
     get_swls();
 });            
 
@@ -220,6 +223,33 @@ function page_move(target){
     cancelmove = false;
 
 }
+
+// get search info from krx
+function krx_itemcount(){
+  var location = window.location.search;
+  $.ajax({
+  type : "GET",
+  dataType : "json",
+  url : "krx/itemcount"+location, 
+  success : function(resp){
+    $('#krx_search').html(resp);
+  }
+  });
+};
+
+function krx_items(){
+  var location = window.location.search;
+  $.ajax({
+  type : "GET",
+  dataType : "json",
+  url : "/krx/items"+location, 
+  success : function(resp){
+    $('#show_text_results').html(resp);
+  }
+  });
+};
+
+
 
 function get_swls(){
     $(".swlid").each(function () {

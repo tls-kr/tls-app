@@ -1893,11 +1893,19 @@ declare function tlslib:linkheader($qc) {
      }　</span>
      
      ,
-     <span>{" 漢リポ: ",
+     <span id="krx_search">{" 漢リポ: ",
      <a class="btn badge badge-light chn-font" target="kanripo" title="Search {$qc} in Kanseki Repository (External link)" style="background-color:paleturquoise" href="http://www.kanripo.org/search?query={string-join($qc, '')}">{$qc}</a>
      }</span>
 )
 };
+
+(:
+     ,
+     <span id="krx_search">{" 漢リポ: ",
+     <a class="btn badge badge-light chn-font" target="kanripo" title="Search {string-join($qc, '')} in Kanseki Repository" style="background-color:paleturquoise" onclick="krx_items()">{$qc}</a>
+     }</span>
+
+:)
 
 declare function tlslib:guoxuedashi($c as xs:string){
 <a class="btn badge badge-light chn-font" target="GXDS" title="Search {$c} in 國學大師字典 (External link)" style="background-color:paleturquoise" href="http://www.guoxuedashi.com/so.php?sokeytm={$c}&amp;ka=100">{$c}</a>

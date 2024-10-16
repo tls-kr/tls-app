@@ -1052,8 +1052,8 @@ declare function src:show-group-by-results($map as map(*)){
 };
 
 declare function src:show-text-results($map as map(*)){
-    <div>{$map?p}
-    <div  id="show-text-results">
+    <div id="text_results_top">{$map?p}
+    <div  id="show_text_results">
     <table class="table">
     {for $hx at $c in subsequence($map?hits, $map?start, $map?resno)
       for $h in if ($map?search-type=$src:search-trans) then $hx else try { util:expand($hx)//exist:match/ancestor::tei:seg } catch * {"x"}
