@@ -200,15 +200,16 @@ else if (contains($exist:path, "/$shared/")) then
     </dispatch>
 else 
     (: everything else is passed through :)
-    
+(:    
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
         <cache-control cache="yes"/>
     </dispatch>
+:)
 
 (: This is for the open api, but not ready yet...  :)
 
 
-(:    <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+    <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
         <forward url="{$exist:controller}/modules/api.xql">
             <set-header name="Access-Control-Allow-Origin" value="*"/>
             <set-header name="Access-Control-Allow-Credentials" value="true"/>
@@ -217,4 +218,3 @@ else
             <set-header name="Cache-Control" value="no-cache"/>
         </forward>
     </dispatch>
-:)
