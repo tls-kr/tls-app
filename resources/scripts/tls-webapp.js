@@ -25,8 +25,10 @@ $(function() {
      "plugins" : ["dnd", "contextmenu" ]
      });
     }
-} finally {}    
+    }
+ catch (err) {}
     set_keyup ();
+    try {    
     set_currentline("mark");
     var pbx = window.localStorage.getItem('display-pastebox');
     if (pbx) {
@@ -36,6 +38,8 @@ $(function() {
     krx_itemcount();
     // only relevant for textview pages
     get_swls();
+  }
+  catch (err) {}
 });            
 
 
@@ -236,10 +240,14 @@ function krx_itemcount(){
   dataType : "json",
   url : "krx/itemcount"+location, 
   success : function(resp){
-    console.log("here");
-    sleep(3000);
-    console.log(resp);
-    $('#krx_search').html(resp);
+    $('#krx_search').html(resp.responseText);
+    },
+  error: function(resp){
+    console.log('an error has occurred?!', resp)
+    },
+  complete : function(resp){
+  //  var res = String(resp);
+    $('#krx_search').html(resp.responseText);
   }
   });
 };
@@ -250,10 +258,11 @@ function krx_items(){
   type : "GET",
   dataType : "json",
   url : "/krx/items"+location, 
-  success : function(resp){
-    $('#show_text_results').html(resp);
+  complete : function(resp){
+    $('#show_text_results').html(resp.responseText);
   }
   });
+  $('#show_text_results').html('<p>Searching in the new Kanseki Repository, please wait for a moment...</p>')
 };
 
 
@@ -1037,7 +1046,7 @@ function get_sw(sel, xid, line){
   if (leftword.length > 0) {
   $("#new-att-detail").html('The left word for a word relation has been defined: <br/><span class="font-weight-bold">' + leftword + '/' + lwobj.concept + '</span>. <br/>To continue, please select the right word, or <span title="Reset the left word" class="btn badge badge-primary ml-2" onclick="reset_leftword()">cancel</span>.<br/>Or you can set '+ sel +' as <span title="Alternate name or word" class="btn badge badge-primary ml-2" onclick="alt_name(\''+sel+'\')">alternate name</span> for ' + leftword + '.')    
   } else {
-  $("#new-att-detail").html('<span class="badge badge-primary">Use</span> one of the following syntactic words (SW), create a <span class="mb-2 badge badge-secondary">New SW</span>, add an <span class="font-weight-bold">existing</span> <span class="btn badge badge-primary ml-2" onclick="show_new_concept(\'existing\', \'\')">Concept</span> to the word or create a <span class="btn badge badge-primary ml-2" onclick="show_new_concept(\'new\', \'\')">New Concept</span>. You can also add a word relation: First set the left word with <span class="badge badge-secondary">LW</span>.')
+  $("#new-att-detail").html('<span class="badge badge-primary">Use</span> one of the following syntactic words (SW), create a <span class="mb-2 badge badge-secondary">New SW</span>, add an <span class="font-weight-bold">existing</span> <span class="btn badge badge-primary ml-2" onclick="show_new_concept(\'existing\', \'\')">Concept</span> to the word or create a <span class="btn badge badge-primary ml-2" onclick="show_new_concept(\'new\', \'\')">New Concept</span>.<br/> You can also add a word relation: First set the left word with <span class="badge badge-secondary">LW</span>.')
   }
   $.ajax({
   type : "GET",
@@ -1060,6 +1069,7 @@ function get_sw(sel, xid, line){
     }
   });
   }
+  $('#swl-select').html('<span class="font-weight-bold">Loading the list, please wait a moment.</span>')
 };
 
 // when the domain in the Floater is changed, this will trigger a new search
