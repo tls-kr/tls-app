@@ -128,6 +128,9 @@ switch($section)
 declare function app:jstree-script($node as node(), $model as map(*)){
 if (tu:html-file() = ("char", "word")) then 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/jstree.min.js"/>
+else 
+if (tu:html-file() = ("search")) then
+<script type="text/javascript" src="resources/scripts/krx.js"/>
 else ()
 };
 (:~

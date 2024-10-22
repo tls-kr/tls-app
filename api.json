@@ -185,7 +185,109 @@
                 "security": [{ "cookieAuth": [] }]
             }
         },
-
+  "/krxitems": {
+      "get": {
+        "summary": "Retrieve items with pagination and search",
+        "operationId": "src:items",
+        "description": "Returns a paginated list of items in HTML format. Optionally, a search term can be provided.",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "query",
+            "schema": {
+              "type": "string",
+              "default": "君子"
+            },
+            "required": true,
+            "description": "The search term to search for."
+          },
+          {
+            "in": "query",
+            "name": "start",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default" : 1
+            },
+            "required": true,
+            "description": "The starting index of items."
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": "50"
+            },
+            "required": true,
+            "description": "The number of items"
+          },
+          {
+            "in": "query",
+            "name": "search-type",
+            "schema": {
+              "type": "string",
+              "enum": ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"],
+              "default": "1"
+            },
+            "required": false,
+            "description": "Search types: \n - `1`: search texts\n - `2`: search dictionary\n - `3`: search translations\n - `4`: search everyting\n - `5` search only one text\n - `6`: search translated lines\n - `7`: search titles\n - `8`: tabulate search results by text\n - `9`: advanced search\n - `10`: search bibliography\n - `11`: search notes\n - `12`: display list of texts"
+          },
+          {
+            "in": "query",
+            "name": "mode",
+            "schema": {
+              "type": "string",
+              "enum": ["date", "date-desc", "rating"],
+              "default": "date"
+            },
+            "required": false,
+            "description": "Sort modes : \n - `date`: order by text date (ascending)\n - `date-desc`: order by text date (descending)\n - `rating`: order by text rating"
+          },
+          {
+            "in": "query",
+            "name": "textid",
+            "schema": {
+              "type": "string",
+              "default" : ""
+            },
+            "required": false,
+            "description": "The textid of the requested text."
+          },
+          {
+            "in": "query",
+            "name": "filter",
+            "schema": {
+              "type": "string",
+              "default" : ""
+            },
+            "required": false,
+            "description": "The filter category to be applied."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response with HTML content.",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string",
+                  "example": "<html>\n  <body>\n    <h1>Items</h1>\n    <p>List of items filtered by search term...</p>\n  </body>\n</html>"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request, invalid query parameters."
+          },
+          "500": {
+            "description": "Server error."
+          }
+        }
+      }
+  },
     "/krxitemcount": {
       "get": {
         "summary": "Count the hits in a search",

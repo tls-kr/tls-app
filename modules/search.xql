@@ -69,13 +69,88 @@ declare function src:itemcount($request as map(*)){
         , $hits := src:ngram-query($query, $mode, $search-type, $textid, $cat)
         return
         <span>{" 漢リポ: ",
-     <a class="btn badge badge-light chn-font" target="kanripo" title="Search {$query} in Kanseki Repository" style="background-color:paleturquoise" onclick="krx_items()">{$query}:{count($hits?all-hits)}</a>
+     <a class="btn badge badge-light chn-font" target="kanripo" title="Search {$query} in Kanseki Repository" style="background-color:paleturquoise" onclick="krx_items('1')">{$query}:<span id="krxitemcount">{count($hits?all-hits)}</span></a>
      }</span>
     }
     catch * {
         roaster:response(400, map { "error": $err:description })        
     }
 };
+declare function src:items($request as map(*)){
+    try {
+        let $s-time := util:system-dateTime()
+        let $query as xs:string := $request?parameters?query
+        , $start as xs:int := xs:int($request?parameters?start)
+        , $limit as xs:int := xs:int($request?parameters?limit)
+        , $mode as xs:string := $request?parameters?mode
+        , $search-type as xs:string := $request?parameters?search-type
+        , $textid as xs:string := $request?parameters?textid
+        , $filter as xs:string := $request?parameters?filter
+        , $cat := map{}
+        , $hits := src:ngram-query($query, $mode, $search-type, $textid, $cat)
+        , $map :=     
+        map{"hits" : if ($search-type = $src:ngtype) then $hits?hits else $hits, 
+        "totalhits": if ($search-type = $src:ngtype) then $hits?all-hits else (), 
+       "query" : $query, 
+       "mode" : $mode, 
+       "start" : $start,
+       "search-type" : $search-type, 
+       "textid" : $textid, 
+       "resno" : $limit, 
+       "cat" : $cat, 
+       "s-time": $s-time}
+
+        , $show := src:show-item-results($map)
+        return
+            roaster:response(200, 
+            $show)
+    }
+    catch * {
+        roaster:response(400, map { "error": $err:description })        
+    }
+};
+
+declare function src:show-item-results($map as map(*)){
+    let $q1 := substring($map?query, 1, 1)
+    return
+    <div>
+    <table class="table">
+    {  try{
+    for $hx at $c0 in subsequence($map?hits, $map?start, $map?resno)
+      for $h at $c in try { util:expand($hx)//exist:match/ancestor::tei:seg } catch * {"x"}
+      let $loc :=  $h/@xml:id
+      , $m1 := try { substring(($h/exist:match)[1]/text(), 1, 1) } catch * {"x"}
+      , $cseg := collection($config:tls-texts-root)//tei:seg[@xml:id=$loc]
+      , $head :=  lmd:get-metadata($cseg, "head")
+      , $title := lmd:get-metadata($cseg, "title")
+      , $textid := lmd:get-metadata($cseg, "textid")
+      where  $m1 = $q1
+    return
+      <tr>
+        <td class="chn-font">{$c0 + $map?start -1}({$c})</td>
+        <td><a href="textview.html?location={$loc}&amp;query={$map?query}">{$title, " / ", $head}</a>
+        <span class="btn badge badge-light " onclick="show_dialog('text-info', {{'textid': '{lmd:get-metadata($cseg, 'textid')}'}})" title="Information about this text">
+           <img class="icon "  src="resources/icons/octicons/svg/info.svg"/></span>
+        </td>
+        <td class="chn-font">{ try { 
+        for $sh in $h/preceding-sibling::tei:seg[position()<4] return lrh:proc-seg($sh,map{"punc" : true(), "lpb" : false()}),
+        lrh:proc-seg($h, map{"punc" : true(), "lpb" : false()}),
+        for $sh in $h/following-sibling::tei:seg[position()<4] return lrh:proc-seg($sh, map{"punc" : true(), "lpb" : false()})} catch * {()}}
+        </td>
+        </tr>
+        } catch * {$err:description}
+    }
+    </table>
+    <nav aria-label="Page navigation">
+      <ul class="pagination">
+        <li class="page-item"><a class="page-link {if (xs:int($map?start) = 1) then "disabled" else ()}" href="#" onclick="krx_items('{xs:int($map?start) - xs:int($map?resno)}')">&#171;</a></li>
+        <li class="page-item"><a class="page-link" href="#" onclick="krx_items('{xs:int($map?start) + xs:int($map?resno)}')">&#187;</a></li>
+      </ul>
+     </nav>
+    </div>
+
+};
+
 
 (: search related functions :)
 (:~
@@ -347,22 +422,24 @@ let $st :=  if (string-length($type) > 0) then map:get($config:search-map, $map?
 return
 (if ($map?search-type = $src:search-bib ) then () else
  if ($map?search-type = $src:ngtype) then (
- <h1>Searching in <strong>{if (count(map:keys($map?cat)) > 0) then string-join(for $c in map:keys($map?cat) return lmd:cat-title($map?cat?($c)), " / ") else $st}</strong> for <mark class="chn-font">{$map?query}</mark></h1>
+ <h1 id="search-results-top">Searching in <strong>{if (count(map:keys($map?cat)) > 0) then string-join(for $c in map:keys($map?cat) return lmd:cat-title($map?cat?($c)), " / ") else $st}</strong> for <mark class="chn-font">{$map?query}</mark></h1>
 ) else
  if ($map?search-type = $src:search-trans) then (
- <h1>Searching in <strong>{$st}</strong>{if (string-length($map?textid) > 0) then " for " || lu:get-title($map?textid) else ()} for <mark class="chn-font">{$map?query} </mark> </h1>
+ <h1 id="search-results-top">Searching in <strong>{$st}</strong>{if (string-length($map?textid) > 0) then " for " || lu:get-title($map?textid) else ()} for <mark class="chn-font">{$map?query} </mark> </h1>
 ) else
  if ($map?search-type = $src:textlist) then
    let $count := count($map?hits)
    return 
    if($count >0) then
-    <h1>Catalog  {if (count(map:keys($map?cat)) > 0) then "excerpt for subcategory " || string-join(for $c in map:keys($map?cat) return lmd:cat-title($map?cat?($c)), " / ") else ()}
+    <h1 id="search-results-top">Catalog  {if (count(map:keys($map?cat)) > 0) then "excerpt for subcategory " || string-join(for $c in map:keys($map?cat) return lmd:cat-title($map?cat?($c)), " / ") else ()}
     <span>({$count} items)</span> </h1>
    else src:textlist-doc()
  else
+<div id="search-results-top">
 <h1>Searching in <strong>{$st}</strong> for <mark class="chn-font">{$map?query}</mark></h1>
-,
+
 <p>Time: {util:system-dateTime() - $map?s-time}</p>
+</div>
 )
 };
 
@@ -377,15 +454,17 @@ let $query := $model?query
   , $sortmax := if ($sm or $sm = 0) then $sm else $src:sortmax
 return
 (: if type = 10 do not display here :) 
-if ($model?search-type = ($src:search-bib, $src:textlist)) then () else (
-<h4>Found {$cnt} {if ($cnt = 1) then " match" else " matches"},  <span>showing {$start} to {min(($cnt, $start + $model?resno -1))}</span></h4>
-,if (count($model?hits) < $sortmax or $sortmax < 1) then () else
+if ($model?search-type = ($src:search-bib, $src:textlist)) then () else 
+<div id="search-results-count">
+<h4>Found {$cnt} {if ($cnt = 1) then " match" else " matches"}, <span>showing {$start} to {min(($cnt, $start + $model?resno -1))}</span></h4>
+{if (count($model?hits) < $sortmax or $sortmax < 1) then () else
  <div class="row">
  <div class="col-md-7">
  <p class="bg-warning" onclick="show_dialog('update-setting', {{'setting': 'search-sortmax', 'value': '{$sortmax}', 'hint': 'This is the number of hits beyond which searching will be disabled. The current value is {$sortmax}. Enter 0 to switch off the disabling.'}})">Sorting is disabled, since we have more than {$sortmax} hits. <br/>Select a facet from the display to the left to filter and reduce the number of hits and apply sorting or click here to change the setting.</p>
  </div>
  </div>
-)
+}  
+ </div>
 };
 
 
@@ -775,7 +854,7 @@ declare function src:facets($node as node()*, $model as map(*), $query as xs:str
            case $src:search-tabulated return 
             let $genres := ("tls-dates", "kr-categories")
            return 
-           <div  class="col-md-3">
+           <div class="col-md-3" id="facets-top">
             <h1>Facets</h1>
             <div id="search-settings-details">
             <h3 data-toggle="collapse" data-target="#search-details" class="badge badge-light">Configure...</h3>
@@ -1073,7 +1152,8 @@ declare function src:show-group-by-results($map as map(*)){
 };
 
 declare function src:show-text-results($map as map(*)){
-    <div id="text_results_top">{$map?p}
+    <div id="text_results_top">
+    <div id="text_results_menu">{$map?p}</div>
     <div  id="show_text_results">
     <table class="table">
     {for $hx at $c in subsequence($map?hits, $map?start, $map?resno)
