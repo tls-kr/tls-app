@@ -232,38 +232,6 @@ function page_move(target){
 
 }
 
-// get search info from krx
-function krx_itemcount(){
-  var location = window.location.search;
-  $.ajax({
-  type : "GET",
-  dataType : "json",
-  url : "krx/itemcount"+location, 
-  success : function(resp){
-    $('#krx_search').html(resp.responseText);
-    },
-  error: function(resp){
-    console.log('an error has occurred?!', resp)
-    },
-  complete : function(resp){
-  //  var res = String(resp);
-    $('#krx_search').html(resp.responseText);
-  }
-  });
-};
-
-function krx_items(){
-  var location = window.location.search;
-  $.ajax({
-  type : "GET",
-  dataType : "json",
-  url : "/krx/items"+location, 
-  complete : function(resp){
-    $('#show_text_results').html(resp.responseText);
-  }
-  });
-  $('#show_text_results').html('<p>Searching in the new Kanseki Repository, please wait for a moment...</p>')
-};
 
 
 

@@ -444,7 +444,7 @@ declare function tlslib:navbar-concept($node as node()*, $model as map(*)){
 declare function tlslib:navbar-doc(){
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownDoc" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                Documentation
+                                About
                             </a>
                             <div class="dropdown-menu" aria-labelledby="navbarDropdownDoc">
                                 <a class="dropdown-item" href="documentation.html?section=overview">Overview</a>
