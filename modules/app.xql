@@ -1262,8 +1262,9 @@ function app:navbar-main($node as node()*, $model as map(*), $query as xs:string
 let $context := substring-before(tokenize(request:get-uri(), "/")[last()], ".html")
  ,$testuser := contains(sm:id()//sm:group, ('tls-test', 'guest'))
 (: , $l := log:info($app:log, "Loading; app:navbar-main "):)
-
+let $user := sm:id()//sm:real/sm:username/text()
 return
+if ($user = 'guest') then () else
 <nav class="navbar navbar-expand-sm navbar-light bg-light fixed-top">
                 <span class="banner-icon"><a href="index.html">
                 {app:logo($node, $model)}</a>
