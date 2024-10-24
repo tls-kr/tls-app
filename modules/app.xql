@@ -115,6 +115,8 @@ declare
     %templates:wrap
 function app:doc($node as node(), $model as map(*), $section as xs:string) {
 switch($section)
+ case "statistics" return app:stats()
+ case "main-features" return doc(concat($config:app-root, "/documentation/main-features.html"))
  case "overview" return doc(concat($config:app-root, "/documentation/overview.html"))
  case "team" return doc(concat($config:app-root, "/documentation/team.html"))
  case "manual" return doc(concat($config:app-root, "/documentation/manual.html"))
@@ -1536,33 +1538,77 @@ return
 </ul>
 </div>
 };
+
 declare
     %templates:wrap
-function app:stats($node as node()*, $model as map(*)){
+function app:welcome($node as node()*, $model as map(*)){
 let $user := sm:id()//sm:real/sm:username/text()
   , $r := tlslib:recent-texts-list(10)
-  , $d := for $d1 in collection($config:tls-data-root||"/statistics/")//div[@type="statistics"]
+return
+<div>
+        {if ($user = 'guest') then
+        <div>
+          <h3>Welcome to the HXWD website</h3>
+          <p>This is a website for people interested in reading and translating premodern Chinese texts. </p>
+          <p>It requires some familiarity with Chinese to be useful. </p>
+          <p>While you are welcome to explore the site without signing in, most of the features are only available to registered users. </p>
+          <p>The <a href="https://docs.hxwd.org" target="docs">documentation</a> is still sparse, but you might still find it useful.</p>
+          <p>You can start reading the <b><a href="textview.html?location=KR1h0004">論語 Lunyu (Confucius analects)</a></b> or <br/>
+           have a look at the <b><a href="search.html?search-type=12">list of texts</a></b></p>
+          <p>Search the database:   
+           <form action="search.html" class="form-inline my-2 my-lg-0" method="get">
+                 <input type="hidden" name="textid" value=""/>
+                 <input id="query-inp" name="query" class="form-control w-50 mr-sm-2 chn-font" type="search" placeholder="Search" aria-label="Search" value=""/>
+                 <span class="mr-1">in</span>
+                  <select class="form-control input-sm" name="search-type">
+                   <option selected="true" value="1">texts</option>
+                   <option value="7">titles</option>
+                   <option value="2">dictionary</option>
+                   <option value="3">translations</option>
+                   <option value="4">everything</option>
+                   <option value="10">bibliography</option>
+                 </select>
+                 <button id="search-submit" class="btn btn-outline-success my-2 my-sm-0" type="submit">
+                 <img class="icon" src="resources/icons/open-iconic-master/svg/magnifying-glass.svg"/>
+                 </button>
+                 </form>
+           </p>
+          <p>
+            <b><a href="#"  data-toggle="modal" data-target="#loginDialog">
+              Login</a>
+              </b> or <br/><br/>
+            <a href="signup.html"><b>Apply</b> for membership in the TLS project.</a>
+          </p>
+        </div>
+        else if ($r) then 
+        <div>
+         <h3>Welcome back!</h3>
+         <p>Here are some texts you recently looked at:</p>
+         <ul>{for $l in $r return $l}</ul>
+                <p>
+                    Please acknowledge your use of TLS in your publications.
+                </p>                
+        </div> else ()
+        }
+<p>
+     <span class="text-danger">This website is under development.</span>
+        </p>
+        <p>Problems and suggestions can be reported and discussed also on <a href="https://github.com/tls-kr/tls-app/issues">GitHub Issues</a></p>
+        <hr/>
+</div>
+};
+
+declare function app:stats(){
+let $d := for $d1 in collection($config:tls-data-root||"/statistics/")//div[@type="statistics"]
    let $m := xs:dateTime($d1/@modified)
    order by $m descending
    return $d1
 return
-(: the link for github issues that need discussion
-https://api.github.com/repos/tls-kr/tls-app/issues?labels=need+discussion
-:)
-(<p>
-            <span class="text-danger">This website is under development.</span>
-        </p>,
-        <p>Problems and suggestions can be reported and discussed also on <a href="https://github.com/tls-kr/tls-app/issues">GitHub Issues</a></p>,
-        if ($r) then <div>
-        <h3>Welcome back!</h3>
-        <p>Here are some texts you recently looked at:</p>
-        <ul>{for $l in $r return $l}</ul>
-        </div> else (),
 <div>
 <h3>Overview of the content of the database (last updated: {format-dateTime(xs:dateTime(data($d[1]/@modified)), "[MNn] [D], [Y]", "en", (), ())})</h3>
 {$d[1]//table[@id='stat-overview']}
 </div>        
-)
+
 };
 
 declare

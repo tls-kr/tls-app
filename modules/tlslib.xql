@@ -443,14 +443,13 @@ declare function tlslib:navbar-concept($node as node()*, $model as map(*)){
 
 declare function tlslib:navbar-doc(){
                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownDoc" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                About
-                            </a>
+                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownDoc" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">About</a>
                             <div class="dropdown-menu" aria-labelledby="navbarDropdownDoc">
-                                <a class="dropdown-item" href="documentation.html?section=overview">Overview</a>
+                                <a class="dropdown-item" href="documentation.html?section=main-features">Main features</a>
+                                <a class="dropdown-item" href="documentation.html?section=statistics">Statistics</a>
                                 <a class="dropdown-item" href="documentation.html?section=team">Advisory Board</a>
                                 <div class="dropdown-divider"/>
-                                <a class="dropdown-item" href="documentation.html?section=manual">About this website</a>
+                                <a class="dropdown-item" target="docs" href="https://docs.hxwd.org">Documentation</a>
                                 <a class="dropdown-item" href="documentation.html?section=text-crit">Critically establishing a text</a>
                                 <a class="dropdown-item" href="documentation.html?section=taxonomy">Genre categories</a>
                                 {if ("tls-user" = sm:id()//sm:group) then 

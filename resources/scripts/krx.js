@@ -5,7 +5,7 @@
 
 // the dev server needs a different prefix
 
-const urlprefix =  window.location.host.includes('8443') ? 'krx' : 'krx/'
+const urlprefix =  window.location.host.includes('8443') ? '/exist/apps/krx-app/' : 'krx/'
 
 
 // get search info from krx
@@ -37,6 +37,7 @@ function krx_items(start){
       const regex = /start=\d+/i;
       var location = window.location.search.replace(regex, 'start='+start);
   }
+  console.log(location);
   $.ajax({
   type : "GET",
   dataType : "json",
@@ -52,3 +53,23 @@ function krx_items(start){
   });
   $('#show_text_results').html('<p>Searching in the new Kanseki Repository, please wait for a moment...</p>')
 };
+
+function krx_preview(loc, query){
+  $.ajax({
+  type : "GET",
+  dataType : "json",
+  url : urlprefix + "preview?location="+loc+"&query="+query, 
+  complete : function(resp){
+    var ic = $('#krxitemcount').text();
+    $('#search-results-count').html(resp.responseText);
+    $('#preview-frame').show();
+  }
+  });
+    
+}
+
+function krx_hide(form){
+  $("#"+form).hide();  
+};
+
+
