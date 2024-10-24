@@ -67,6 +67,13 @@ declare variable $config:tls-manifests :=
 
 declare variable $config:ignored-text-ids := ("sgn:review");
 
+declare variable $config:help-base-url := "https://docs.hxwd.org/";
+declare variable $config:help-map := map{
+'search' : '2-User-manual/Search-results',
+'textview' : '2-User-manual/The-textview-page',
+'floater' : '2-User-manual/The-attribution-floater'
+};
+
 declare variable $config:seg-split-tokens := '[，。：．；？﹖！，』」/、]';
 
 declare variable $config:kanji-numberlike-tokens := '[〇一二三四五六七八九十百千萬億兆上中下]';

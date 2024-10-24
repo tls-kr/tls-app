@@ -459,6 +459,15 @@ declare function tlslib:navbar-doc(){
                         </li>
 
 };
+declare function tlslib:navbar-help($model as map(*)){
+   let $context := if (string-length($model?context) > 0) then $model?context else substring-before(tokenize(request:get-uri(), "/")[last()], ".html")
+   let $link := $config:help-map?($context)
+   return
+                        <li class="nav-item">
+                            <a class="nav-link" href="{$config:help-base-url}{$link}"  target="docs" id="navbarDropdownLinks" role="button">Help
+                            <img class="icon"  src="resources/icons/help.svg"/></a>
+                        </li>
+};
 
 declare function tlslib:navbar-link(){
                         <li class="nav-item dropdown">
@@ -841,8 +850,9 @@ declare function tlslib:swl-form-dialog($context as xs:string, $model as map(*))
       
      }</h6>
     <h6 class="text-muted">Line: <span id="swl-line-text-span" class="ml-2 chn-font">Text of line</span>
-    {lrh:format-button-common("toggle_list_display()","Switch to different ordering of Lexical entries.", "octicons/svg/gear.svg")}
-    {lrh:format-button-common("add_rd_here()","Add observation (regarding a text segment) starting on this line", "octicons/svg/comment.svg")}
+     {lrh:format-button-common("window.open('"||$config:help-base-url||$config:help-map?floater||"', 'docs')","Click here to display the manual for this screen", "help.svg")}    
+     {lrh:format-button-common("toggle_list_display()","Switch to different ordering of Lexical entries.", "octicons/svg/gear.svg")}
+     {lrh:format-button-common("add_rd_here()","Add observation (regarding a text segment) starting on this line", "octicons/svg/comment.svg")}
     </h6>
     <!--  {lrh:format-button-common("add_parallel()","Add word relations starting on this line", "對")} -->
     <div class="card-text">
