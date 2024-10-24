@@ -77,9 +77,12 @@ return
 declare function lsf:get-sw-dispatch($word, $context, $domain, $leftword){
 let $pref := lus:get-sf-display-setting()
 return 
- if ($pref = 'by-syn-func') then 
+  switch($pref)
+case 'by-syn-func' return
  lsf:get-sw-by-syn-func($word, $context, $domain, $leftword)
- else
+case 'by-frequency' return
+ lsf:get-sw-by-frequency($word, $context, $domain, $leftword)
+default return
  lsf:get-sw-by-concept($word, $context, $domain, $leftword)
 };
 
@@ -178,7 +181,7 @@ let $map := map{'word' : $word, 'domain' : $domain, 'context' : $context}
 , $edit := sm:id()//sm:groups/sm:group[. = "tls-editor"] and $doann
 , $sum := sum(for $a in $list return $a?12 )
 return
-(<li>Total annotations: <strong>{$sum}</strong></li>,
+(<li><a href="char.html?char={$word}" title="Click here to go to the taxonomy for {$word}"><span id="syn-disp-zi">{$word}</span></a>&#160;Total annotations: <strong>{$sum}</strong></li>,
 for $w in $list
   let $sfs := $w?6
   group by $sfs
@@ -193,8 +196,6 @@ for $w in $list
 return
 <li>{lsf:format-grouping-item($map)}
 <ul class="collapse" id="{$w[1]?7}-synfunc">
-{lsf:display-sense($sfs/ancestor::tei:sense, -1, false())}
-
 {
 for $s at $pos in $w
 let $def := $s?11
@@ -255,6 +256,83 @@ else ()
 </li>
 )
 };
+
+(: This displays the list of words by frequency in the right hand popup pane (floater)  :)
+declare function lsf:get-sw-by-frequency($word as xs:string, $context as xs:string, $domain as xs:string, $leftword as xs:string) as item()* {
+let $map := map{'word' : $word, 'domain' : $domain, 'context' : $context}
+, $list := lsf:get-sw-list($map)
+, $doann := contains($context, 'textview')  (: the page we were called from can annotate :)
+, $user := sm:id()//sm:real/sm:username/text()
+, $edit := sm:id()//sm:groups/sm:group[. = "tls-editor"] and $doann
+, $sum := sum(for $a in $list return $a?12 )
+return
+(<li><a href="char.html?char={$word}" title="Click here to go to the taxonomy for {$word}"><span id="syn-disp-zi">{$word}</span></a>&#160;Total annotations: <strong>{$sum}</strong></li>,
+for $w in $list
+  order by $w?12 descending  
+return
+<ul  id="{$w[1]?7}-synfunc">
+
+{
+for $s at $pos in $w
+let $def := $s?11
+let $sf := ($s?6)[1],
+$sfid := $s?7,
+$sm := $s?8,
+$smid := $s?9,
+$sid := $s?10,
+$sresp := tu:get-member-initials($s?13),
+$clicksf := if ($edit) then concat("get_sf('" , $sid , "', 'syn-func')") else "",
+$clicksm := if ($edit) then concat("get_sf('" , $sid , "', 'sem-feat')") else "",
+$atts := $s?12,
+$wid := $s?3,
+$zi := $s?1,
+$py := $s?2,
+$concept-id := $s?5,
+$cdef := "", 
+$concept := $s?4,
+$esc := replace($concept[1], "'", "\\'")
+order by $atts descending
+return
+<li  class="mb-3 chn-font">
+<span id="{$wid}-{$pos}-py" title="Click here to change pinyin" onclick="assign_guangyun_dialog({{'zi':'{$zi}', 'wid':'{$wid}','py': '{$py}','concept' : '{$esc}', 'concept_id' : '{$concept-id}', 'pos' : '{$pos}'}})">&#160;({string-join($py, "/")})&#160;</span>
+{if ($edit) then
+(<a href="#" onclick="{$clicksf}" title="{lsf:get-sf-def($sfid, 'syn-func')}">{$sf}&#160;</a>)
+else ()
+}
+{
+ if (string-length($sm) > 0) then
+ <a href="#" onclick="{$clicksm}" title="{lsf:get-sf-def($smid, 'sem-feat')}">{$sm}</a>
+ else 
+  if ($edit) then
+  (: allow for newly defining sem-feat :) 
+  <a href="#" onclick="{$clicksm}" title="Click here to add a semantic feature to the SWL">＋</a>
+  else ()
+}
+
+<span class="swedit" id="def-{$sid}" contenteditable="{if ($edit) then 'true' else 'false'}">{ $def}</span>
+
+<strong><a href="concept.html?uuid={$concept-id}#{$wid}" title="{$cdef}" >{$concept}</a></strong> 
+     { if (sm:is-authenticated()) then 
+     (
+     if ($user != 'test' and $doann) then
+     <button class="btn badge badge-primary ml-2" type="button" onclick="save_this_swl('{$sid}')">
+           Use
+      </button> else ()) else ()}
+
+     <button class="btn badge badge-light ml-2" type="button" 
+     data-toggle="collapse" data-target="#{$sid}-resp" onclick="show_att('{$sid}')">
+      <span class="ml-2">SWL: {$atts}</span>
+      </button> 
+      
+      <div id="{$sid}-resp" class="collapse container"></div>
+
+</li>
+} 
+</ul>
+)
+};
+
+
 
 declare function lsf:get-sw($word as xs:string, $context as xs:string, $domain as xs:string, $leftword as xs:string) as item()* {
 let $map := map{'word' : $word, 'domain' : $domain, 'context' : $context}

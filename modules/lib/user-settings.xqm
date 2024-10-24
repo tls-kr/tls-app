@@ -47,14 +47,17 @@ $doc
 )
 };
 
-(:  by-concept , by-syn-func :)
+(:  by-concept , by-syn-func
+2024-10-24:  Make this a cycle through more options
+:)
 declare function lus:toggle-list-display($map as map(*)){
 let $pref := lus:get-sf-display-setting()
+, $choices := ('by-concept','by-syn-func', 'by-frequency')
+, $new :=  let $tmp := index-of($choices, $pref) + 1 
+            return 
+             if ($tmp > count($choices)) then 1 else $tmp
 return 
- if ($pref = 'by-concept') then 
-   lus:set-sf-display-setting('by-syn-func')
- else
-   lus:set-sf-display-setting('by-concept')
+    lus:set-sf-display-setting($choices[$new])
 };
 
 declare function lus:get-sf-display-setting(){

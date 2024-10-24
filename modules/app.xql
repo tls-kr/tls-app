@@ -1264,7 +1264,7 @@ let $context := substring-before(tokenize(request:get-uri(), "/")[last()], ".htm
 (: , $l := log:info($app:log, "Loading; app:navbar-main "):)
 let $user := sm:id()//sm:real/sm:username/text()
 return
-if ($user = 'guest') then () else
+if ($user = 'guest' and $context = ('index', 'signup')) then () else
 <nav class="navbar navbar-expand-sm navbar-light bg-light fixed-top">
                 <span class="banner-icon"><a href="index.html">
                 {app:logo($node, $model)}</a>
@@ -1302,9 +1302,11 @@ if ($user = 'guest') then () else
                         tlslib:tv-header($node, $model)
                         else 
                         (tlslib:navbar-doc(),
-                        tlslib:navbar-link())}
+                        tlslib:navbar-link()
+                        )}
                         {if (not($testuser)) then tlslib:navbar-bookmarks() else ()}
                         {if (lpm:should-display-navbar-review($context, $model)) then tlslib:navbar-review($context) else ()}
+                        {tlslib:navbar-help($model)}
                         </ul>
                     <ul class="navbar-nav">
                     <li class="nav-item">
@@ -1476,7 +1478,7 @@ declare
 function app:footer($node as node()*, $model as map(*)){
             <div class="container">
                 <span id="copyright"/>
-                    <p>Copyright TLS Project 2023, licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/" title="Creative Commons Attribution-ShareAlike 4.0 International License">CC BY SA</a> license (except some translations)</p>
+                    <p>Copyright TLS Project 2024, licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/" title="Creative Commons Attribution-ShareAlike 4.0 International License">CC BY SA</a> license (except some translations)</p>
                 <p>Developed at the <strong>Center for Innovative Informatics of the Humanities, Institute for Research in Humanities, Kyoto University</strong>, with support from the 
                 <strong>Dean for Research, Department of East Asian Studies</strong>, and
                 <strong>Program in East Asian Studies, Princeton University</strong>.</p>    
