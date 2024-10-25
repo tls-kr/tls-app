@@ -32,10 +32,13 @@ function krx_itemcount(){
 
 function krx_items(start){
   if (start === 'undefined'){
-  var location = window.location.search;
-  } else {
-      const regex = /start=\d+/i;
-      var location = window.location.search.replace(regex, 'start='+start);
+  start = 1
+  } 
+      if (window.location.search.includes('start')){
+        const regex = /start=\d+/i;
+        var location = window.location.search.replace(regex, 'start='+start);
+      } else { 
+        var location = window.location.search+"&start="+start
   }
   console.log(location);
   $.ajax({
