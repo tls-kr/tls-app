@@ -1321,7 +1321,7 @@ declare function src:textlist-doc(){
      <p>This page allows you to browse the contents of the TLS and discover what texts are available.  The texts are basically classified into the four traditional bibliographic categories.       However, the Daoist and Buddhist texts, which are usually part of the <i>KR3 子部</i> in the traditional classification are treated as top level categories, for a total of six top level categories, as shown in Table 1.
      </p>
 <table id="orgca5db22" border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
-<caption class="t-above"><span class="table-number">Table 1:</span> The six top categories (as in the <a href="https://kanripo.org">Kanseki Repository</a>)</caption>
+<caption class="t-above"><span class="table-number">Table 1:</span> The six top categories (as in the <a href="https://www.kanripo.org">Kanseki Repository</a>)</caption>
 
 <colgroup>
 <col  class="org-left" />

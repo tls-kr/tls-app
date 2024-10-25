@@ -181,7 +181,7 @@ let $map := map{'word' : $word, 'domain' : $domain, 'context' : $context}
 , $edit := sm:id()//sm:groups/sm:group[. = "tls-editor"] and $doann
 , $sum := sum(for $a in $list return $a?12 )
 return
-(<li><a href="char.html?char={$word}" title="Click here to go to the taxonomy for {$word}"><span id="syn-disp-zi">{$word}</span></a>&#160;Total annotations: <strong>{$sum}</strong></li>,
+(<li><a href="char.html?char={$word}" title="Click here to go to the taxonomy for {$word}"><span id="syn-disp-zi">{$word}</span></a>&#160;Total annotations: <strong>{$sum}</strong> <span class="text-muted">(by syntactic functions)</span></li>,
 for $w in $list
   let $sfs := $w?6
   group by $sfs
@@ -266,7 +266,7 @@ let $map := map{'word' : $word, 'domain' : $domain, 'context' : $context}
 , $edit := sm:id()//sm:groups/sm:group[. = "tls-editor"] and $doann
 , $sum := sum(for $a in $list return $a?12 )
 return
-(<li><a href="char.html?char={$word}" title="Click here to go to the taxonomy for {$word}"><span id="syn-disp-zi">{$word}</span></a>&#160;Total annotations: <strong>{$sum}</strong></li>,
+(<li><a href="char.html?char={$word}" title="Click here to go to the taxonomy for {$word}"><span id="syn-disp-zi">{$word}</span></a>&#160;Total annotations: <strong>{$sum}</strong>&#160;<span class="text-muted">(frequent use first)</span></li>,
 for $w in $list
   order by $w?12 descending  
 return

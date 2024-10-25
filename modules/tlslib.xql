@@ -824,11 +824,11 @@ declare function tlslib:swl-form-dialog($context as xs:string, $model as map(*))
 {if ($context = 'textview') then
  <div class="card-body">
     <h5 class="card-title"><span id="new-att-title">{if (sm:is-authenticated()) then "New Attribution:" else "Existing SW for " }<strong class="ml-2 chn-font"><span id="swl-query-span">Word or char to annotate</span>:</strong></span>
-<span id="domain-lookup-mark">
+    <span id="domain-lookup-mark">
     <span class="badge badge-info ml-2" onclick="wikidata_search('wikidata')" title="Click here for a quick search in WikiData"> WD </span>
     { if (lpm:can-search-similar-lines()) then <span class="badge badge-info ml-2" onclick="wikidata_search('similar')" title="Search for similar lines"> 似 </span> else ()}
     <span>　　Lookup domain:<select id="domain-select" onChange="update_swlist()"><option value="core">Core</option>{for $d in xmldb:get-child-collections($config:tls-data-root||'/domain') return <option value="{$d}">{tlslib:capitalize-first($d)}</option>}</select></span>
-    {if (1 = 1) then
+    {if (1 = 0) then
     (: do not display for the time being  :) 
     <span>　　<span class="btn badge badge-light" type="button" data-toggle="collapse" data-target="#mark-buttons" >Mark</span>
 
@@ -1929,10 +1929,10 @@ declare function tlslib:guguolin($qc){
     for $c at $pos in $qc return
 <form class="btn badge badge-light chn-font"  name="guguolin" target="dict" action="http://www.kaom.net/hemoye/z_hmy_zidian8.php" method="post" title="訓詁工具書查詢 {$c} (External link)" >
   {if ($pos = 1) then "字書：" else ()}
-  <input type="hidden" name="word" id="word" value="{$c}="/>
-  <input type="hidden" name="mode" id="mode" value="word" />
-  <input type="hidden" name="bianti" id="bianti" value="no"/>
-  <input type="hidden" name="page" id="page" value="no"/>
+  <input type="hidden" name="word"  value="{$c}="/>
+  <input type="hidden" name="mode"  value="word" />
+  <input type="hidden" name="bianti"  value="no"/>
+  <input type="hidden" name="page"  value="no"/>
   <button class="btn badge badge-light" type="submit" style="background-color:paleturquoise">{$c}</button>
 </form>
 };
