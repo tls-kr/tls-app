@@ -49,15 +49,28 @@ declare function lpm:can-write-debug-log(){
 };
 
 declare function lpm:can-use-ai(){
- "dba" = sm:id()//sm:group
+ "dbax" = sm:id()//sm:group
 };
 
 declare function lpm:can-delete-applications(){
  ("dba") = sm:id()//sm:group
 };
 
-declare function lpm:can-delete-translations(){
- ("dba", "tls-editor") = sm:id()//sm:group
+declare function lpm:is-owner($node){
+ let $user := sm:id()//sm:real/sm:username/text()
+ return
+     $user = sm:get-permissions(base-uri($node))/sm:permission/@owner
+};
+
+declare function lpm:can-translate(){
+ ("tls-user") = sm:id()//sm:group
+};
+
+(: this includes permissions to edit the translation info, while the translation itself can be edited by members of the tls-user group  :)
+declare function lpm:can-delete-translations($trid){
+ let $trc := collection($config:tls-translation-root)//tei:TEI[@xml:id=$trid]
+ return
+  lpm:is-owner($trc) or (sm:id()//sm:group/text() = ("tls-editor", "tls-admin"))
 };
 
 declare function lpm:can-search-similar-lines(){
