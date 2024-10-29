@@ -225,7 +225,7 @@ else ()
 }
 {
  if (string-length($sm) > 0) then
- <a href="#" onclick="{$clicksm}" title="{lsf:get-sf-def($smid, 'sem-feat')}">{$sm}</a>
+ <em title="{lsf:get-sf-def($smid, 'sem-feat')}">{$sm}</em>
  else 
   if ($edit) then
   (: allow for newly defining sem-feat :) 
@@ -297,11 +297,12 @@ return
 <span id="{$wid}-{$pos}-py" title="Click here to change pinyin" onclick="assign_guangyun_dialog({{'zi':'{$zi}', 'wid':'{$wid}','py': '{$py}','concept' : '{$esc}', 'concept_id' : '{$concept-id}', 'pos' : '{$pos}'}})">&#160;({string-join($py, "/")})&#160;</span>
 {if ($edit) then
 (<a href="#" onclick="{$clicksf}" title="{lsf:get-sf-def($sfid, 'syn-func')}">{$sf}&#160;</a>)
-else ()
+else 
+(<span class="font-weight-bold" title="{lsf:get-sf-def($sfid, 'syn-func')}">{$sf}</span>)
 }
 {
  if (string-length($sm) > 0) then
- <a href="#" onclick="{$clicksm}" title="{lsf:get-sf-def($smid, 'sem-feat')}">{$sm}</a>
+ <em title="{lsf:get-sf-def($smid, 'sem-feat')}">{$sm}</em>
  else 
   if ($edit) then
   (: allow for newly defining sem-feat :) 

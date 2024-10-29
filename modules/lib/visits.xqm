@@ -25,7 +25,7 @@ declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare function lvs:record-visit($targetseg as node()){
 let $user := sm:id()//sm:real/sm:username/text(),
 $groups := sm:get-user-groups($user),
-$doc := if ("guest" = $groups) then () else lvs:get-visit-file(),
+$doc := if ( ("guest", "tls-test") = $groups) then () else lvs:get-visit-file(),
 $date := current-dateTime()
 , $textid := lmd:get-metadata($targetseg, "textid")
 , $ex := $doc//tei:item[@xml:id=$textid]
@@ -75,14 +75,14 @@ declare function lvs:get-visit-file(){
 
 declare function lvs:visit-time($textid as xs:string){
   let $user := sm:id()//sm:real/sm:username/text(),
-  $doc := if ($user="guest") then () else doc($config:tls-user-root|| $user || "/recent.xml")
+  $doc := if ($user=("guest", "test")) then () else doc($config:tls-user-root|| $user || "/recent.xml")
   return
   $doc//tei:list[@type="visits"]/tei:item[@xml:id=$textid]/@modified
 };
 
 declare function lvs:recent-visits(){
   let $user := sm:id()//sm:real/sm:username/text(),
-  $doc := if ($user="guest") then () else doc($config:tls-user-root|| $user || "/recent.xml")
+  $doc := if ($user=("guest")) then () else doc($config:tls-user-root|| $user || "/recent.xml")
   return
   $doc//tei:list[@type="visits"]/tei:item
 };
