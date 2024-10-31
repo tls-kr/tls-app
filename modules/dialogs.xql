@@ -111,7 +111,10 @@ return
 
 declare function local:tr-info-dialog($name, $options){
 let $body := ltr:transinfo($options?trid)
-, $buttons := (if (lpm:can-delete-translations($options?trid)) then
+, $isresearchnote := not(contains($options?trid, "-"))
+, $title :=  if ($isresearchnote) then "Research Note" else "Information about translation"
+, $buttons := if ($isresearchnote) then () else  
+              (if (lpm:can-delete-translations($options?trid)) then
                  <button type="button" class="btn btn-primary" onclick="display_tr_file_dialog('{$name}','{$options?slot}', '{$options?trid}')">Edit Translation Data</button> else (),
                if (lpm:can-delete-translations($options?trid)) then
 <button type="button" class="btn btn-danger" onclick="delete_tr_file('{$name}','{$options?slot}', '{$options?trid}')">Delete translation</button>
@@ -123,7 +126,7 @@ return
         "body": $body, 
         "buttons" : $buttons, 
         "options" : $options,
-        "title":  "Information about translation"
+        "title": $title 
       })           
 };
 

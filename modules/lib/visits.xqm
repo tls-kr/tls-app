@@ -39,6 +39,10 @@ else
   else ()
 };
 
+(: 2024-10-31 TODO :)
+declare function lvs:record-visit-remote($sid as xs:string){
+};
+
 declare function lvs:get-visit-file(){
   let $user := sm:id()//sm:real/sm:username/text(),
   $doc-path := $config:tls-user-root|| $user || "/recent.xml",

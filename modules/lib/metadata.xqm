@@ -14,6 +14,22 @@ import module namespace config="http://hxwd.org/config" at "../config.xqm";
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 
+(: for remote texts, we need at least a metadata record :)
+
+declare function lmd:get-metadata-from-catalog($line-id, $field){
+  let $location := tokenize($line-id, '_')
+  , $textid := $location[1]
+  , $edition := $location[2]
+  let $entry := switch ($edition) 
+                 case "CBETA" return collection($config:tls-texts-meta)//entry[@cbid=$textid]
+                 default return collection($config:tls-texts-meta)//entry[@krid=$textid]
+  return
+  switch ($field)
+    case "title" return
+      string-join(($entry//title | $entry/title), " - ")
+    default return "No title"
+};
+
 (: for a $hit, we find the value associated with the requested genre :)
  
 declare function lmd:get-metadata($hit, $field){
@@ -22,10 +38,12 @@ declare function lmd:get-metadata($hit, $field){
         switch ($field)
             case "textid" return if ($hit/@textid) then ($hit/@textid) else $hit/ancestor-or-self::tei:TEI/@xml:id
             case "title" return 
-                string-join((
+                let $t := string-join((
                     $header//tei:msDesc/tei:head, $header//tei:titleStmt/tei:title[@type = 'main'],
                     $header//tei:titleStmt/tei:title
                 ), " - ") => normalize-space()
+                return
+                if ($t) then $t else ()
             case "date-node" return
                   ($header//tei:profileDesc/tei:creation)[1]/tei:date
             case "date" return

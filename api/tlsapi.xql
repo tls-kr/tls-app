@@ -61,20 +61,18 @@ concat($callback, "([", string-join($payload, ","), "]);")
  called from the save-swl-* functions.
 :)
 
-declare function tlsapi:make-attribution($line-id as xs:string, $sense-id as xs:string, 
+declare function tlsapi:make-attribution($line-id as xs:string, $line as xs:string, $sense-id as xs:string, 
  $user as xs:string, $currentword as xs:string, $pos as xs:string) as element(){
-let $line := collection($config:tls-texts-root)//tei:seg[@xml:id=$line-id],
-$textid := tokenize($line-id, "_")[1],
+let $textid := tokenize($line-id, "_")[1],
 (: we generally use the translation from slot1 :)
 $trm := ltr:get-translations($textid),
 $trid := lrh:get-content-id($textid, 'slot1', $trm),
 $tr := $trm($trid)[1]//tei:seg[@corresp='#' || $line-id],
-(:$tr-resp := $trm($trid)[1]//tei:fileDesc//tei:editor[@role='translator']/text(),:)
-(:$title-en := $tr/ancestor::tei:TEI/tei:teiHeader/tei:fileDesc/tei:titleStmt/tei:title/text(),:)
-(:$title := $line/ancestor::tei:TEI/tei:teiHeader/tei:fileDesc/tei:titleStmt/tei:title/text(),:)
 $tr-resp := lmd:get-metadata($tr, "resp"),
 $title-en := lmd:get-metadata($tr, "title"),
-$title := lmd:get-metadata($line, "title"),
+(: $line := collection($config:tls-texts-root)//tei:seg[@xml:id=$line-id],:)
+(: 2024-10-31 might have to rethink this: we are now getting all titles from the catalog, not from the text header. :)
+$title := lmd:get-metadata-from-catalog($line-id, "title"),
 $sense := collection($config:tls-data-root)//tei:sense[@xml:id=$sense-id],
 $concept := $sense/ancestor::tei:div/tei:head/text(),
 $concept-id := $sense/ancestor::tei:div/@xml:id, 
@@ -88,7 +86,7 @@ $newswl :=
 <tls:ann xmlns="http://www.tei-c.org/ns/1.0" concept="{$concept}" concept-id="{$concept-id}" xml:id="{$uuid}">
 <link target="#{$line-id} #{$sense-id}"/>
 <tls:text>
-<tls:srcline title="{$title}" target="#{$line-id}" pos="{$pos}">{$line/text()}</tls:srcline>
+<tls:srcline title="{$title}" target="#{$line-id}" pos="{$pos}">{$line}</tls:srcline>
 <tls:line title="{$title-en}" transl-id="{$trid}" src="{$tr-resp}">{$tr/text()}</tls:line>
 </tls:text>
 <form  corresp="{$sense/parent::tei:entry/tei:form/@corresp}" orig="{$currentword}">
@@ -110,7 +108,7 @@ $newswl
 };
 
 (: instead of using a uuid-named file hierarchy, this version uses one file per text to store the annotations :)
-declare function tlsapi:save-swl-to-docs($line-id as xs:string, $sense-id as xs:string, 
+declare function tlsapi:save-swl-to-docs($line-id as xs:string, $line as xs:string, $sense-id as xs:string, 
 $user as xs:string, $currentword as xs:string, $pos as xs:string) {
 let $targetcoll := if (xmldb:collection-available($config:tls-data-root || "/notes/doc")) then $config:tls-data-root || "/notes/doc" else 
     concat($config:tls-data-root || "/notes", xmldb:create-collection($config:tls-data-root || "/notes", "doc"))
@@ -121,7 +119,7 @@ if ($seg/@state='locked') then "Line is locked.  Please add punctuation before a
 else (
 let $docname :=  $textid || "-ann.xml"
  ,$cat := try{lmd:checkCat($seg,  "swl")} catch * {()} 
-,$newswl:=tlsapi:make-attribution($line-id, $sense-id, $user, $currentword, $pos)
+,$newswl:=tlsapi:make-attribution($line-id, $line, $sense-id, $user, $currentword, $pos)
 ,$targetdoc :=   if (doc-available(concat($targetcoll,"/",$docname))) then
                     doc(concat($targetcoll,"/", $docname)) else 
                     (
@@ -187,11 +185,11 @@ let $targetnode := collection($config:tls-texts-root)//tei:seg[@xml:id=$line-id]
 return ()
 };
 
-declare function tlsapi:save-swl-with-path($line-id as xs:string, $sense-id as xs:string, 
+declare function tlsapi:save-swl-with-path($line-id as xs:string, $line as xs:string, $sense-id as xs:string, 
 $notes-path as xs:string, $user as xs:string, $currentword as xs:string, $pos as xs:string ){
 
 if (($line-id != "xx") and ($sense-id != "xx")) then
-let $newswl:=tlsapi:make-attribution($line-id, $sense-id, $user, $currentword, $pos)
+let $newswl:=tlsapi:make-attribution($line-id, $line, $sense-id, $user, $currentword, $pos)
 ,$uuid := $newswl/tls:ann/@xml:id
 ,$path := concat($notes-path, substring($uuid, 6, 2))
 return (
@@ -215,13 +213,13 @@ else
 };
 
 
-declare function tlsapi:save-swl($line-id as xs:string, $sense-id as xs:string, $pos as xs:string){
+declare function tlsapi:save-swl($line-id as xs:string, $line as xs:string, $sense-id as xs:string, $pos as xs:string){
 let $notes-path := concat($config:tls-data-root, "/notes/new/")
 let $user := sm:id()//sm:real/sm:username/text()
 let $currentword := ""
 return
 (:tlsapi:save-swl-with-path($line-id, $sense-id, $notes-path, $user, $currentword):)
-tlsapi:save-swl-to-docs($line-id, $sense-id, $user, $currentword, $pos)
+tlsapi:save-swl-to-docs($line-id, $line, $sense-id, $user, $currentword, $pos)
 
 };
 
@@ -821,6 +819,7 @@ declare function tlsapi:goto-translation-seg($map as map(*)){
 
 (:~
 : Dialog for new translation stub
+: $trid in the case of updating the translation metadata
 :)
 
 declare function tlsapi:new-translation($slot as xs:string, $loc as xs:string?, $trid as xs:string?){
@@ -833,7 +832,7 @@ let $tru := collection($config:tls-user-root|| $user || "/translations")/tei:TEI
 , $ref := substring($trfile//tei:ref/@target, 2)
 , $segcount := count($trfile//tei:seg)
 let $textid := tokenize($loc, "_")[1],
-$title := lu:get-title($textid),
+$title := lmd:get-metadata-from-catalog($loc, "title"),
 $tr := ltr:get-translations($textid)
 , $type := $trfile/@type
 , $trlg := if ($trfile//tei:sourceDesc//tei:lang/@xml:lang) then data($trfile//tei:sourceDesc//tei:lang/@xml:lang) else "en"
@@ -1209,60 +1208,6 @@ return
 ltp:chunkcol-left($dseg, $model, $tr, $slot1-id, $slot2-id, $map?lineid, xs:int($map?cnt)))
 };
 
-
-declare function tlsapi:new-anonymous-translation(){
-()
-(:
-(: what follows is irrelevant for actively created translations, keep it here for those who are created by just writing the translation :) 
-,$trcoll := concat($config:tls-translation-root, "/", $lang)
-,$trcollavailable := if ($transl) then 1 else xmldb:collection-available($trcoll) or 
-  (xmldb:create-collection($config:tls-translation-root, $lang),
-  sm:chown(xs:anyURI($trcoll), "tls"),
-  sm:chgrp(xs:anyURI($trcoll), "tls-user"),
-  sm:chmod(xs:anyURI($trcoll), "rwxrwxr--")
-  )
-,$docpath := if ($transl) then document-uri($transl) else concat($trcoll, "/", $txtid, "-", $lang, ".xml")
-,$title := collection($config:tls-texts-root)//tei:TEI[@xml:id=$txtid]//tei:titleStmt/tei:title/text()
-,$seg := <seg xmlns="http://www.tei-c.org/ns/1.0" corresp="#{$id}" xml:lang="{$lang}" resp="#{$user}" modified="{current-dateTime()}">{$tr-to-save}</seg>
-let $doc :=
-  if (not (doc-available($docpath))) then
-   (: TODO make sure that ID is unique across all translations :)
-   let $uid := util:uuid()
-   (: maybe like this? :)
-   ,$newid := $txtid || "-" || $lang || "-tls" || tokenize($uid, "-")[2]
-   return
-   doc(xmldb:store($trcoll, $newid || ".xml", 
-   <TEI xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$newid}">
-  <teiHeader>
-      <fileDesc>
-         <titleStmt>
-            <title>Translation of {$title} into ({$lang})</title>
-            <editor role="translator">TLS Project</editor>
-         </titleStmt>
-         <publicationStmt>
-            <p>published electronically as part of the TLS project at https://hxwd.org</p>
-         </publicationStmt>
-         <sourceDesc>
-            <p>Created by members of the TLS project</p>
-            <p>Translation of <bibl corresp="#{$txtid}">
-                  <title xml:lang="och">{$title}</title>
-               </bibl> into <lang xml:lang="en">English</lang>.</p>
-         </sourceDesc>
-      </fileDesc>
-     <profileDesc>
-        <creation>Initially created: <date>{current-dateTime()}</date> by {$user}</creation>
-     </profileDesc>
-  </teiHeader>
-  <text>
-      <body>
-      <div><head>Translated parts</head><p xml:id="{$txtid}-start"></p></div>
-      </body>
-  </text>
-</TEI>)) 
- else doc($docpath)
-
-:)
-};
 
 (: The bookmark will also serve as template for intertextual links and anthology, which is why we also save word and line :)
  

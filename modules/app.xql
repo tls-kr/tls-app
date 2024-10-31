@@ -39,11 +39,28 @@ import module namespace lmd="http://hxwd.org/lib/metadata" at "lib/metadata.xqm"
 import module namespace lus="http://hxwd.org/lib/user-settings" at "user-settings.xqm";
 import module namespace lrh="http://hxwd.org/lib/render-html" at "lib/render-html.xqm";
 import module namespace lpm="http://hxwd.org/lib/permissions" at "lib/permissions.xqm";
+import module namespace ltp="http://hxwd.org/lib/textpanel" at "lib/textpanel.xqm";
+import module namespace http="http://expath.org/ns/http-client";
 
 
 declare variable $app:log := $config:tls-log-collection || "/tlslib";
 
 declare variable $app:SESSION := "tls:results";
+
+
+declare function app:get-remote-segs($map as map(*)){
+let $path:= "?location="||$map?location||"&amp;prec="||$map?prec||"&amp;foll="||$map?foll||"&amp;type=skeleton"
+, $krp := "https://hxwd.org/krx/preview"
+let $res :=  
+            http:send-request(<http:request http-version="1.1" href="{xs:anyURI($krp||$path)}" method="get">
+                                <http:header name="Connection" value="close"/>
+                              </http:request>)                              
+return  
+if ($res[1]/@status="200") then  $res[2]
+(:($res[2] => util:base64-decode() => parse-json() ):)
+else
+<error>{$res}</error>
+};
 
 (: start here :)
 (:~
@@ -378,7 +395,9 @@ function app:tv-data($node as node()*, $model as map(*), $location as xs:string?
    session:create(),
     let $textid := tlslib:get-textid($location)
     , $title :=  lu:get-title($textid)
-    , $seg := tlslib:get-first-seg($location, $mode, $first)
+    , $seg := if ($mode = 'remote') then 
+     app:get-remote-segs(map{'location' : $location, 'prec': $prec, 'foll': $foll, 'first': $first})
+    else tlslib:get-first-seg($location, $mode, $first)
     return
     map { "textid" : $textid, "title" : $title, "seg": $seg}
 };
@@ -400,20 +419,19 @@ declare
     %templates:default("first", "false")     
 function app:textview($node as node()*, $model as map(*), $location as xs:string?, $mode as xs:string?, $prec as xs:int?, $foll as xs:int?, $first as xs:string)
 {
-    let $dataroot := $config:tls-data-root
-    , $user := sm:id()//sm:real/sm:username/text()
-    , $usercoll := collection($config:tls-user-root || "/" || $user)
-    , $message := (for $k in map:keys($model) return $k) => string-join(",")
-(:    , $dispseg := tlslib:get-first-seg($location, $mode, $first):)
-    , $dispseg := $model("seg")
+(:     let $message := (for $k in map:keys($model) return $k) => string-join(","):)
+  let $dispseg := $model("seg")
 (:    , $l := log:info($app:log, "Loading; $model keys: " || $message):)
 let $start-time := util:system-time()
 let $query-needing-measurement := (: insert query or function call here :)
 
     (session:create(),
-    
-    if (string-length($location) > 0) then 
-      try {tlslib:display-chunk($dispseg, $model, $prec, $foll)} catch * {"An error occurred, can't display text. Code:" || count($dispseg) || " (dispseg)" }      
+    if ($mode = 'remote') then
+    ltp:prepare-chunk($dispseg, map:merge(($model, map{'prec': $prec, 'foll': $foll})))
+    else
+     if (string-length($location) > 0) then 
+     tlslib:display-chunk($dispseg, $model, $prec, $foll)
+(:      try {tlslib:display-chunk($dispseg, $model, $prec, $foll)} catch * {"An error occurred, can't display text. Code:" || count($dispseg) || " (dispseg)" }      :)
     else 
     app:textlist()
     

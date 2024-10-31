@@ -15,6 +15,7 @@ import module namespace tu="http://hxwd.org/utils" at "../tlsutils.xql";
 import module namespace config="http://hxwd.org/config" at "../config.xqm";
 import module namespace lmd="http://hxwd.org/lib/metadata" at "metadata.xqm";
 import module namespace lu="http://hxwd.org/lib/utils" at "utils.xqm";
+import module namespace ltr="http://hxwd.org/lib/translation" at "translation.xqm";
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace mf="http://kanripo.org/ns/KRX/Manifest/1.0";
@@ -62,13 +63,21 @@ declare function lpm:is-owner($node){
      $user = sm:get-permissions(base-uri($node))/sm:permission/@owner
 };
 
+declare function lpm:tls-user-can-see($node){
+(substring(sm:get-permissions(base-uri($node))/sm:permission/@mode, 4, 1) = 'r' and sm:id()//sm:group/text() = ('tls-user'))
+};
+
+declare function lpm:all-can-see($node){
+(substring(sm:get-permissions(base-uri($node))/sm:permission/@mode, 7, 1) = 'r' )
+};
+
 declare function lpm:can-translate(){
  ("tls-user") = sm:id()//sm:group
 };
 
 (: this includes permissions to edit the translation info, while the translation itself can be edited by members of the tls-user group  :)
 declare function lpm:can-delete-translations($trid){
- let $trc := collection($config:tls-translation-root)//tei:TEI[@xml:id=$trid]
+ let $trc := ltr:get-translation-file($trid)
  return
   lpm:is-owner($trc) or (sm:id()//sm:group/text() = ("tls-editor", "tls-admin"))
 };

@@ -37,9 +37,9 @@ $(function() {
     // only relevant for search pages
     krx_itemcount();
     // only relevant for textview pages
-    get_swls();
   }
   catch (err) {}
+  get_swls();
 });            
 
 
@@ -713,10 +713,11 @@ function show_swls_for_line(line_id){
 // this saves the SW for a line, called from save_this_swl (from the "Use" button)
 
 function save_swl_line(sense_id, line_id, pos){
-  $.ajax({
+var line = $( "#swl-line-text-span" ).text();
+$.ajax({
   type : "PUT",
   dataType : "html",
-  url : "api/save_swl.xql?line="+line_id+"&sense="+sense_id+"&pos="+pos,
+  url : "api/save_swl.xql?line-id="+line_id+"&line="+line+"&sense="+sense_id+"&pos="+pos,
   success : function(resp){
   hide_swl_form("#editSWLDialog");
   console.log("Hiding form");
