@@ -16,7 +16,7 @@ declare namespace tei= "http://www.tei-c.org/ns/1.0";
 
 (: for remote texts, we need at least a metadata record :)
 
-declare function lmd:get-metadata-from-catalog($line-id, $field){
+declare function lmd:get-metadata-from-catalog($line-id as xs:string, $field as xs:string){
   let $location := tokenize($line-id, '_')
   , $textid := $location[1]
   , $edition := $location[2]
@@ -26,13 +26,13 @@ declare function lmd:get-metadata-from-catalog($line-id, $field){
   return
   switch ($field)
     case "title" return
-      string-join(($entry//title | $entry/title), " - ")
+      string-join(($entry//title | $entry/title), " - ")||""
     default return "No title"
 };
 
 (: for a $hit, we find the value associated with the requested genre :)
  
-declare function lmd:get-metadata($hit, $field){
+declare function lmd:get-metadata($hit , $field as xs:string){
     let $header := try {$hit/ancestor-or-self::tei:TEI/tei:teiHeader} catch * {()}
     return
         switch ($field)

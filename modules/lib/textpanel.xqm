@@ -192,8 +192,31 @@ declare function ltp:prepare-chunk($chunk as node()*, $map as map(*)){
       {lsd:swl-form-dialog('textview', $map)}
     </div>
     </div>,
-    (: insert page navigation here :)
-    wd:quick-search-form('title')
+      <div class="row">
+      <div class="col-sm-2">
+      {if ($dseg) then  
+       <button type="button" class="btn" onclick="page_move('{$chunk/div/nav/@first}')" title="Go to the first page"><span style="color: blue">First</span></button>
+       else ()}
+       </div>
+      <div class="col-sm-2">
+      {if (1) then  
+       <button type="button" class="btn" onclick="page_move('{$chunk/div/nav/@prev}')" title="Go to the previous page"><span style="color: blue">Previous</span></button>
+       else ()}
+       </div>
+       <div class="col-sm-2">
+       {
+       if (1) then
+       <button id="nextpagebutton" type="button" class="btn" onclick="page_move('{$chunk/div/nav/@next}')" title="Go to the next page"><span style="color: blue">Next</span></button>
+       else ()}
+       </div> 
+       <div class="col-sm-2">
+       {
+       if (1) then
+       <button type="button" class="btn" onclick="page_move('{$chunk/div/nav/@last}')" title="Go to the last page"><span style="color: blue">Last</span></button>
+       else ()}
+       </div> 
+        {wd:quick-search-form('title')}
+      </div>
 )
 
 };
@@ -349,7 +372,7 @@ return
 <div class="col-sm-2"></div>
 </div>
 };
-
+(: TODO: adopt for remote texts! the pb is now already in the html :)
 declare function ltp:zero-panel-row($map){
 <div class="col .no-gutters">
 { (

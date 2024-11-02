@@ -32,6 +32,8 @@ import module namespace lpm="http://hxwd.org/lib/permissions" at "../modules/lib
 import module namespace ltp="http://hxwd.org/lib/textpanel" at "../modules/lib/textpanel.xqm";
 import module namespace lsf="http://hxwd.org/lib/syn-func" at "../modules/lib/syn-func.xqm";
 
+import module namespace remote="http://hxwd.org/remote" at "../modules/lib/remote.xqm";
+
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
@@ -86,7 +88,7 @@ $newswl :=
 <tls:ann xmlns="http://www.tei-c.org/ns/1.0" concept="{$concept}" concept-id="{$concept-id}" xml:id="{$uuid}">
 <link target="#{$line-id} #{$sense-id}"/>
 <tls:text>
-<tls:srcline title="{$title}" target="#{$line-id}" pos="{$pos}">{$line}</tls:srcline>
+<tls:srcline title="{lmd:get-metadata-from-catalog($line-id, 'title')}" target="#{$line-id}" pos="{$pos}">{$line}</tls:srcline>
 <tls:line title="{$title-en}" transl-id="{$trid}" src="{$tr-resp}">{$tr/text()}</tls:line>
 </tls:text>
 <form  corresp="{$sense/parent::tei:entry/tei:form/@corresp}" orig="{$currentword}">
@@ -1277,10 +1279,11 @@ return
 };
 
 declare function tlsapi:get-facs-for-page($map as map(*)){
+ let $seg := collection($config:tls-texts-root)//tei:seg[@xml:id=$map?segid]
+ return if (not($seg)) then (remote:get-facs-for-page($map)) else
  let $slot := $map?slot
- ,$textid := tokenize($map?location, "_")[1]
+ ,$textid := tokenize($map?segid, "_")[1]
  ,$ed := $map?pbed
- ,$seg := collection($config:tls-texts-root)//tei:seg[@xml:id=$map?segid]
  ,$pb := ($seg//tei:pb[@ed=$ed] | ($seg/preceding::tei:pb[@ed=$ed])[last()])[1]
 (: ,$fac := $pb/@facs:)
  ,$img := $config:tls-facs-root || $config:ed-img-map?($ed) || $pb/@facs
