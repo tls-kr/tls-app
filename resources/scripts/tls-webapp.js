@@ -400,6 +400,8 @@ function get_canvas_for_page(slot, myid){
 }; 
  
 function get_facs_for_page(slot, pbfacs, pbed, segid){
+//  var location = $('#chunkcol-left').children('div').eq(0).children('div').eq(0).attr('id');
+  var location = $('.zh')[0].attributes['id'].nodeValue;
   var dw = document.documentElement.clientWidth;
   var dh = document.documentElement.clientHeight;
   var new_height = $('#chunkcol-left').outerHeight();
@@ -410,7 +412,7 @@ function get_facs_for_page(slot, pbfacs, pbed, segid){
    $.ajax({
    type : "GET",
    dataType : "html",
-   url : "api/responder.xql?func=get-facs-for-page&pb="+pbfacs+"&segid="+segid+"&pbed="+pbed+"&slot="+slot+"&left="+new_left+"&width="+new_width+"&height="+new_height, 
+   url : "api/responder.xql?func=get-facs-for-page&pb="+pbfacs+"&segid="+location+"&pbed="+pbed+"&slot="+slot+"&left="+new_left+"&width="+new_width+"&height="+new_height, 
    success : function(resp){
    // xxx###
    $('#fac'+slot).html(resp);
@@ -427,7 +429,7 @@ function get_facs_for_page(slot, pbfacs, pbed, segid){
 
 function move_to_page(slot){
     page = $('#current-page-'+slot).html()
-    var location = $('#chunkcol-left').children('div').eq(0).children('div').eq(1).attr('id');
+    var location = $('.zh')[0].attributes['id'].nodeValue;
     $.get("api/responder.xql?func=move-to-page&page="+page+"&location="+location,
     function(resp){
 //      console.log(resp)

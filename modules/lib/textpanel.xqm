@@ -385,7 +385,12 @@ else (),
   let $node := ($map?seg//tei:lb)[1]
   , $n := if (contains($node/@n, "-")) then tokenize($node/@n, '-')[2] else $node/@n
   return
-<span class="btn badge badge-light text-muted ed-{data($node/@ed)}">{data($n)}</span>
+  <span class="badge badge-light text-muted ed-{data($node/@ed)}">{data($n)}</span>
+else
+if ($map?seg//span[contains(@class, "lb")]) then
+  let $n := tokenize($map?seg//span/@title, ':')
+  return
+  <span class="badge badge-light text-muted ed-{$n[1]}">{$n[2]}</span>
 else
 if ($map?seg//tei:pb or local-name(($map?seg/preceding-sibling::*)[last()]) = ('lb', 'pb')) then 
  let $node := ($map?seg//tei:pb | ($map?seg/preceding-sibling::tei:pb)[last()])[1]

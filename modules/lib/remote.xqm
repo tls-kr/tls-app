@@ -42,5 +42,5 @@ return
 if ($res[1]/@status="200") then  $res[2]
 (:($res[2] => util:base64-decode() => parse-json() ):)
 else
-<error>{$res}</error>
+<error>{$res[1]}{$res[2] => util:base64-decode()}</error>
 };
