@@ -22,11 +22,11 @@ declare function lmd:get-metadata-from-catalog($line-id as xs:string, $field as 
   , $edition := $location[2]
   let $entry := switch ($edition) 
                  case "CBETA" return collection($config:tls-texts-meta)//entry[@cbid=$textid]
-                 default return collection($config:tls-texts-meta)//entry[@krid=$textid]
+                 default return collection($config:tls-texts-meta)//work[@krid=$textid]
   return
   switch ($field)
     case "title" return
-      string-join(($entry//title | $entry/title), " - ")||""
+      string-join(($entry//title | $entry/title), " - ")
     default return "No title"
 };
 

@@ -622,7 +622,7 @@ declare function tlslib:tv-header($node as node()*, $model as map(*)){
 
    return
       (
-      <span class="navbar-text ml-2 font-weight-bold">{$model('title')} <small class="ml-2">{$model('seg')/ancestor::tei:div[1]/tei:head[1]/text()}</small></span> 
+      <span class="navbar-text ml-2 font-weight-bold" id="nb-text-title">{$model('title')} <small class="ml-2">{$model('seg')/ancestor::tei:div[1]/tei:head[1]/text()}</small></span> 
       ,<li class="nav-item dropdown">
        <a id="navbar-mulu" role="button" data-toggle="dropdown" href="#" class="nav-link dropdown-toggle">目錄</a> 
        <div class="dropdown-menu">

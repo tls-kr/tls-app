@@ -266,7 +266,7 @@ declare function ltp:display-seg($seg as node()*, $options as map(*) ) {
  ,$loc := map:get($options, "loc")
  ,$locked := $seg/@state = 'locked'
  ,$textid := lmd:get-metadata($seg, "textid")
- ,$mark := if ($seg/@data-mark) then "mark" else ()
+ ,$mark := if ($seg/@data-mark or $options?loc = $segid) then "mark" else ()
  ,$lang := 'zho'
  ,$alpheios-class := if ($user = 'test2') then 'alpheios-enabled' else ''
  ,$markup-class := "tei-" || local-name($seg/parent::*)
