@@ -11,7 +11,8 @@ let $line-id := request:get-parameter("line-id", "xx")
 let $line := request:get-parameter("line", "xx")
 let $sense-id := request:get-parameter("sense", "xx")
 let $pos := request:get-parameter("pos", "0")
+let $tit := request:get-parameter("tit", "xx")
 
 return
 
-tlsapi:save-swl($line-id, $line, $sense-id, $pos)
+tlsapi:save-swl($line-id, $line, $sense-id, $pos, $tit)
