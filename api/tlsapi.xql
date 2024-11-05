@@ -126,7 +126,10 @@ let $docname :=  $textid || "-ann.xml"
                     doc(concat($targetcoll,"/", $docname)) else 
                     (
    doc(xmldb:store($targetcoll, $docname, 
-  <TEI xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$textid}-ann">
+  element {QName(xs:anyURI("http://www.tei-c.org/ns/1.0"), "TEI")}
+  { 
+  attribute xml:id {$textid||"-ann"},
+  if (not($seg)) then attribute type {"remote"} else (), 
   <teiHeader>
       <fileDesc>
          <titleStmt>
@@ -142,13 +145,13 @@ let $docname :=  $textid || "-ann.xml"
      <profileDesc>
         <creation>Initially created: <date>{current-dateTime()}</date> by {$user}</creation>
      </profileDesc>
-  </teiHeader>
+  </teiHeader>,
   <text>
       <body>
       <div><head>Annotations</head><p xml:id="{$textid}-start"></p></div>
       </body>
   </text>
-</TEI>))
+  }))
  ,sm:chmod(xs:anyURI($targetcoll || "/" || $docname), "rwxrwxr--")
 )
 

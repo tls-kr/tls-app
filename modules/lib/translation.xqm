@@ -62,7 +62,8 @@ let $tru := collection($config:tls-user-root|| $user || "/translations")/tei:TEI
 , $buri := document-uri(root($trfile))
 , $oldvis := if ($tru) then "option3" else "option1"
 ,$lg := $config:languages($lang)
-,$title := lu:get-title($txtid)
+,$src:= collection($config:tls-texts-root)//tei:TEI[@xml:id=$txtid]
+,$title := lmd:get-metadata-from-catalog($txtid, "title")
 ,$trx := if (not($translator = "yy")) then $translator else if ($vis = "option3") then $fullname else "TLS Project"
 , $titlestmt :=if ($type = "transl") then 
          <titleStmt xmlns="http://www.tei-c.org/ns/1.0">
@@ -104,6 +105,7 @@ let $tru := collection($config:tls-user-root|| $user || "/translations")/tei:TEI
             {if ($type="transl") then 
              <ab>Translation of <bibl corresp="#{$txtid}">
                   <title xml:lang="och">{$title}</title>
+                  {if ($src) then () else <ref type="remote" target="https://hxwd.org/krx/textinfo/{$txtid}"/>}
                </bibl> into <lang xml:lang="{$lang}">{$lg}</lang>.</ab>
              else 
              <p>Comments and notes to <bibl corresp="#{$txtid}">
@@ -141,7 +143,7 @@ declare function ltr:store-new-translation($lang as xs:string, $txtid as xs:stri
   (: 2022-02-21 new option4 == store a Research Note file in /notes/research/ :)
   ,$newid := if ($vis = "option4") then $txtid else $txtid || "-" || $lang || "-" || tokenize($uuid, "-")[1]
   ,$lg := $config:languages($lang)
-  ,$title := lu:get-title($txtid)
+  ,$title := lmd:get-metadata-from-catalog($txtid, "title")
   ,$txt := collection($config:tls-texts-root)//tei:TEI[@xml:id=$txtid]
    (: we don't want this to happen just when somebody visits a text :)
   ,$cat := if ($vis = "option4") then () else 
@@ -207,6 +209,7 @@ declare function ltr:store-new-translation($lang as xs:string, $txtid as xs:stri
             {if ($type="transl") then 
              <ab>Translation of <bibl corresp="#{$txtid}">
                   <title xml:lang="och">{$title}</title>
+                  {if ($txt) then () else <ref type="remote" target="https://hxwd.org/krx/textinfo/{$txtid}"/>}
                </bibl> into <lang xml:lang="{$lang}">{$lg}</lang>.</ab>
              else 
              <p>Comments and notes to <bibl corresp="#{$txtid}">

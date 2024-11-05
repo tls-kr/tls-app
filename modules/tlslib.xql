@@ -1194,11 +1194,13 @@ declare function tlslib:show-att-display($a as node()){
 
 let $user := sm:id()//sm:real/sm:username/text()
 let $src := data($a/tls:text/tls:srcline/@title)
-let $line := $a/tls:text/tls:srcline/text(),
-$tr := $a/tls:text/tls:line,
-$target := substring(data($a/tls:text/tls:srcline/@target), 2),
+let $line := $a/tls:text/tls:srcline/text()
+(: 2024-11-05:  the type is remote for texts not annotated locally :)
+, $type := $a/ancestor::tei:TEI/@type
+, $tr := $a/tls:text/tls:line
+, $target := substring(data($a/tls:text/tls:srcline/@target), 2)
 (: TODO find a better way, get juan for CBETA texts :)
-$loc := try {xs:int((tokenize($target, "_")[3] => tokenize("-"))[1])} catch * {0}
+, $loc := try {xs:int((tokenize($target, "_")[3] => tokenize("-"))[1])} catch * {0}
 , $exemplum := if ($a/tls:metadata/@rating) then xs:int($a/tls:metadata/@rating) else 0
 , $bg := if ($exemplum > 0) then "protypical-"||$exemplum else "bg-light"
 , $creator-id := substring($a/tls:metadata/@resp, 2)
@@ -1206,7 +1208,7 @@ $loc := try {xs:int((tokenize($target, "_")[3] => tokenize("-"))[1])} catch * {0
 , $resp := tu:get-member-initials($creator-id)
 return
 <div class="row {$bg} table-striped">
-<div class="col-sm-2"><a href="textview.html?location={$target}" class="font-weight-bold">{$src, $loc}</a></div>
+<div class="col-sm-2"><a href="textview.html?location={$target}{if ($type='remote')then '&amp;mode=remote'else()}" class="font-weight-bold">{$src, $loc}</a></div>
 <div class="col-sm-3"><span data-target="{$target}" data-toggle="popover">{$line}</span></div>
 <div class="col-sm-7"><span>{$tr/text()}</span>
 {if ((sm:has-access(document-uri(fn:root($a)), "w") and $a/@xml:id) and not(contains(sm:id()//sm:group, 'tls-test'))) then 
