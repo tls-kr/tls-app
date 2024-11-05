@@ -64,7 +64,7 @@ concat($callback, "([", string-join($payload, ","), "]);")
 :)
 
 declare function tlsapi:make-attribution($line-id as xs:string, $line as xs:string, $sense-id as xs:string, 
- $user as xs:string, $currentword as xs:string, $pos as xs:string) as element(){
+ $user as xs:string, $currentword as xs:string, $pos as xs:string, $tit as xs:string) as element(){
 let $textid := tokenize($line-id, "_")[1],
 (: we generally use the translation from slot1 :)
 $trm := ltr:get-translations($textid),
@@ -88,7 +88,7 @@ $newswl :=
 <tls:ann xmlns="http://www.tei-c.org/ns/1.0" concept="{$concept}" concept-id="{$concept-id}" xml:id="{$uuid}">
 <link target="#{$line-id} #{$sense-id}"/>
 <tls:text>
-<tls:srcline title="{lmd:get-metadata-from-catalog($line-id, 'title')}" target="#{$line-id}" pos="{$pos}">{$line}</tls:srcline>
+<tls:srcline title="{$tit}" target="#{$line-id}" pos="{$pos}">{$line}</tls:srcline>
 <tls:line title="{$title-en}" transl-id="{$trid}" src="{$tr-resp}">{$tr/text()}</tls:line>
 </tls:text>
 <form  corresp="{$sense/parent::tei:entry/tei:form/@corresp}" orig="{$currentword}">
@@ -111,7 +111,7 @@ $newswl
 
 (: instead of using a uuid-named file hierarchy, this version uses one file per text to store the annotations :)
 declare function tlsapi:save-swl-to-docs($line-id as xs:string, $line as xs:string, $sense-id as xs:string, 
-$user as xs:string, $currentword as xs:string, $pos as xs:string) {
+$user as xs:string, $currentword as xs:string, $pos as xs:string, $tit as xs:string) {
 let $targetcoll := if (xmldb:collection-available($config:tls-data-root || "/notes/doc")) then $config:tls-data-root || "/notes/doc" else 
     concat($config:tls-data-root || "/notes", xmldb:create-collection($config:tls-data-root || "/notes", "doc"))
 ,$textid := tokenize($line-id, "_")[1]
@@ -121,7 +121,7 @@ if ($seg/@state='locked') then "Line is locked.  Please add punctuation before a
 else (
 let $docname :=  $textid || "-ann.xml"
  ,$cat := try{lmd:checkCat($seg,  "swl")} catch * {()} 
-,$newswl:=tlsapi:make-attribution($line-id, $line, $sense-id, $user, $currentword, $pos)
+,$newswl:=tlsapi:make-attribution($line-id, $line, $sense-id, $user, $currentword, $pos, $tit)
 ,$targetdoc :=   if (doc-available(concat($targetcoll,"/",$docname))) then
                     doc(concat($targetcoll,"/", $docname)) else 
                     (
@@ -191,7 +191,7 @@ declare function tlsapi:save-swl-with-path($line-id as xs:string, $line as xs:st
 $notes-path as xs:string, $user as xs:string, $currentword as xs:string, $pos as xs:string ){
 
 if (($line-id != "xx") and ($sense-id != "xx")) then
-let $newswl:=tlsapi:make-attribution($line-id, $line, $sense-id, $user, $currentword, $pos)
+let $newswl:=tlsapi:make-attribution($line-id, $line, $sense-id, $user, $currentword, $pos, "")
 ,$uuid := $newswl/tls:ann/@xml:id
 ,$path := concat($notes-path, substring($uuid, 6, 2))
 return (
@@ -215,13 +215,13 @@ else
 };
 
 
-declare function tlsapi:save-swl($line-id as xs:string, $line as xs:string, $sense-id as xs:string, $pos as xs:string){
+declare function tlsapi:save-swl($line-id as xs:string, $line as xs:string, $sense-id as xs:string, $pos as xs:string, $tit as xs:string){
 let $notes-path := concat($config:tls-data-root, "/notes/new/")
 let $user := sm:id()//sm:real/sm:username/text()
 let $currentword := ""
 return
 (:tlsapi:save-swl-with-path($line-id, $sense-id, $notes-path, $user, $currentword):)
-tlsapi:save-swl-to-docs($line-id, $line, $sense-id, $user, $currentword, $pos)
+tlsapi:save-swl-to-docs($line-id, $line, $sense-id, $user, $currentword, $pos, $tit)
 
 };
 

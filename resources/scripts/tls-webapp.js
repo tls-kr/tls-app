@@ -715,10 +715,12 @@ function show_swls_for_line(line_id){
 
 function save_swl_line(sense_id, line_id, pos){
 var line = $( "#swl-line-text-span" ).text();
+var tit = $( "#nb-text-title" ).text();
+
 $.ajax({
   type : "PUT",
   dataType : "html",
-  url : "api/save_swl.xql?line-id="+line_id+"&line="+line+"&sense="+sense_id+"&pos="+pos,
+  url : "api/save_swl.xql?line-id="+line_id+"&line="+line+"&sense="+sense_id+"&pos="+pos+"&tit="+tit,
   success : function(resp){
   hide_swl_form("#editSWLDialog");
   console.log("Hiding form");
