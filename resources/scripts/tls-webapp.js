@@ -37,9 +37,9 @@ $(function() {
     // only relevant for search pages
     krx_itemcount();
     // only relevant for textview pages
-    get_swls();
   }
   catch (err) {}
+  get_swls();
 });            
 
 
@@ -400,7 +400,8 @@ function get_canvas_for_page(slot, myid){
 }; 
  
 function get_facs_for_page(slot, pbfacs, pbed, segid){
-  var location = $('#chunkcol-left').children('div').eq(0).children('div').eq(0).attr('id');
+//  var location = $('#chunkcol-left').children('div').eq(0).children('div').eq(0).attr('id');
+  var location = $('.zh')[0].attributes['id'].nodeValue;
   var dw = document.documentElement.clientWidth;
   var dh = document.documentElement.clientHeight;
   var new_height = $('#chunkcol-left').outerHeight();
@@ -411,7 +412,7 @@ function get_facs_for_page(slot, pbfacs, pbed, segid){
    $.ajax({
    type : "GET",
    dataType : "html",
-   url : "api/responder.xql?func=get-facs-for-page&location="+location+"&pb="+pbfacs+"&segid="+segid+"&pbed="+pbed+"&slot="+slot+"&left="+new_left+"&width="+new_width+"&height="+new_height, 
+   url : "api/responder.xql?func=get-facs-for-page&pb="+pbfacs+"&segid="+location+"&pbed="+pbed+"&slot="+slot+"&left="+new_left+"&width="+new_width+"&height="+new_height, 
    success : function(resp){
    // xxx###
    $('#fac'+slot).html(resp);
@@ -428,7 +429,7 @@ function get_facs_for_page(slot, pbfacs, pbed, segid){
 
 function move_to_page(slot){
     page = $('#current-page-'+slot).html()
-    var location = $('#chunkcol-left').children('div').eq(0).children('div').eq(1).attr('id');
+    var location = $('.zh')[0].attributes['id'].nodeValue;
     $.get("api/responder.xql?func=move-to-page&page="+page+"&location="+location,
     function(resp){
 //      console.log(resp)
@@ -713,10 +714,11 @@ function show_swls_for_line(line_id){
 // this saves the SW for a line, called from save_this_swl (from the "Use" button)
 
 function save_swl_line(sense_id, line_id, pos){
-  $.ajax({
+var line = $( "#swl-line-text-span" ).text();
+$.ajax({
   type : "PUT",
   dataType : "html",
-  url : "api/save_swl.xql?line="+line_id+"&sense="+sense_id+"&pos="+pos,
+  url : "api/save_swl.xql?line-id="+line_id+"&line="+line+"&sense="+sense_id+"&pos="+pos,
   success : function(resp){
   hide_swl_form("#editSWLDialog");
   console.log("Hiding form");

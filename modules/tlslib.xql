@@ -32,7 +32,7 @@ import module namespace log="http://hxwd.org/log" at "log.xql";
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
-declare namespace  mods="http://www.loc.gov/mods/v3";
+declare namespace mods="http://www.loc.gov/mods/v3";
 
 declare namespace mf="http://kanripo.org/ns/KRX/Manifest/1.0";
 declare namespace tx="http://exist-db.org/tls";
@@ -622,7 +622,7 @@ declare function tlslib:tv-header($node as node()*, $model as map(*)){
 
    return
       (
-      <span class="navbar-text ml-2 font-weight-bold">{$model('title')} <small class="ml-2">{$model('seg')/ancestor::tei:div[1]/tei:head[1]/text()}</small></span> 
+      <span class="navbar-text ml-2 font-weight-bold" id="nb-text-title">{$model('title')} <small class="ml-2">{$model('seg')/ancestor::tei:div[1]/tei:head[1]/text()}</small></span> 
       ,<li class="nav-item dropdown">
        <a id="navbar-mulu" role="button" data-toggle="dropdown" href="#" class="nav-link dropdown-toggle">目錄</a> 
        <div class="dropdown-menu">
@@ -709,8 +709,8 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
       $head := if ($d/tei:head[1]/tei:seg) then ( $d/tei:head[1]/tei:seg)/text() 
          else if ($d/ancestor::tei:div/tei:head) then $d/ancestor::tei:div/tei:head/tei:seg/text() 
          else ($d//text())[1],
-      $sc := count($d//tei:seg),
-      $xpos := index-of($d//tei:seg/@xml:id, $targetseg/@xml:id),
+(:      $sc := count($d//tei:seg),
+      $xpos := index-of($d//tei:seg/@xml:id, $targetseg/@xml:id),:)
 (:      $title := $model('title')/text(),:)
       $dseg := ($pseg, $targetseg, $fseg),
       $log := log:info($tlslib:log, "assembled dseg"),
@@ -759,11 +759,11 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
       with selection for translation etc, we use this as a header line :)()}
        <div class="row">
         <div class="col .no-gutters"><img class="icon state-{$state}"  src="{$config:circle}"/></div>
-        <div class="{$zh-width}" id="toprow-1"><span class="font-weight-bold">{$head}</span><span class="btn badge badge-light">line {$xpos} / {($xpos * 100) idiv $sc}%</span> 
-        {if (string-length($pb/@facs) > 0) then 
-        let $pg := substring-before(tokenize(data($pb/@facs), '/')[last()], '.')
+        <div class="{$zh-width}" id="toprow-1"><span class="font-weight-bold">{$head}</span><span class="btn badge badge-light">line {$model?seg//stats/@xpos=>data()} / {$model?seg//stats/@percent=>data()}%</span> 
+        {if (string-length($model?seg//pb/@facs=>data()) > 0) then 
+        let $pg := substring-before(tokenize(data($model?seg//pb/@facs), '/')[last()], '.')
         return
-          <span class="btn badge badge-light ed-{data($pb/@ed)}" title="Click here to display a facsimile of this page &#10; {$pg}" onclick="get_facs_for_page('slot1', '{$fpref}{$pb/@facs}', '{data($pb/@ed)}', '{data($targetseg/@xml:id)}')" >{$config:wits?(data($pb/@ed))}:{data($pb/@n)}</span>
+          <span class="btn badge badge-light ed-{data($model?seg//pb/@ed)}" title="Click here to display a facsimile of this page &#10; {$pg}" onclick="get_facs_for_page('slot1', '{$fpref}{$pb/@facs}', '{data($pb/@ed)}', '{data($targetseg/@xml:id)}')" >{$config:wits?(data($pb/@ed))}:{data($pb/@n)}</span>
          else <span title="No facsimile available" class="btn badge badge-light">{data($pb/@n)}</span>
          }
         <!-- zh --></div>

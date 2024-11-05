@@ -38,10 +38,7 @@ declare variable $ltr:tr-map-indices := map{
 };
 
 declare function ltr:get-translation-file($trid as xs:string){
-let $user := sm:id()//sm:real/sm:username/text()
-let $tru := collection($config:tls-user-root|| $user || "/translations")/tei:TEI[@xml:id=$trid]
-, $trc := collection($config:tls-translation-root)//tei:TEI[@xml:id=$trid]
-, $trfile := if ($tru) then $tru else $trc
+let $trfile := ltr:get-tr-collections()//tei:TEI[@xml:id=$trid]
 return $trfile
 };
 
@@ -147,7 +144,9 @@ declare function ltr:store-new-translation($lang as xs:string, $txtid as xs:stri
   ,$title := lu:get-title($txtid)
   ,$txt := collection($config:tls-texts-root)//tei:TEI[@xml:id=$txtid]
    (: we don't want this to happen just when somebody visits a text :)
-  ,$cat := if ($vis = "option4") then () else lmd:checkCat($txt,  "tr-" || $lang) 
+  ,$cat := if ($vis = "option4") then () else 
+    (: 2024-10-31 here we would update the header to mark the availability of a translation, but this does not work for remote files, so we just ignore it for now :)
+    try {lmd:checkCat($txt,  "tr-" || $lang) } catch * {()}
   ,$trcoll := if ($vis="option3") then $config:tls-user-root || $user || "/translations" 
     else if ($vis = "option4") then $config:tls-data-root || "/notes/research" 
     else $config:tls-translation-root || "/" || $lang
@@ -243,10 +242,7 @@ if (not($vis="option3")) then
 };
 
 declare function ltr:transinfo($trid){
-let $user := sm:id()//sm:real/sm:username/text()
-let $tru := collection($config:tls-user-root|| $user || "/translations")/tei:TEI[@xml:id=$trid]
-, $trc := collection($config:tls-translation-root)//tei:TEI[@xml:id=$trid]
-, $trfile := if ($tru) then $tru else $trc
+let $trfile := ltr:get-tr-collections()//tei:TEI[@xml:id=$trid]
 , $segs := $trfile//tei:seg
 , $trm := map:merge( for $s in $segs 
            let $resp := replace(normalize-space($s/@resp), "#", "")
@@ -263,7 +259,11 @@ let $tru := collection($config:tls-user-root|| $user || "/translations")/tei:TEI
 return
 <div class="col">{(
   lrh:display-row(map{"col2" : "Title", "col3" : lmd:get-metadata($trfile, "title")})
-  ,lrh:display-row(map{"col2" : "Who can see this?", "col3" : if ($tru) then "Visibily to current user only" else "Visible to TLS Project members"})
+  ,lrh:display-row(map{"col2" : "Who can see this?", "col3" : if (lpm:all-can-see($trfile)) then 
+                                   "Visible to everybody" else 
+                                  if (lpm:tls-user-can-see($trfile)) then
+                                  "Visible to TLS Project members" else
+                                   "Visibily to current user only" })
   ,lrh:display-row(map{"col2" : "Translated Lines", "col3" : count($segs)})
   ,lrh:display-row(map{"col2" : "Translators/Operators", 
                       "col2-tit" : "This shows the person responsible in the system, not necessarily the original translator", 
@@ -517,7 +517,8 @@ let $id := substring-before($trid, '-slot')
 ,$transl := $tr($content-id)[1]
 ,$seg := <seg xmlns="http://www.tei-c.org/ns/1.0" corresp="#{$id}" xml:lang="{$lang}" resp="#{$user}" modified="{current-dateTime()}">{$tr-to-save}</seg>
 ,$node := $transl//tei:seg[@corresp="#" || $id]
-,$visit := lvs:record-visit(lu:get-seg($id))
+,$targetseg := lu:get-seg($id)
+,$visit := if ($targetseg) then lvs:record-visit($targetseg) else lvs:record-visit-remote($id)
 return
 if ($node) then (
  update insert attribute modified {current-dateTime()} into $node,

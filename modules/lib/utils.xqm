@@ -52,6 +52,10 @@ if ($q div string-length($string) > 0.5) then xs:boolean("1") else xs:boolean(0)
 else xs:boolean(0)
 };
 
+declare function lu:capitalize-first ( $arg as xs:string? )  as xs:string? {
+   concat(upper-case(substring($arg,1,1)),
+             substring($arg,2))
+ } ;
 
 
 

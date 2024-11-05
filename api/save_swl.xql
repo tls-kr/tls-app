@@ -7,10 +7,11 @@ declare option output:media-type "text/html";
 
 import module namespace tlsapi="http://hxwd.org/tlsapi" at "tlsapi.xql";
 
-let $line-id := request:get-parameter("line", "xx")
+let $line-id := request:get-parameter("line-id", "xx")
+let $line := request:get-parameter("line", "xx")
 let $sense-id := request:get-parameter("sense", "xx")
 let $pos := request:get-parameter("pos", "0")
 
 return
 
-tlsapi:save-swl($line-id, $sense-id, $pos)
+tlsapi:save-swl($line-id, $line, $sense-id, $pos)

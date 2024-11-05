@@ -15,6 +15,7 @@ import module namespace tu="http://hxwd.org/utils" at "../tlsutils.xql";
 import module namespace config="http://hxwd.org/config" at "../config.xqm";
 
 import module namespace krx="http://hxwd.org/krx-utils" at "../krx-utils.xql";
+import module namespace wd="http://hxwd.org/wikidata" at "../wikidata.xql"; 
 
 import module namespace lmd="http://hxwd.org/lib/metadata" at "metadata.xqm";
 import module namespace lu="http://hxwd.org/lib/utils" at "utils.xqm";
@@ -26,6 +27,7 @@ import module namespace lpm="http://hxwd.org/lib/permissions" at "permissions.xq
 import module namespace lli="http://hxwd.org/lib/link-items" at "link-items.xqm";
 import module namespace ltr="http://hxwd.org/lib/translation" at "translation.xqm";
 import module namespace log="http://hxwd.org/log" at "../log.xql";
+import module namespace lsd="http://hxwd.org/lib/swl-dialog" at "swl-dialog.xqm";
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
@@ -92,6 +94,164 @@ declare function ltp:show-textpanel($seg as node(), $map as map(*)){
 
 };
 
+(: ugly quick fix, copied over from tlslib
+TODO : handle properly! :)
+declare function ltp:annotation-types($type as xs:string){
+  let $map := 
+ map{'nswl' : ('Grammar', 'Syntactic Word Location'), 
+     'rdl' : ('Rhetoric', 'Rhetoric Device Location'),
+     'drug' : ('本草', 'Drug Location')}
+ return
+ if (count($map($type))> 0) then $map($type) else ( collection($config:tls-data-root)//tei:TEI[@xml:id="facts-def"]//tei:div[@xml:id=$type]/tei:head/text(), '')
+};
+
+
+(:
+TODO: move this
+      $visit := lvs:record-visit($targetseg),
+      {tlslib:textinfo($model?textid)}
+
+:)
+
+declare function ltp:prepare-chunk($chunk as node()*, $map as map(*)){
+      let $zh-width := 'col-sm-3'
+      , $colums := if (string-length($map?columns)>0) then xs:int($map?columns) else 2 
+      , $state := if ($chunk/div/info/@state) then $chunk/div/info/@state else "yellow" 
+      , $xpos := data($chunk/div/stats/@xpos)
+      , $percent := data($chunk/div/stats/@percent)
+      , $pb := $chunk/div/pb 
+      , $facs := data($pb/@facs)
+      , $fpref :=  data($pb/@fpref)
+      , $ed :=  data($pb/@ed)
+      , $n := data($pb/@n)
+      , $head := $chunk/div/head
+      , $dseg := $chunk/div/segments/div
+      , $tseg := $dseg[@data-mark]
+      , $show-transl := lpm:should-show-translation()
+      , $show-variants := xs:boolean(1)
+      , $textid := data($chunk/div/info/@textid)
+      , $tr := if (lpm:should-show-translation()) then 
+         if (string-length($facs) > 0) then map:merge((ltr:get-translations($textid), 
+            for $edx in tokenize($chunk/div/pb/@eds)
+            return
+            map:entry("facs_"||$edx, ("dummy", $edx, data($tseg/@xml:id)) ))) 
+
+         else ltr:get-translations($textid)
+         else map{},
+      $slot1-id := lrh:get-content-id($textid, 'slot1', $tr),
+      $slot2-id := lrh:get-content-id($textid, 'slot2', $tr),
+      $atypes := distinct-values(for $s in $dseg/@xml:id
+        let $link := "#" || $s
+        return
+        for $node in (collection($config:tls-data-root|| "/notes")//tls:ann[.//tls:srcline[@target=$link]] | collection($config:tls-data-root|| "/notes")//tls:span[.//tls:srcline[@target=$link]] ) return 
+        (: need to special case the legacy type ann=swl :)
+        if (local-name($node)='ann') then "nswl" else data($node/@type))
+    return
+      (
+      <div id="chunkrow" class="row">
+      <div id="srcref" class="col-sm-12 collapse" data-toggle="collapse">
+      {(: textinfo goes here :) ()}
+      </div>
+      <!-- here is where we select what kind of annotation to display -->
+      {if (count($atypes) > 1) then 
+      <div id="swlrow" class="col-sm-12 swl collapse" data-toggle="collapse">
+       <div class="row">
+         <div class="col-sm-2" id="swlrow-1"><span class="font-weight-bold">Select type of annotation:</span></div>
+         <div class="col-sm-5" id="swlrow-2">{for $a in $atypes return <button id="{$a}-select" onclick="showhide('{$a}')" title="{ltp:annotation-types($a)[2]}" class="btn btn-primary ml-2" type="button">{ltp:annotation-types($a)[1]}</button>}</div>
+      </div>
+      </div>
+      else ()
+      }
+      <div id="toprow" class="col-sm-12">
+      
+      {(:  this is the same structure as the one display-seg will fill it 
+      with selection for translation etc, we use this as a header line :)()}
+       <div class="row">
+        <div class="col .no-gutters"><img class="icon state-{$state}"  src="{$config:circle}"/></div>
+        <div class="{$zh-width}" id="toprow-1"><span class="font-weight-bold">{$head}</span><span class="btn badge badge-light">line {$xpos} / {$percent}%</span> 
+        {if (string-length($facs) > 0) then 
+        let $pg := substring-before(tokenize($facs, '/')[last()], '.')
+        return
+          <span class="btn badge badge-light ed-{$ed}" title="Click here to display a facsimile of this page &#10; {$pg}" onclick="get_facs_for_page('slot1', '{$fpref}{$facs}', '{$ed}', '{data($tseg/@xml:id)}')" >{$config:wits?($ed)}:{$n}</span>
+         else <span title="No facsimile available" class="btn badge badge-light">{$n}</span>
+         }
+        <!-- zh --></div>
+        <!-- 2024-09-06 this is rubbish, this needs also to be moved to textpanel and not hardcode the width -->
+        {for $i in (1 to $colums)
+        return 
+        <div class="col-sm-4" id="top-slot{$i}"><!-- tr -->
+        {if ($show-transl) then ltr:render-translation-submenu($textid, "slot"||$i, lrh:get-content-id($textid, 'slot'||$i, $tr) , $tr) else ()}
+        </div>
+        }
+        </div>
+      </div>
+      <div id="chunkcol-left" class="col-sm-12">
+      {ltp:chunkcol-left($dseg, map:put($map, "zh-width", $zh-width), $tr, $slot1-id, $slot2-id, data($tseg/@xml:id), 0)}
+      </div>
+      <div id="chunkcol-right" class="col-sm-0">
+      {lsd:swl-form-dialog('textview', $map)}
+    </div>
+    </div>,
+      <div class="row">
+      <div class="col-sm-2">
+      {if ($dseg) then  
+       <button type="button" class="btn" onclick="page_move('{$chunk/div/nav/@first}')" title="Go to the first page"><span style="color: blue">First</span></button>
+       else ()}
+       </div>
+      <div class="col-sm-2">
+      {if (1) then  
+       <button type="button" class="btn" onclick="page_move('{$chunk/div/nav/@prev}')" title="Go to the previous page"><span style="color: blue">Previous</span></button>
+       else ()}
+       </div>
+       <div class="col-sm-2">
+       {
+       if (1) then
+       <button id="nextpagebutton" type="button" class="btn" onclick="page_move('{$chunk/div/nav/@next}')" title="Go to the next page"><span style="color: blue">Next</span></button>
+       else ()}
+       </div> 
+       <div class="col-sm-2">
+       {
+       if (1) then
+       <button type="button" class="btn" onclick="page_move('{$chunk/div/nav/@last}')" title="Go to the last page"><span style="color: blue">Last</span></button>
+       else ()}
+       </div> 
+        {wd:quick-search-form('title')}
+      </div>
+)
+
+};
+
+(: 
+
+      <div class="row">
+      <div class="col-sm-2">
+      {if ($dseg) then  
+       <button type="button" class="btn" onclick="page_move('{tokenize($dseg/@xml:id, "_")[1]}&amp;first=true')" title="Go to the first page"><span style="color: blue">First</span></button>
+       else ()}
+       </div>
+      <div class="col-sm-2">
+      {if ($dseg[1]/preceding::tei:seg[1]/@xml:id) then  
+       <button type="button" class="btn" onclick="page_move('{$dseg[1]/preceding::tei:seg[1]/@xml:id}&amp;prec={$foll+$prec -2}&amp;foll=2')" title="Go to the previous page"><span style="color: blue">Previous</span></button>
+       else ()}
+       </div>
+       <div class="col-sm-2">
+       {
+       if ($dseg[last()]/following::tei:seg[1]/@xml:id) then
+       <button id="nextpagebutton" type="button" class="btn" onclick="page_move('{$dseg[last()]/following::tei:seg[1]/@xml:id}&amp;prec=2&amp;foll={$foll+$prec -2}')" title="Go to the next page"><span style="color: blue">Next</span></button>
+       else ()}
+       </div> 
+       <div class="col-sm-2">
+       {
+       if ($dseg/following::tei:seg[last()]/@xml:id) then
+       <button type="button" class="btn" onclick="page_move('{$dseg/following::tei:seg[last()]/@xml:id}&amp;prec={$foll+$prec -2}&amp;foll=0')" title="Go to the last page"><span style="color: blue">Last</span></button>
+       else ()}
+       </div> 
+        {wd:quick-search-form('title')}
+      </div>
+
+:)
+
+
 declare function ltp:display-seg($seg as node()*, $options as map(*) ) {
  let $log := log:info($ltp:log, "entering display-seg for " || $seg/@xml:id)
  let $user := sm:id()//sm:real/sm:username/text()
@@ -106,7 +266,7 @@ declare function ltp:display-seg($seg as node()*, $options as map(*) ) {
  ,$loc := map:get($options, "loc")
  ,$locked := $seg/@state = 'locked'
  ,$textid := lmd:get-metadata($seg, "textid")
- ,$mark := if ($segid = $loc) then "mark" else ()
+ ,$mark := if ($seg/@data-mark or $options?loc = $segid) then "mark" else ()
  ,$lang := 'zho'
  ,$alpheios-class := if ($user = 'test2') then 'alpheios-enabled' else ''
  ,$markup-class := "tei-" || local-name($seg/parent::*)
@@ -124,18 +284,29 @@ declare function ltp:display-seg($seg as node()*, $options as map(*) ) {
   ,$zhclass := 
                 $ltp:panel-matrix?($colums)[1] || " zh chn-font " || $alpheios-class || " " || $markup-class     
    let $log := log:info($ltp:log, "starting display-seg for " || $seg/@xml:id)
-              
+
+(:
+, "tr" : if (lpm:has-edit-permission($textid)) then try {for $t in ltr:find-translators($textid) return $t/ancestor::tei:TEI } catch * {()} else ()
+
+:)
+
 return
 (
 <div class="row {$mark}">
 {ltp:zero-panel-row(map{"locked" : $locked, "textid" : $textid, "seg" : $seg
-(:, "tr" : if (lpm:has-edit-permission($textid)) then try {for $t in ltr:find-translators($textid) return $t/ancestor::tei:TEI } catch * {()} else ():)
 }) }
+{ if (local-name($seg) = 'div') then
+  (: 2024-10-31: most code expects @xml:id, so we have both @id and @xml:id here, but filter out the unwanted latter.   :)
+  element {local-name($seg)}
+  {$seg/@* except $seg/@xml:id, 
+   $seg/node()}
+else
 <div class="{$zhclass}{if ($seg/@type='comm') then ' tls-comm' else if($locked) then 'locked' else '' }" style="{if ($seg/@type='bcj') then 'color:red' else ()}" lang="{$lang}" id="{$segid}" >{
 lrh:proc-seg($seg, map{"punc" : true(), "textid" : $textid})
 }
 <!-- data-tei="{ util:node-id($seg) }" -->
-</div>　
+</div>
+}
 {
 for $i in (1 to $colums)
  let $slot := if (lpm:should-show-translation()) then 
@@ -201,7 +372,7 @@ return
 <div class="col-sm-2"></div>
 </div>
 };
-
+(: TODO: adopt for remote texts! the pb is now already in the html :)
 declare function ltp:zero-panel-row($map){
 <div class="col .no-gutters">
 { (
@@ -214,7 +385,12 @@ else (),
   let $node := ($map?seg//tei:lb)[1]
   , $n := if (contains($node/@n, "-")) then tokenize($node/@n, '-')[2] else $node/@n
   return
-<span class="btn badge badge-light text-muted ed-{data($node/@ed)}">{data($n)}</span>
+  <span class="badge badge-light text-muted ed-{data($node/@ed)}">{data($n)}</span>
+else
+if ($map?seg//span[contains(@class, "lb")]) then
+  let $n := tokenize($map?seg//span/@title, ':')
+  return
+  <span class="badge badge-light text-muted ed-{$n[1]}">{$n[2]}</span>
 else
 if ($map?seg//tei:pb or local-name(($map?seg/preceding-sibling::*)[last()]) = ('lb', 'pb')) then 
  let $node := ($map?seg//tei:pb | ($map?seg/preceding-sibling::tei:pb)[last()])[1]
@@ -239,9 +415,9 @@ if ($map?ann = 'false') then () else
 case element(tei:TEI) return (if ($node/@type='notes') then 
       lli:get-linked-items($map?user, $map?seg/@xml:id) else (),
       <div class="tr" tabindex="{$map?tabindex}" id="{$map?seg/@xml:id}-{$map?ex}" contenteditable="{$map?editable}">{$node//tei:seg[@corresp="#"||$map?seg/@xml:id]//text()}</div>  )
-default return
+default return ()
 
-(krx:get-varseg-ed($map?seg/@xml:id, substring-before($node, "::")))
+(:(krx:get-varseg-ed($map?seg/@xml:id, substring-before($node, "::"))):)
 
 }
 </div>
