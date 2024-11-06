@@ -22,6 +22,31 @@ declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace mf="http://kanripo.org/ns/KRX/Manifest/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
 
+(:~
+: format the duration in a human readable way
+: @param  $pt a xs:duration instance
+:)
+declare function lrh:display-duration($pt as xs:duration) {
+let $y := years-from-duration($pt)
+,$m := months-from-duration($pt)
+,$d := days-from-duration($pt)
+,$h := hours-from-duration($pt)
+,$mi := minutes-from-duration($pt)
+,$s := seconds-from-duration($pt)
+return
+<span>{(
+if ($y > 0) then if ($y > 1) then <span> {$y} years </span> else <span>{$y} year </span> else (),
+if ($m > 0) then if ($m > 1) then <span> {$m} months </span> else <span> {$m} month </span> else (),
+if ($d > 0) then if ($d > 1) then <span> {$d} days </span> else <span> {$d} day </span> else (),
+if ($h > 0) then if ($h > 1) then <span> {$h} hours </span> else <span> {$h} hour </span> else (),
+if ($mi > 0) then if ($mi > 1) then <span> {$mi} minutes </span> else <span> {$mi} minute </span> else (),
+if ($s > 0) then if ($s > 1) then <span> {$s} seconds </span> else <span> {$s} second </span> else ()
+)
+}
+</span>
+};
+
+
 declare function lrh:display-row($map as map(*)){
   <div class="row">
     <div class="col-sm-1">{$map?col1}</div>
@@ -176,4 +201,217 @@ declare function lrh:format-button($onclick as xs:string, $title as xs:string, $
 
 declare function lrh:format-button-common($onclick as xs:string, $title as xs:string, $icon as xs:string){
   lrh:format-button($onclick, $title, $icon, "", "close", "tls-user")
+};
+
+(:~
+: formats a single syntactic word location for display either in a row (as in the textview, made visible by the blue eye) or as a list item, this is used in the left hand display for the annotations
+: @param $node  the tls:ann element to display
+: @param $type  type of the display, currently 'row' for selecting the row style, anything else will be list style
+: called from api/show_swl_for_line.xql
+: 2021-10-15: also display other annotation types (e.g. rhetorical devices etc.)
+: 2024-11-06 moved here from tlslib
+:)
+declare function lrh:format-swl($node as node(), $options as map(*)){
+let $user := sm:id()//sm:real/sm:username/text(),
+$usergroups := sm:get-user-groups($user),
+(: already used swl as a class, so need a different one here; for others we want the type given in the source :)
+$anntype := if (local-name($node)='ann') then "nswl" else 
+               if (local-name($node)='drug') then "drug" else
+               if (local-name($node)='item') then "wrl"
+               else data($node/@type),
+$type := $options?type,
+$context := $options?context
+let $concept := data($node/@concept),
+$creator-id := if ($node/tls:metadata/@resp) then
+ substring($node/tls:metadata/@resp, 2) else 
+ substring($node/ancestor::tei:div[@type='word-rel-ref']/@resp, 2)  ,
+$zi := string-join($node/tei:form/tei:orth/text(), "/")
+(: 2021-03-17 we ignore the pinyin from SWL, retrieve the one from concept below as $cpy :)
+(:$py := $node/tei:form[1]/tei:pron[starts-with(@xml:lang, 'zh-Latn')][1]/text(),:)
+,$link := substring(tokenize($node/tei:link/@target)[2], 2)
+(: 2021-03-17 below we get the data from the CONCEPT entry, rather than the SWL, all we need in the SWL now is the link :)
+, $s := collection($config:tls-data-root)//tei:sense[@xml:id=$link]
+, $w := $s/ancestor::tei:entry
+, $czi := string-join($w/tei:form/tei:orth/text(), " / ")
+, $cpy := string-join($w/tei:form/tei:pron[@xml:lang='zh-Latn-x-pinyin']/text(), " / ")
+,$cdef := $w/ancestor::tei:div/tei:div[@type="definition"]/tei:p/text()
+,$sf := $s//tls:syn-func
+,$sm := $s//tls:sem-feat
+,$def := lu:get-sense-def($link)
+,$rid := $options?line-id || "-" || $node/@xml:id 
+, $exemplum := if ($node/tls:metadata/@rating) then xs:int($node/tls:metadata/@rating) else 0
+, $bg := if ($exemplum > 0) then "protypical-"||$exemplum else "bg-light"
+, $marktext := if ($exemplum = 0) then "Mark this attribution as prototypical" else "Currently marked as prototypical "||$exemplum ||". Increase up to 3 then reset."
+, $resp := tu:get-member-initials($creator-id)
+, $wr-rel :=  $node/ancestor::tei:div[@type='word-rel-ref']
+(:$pos := concat($sf, if ($sm) then (" ", $sm) else "")
+:)
+return
+if ($type = "row") then
+if ($anntype = "wrl") then 
+<div class="row {$bg} {$anntype}">
+<div class="col-sm-1"><span class="{$anntype}-col">●</span></div>
+<div class="col-sm-2"><span>{$node/text()}</span></div>
+<div class="col-sm-3"><a href="concept.html?concept={$concept}{$node/@corresp}" title="{$cdef}">{$concept}</a></div>
+<div class="col-sm-6"><span>WR: {$wr-rel/ancestor::tei:div[@type='word-rel-type']/tei:head/text()} /  {data($node/@p)}</span>
+{ (: buttons start -- put them in extra function, together with the other version below! :)
+if ("tls-editor"=sm:get-user-groups($user) and $wr-rel/@xml:id) then 
+
+   (: for reviews, we display the buttons in tlslib:show-att-display, so we do not need them here :)
+   if (not($context='review')) then
+   (: not as button, but because of the title string open-iconic-master/svg/person.svg :)
+   lrh:format-button("null()", "Resp: " || $resp[1] , $resp[2], "small", "close", "tls-user") else ()
+   
+else  
+   (: for my own swls: delete, otherwise approve :)
+ if (($user = $creator-id) or contains($usergroups, "tls-editor" )) then 
+    lrh:format-button("delete_word_relation('" || data($wr-rel/@xml:id) || "')", "Immediately delete this WR", "open-iconic-master/svg/x.svg", "small", "close", "tls-editor")
+   else ()
+  (:  ,   
+   lrh:format-button("incr_rating('swl', '" || data($wr-rel/@xml:id) || "')", $marktext, "open-iconic-master/svg/star.svg", "small", "close", "tls-editor"),
+   if (not ($user = $creator-id)) then
+   (   
+    lrh:format-button("save_swl_review('" || data($wr-rel/@xml:id) || "')", "Approve the SWL for " || $zi, "octicons/svg/thumbsup.svg", "small", "close", "tls-editor")
+    ) else ()
+  :) 
+  
+(: buttons end :)
+}
+
+</div>
+</div>
+else
+if ($anntype eq "nswl") then
+<div class="row {$bg} {$anntype}">
+{if (not($context = 'review')) then 
+<div class="col-sm-1"><span class="{$anntype}-col">●</span></div>
+else ()}
+<div class="col-sm-2"><span class="zh chn-font">{$czi}</span> ({$cpy})
+{if  ("tls-admin.x" = sm:get-user-groups($user)) then (data(($node//tls:srcline/@pos)[1]),
+ <a href="{
+      concat($config:exide-url, "?open=", document-uri(root($node)))}">eXide</a>)
+      else ()
+  }    
+</div>
+<div class="col-sm-3"><a href="concept.html?concept={$concept}#{$w/@xml:id}" title="{$cdef}">{$concept}</a></div>
+<div class="col-sm-6">
+<span><a href="browse.html?type=syn-func&amp;id={data($sf/@corresp)}">{($sf)[1]/text()}</a>&#160;</span>
+{if ($sm) then 
+<span><a href="browse.html?type=sem-feat&amp;id={$sm/@corresp}">{($sm)[1]/text()}</a>&#160;</span> else ()}
+{
+if (($user = $creator-id) or contains($usergroups, "tls-editor" )) then 
+    lrh:format-button("delete_swl('swl', '" || data($node/@xml:id) || "')", "Immediately delete this SWL for "||$zi[1], "open-iconic-master/svg/x.svg", "small", "close", "tls-editor")
+   else (),
+if ("tls-editor"=sm:get-user-groups($user) and $node/@xml:id) then 
+(
+ (: for reviews, we display the buttons in tlslib:show-att-display, so we do not need them here :)
+  if (not($context='review')) then
+   (
+   (: not as button, but because of the title string open-iconic-master/svg/person.svg :)
+   lrh:format-button("null()", "Resp: " || $resp[1] , $resp[2], "small", "close", "tls-user"),
+   (: for my own swls: delete, otherwise approve :)
+   lrh:format-button("incr_rating('swl', '" || data($node/@xml:id) || "')", $marktext, "open-iconic-master/svg/star.svg", "small", "close", "tls-editor"),
+   if (not ($user = $creator-id)) then
+   (
+<span class="rp-5">
+{lrh:format-button("review_swl_dialog('" || data($node/@xml:id) || "')", "Review the SWL for " || $zi[1], "octicons/svg/unverified.svg", "small", "close", "tls-editor")}&#160;&#160;</span>,   
+    lrh:format-button("save_swl_review('" || data($node/@xml:id) || "')", "Approve the SWL for " || $zi, "octicons/svg/thumbsup.svg", "small", "close", "tls-editor")
+    ) else ()
+  ) else ()
+)
+else ()
+}
+</div>
+</div>
+else if ($anntype eq "drug") then
+<div class="row bg-light {$anntype}">
+ <div class="col-sm-2"><span class="{$anntype}-col">drug</span></div>
+ <div class="col-sm-6">{$node/text()}, Q:{data($node/@quantity)}, FL:{data($node/@flavor)}
+ {
+   if (($user = $creator-id) or contains($usergroups, "tls-editor" )) then 
+    lrh:format-button("delete_swl('drug', '" || data($node/@xml:id) || "')", "Immediately delete the observation "||data($node/text()), "open-iconic-master/svg/x.svg", "small", "close", "tls-editor")
+   else ()
+}
+</div>
+</div>
+else
+(: not swl, eg: rhet-dev etc :)
+<div class="row bg-light {$anntype}" style="{if ($anntype ne 'nswl') then 'display:None;' else ()}">
+{
+let $role := if (ends-with(data($node/tls:text[tls:srcline[@target="#"||$options?line-id]]/@role), 'start')) then "(●" else "●)"
+return
+(
+ <div class="col-sm-2"><span class="{$anntype}-col">{$role}</span></div>,
+ <div class="col-sm-6">{if ($anntype='rdl') then <a href="rhet-dev.html?uuid={$node/@rhet-dev-id}">{data($node/@rhet-dev)}</a> else
+ if ($anntype = 'comment') then
+ (<span class="text-muted">{collection($config:tls-data-root)//tei:TEI[@xml:id="facts-def"]//tei:div[@xml:id=$anntype]/tei:head/text() || ":　"}</span>, 
+  if ($role eq "(●") then
+   (: for the comment, we display the note, not the @name, which does not make sense here.. :)
+   <span class="{$anntype}-name" data-uuid="{data($node/@xml:id)}" data-lineid="{$options?line-id}">{data($node/tls:note)}</span>
+  else ()
+  ) 
+ else
+ (collection($config:tls-data-root)//tei:TEI[@xml:id="facts-def"]//tei:div[@xml:id=$anntype]/tei:head/text() || "　", 
+  if ($role eq "(●") then
+   <span class="{$anntype}-name" data-uuid="{data($node/@xml:id)}" data-lineid="{$options?line-id}">{data($node/@name)}</span>
+  else ()
+ )}
+{
+   if (($user = $creator-id) or contains($usergroups, "tls-editor" )) then 
+    lrh:format-button("delete_swl('rdl', '" || data($node/@xml:id) || "')", "Immediately delete the observation "||data($node/@rhet-dev), "open-iconic-master/svg/x.svg", "small", "close", "tls-editor")
+   else ()
+}
+ </div>
+) 
+}
+</div> 
+(: not in the row :)
+else 
+<li class="list-group-item" id="{$concept}">{$cpy} {$concept} {$sf} {$sm} {
+if (string-length($def) > 10) then concat(substring($def, 10), "...") else $def}</li>
+};
+
+
+ (:~
+ : called from function tlsapi:show-att($uid as xs:string)
+  : 2020-02-26 it seems this belongs to tlsapi
+  : 2020-03-13 this is called from app:recent 
+  : 2024-11-06 moved here from tlslib
+ :)
+ 
+declare function lrh:show-att-display($a as node()){
+
+let $user := sm:id()//sm:real/sm:username/text()
+let $src := data($a/tls:text/tls:srcline/@title)
+let $line := $a/tls:text/tls:srcline/text()
+(: 2024-11-05:  the type is remote for texts not annotated locally :)
+, $type := $a/ancestor::tei:TEI/@type
+, $tr := $a/tls:text/tls:line
+, $target := substring(data($a/tls:text/tls:srcline/@target), 2)
+(: TODO find a better way, get juan for CBETA texts :)
+, $loc := try {xs:int((tokenize($target, "_")[3] => tokenize("-"))[1])} catch * {0}
+, $exemplum := if ($a/tls:metadata/@rating) then xs:int($a/tls:metadata/@rating) else 0
+, $bg := if ($exemplum > 0) then "protypical-"||$exemplum else "bg-light"
+, $creator-id := substring($a/tls:metadata/@resp, 2)
+(:, $resp := doc($config:tls-data-root || "/vault/members.xml")//tei:person[@xml:id=$creator-id]//tei:persName/text():)
+, $resp := tu:get-member-initials($creator-id)
+return
+<div class="row {$bg} table-striped">
+<div class="col-sm-2"><a href="textview.html?location={$target}{if ($type='remote')then '&amp;mode=remote'else()}" class="font-weight-bold">{$src, $loc}</a></div>
+<div class="col-sm-3"><span data-target="{$target}" data-toggle="popover">{$line}</span></div>
+<div class="col-sm-7"><span>{$tr/text()}</span>
+{if ((sm:has-access(document-uri(fn:root($a)), "w") and $a/@xml:id) and not(contains(sm:id()//sm:group, 'tls-test'))) then 
+(
+ if ($resp[1]) then 
+   lrh:format-button("null()", "Resp: " || $resp[1] , $resp[2], "small", "close", "tls-user") else (),
+
+(:lrh:format-button("review_swl_dialog('" || data($a/@xml:id) || "')", "Review this attribution", "octicons/svg/unverified.svg", "small", "close", "tls-editor"),:)
+lrh:format-button("incr_rating('swl', '" || data($a/@xml:id) || "')", "Mark this attribution as prototypical", "open-iconic-master/svg/star.svg", "small", "close", "tls-editor"),
+lrh:format-button("delete_swl('swl', '" || data($a/@xml:id) || "')", "Delete this attribution", "open-iconic-master/svg/x.svg", "small", "close", "tls-editor"),
+ if (not ($user = substring($a/tls:metadata/@resp, 2))) then
+    lrh:format-button("save_swl_review('" || data($a/@xml:id) || "')", "Approve the SWL", "octicons/svg/thumbsup.svg", "small", "close", "tls-editor") else ()
+)
+else ()}
+</div>
+</div>
 };
