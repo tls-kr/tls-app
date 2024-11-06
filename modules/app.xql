@@ -40,6 +40,7 @@ import module namespace lus="http://hxwd.org/lib/user-settings" at "user-setting
 import module namespace lrh="http://hxwd.org/lib/render-html" at "lib/render-html.xqm";
 import module namespace lpm="http://hxwd.org/lib/permissions" at "lib/permissions.xqm";
 import module namespace ltp="http://hxwd.org/lib/textpanel" at "lib/textpanel.xqm";
+import module namespace lrv="http://hxwd.org/lib/review" at "lib/review.xqm";
 
 import module namespace remote="http://hxwd.org/remote" at "lib/remote.xqm";
 
@@ -1391,10 +1392,10 @@ declare
     %templates:default("issue", "")    
 function app:review($node as node()*, $model as map(*), $type as xs:string, $issue as xs:string){
  switch($type) 
-  case "swl" return tlslib:review-swl()
-  case "gloss" return tlslib:review-gloss()
-  case "special" return tlslib:review-special($issue)
-  case "request" return tlslib:review-request()
+  case "swl" return lrv:review-swl()
+  case "gloss" return lrv:review-gloss()
+  case "special" return lrv:review-special($issue)
+  case "request" return lrv:review-request()
   case "user" return sgn:review()
   default return ""
 };
@@ -1441,10 +1442,10 @@ return
 for $a in subsequence($atts, 1, 1)
 let $att := $a/ancestor::tls:ann
 return 
-<div><span>The most recent attribution was {tlslib:display-duration(xs:dateTime(current-dateTime()) - xs:dateTime(data($a/@created)))} ago :</span>
+<div><span>The most recent attribution was {lrh:display-duration(xs:dateTime(current-dateTime()) - xs:dateTime(data($a/@created)))} ago :</span>
 {(
-tlslib:show-att-display($att),
-tlslib:format-swl($att, map{"type" : "row"})
+lrh:show-att-display($att),
+lrh:format-swl($att, map{"type" : "row"})
 )}
 </div>}
 </div>

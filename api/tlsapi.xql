@@ -126,7 +126,10 @@ let $docname :=  $textid || "-ann.xml"
                     doc(concat($targetcoll,"/", $docname)) else 
                     (
    doc(xmldb:store($targetcoll, $docname, 
-  <TEI xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$textid}-ann">
+  element {QName(xs:anyURI("http://www.tei-c.org/ns/1.0"), "TEI")}
+  { 
+  attribute xml:id {$textid||"-ann"},
+  if (not($seg)) then attribute type {"remote"} else (), 
   <teiHeader>
       <fileDesc>
          <titleStmt>
@@ -142,13 +145,13 @@ let $docname :=  $textid || "-ann.xml"
      <profileDesc>
         <creation>Initially created: <date>{current-dateTime()}</date> by {$user}</creation>
      </profileDesc>
-  </teiHeader>
+  </teiHeader>,
   <text>
       <body>
       <div><head>Annotations</head><p xml:id="{$textid}-start"></p></div>
       </body>
   </text>
-</TEI>))
+  }))
  ,sm:chmod(xs:anyURI($targetcoll || "/" || $docname), "rwxrwxr--")
 )
 
@@ -445,7 +448,7 @@ for $swl in collection($config:tls-data-root|| "/notes")//tls:srcline[@target=$l
 let $pos := if (string-length($swl/@pos) > 0) then xs:int(tokenize($swl/@pos)[1]) else 0
 order by $pos
 return
-("{'id': '" || data($d/@xml:id)||"','html':'" , tlslib:format-swl($swl/ancestor::tls:ann, map{'type' : 'row'}) , "'}")
+("{'id': '" || data($d/@xml:id)||"','html':'" , lrh:format-swl($swl/ancestor::tls:ann, map{'type' : 'row'}) , "'}")
 };
 
 
@@ -620,7 +623,7 @@ if (count($atts) > 0) then
  let $when := data($a/tls:text/@tls:when)
  order by $when descending
  return 
- tlslib:show-att-display($a)
+ lrh:show-att-display($a)
 else 
  <p class="font-weight-bold">No attributions found</p>
 };
@@ -706,7 +709,7 @@ return
             </div>
             <div class="modal-body">
             <h6 class="font-weight-bold">Existing SWL <small>created by {$creator//tei:persName/text()}, {$date}</small></h6>
-            <div class="card-text">{tlslib:format-swl($swl, map{'type': 'row', 'context' : 'review'})}</div>
+            <div class="card-text">{lrh:format-swl($swl, map{'type': 'row', 'context' : 'review'})}</div>
             <h6 class="font-weight-bold mt-2">Context</h6>
             {ltp:get-text-preview($seg-id, map{"context" : 3, "format" : "plain"})}
             <!--
