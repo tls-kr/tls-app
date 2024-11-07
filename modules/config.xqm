@@ -71,7 +71,8 @@ declare variable $config:help-base-url := "https://docs.hxwd.org/";
 declare variable $config:help-map := map{
 'search' : '2-User-manual/Search-results',
 'textview' : '2-User-manual/The-textview-page',
-'floater' : '2-User-manual/The-attribution-floater'
+'floater' : '2-User-manual/The-attribution-floater',
+'citation' : '2-User-manual/Citations'
 };
 
 declare variable $config:seg-split-tokens := '[，。：．；？﹖！，』」/、]';

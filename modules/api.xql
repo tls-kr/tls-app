@@ -16,6 +16,7 @@ import module namespace app="http://hxwd.org/app" at "app.xql";
 import module namespace av="http://hxwd.org/api/view" at "api-view.xql";
 import module namespace tlsapi="http://hxwd.org/tlsapi" at "../api/tlsapi.xql";
 import module namespace src="http://hxwd.org/search" at "search.xql";
+import module namespace lct="http://hxwd.org/citations" at "lib/citations.xqm";
 
 (:~
  : list of definition files to use
