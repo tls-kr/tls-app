@@ -20,9 +20,12 @@ declare variable $lct:coll := (collection($config:tls-data-root||"/notes/swl")|c
 declare variable $lct:perspectives := map{
 'concepts' : 'Concepts',
 'chars' : 'Characters',
-'users' : 'Contributors',
-'date' : 'Creation date'
+'users' : 'Contributors'
 };
+
+(:, 'date' : 'Creation date' :)
+
+
 declare variable $lct:grouping := map{
 "diachronic" : "Diachronic", 
 "by-text": "By text", 
@@ -32,45 +35,59 @@ declare variable $lct:grouping := map{
 };
 
 declare function lct:citations-form($node as node()*, $model as map(*)){
+let $n := if (string-length($model?n)>0) then $model?n else 10
+return
 (
 <div class="row">
  <div class="col-md-1">x</div>
- <div class="col-md-3">
- <b>Perspectives:</b>
- <select class="form-control" name="select-perspective">
- {for $o in map:keys($lct:perspectives)
- return 
- <option value="{$o}">{$lct:perspectives?($o)}</option>}
- </select>
- </div>
  <div class="col-md-2">
  <b>Item</b>
  <input id="input-target" class="form-control" value=""/>
  </div>
  <div class="col-md-3">
+ <b>Perspectives:</b>
+ <select class="form-control" id="select-perspective">
+ {for $o in map:keys($lct:perspectives)
+ return 
+ <option value="{$o}">{$lct:perspectives?($o)}</option>}
+ </select>
+ </div>
+ <div class="col-md-3">
  <b>Grouping:</b>
- <select class="form-control" name="select-perspective">
+ <select class="form-control" id="select-grouping">
  {for $o in map:keys($lct:grouping)
  return 
  <option value="{$o}">{$lct:grouping?($o)}</option>}
  </select>
  </div>
+ <div class="col-md-2">
+ <b>Execute</b><br/>
+ <button type="button" class="btn btn-primary" onclick="do_citation()">Go</button>
+ </div>
 </div>,
 <hr/>,
-<div class="row">
+if (1 = 2) then () else
+<div class="row" id="cit-results">
  <div class="col-md-1">x</div>
  <div class="col-md-2"><b>Most frequent concepts</b>
-{lct:citations(map{"parameters" : map{"perspective" : "concepts", "count" : 10}})}
+{lct:citations(map{"parameters" : map{"perspective" : "concepts", "count" : $n}})}
  </div>
  <div class="col-md-2"><b>Most frequent characters</b>
-{lct:citations(map{"parameters" : map{"perspective" : "chars", "count" : 10}})}
+{lct:citations(map{"parameters" : map{"perspective" : "chars", "count" : $n}})}
  </div>
  <div class="col-md-2"><b>Most prolific contributors</b>
-{lct:citations(map{"parameters" : map{"perspective" : "users", "count" : 10}})}
+{lct:citations(map{"parameters" : map{"perspective" : "users", "count" : $n}})}
  </div>
+ {if (1 = 1) then () else 
+ <div class="col-md-2"><b>Most attributed texts</b>
+{lct:citations(map{"parameters" : map{"perspective" : "texts", "count" : $n}})}
+ </div>
+ }
+ {if (1 = 1) then () else 
  <div class="col-md-4"><b>Most recent citations</b>
 {lct:recent(10)}
  </div>
+ }
 </div>,
 <hr/>
 )
@@ -94,6 +111,7 @@ let $ann := $lct:coll//tls:ann
         case "concepts" return   ($a//@concept)[1]
         case "users" return ($a//tls:metadata/@resp)[1]
         case "chars" return ($a//tei:form/tei:orth)[1]
+        case "texts" return ($a/ancestor::tei:TEI/@xml:id)[1]
         default return ()
         group by $o
         let $cnt := count($a)
@@ -101,14 +119,13 @@ let $ann := $lct:coll//tls:ann
         where $cnt > $n
         return 
         [$cnt, $o[1]], 1, 10)
-let $res := <ul >
+let $res := <ol >
     {
     for $i at $pos in $l
-    where $pos < $n
     return
-        <li pos="{$pos}" cnt="{$i?1}">{string($i?2)} ({$i?1})</li>
+        <li pos="{$pos}" onclick="cit_set_value('{$perspective}', '{string($i?2)}')">{string($i?2)} ({$i?1})</li>
         }
-    </ul>
+    </ol>
 
 return $res
 };

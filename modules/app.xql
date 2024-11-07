@@ -138,6 +138,9 @@ if (tu:html-file() = ("char", "word")) then
 else 
 if (tu:html-file() = ("search")) then
 <script type="text/javascript" src="resources/scripts/krx.js"/>
+else 
+if (tu:html-file() = ("citations")) then
+<script type="text/javascript" src="resources/scripts/tls-citations.js"/>
 else ()
 };
 (:~

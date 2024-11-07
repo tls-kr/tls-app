@@ -422,7 +422,7 @@
                     "schema": {
                        "type" : "string",
                        "default" : "chars",
-                       "enum" : ["concepts", "chars", "users", "date"]
+                       "enum" : ["concepts", "chars", "users", "texts"]
                        }
                 },
                 {
