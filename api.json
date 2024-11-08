@@ -372,7 +372,6 @@
         ],
         "responses": {
           "200": {
-            "headers" : {"encoding" : "contentType: application/xml; charset=utf-8"},
             "description": "A successful response with HTML content.",
             "content": {
               "text/html": {
@@ -392,7 +391,90 @@
         }
       }
     },
-
+    "/citations/{perspective}/{grouping}":{
+        "get": {
+            "description" : "Citations, analyzed in different forms",
+            "summary": "Citations",
+            "operationId" : "lct:citations",
+            "parameters": [
+                {
+                    "required": false,
+                    "name": "count",
+                    "in": "query",
+                    "schema": {
+                      "type" : "integer",
+                      "maximum": 100,
+                      "default": 10
+                      }
+                },
+                {
+                    "required": false,
+                    "name": "item",
+                    "in": "query",
+                    "schema": {
+                      "type" : "string"
+                      }
+                },
+                {
+                    "required" : true,
+                    "name": "perspective",
+                    "in": "path",
+                    "schema": {
+                       "type" : "string",
+                       "default" : "chars",
+                       "enum" : ["concepts", "chars", "users", "texts"]
+                       }
+                },
+                {
+                    "in": "path",
+                    "name": "grouping",
+                    "required": true,
+                    "schema": {
+                     "type" : "string",
+                     "enum" : ["diachronic", "by-text", "by-syn-func", "by-char", "by-concept", "none"],
+                     "default" : "diachronic"
+                     }
+                },
+                {
+                    "in": "query",
+                    "name": "group2",
+                    "required": false,
+                    "schema": {
+                     "type" : "string",
+                     "enum" : ["diachronic", "by-text", "by-syn-func", "by-char", "by-concept", "none"],
+                     "default" : "none"
+                     }
+                     
+                },
+                {
+                    "in": "query",
+                    "name": "sort",
+                    "required": true,
+                    "schema": {
+                     "type" : "string",
+                     "enum" : ["by-freq-descending", "by-freq-ascending", "by-date-ascending", "by-date-descending"],
+                     "default" : "by-freq-descending"
+                     }
+                     
+                }
+            ],
+            "responses": {
+                "200" : 
+                {
+                "description": "A successful response with HTML content.",
+                "content": {
+                   "text/html": {
+                    "schema": {
+                     "type": "string",
+                     "example": "<span id=\"krx-search\">漢リポ: <a class=\"btn badge badge-light chn-font\" target=\"kanripo\" title=\"Search 君子 in Kanseki Repository\" style=\"background-color:paleturquoise\" href=\"krx/items?query=君子\">君子</a></span>"
+                }
+              }
+            }
+                    
+                }
+            }
+        }
+    },
 
 		"/api/parameters": {
             "get": {
@@ -526,7 +608,7 @@
             "parameters": [
                {
                "name": "user",
-               "required": "true",
+               "required": true,
                "in": "path"
 
                }

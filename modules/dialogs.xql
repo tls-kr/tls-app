@@ -20,6 +20,7 @@ import module namespace ltp="http://hxwd.org/lib/textpanel" at "lib/textpanel.xq
 import module namespace lrh="http://hxwd.org/lib/render-html" at "lib/render-html.xqm";
 import module namespace lpm="http://hxwd.org/lib/permissions" at "lib/permissions.xqm";
 
+import module namespace remote="http://hxwd.org/remote" at "lib/remote.xqm";
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
@@ -151,7 +152,7 @@ return
 declare function local:text-info($name, $options){
   dialogs:modal-frame($name, 
       map{
-        "body": tlslib:textinfo($options?textid), 
+        "body": if ($options?mode='remote') then remote:call-remote-get(map{'server' : 'https://hxwd.org/krx/textinfo/', 'path' : $options?textid}) else tlslib:textinfo($options?textid), 
         "options" : $options,
         "title":  "Text information"
       })           

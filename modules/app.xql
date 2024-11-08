@@ -138,6 +138,9 @@ if (tu:html-file() = ("char", "word")) then
 else 
 if (tu:html-file() = ("search")) then
 <script type="text/javascript" src="resources/scripts/krx.js"/>
+else 
+if (tu:html-file() = ("citations")) then
+<script type="text/javascript" src="resources/scripts/tls-citations.js"/>
 else ()
 };
 (:~
@@ -1298,6 +1301,7 @@ if ($user = 'guest' and $context = ('index', 'signup')) then () else
                                 <a class="dropdown-item" href="browse.html?type=concept">Concepts</a>
                                 <a class="dropdown-item" href="browse.html?type=taxchar">Characters</a>
                                 <a class="dropdown-item" href="browse.html?type=taxword">Words</a>
+                                <a class="dropdown-item" href="citations.html">Citations</a>
                                 <a class="dropdown-item" href="browse.html?type=word-rel-type">Word relations</a>
                                 <a class="dropdown-item" href="browse.html?type=syn-func">Syntactic functions</a>
                                 <a class="dropdown-item" href="browse.html?type=sem-feat">Semantic features</a>
