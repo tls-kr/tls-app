@@ -431,8 +431,18 @@
                     "required": true,
                     "schema": {
                      "type" : "string",
-                     "enum" : ["diachronic", "by-text", "by-syn-func", "by-char", "by-concept"],
+                     "enum" : ["diachronic", "by-text", "by-syn-func", "by-char", "by-concept", "none"],
                      "default" : "diachronic"
+                     }
+                },
+                {
+                    "in": "query",
+                    "name": "group2",
+                    "required": false,
+                    "schema": {
+                     "type" : "string",
+                     "enum" : ["diachronic", "by-text", "by-syn-func", "by-char", "by-concept", "none"],
+                     "default" : "none"
                      }
                      
                 },
