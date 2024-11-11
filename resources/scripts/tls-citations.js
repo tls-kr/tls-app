@@ -30,7 +30,7 @@ function do_citation() {
     $('#cit-results').html(resp.responseText);
   }
   });
-  $('#cit-results').html('Processing data, please wait for a moment.')
+  $('#cit-results').html('Processing data, just a moment please.')
 };
 
 
