@@ -35,7 +35,7 @@ declare variable $lct:grouping := map{
 "by-text": "By text", 
 "by-syn-func": "By Syntactical Function", 
 "by-sem-feat": "By Semantical Feature", 
-"by-pos": "By Part Of Speach" 
+"by-pos": "By Part Of Speech" 
 };
 
 declare function lct:citations-form($node as node()*, $model as map(*)){
@@ -147,7 +147,7 @@ for $a in $set
  let $s := lct:get-sort-key($a, $sort)
  order by $s descending
  return 
- map:entry($o, 
+ map:entry($o, (count($a),
   map:merge(
    for $b in $a
     let $o2 := lct:get-grouping-key($b, $key2[1])
@@ -155,26 +155,34 @@ for $a in $set
     let $s2 := lct:get-sort-key($b, $sort[1])
     order by $s2
     return 
- map:entry($o2, $b))
+ map:entry($o2, (count($b), $b))))
  ))
 };
 
 declare function lct:format-result-map($map, $level){
 let $k := map:keys($map)
 , $cl := if ($level = 1) then 'col-md-10' else ''
+, $total := sum(for $l in $k return map:get($map, $l)[1])
 return
 <div id="result-map-top-{$level}" class="{$cl}">
+  <h3>Total: {$total}</h3>
   {for $l at $pos in $k
-  let $cnt := count(map:get($map, $l))
-  , $cd := if ($cnt > 1) then "&#160;(" || $cnt || ")" else "" 
+  let $cnt := map:get($map, $l)[1]
+  , $pc := format-number(($cnt div $total) * 100, "##.#") 
+  , $cd := if ($cnt > 0) then "&#160;(" || $cnt || " / "||$pc||"%)" else "" 
+  , $uid := util:uuid()
+  , $class := if ($l = 'none') then () else "collapse container"
   order by $l
   return
-  <div id="res-map-{$level}-{$pos}"><h3 data-toggle="collapse" data-target="#res-map-{$level}-en-{$pos}">{lct:format-key($l)} {$cd}</h3>
-  <div id="res-map-{$level}-en-{$pos}" class="collapse container">
+  <div id="res-map-{$level}-{$pos}">
+  {if ($l = 'none') then () else <h3 data-toggle="collapse" data-target="#res-map-{$uid}">{lct:format-key($l)} {$cd}</h3>}
+  <div id="res-map-{$uid}" class="{$class}">
 {for $e at $epos in map:get($map, $l)
  return
   typeswitch($e[1])
-   case element(tls:ann) return 
+   case xs:int return 
+    for $f in $e return lct:format-citation($f[2], map{})
+    case element(tls:ann) return 
    for $f in $e return lct:format-citation($f, map{})
    case map() return lct:format-result-map($e, $level+1)
    default return ()
