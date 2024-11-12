@@ -4,7 +4,7 @@ xquery version "3.1";
  : Library module for analyzing citations.
  :
  : @author Christian Wittern
- : @date 2023-10-23
+ : @date 2024-11-05
  :)
 
 module namespace lct="http://hxwd.org/citations";
@@ -179,11 +179,12 @@ return
   <h3>Total: {$total}</h3>
   {for $l at $pos in $k
   let $cnt := map:get($map, $l)[1]
-  , $pc := format-number(($cnt div $total) * 100, "##.#") 
+  , $pc := format-number(($cnt div $total) * 100, "0.#") 
   , $cd := if ($cnt > 0) then "&#160;(" || $cnt || " / "||$pc||"%)" else "" 
   , $uid := util:uuid()
   , $class := if ($l = 'none') then () else "collapse container"
-  order by $l
+  , $cc := if (starts-with($l, 'dat')) then $l else $cnt
+  order by $cc descending
   return
   <div id="res-map-{$level}-{$pos}">
   {if ($l = 'none') then () else <h3 data-toggle="collapse" data-target="#res-map-{$uid}">{lct:format-key($l)} {$cd}</h3>}
@@ -307,12 +308,16 @@ let $creator-id := if ($node/tls:metadata/@resp) then substring($node/tls:metada
 , $def := $node//tei:def/text()
 return
 <div class="row {$bg}">
-<div class="col-sm-1" title="{$creation-date}"><span class="chn-font">{$zi}</span> ({$pr}) <span class="btn badge ml-2" onclick="cit_set_value('chars', '{$zi}')">(set)</span></div>
-<div class="col-sm-2"><a href="concept.html?concept={$concept}{$node//tei:sense/@corresp}">{$concept}</a> <span class="btn badge ml-2" onclick="cit_set_value('concept', '{$concept}')">(set)</span></div>
-<div class="col-sm-4"><a href="textview.html?location={$target}{if ($type='remote')then '&amp;mode=remote'else()}" class="font-weight-bold">{$src, $loc}</a>&#160;{$line}{if ($tr) then ' / ' || $tr else ()}</div>
-<div class="col-sm-2"><span class="font-weight-bold">{$sf}</span>{if ($sm) then ("&#160;",<em>{$sm}</em>) else ()}</div>
+<div class="col-sm-1" title="{$creation-date}"><span class="chn-font">{$zi}</span> ({$pr}) {lct:set-value('chars', $zi)}</div>
+<div class="col-sm-2"><a href="concept.html?concept={$concept}{$node//tei:sense/@corresp}">{$concept}</a> {lct:set-value('concept', $concept)}</div>
+<div class="col-sm-4"><a href="textview.html?location={$target}{if ($type='remote')then '&amp;mode=remote'else()}" class="font-weight-bold">{$src, $loc}</a>&#160;{$line}{if ($tr) then (<br/>, $tr) else ()}</div>
+<div class="col-sm-2"><span class="font-weight-bold">{$sf}</span>{lct:set-value('syn-func', $sf)} {if ($sm) then ("&#160;",<em>{$sm}</em>) else ()}</div>
 <div class="col-sm-3">{$def}</div>
 </div>
+};
+
+declare function lct:set-value($perspective, $item){
+<span class="btn badge ml-2" onclick="cit_set_value('{$perspective}', '{$item}')">(set)</span>
 };
 
 declare function lct:cit-count($node as node()*, $model as map(*)){
