@@ -28,6 +28,7 @@ import module namespace lli="http://hxwd.org/lib/link-items" at "link-items.xqm"
 import module namespace ltr="http://hxwd.org/lib/translation" at "translation.xqm";
 import module namespace log="http://hxwd.org/log" at "../log.xql";
 import module namespace lsd="http://hxwd.org/lib/swl-dialog" at "swl-dialog.xqm";
+import module namespace lvs="http://hxwd.org/lib/visits" at "visits.xqm";
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
@@ -130,6 +131,7 @@ declare function ltp:prepare-chunk($chunk as node()*, $map as map(*)){
       , $show-transl := lpm:should-show-translation()
       , $show-variants := xs:boolean(1)
       , $textid := data($chunk/div/info/@textid)
+      , $visit := lvs:record-visit-remote(data($tseg/@xml:id), $tseg/text())
       , $tr := if (lpm:should-show-translation()) then 
          if (string-length($facs) > 0) then map:merge((ltr:get-translations($textid), 
             for $edx in tokenize($chunk/div/pb/@eds)

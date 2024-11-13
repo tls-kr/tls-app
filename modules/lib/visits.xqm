@@ -42,8 +42,22 @@ else
   else ()
 };
 
-(: 2024-10-31 TODO :)
-declare function lvs:record-visit-remote($sid as xs:string){
+(: 2024-10-31 we use the segment id here, not the node :)
+declare function lvs:record-visit-remote($sid as xs:string, $text as xs:string?){
+let $user := sm:id()//sm:real/sm:username/text(),
+$groups := sm:get-user-groups($user),
+$doc := if ( ("guest", "tls-test") = $groups) then () else lvs:get-visit-file(),
+$date := current-dateTime()
+, $textid := tokenize($sid, "_")[1]
+, $ex := $doc//tei:item[@xml:id=$textid]
+, $item := <item xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$textid}" modified="{current-dateTime()}"><ref target="#{$sid}" type="remote">{$text}</ref></item>
+return 
+if ($ex) then 
+  update replace $ex with $item
+else
+  if ($doc) then
+     update insert $item  into $doc//tei:list[@xml:id="recent-start"]
+  else ()
 };
 
 declare function lvs:get-visit-file(){

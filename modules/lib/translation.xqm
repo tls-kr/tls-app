@@ -521,7 +521,7 @@ let $id := substring-before($trid, '-slot')
 ,$seg := <seg xmlns="http://www.tei-c.org/ns/1.0" corresp="#{$id}" xml:lang="{$lang}" resp="#{$user}" modified="{current-dateTime()}">{$tr-to-save}</seg>
 ,$node := $transl//tei:seg[@corresp="#" || $id]
 ,$targetseg := lu:get-seg($id)
-,$visit := if ($targetseg) then lvs:record-visit($targetseg) else lvs:record-visit-remote($id)
+,$visit := if ($targetseg) then lvs:record-visit($targetseg) else lvs:record-visit-remote($id, '')
 return
 if ($node) then (
  update insert attribute modified {current-dateTime()} into $node,
