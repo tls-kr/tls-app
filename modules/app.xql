@@ -963,6 +963,7 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
      else
        (collection($config:tls-data-root || "/concepts") | collection($config:tls-data-root || "/domain"))//tei:div[tei:head[. = $concept]],
     $key := $c/@xml:id,
+    $concept := $c/tei:head/text(),
     $edit := if (sm:id()//sm:groups/sm:group[. = "tls-editor"]) then 'false' else 'false',
     $show := if (string-length($ontshow) > 0) then " show" else "",
     $tr := $c//tei:list[@type="translations"]//tei:item
@@ -972,7 +973,7 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
     <div class="row" id="concept-id" data-id="{$key}">
     <div class="card col-sm-12" style="max-width: 1000px;">
     <div class="card-body">
-    <h4 class="card-title"><span id="{$key}-la" class="sf" contenteditable="{$edit}">{$c/tei:head/text()}</span>&#160;&#160;{for $t in $tr return 
+    <h4 class="card-title"><span id="{$key}-la" class="sf" contenteditable="{$edit}">{$concept}</span>&#160;&#160;{for $t in $tr return 
       <span class="badge badge-light" title="{map:get($config:lmap, $t/@xml:lang)}">{$t/text()}</span>} 
       {if  ("tls-admin" = sm:get-user-groups($user)) then 
       <a target="_blank" class="float-right badge badge-pill badge-light" href="{
@@ -1096,29 +1097,10 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
      <div class="card-header" id="look-head">
       <h5 class="mb-0 mt-2">
         <button class="btn" data-toggle="collapse" data-target="#look" >
-          Attributions overview (<span class="btn badge badge-light">{count($ann)} attested)</span>
+          <a href="citations.html?perspective=concept&amp;item={$concept}" title="This moves to a separate page">Citations</a> (<span class="btn badge badge-light">{count($ann)} attested)</span>
         </button>
       </h5>
       </div>
-     <div id="look" class="collapse" data-parent="#concept-content">
-     <p><b>Attributions by syntactic funtion</b>
-     <ul>
-     {for $sf in distinct-values($ann//tls:syn-func/@corresp)
-       let $csf :=  count($ann//tls:syn-func[@corresp=$sf])
-       order by $csf descending
-       return
-       <li>{($ann//tls:syn-func[@corresp=$sf])[1], " : ", $csf}</li>
-     }</ul></p>
-     <p><b>Attributions by text</b>
-     <ul>{for $ti in distinct-values($ann//tls:srcline/@title)
-       let $csf :=  count($ann//tls:srcline[@title=$ti])
-       order by $csf descending
-       return
-       <li>{data(($ann//tls:srcline[@title=$ti])[1]/@title), " : ", $csf}</li>
-     }
-     </ul>
-     </p>
-    </div>
     </div>
     
     </div>

@@ -4,7 +4,7 @@ xquery version "3.1";
  : Library module for analyzing citations.
  :
  : @author Christian Wittern
- : @date 2023-10-23
+ : @date 2024-11-05
  :)
 
 module namespace lct="http://hxwd.org/citations";
@@ -13,15 +13,19 @@ import module namespace config="http://hxwd.org/config" at "../config.xqm";
 import module namespace tu="http://hxwd.org/utils" at "../tlsutils.xql";
 import module namespace lmd="http://hxwd.org/lib/metadata" at "metadata.xqm";
 
+import module namespace src="http://hxwd.org/search" at "../search.xql";
+
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
 
 declare variable $lct:coll := (collection($config:tls-data-root||"/notes/swl")|collection($config:tls-data-root||"/notes/doc"))//tls:ann;
 
 declare variable $lct:perspectives := map{
-'concepts' : 'Concepts',
 'chars' : 'Characters',
+'concept' : 'Concepts',
 'users' : 'Contributors'
+,"syn-func": "Syntactical Functions"
+,"texts": "Texts"
 };
 
 (:, 'date' : 'Creation date' :)
@@ -38,22 +42,27 @@ declare variable $lct:grouping := map{
 "by-pos": "By Part Of Speech" 
 };
 
-declare function lct:citations-form($node as node()*, $model as map(*)){
-let $n := if (string-length($model?n)>0) then $model?n else 10
+declare function lct:citations-form($node as node()*, $model as map(*), $item as xs:string?, $perspective as xs:string?){
+let $n := if (string-length($model?n)>0) then $model?n else 20
 return
 (
 <div class="row">
  <div class="col-md-1">x</div>
- <div class="col-md-2">
+ <div class="col-md-2 form-group ui-widget" id="input-group" >
  <b>Item</b>
- <input id="input-target" class="form-control" value=""/>
+ <input id="input-target" class="form-control" value="{$item}"/>
+ <span id="input-id-span" style="display:none;"></span>
  </div>
  <div class="col-md-3">
  <b>Perspectives:</b>
- <select class="form-control" id="select-perspective">
+ <select class="form-control" id="select-perspective" onchange="initialize_cit_autocomplete()">
  {for $o in map:keys($lct:perspectives)
  return 
- <option value="{$o}">{$lct:perspectives?($o)}</option>}
+ if ($o = $perspective) then
+ <option value="{$o}" selected='true'>{$lct:perspectives?($o)}</option>
+ else
+ <option value="{$o}">{$lct:perspectives?($o)}</option>
+ }
  </select>
  </div>
  <div class="col-md-3">
@@ -91,7 +100,7 @@ if (1 = 1) then <div class="row" id="cit-results"/> else
 <div class="row" id="cit-results">
  <div class="col-md-1">x</div>
  <div class="col-md-2"><b>Most frequent concepts</b>
-{lct:citations(map{"parameters" : map{"perspective" : "concepts", "count" : $n}})}
+{lct:citations(map{"parameters" : map{"perspective" : "concept", "count" : $n}})}
  </div>
  <div class="col-md-2"><b>Most frequent characters</b>
 {lct:citations(map{"parameters" : map{"perspective" : "chars", "count" : $n}})}
@@ -127,8 +136,10 @@ if (string-length($item) > 0) then
    let $set :=
      switch ($perspective)
        case "chars" return $lct:coll[tei:form/tei:orth[. = $item]]
-       case "concepts" return $lct:coll[@concept = $item]
+       case "concept" return $lct:coll[@concept = $item]
+       case "syn-func" return $lct:coll[.//tls:syn-func[. = $item]]
        case "users" return $lct:coll[tls:metadata[@resp=$item]]
+       case "texts" return $lct:coll[.//tls:srcline/@title[. = $item]]
        default return ()
    return (<div class="col-md-1"/>,
      lct:by-item($set, $map) => lct:format-result-map(1) )
@@ -168,11 +179,12 @@ return
   <h3>Total: {$total}</h3>
   {for $l at $pos in $k
   let $cnt := map:get($map, $l)[1]
-  , $pc := format-number(($cnt div $total) * 100, "##.#") 
+  , $pc := format-number(($cnt div $total) * 100, "0.#") 
   , $cd := if ($cnt > 0) then "&#160;(" || $cnt || " / "||$pc||"%)" else "" 
   , $uid := util:uuid()
   , $class := if ($l = 'none') then () else "collapse container"
-  order by $l
+  , $cc := if (starts-with($l, 'dat')) then $l else $cnt
+  order by $cc descending
   return
   <div id="res-map-{$level}-{$pos}">
   {if ($l = 'none') then () else <h3 data-toggle="collapse" data-target="#res-map-{$uid}">{lct:format-key($l)} {$cd}</h3>}
@@ -192,6 +204,7 @@ return
 }
 </div>
 };
+
 
 declare function lct:format-key($k){
 if (starts-with($k, 'dat')) 
@@ -232,12 +245,13 @@ switch($g)
 case "diachronic" return lmd:get-metadata($a, "tls-dates")
 case "texts"
 case "by-text" return $a//tls:srcline/@title
+case "syn-func"
 case "by-syn-func" return $a//tls:syn-func
 case "by-sem-feat" return $a//tls:sem-feat
 case "by-pos" return $a//tei:pos
 case "chars"
 case "by-char" return ($a//tei:form/tei:orth)[1]
-case "concepts"
+case "concept"
 case "by-concept" return ($a//@concept)[1]
 case "users"
 case "by-user" return ($a//tls:metadata/@resp)[1]
@@ -294,12 +308,20 @@ let $creator-id := if ($node/tls:metadata/@resp) then substring($node/tls:metada
 , $def := $node//tei:def/text()
 return
 <div class="row {$bg}">
-<div class="col-sm-1" title="{$creation-date}"><span class="chn-font">{$zi}</span> ({$pr}) <span class="btn badge ml-2" onclick="cit_set_value('chars', '{$zi}')">(set)</span></div>
-<div class="col-sm-2"><a href="concept.html?concept={$concept}{$node//tei:sense/@corresp}">{$concept}</a> <span class="btn badge ml-2" onclick="cit_set_value('concepts', '{$concept}')">(set)</span></div>
-<div class="col-sm-4"><a href="textview.html?location={$target}{if ($type='remote')then '&amp;mode=remote'else()}" class="font-weight-bold">{$src, $loc}</a>&#160;{$line}{if ($tr) then ' / ' || $tr else ()}</div>
-<div class="col-sm-2"><span class="font-weight-bold">{$sf}</span>{if ($sm) then ("&#160;",<em>{$sm}</em>) else ()}</div>
+<div class="col-sm-1" title="{$creation-date}"><span class="chn-font">{$zi}</span> ({$pr}){lct:set-value('chars', $zi)}</div>
+<div class="col-sm-2"><a href="concept.html?concept={$concept}{$node//tei:sense/@corresp}">{$concept}</a> {lct:set-value('concept', $concept)}</div>
+<div class="col-sm-4"><a href="textview.html?location={$target}{if ($type='remote')then '&amp;mode=remote'else()}" class="font-weight-bold">{$src, $loc}</a>&#160;{$line}{if ($tr) then (<br/>, $tr) else ()}</div>
+<div class="col-sm-2">{lct:set-value('syn-func', $sf)}<span class="font-weight-bold ml-2">{$sf}</span> {if ($sm) then ("&#160;",<em>{$sm}</em>) else ()}</div>
 <div class="col-sm-3">{$def}</div>
 </div>
+};
+
+declare function lct:set-value($perspective, $item){
+<span class="btn badge badge-light" onclick="cit_set_value('{$perspective}', '{$item}')">CIT</span>
+};
+
+declare function lct:set-valuex($perspective, $item){
+<span class="btn badge badge-light" style="background-color:palegreen" onclick="cit_set_value('{$perspective}', '{$item}')">CIT</span>
 };
 
 declare function lct:cit-count($node as node()*, $model as map(*)){

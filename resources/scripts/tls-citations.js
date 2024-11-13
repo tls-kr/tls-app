@@ -35,6 +35,42 @@ function do_citation() {
 
 
 function cit_set_value(perspective, item){
-  $('#input-target').val(item);
   $('#select-perspective').val(perspective).change();
+  $('#input-target').val(item);
 };
+
+
+// for concepts, synfunc we provide autocomplete
+
+function initialize_cit_autocomplete(){
+    var type =   $('#select-perspective').val();
+    $('#input-target').val('');
+    console.log("Initializing autocomplete functions");
+    $( "#input-target" ).autocomplete({
+      appendTo: "#input-group",
+      response : function(event, ui){
+      // need to reset this, in case of a new SF
+        $("#input-id-span" ).html("xxx");     
+        $("#def-old-sf-span").html("<span class='warn'>If the new item is not from the list, please add a definition below!</span>")
+      },
+      source: function( request, response ) {
+        $.ajax( {
+          url: "api/autocomplete.xql",
+          dataType: "jsonp",
+          data: {
+            term: request.term,
+	        type: type
+          },
+          success: function( data ) {
+            response( data );
+          }
+        } );
+      },
+      minLength: 1,
+      select: function( event, ui ) {
+        $("#input-id-span" ).html(ui.item.id);     
+        console.log( "Selected: " + ui.item.value + " aka " + ui.item.id );
+      }
+    } );
+};
+
