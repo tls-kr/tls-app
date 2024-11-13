@@ -11,6 +11,9 @@ module namespace lvs="http://hxwd.org/lib/visits";
 
 import module namespace config="http://hxwd.org/config" at "../config.xqm";
 import module namespace lmd="http://hxwd.org/lib/metadata" at "metadata.xqm";
+import module namespace tu="http://hxwd.org/utils" at "../tlsutils.xql";
+
+import module namespace lu="http://hxwd.org/lib/utils" at "utils.xqm";
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 
@@ -89,4 +92,22 @@ declare function lvs:recent-visits(){
   $doc := if ($user=("guest")) then () else doc($config:tls-user-root|| $user || "/recent.xml")
   return
   $doc//tei:list[@type="visits"]/tei:item
+};
+
+declare function lvs:list-visits(){
+for $v in collection('/db/users')//tei:list[@xml:id='recent-start']/tei:item
+let $u := substring-after(data($v/ancestor::tei:TEI/@xml:id), 'vis-')
+let $t := xs:dateTime($v/@modified)
+group by $u
+let $tr := (for $tx in $t order by $tx descending return $tx)[1]
+order by $tr descending
+return 
+    subsequence(for $l in $v
+    let $t2 := xs:dateTime($l/@modified)
+    , $textid := $l/@xml:id
+    , $title := lu:get-title($textid)
+    , $target := substring($l/tei:ref/@target, 2)
+    where not ($textid = $config:ignored-text-ids)
+        order by $t2 descending
+    return <li u="{$u[1]}">{format-dateTime($t2, "[Y0001]-[M01]-[D01]/[H01]:[m01]:[s01]")}&#160;{tu:get-member-name($u[1])}&#160;({$u[1]})&#160;<br/> <a href="textview.html?location={$target}">{$title}</a></li>, 1, 1)
 };

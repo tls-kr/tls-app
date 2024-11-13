@@ -308,16 +308,20 @@ let $creator-id := if ($node/tls:metadata/@resp) then substring($node/tls:metada
 , $def := $node//tei:def/text()
 return
 <div class="row {$bg}">
-<div class="col-sm-1" title="{$creation-date}"><span class="chn-font">{$zi}</span> ({$pr}) {lct:set-value('chars', $zi)}</div>
+<div class="col-sm-1" title="{$creation-date}"><span class="chn-font">{$zi}</span> ({$pr}){lct:set-value('chars', $zi)}</div>
 <div class="col-sm-2"><a href="concept.html?concept={$concept}{$node//tei:sense/@corresp}">{$concept}</a> {lct:set-value('concept', $concept)}</div>
 <div class="col-sm-4"><a href="textview.html?location={$target}{if ($type='remote')then '&amp;mode=remote'else()}" class="font-weight-bold">{$src, $loc}</a>&#160;{$line}{if ($tr) then (<br/>, $tr) else ()}</div>
-<div class="col-sm-2"><span class="font-weight-bold">{$sf}</span>{lct:set-value('syn-func', $sf)} {if ($sm) then ("&#160;",<em>{$sm}</em>) else ()}</div>
+<div class="col-sm-2">{lct:set-value('syn-func', $sf)}<span class="font-weight-bold ml-2">{$sf}</span> {if ($sm) then ("&#160;",<em>{$sm}</em>) else ()}</div>
 <div class="col-sm-3">{$def}</div>
 </div>
 };
 
 declare function lct:set-value($perspective, $item){
-<span class="btn badge ml-2" onclick="cit_set_value('{$perspective}', '{$item}')">(set)</span>
+<span class="btn badge badge-light" onclick="cit_set_value('{$perspective}', '{$item}')">CIT</span>
+};
+
+declare function lct:set-valuex($perspective, $item){
+<span class="btn badge badge-light" style="background-color:palegreen" onclick="cit_set_value('{$perspective}', '{$item}')">CIT</span>
 };
 
 declare function lct:cit-count($node as node()*, $model as map(*)){

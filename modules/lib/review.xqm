@@ -31,7 +31,8 @@ let $user := "#" || sm:id()//sm:username
 , $issues := map{
 "missing-pinyin" : "Concepts with missing pinyin reading",
 "duplicate" : "Concepts with duplicate word entries",
-"no-dates" : "Texts with no dates assigned"
+"no-dates" : "Texts with no dates assigned",
+"visits"  : "Recent visits"
 }
 return
 <div>
@@ -42,6 +43,7 @@ return
  case "missing-pinyin" return lrv:review-missing-pinyin()
  case "duplicate" return lrv:review-duplicate()
  case "no-dates" return lrv:review-no-dates()
+ case "visits" return lvs:list-visits()
  default return 
   for $i in map:keys($issues)
   order by $i
