@@ -119,9 +119,10 @@ return
     subsequence(for $l in $v
     let $t2 := xs:dateTime($l/@modified)
     , $textid := $l/@xml:id
-    , $title := lu:get-title($textid)
     , $target := substring($l/tei:ref/@target, 2)
+    , $title :=  if (lu:get-title($textid)) then lu:get-title($textid) else lmd:get-metadata-from-catalog($target, 'title')
+    , $type := $l/tei:ref/@type
     where not ($textid = $config:ignored-text-ids)
         order by $t2 descending
-    return <li u="{$u[1]}">{format-dateTime($t2, "[Y0001]-[M01]-[D01]/[H01]:[m01]:[s01]")}&#160;{tu:get-member-name($u[1])}&#160;({$u[1]})&#160;<br/> <a href="textview.html?location={$target}">{$title}</a></li>, 1, 1)
+    return <li u="{$u[1]}">{format-dateTime($t2, "[Y0001]-[M01]-[D01]/[H01]:[m01]:[s01]")}&#160;{tu:get-member-name($u[1])}&#160;({$u[1]})&#160;<br/> <a href="textview.html?location={$target}&amp;mode={$type}">{$title}</a></li>, 1, 1)
 };

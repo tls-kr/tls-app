@@ -150,11 +150,11 @@ for $node in $note/node()
 (: format the app for display in the segment :)
 declare function lrh:format-app($app as node()){
  let $lwit := $app/ancestor::tei:TEI//tei:witness[@xml:id=substring($app/tei:lem/@wit, 2)]/text()
- let $lem :=  string-join($app/tei:lem//text(), ' ') || $lwit ||"；" 
- , $t := string-join(for $r in $app/tei:rdg
+ let $lem :=   string-join($app/tei:lem//text(), ' ') || $lwit ||"；" 
+ , $t := try{ string-join(for $r in $app/tei:rdg
         let $wit := "【" || string-join(for $w in tokenize($r/@wit) return $app/ancestor::tei:TEI//tei:witness[@xml:id=substring($w, 2)]/text() , "，") ||  "】"
-        return $r/text() || $wit, "；")
- , $note := if ($app/tei:note) then "&#xA;(Note: " || $app/tei:note/text() || ")&#xA;" || $app/tei:note/tei:bibl else () 
+        return $r/text() || $wit, "；")  } catch * {"XX"}
+ , $note := if ($app/tei:note) then "&#xA;(Note: " || $app/tei:note/text() || ")&#xA;" || $app/tei:note/tei:bibl else ()
   return $lem || $t || $note
 };
 
@@ -293,11 +293,12 @@ else ()}
       else ()
   }    
 </div>
-<div class="col-sm-3"><a href="concept.html?concept={$concept}#{$w/@xml:id}" title="{$cdef}">{$concept}</a></div>
-<div class="col-sm-6">
+<div class="col-sm-2"><a href="concept.html?concept={$concept}#{$w/@xml:id}" title="{$cdef}">{$concept}</a></div>
+<div class="col-sm-7">
 <span><a href="browse.html?type=syn-func&amp;id={data($sf/@corresp)}">{($sf)[1]/text()}</a>&#160;</span>
 {if ($sm) then 
 <span><a href="browse.html?type=sem-feat&amp;id={$sm/@corresp}">{($sm)[1]/text()}</a>&#160;</span> else ()}
+<span class="ml-2">{$def}</span>
 {
 if (($user = $creator-id) or contains($usergroups, "tls-editor" )) then 
     lrh:format-button("delete_swl('swl', '" || data($node/@xml:id) || "')", "Immediately delete this SWL for "||$zi[1], "open-iconic-master/svg/x.svg", "small", "close", "tls-editor")

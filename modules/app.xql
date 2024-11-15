@@ -426,7 +426,11 @@ let $query-needing-measurement := (: insert query or function call here :)
     else
      if (string-length($location) > 0) then 
 (:     tlslib:display-chunk($dispseg, $model, $prec, $foll):)
-      try {tlslib:display-chunk($dispseg, $model, $prec, $foll)} catch * {"An error occurred, can't display text. Code:" || count($dispseg) || " (dispseg)" }      
+      try {
+      
+      tlslib:display-chunk($dispseg, $model, $prec, $foll)
+      
+      } catch * {"An error occurred, can't display text. Code:" || count($dispseg) || " (dispseg)" }      
     else 
     app:textlist()
     
