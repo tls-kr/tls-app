@@ -93,3 +93,7 @@ contains(sm:id()//sm:group, ('tls-test', 'guest'))
 declare function lpm:should-show-translation(){
 not(contains(sm:id()//sm:group/text(), "guest"))
 };
+
+declare function lpm:show-buddhist-tools(){
+("chris", "CW", "cwittern") = sm:id()//sm:real/sm:username/text()
+};

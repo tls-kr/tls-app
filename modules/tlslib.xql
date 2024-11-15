@@ -990,16 +990,21 @@ return if ($sfexist) then $sfexist/parent::tei:div/@xml:id else $uuid
 
 
 declare function tlslib:recent-texts-list($num){
-subsequence( for $l in  lvs:recent-visits()
+  let $ids := subsequence( for $l in  lvs:recent-visits()
   let $date := xs:dateTime($l/@modified)
   , $textid := $l/@xml:id
-  , $title := lu:get-title($textid)
   , $target := substring($l/tei:ref/@target, 2)
+  , $type := $l/tei:ref/@type
   order by $date descending
   where not ($textid = $config:ignored-text-ids)
-  return 
-  <li><a href="textview.html?location={$target}">{$title}</a></li>
-  , 1, $num)
+  return [$target, $textid, $type], 1, $num)
+  for $text in $ids 
+  let $title := if (lu:get-title($text?2)) then lu:get-title($text?2) else lmd:get-metadata-from-catalog($text?1, 'title')
+  return
+  if ($text?3 = 'remote') then 
+  <li><a href="textview.html?location={$text?1}&amp;mode=remote">{if ($title) then $title else $text?2}</a></li>
+  else
+  <li><a href="textview.html?location={$text?1}">{if ($title) then $title else $text?2}</a></li>
 };
 
 (: generic function to save the setting of $map?setting to $map?value :)

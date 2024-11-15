@@ -12,6 +12,8 @@ import module namespace config="http://hxwd.org/config" at "../config.xqm";
 import module namespace lu="http://hxwd.org/lib/utils" at "utils.xqm";
 import module namespace tu="http://hxwd.org/utils" at "../tlsutils.xql";
 import module namespace lus="http://hxwd.org/lib/user-settings" at "user-settings.xqm";
+import module namespace lsi="http://hxwd.org/special-interest" at "special-interest.xqm";
+import module namespace lpm="http://hxwd.org/lib/permissions" at "permissions.xqm";
 
 import module namespace lrh="http://hxwd.org/lib/render-html" at "render-html.xqm";
 
@@ -77,6 +79,7 @@ return
 declare function lsf:get-sw-dispatch($word, $context, $domain, $leftword){
 let $pref := lus:get-sf-display-setting()
 return 
+( if (lpm:show-buddhist-tools()) then <ul>{lsi:ddb-lookup($word)}</ul> else (),
   switch($pref)
 case 'by-syn-func' return
  lsf:get-sw-by-syn-func($word, $context, $domain, $leftword)
@@ -84,6 +87,7 @@ case 'by-frequency' return
  lsf:get-sw-by-frequency($word, $context, $domain, $leftword)
 default return
  lsf:get-sw-by-concept($word, $context, $domain, $leftword)
+)
 };
 
 (: produce the list and return as array  
