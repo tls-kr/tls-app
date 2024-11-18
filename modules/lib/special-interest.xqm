@@ -13,6 +13,7 @@ import module namespace config="http://hxwd.org/config" at "../config.xqm";
 import module namespace tu="http://hxwd.org/utils" at "../tlsutils.xql";
 import module namespace lmd="http://hxwd.org/lib/metadata" at "metadata.xqm";
 
+declare namespace os="http://a9.com/-/spec/opensearch/1.1/";
 
 declare variable $lsi:general := 
   map{"moedict" : ("MoeDict", "", "https://www.moedict.tw/#{searchTerms}"),
@@ -27,6 +28,8 @@ declare variable $lsi:buddhist :=
   };
   
 (:
+also add chise ids-find :: need to separate character only and word type SE.
+
 "https://dict.concised.moe.edu.tw/search.jsp?md=1&amp;word=%E5%A4%A2&amp;size=-1"
 :)
 declare variable $lsi:label := map{
@@ -34,10 +37,22 @@ declare variable $lsi:label := map{
 'cjkvedic.xml' : 'CJKV'
 };
 
-declare function lsi:ddb-lookup($word){
+declare function lsi:ddb-lookup($word, $map){
 for $w in collection($config:tls-data-root||"/external")//orth[. = $word]
 let $link := $w/parent::entry/href/text()
 , $def := $w/parent::entry/def/text()
 , $r := tokenize(base-uri($w), '/')[last()]
 return <li><span class="ml-2 badge">{$lsi:label($r)}</span><a target="docs" href="{$link}">{$word}</a>:<span class="ml-2">{$def}</span></li>
+};
+
+declare function lsi:parse-opensearch($nodes, $map){
+for $node in $nodes
+return
+typeswitch($node)
+case element(os:Url) return ()
+case element(os:OpenSearchDescription) return
+   for $n in $node/node()
+   return lsi:parse-opensearch($n, $map)
+default return ()
+
 };

@@ -17,6 +17,9 @@ import module namespace lmd="http://hxwd.org/lib/metadata" at "metadata.xqm";
 import module namespace lu="http://hxwd.org/lib/utils" at "utils.xqm";
 import module namespace ltr="http://hxwd.org/lib/translation" at "translation.xqm";
 
+import module namespace lus="http://hxwd.org/lib/user-settings" at "user-settings.xqm";
+
+
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace mf="http://kanripo.org/ns/KRX/Manifest/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
@@ -79,7 +82,11 @@ declare function lpm:can-translate(){
 declare function lpm:can-delete-translations($trid){
  let $trc := ltr:get-translation-file($trid)
  return
-  lpm:is-owner($trc) or (sm:id()//sm:group/text() = ("tls-editor", "tls-admin"))
+  lpm:is-owner($trc) or lpm:tls-editor()
+};
+
+declare function lpm:tls-editor(){
+ (sm:id()//sm:group/text() = ("tls-editor", "tls-admin"))
 };
 
 declare function lpm:can-search-similar-lines(){
@@ -96,4 +103,19 @@ not(contains(sm:id()//sm:group/text(), "guest"))
 
 declare function lpm:show-buddhist-tools(){
 ("chris", "CW", "cwittern") = sm:id()//sm:real/sm:username/text()
+};
+
+declare function lpm:show-setting-restricted($type as xs:string, $context as xs:string?){
+ if (not(lpm:tls-editor())) then false() else
+ lpm:show-setting($type, $context)
+};
+
+declare function lpm:show-setting($type as xs:string, $context as xs:string?){
+ if (not(lpm:tls-editor())) then false() else
+  let $pref := lus:get-user-setting($type, $context) 
+ (: not sure if I need to propagate context :)
+ return
+ if ($pref = '0') then false() else
+ if ($pref = '1') then true() else
+  $context = $pref
 };

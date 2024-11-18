@@ -1509,39 +1509,6 @@ declare function app:recent-activity(){
   return $r
 };
 
-
-declare
-    %templates:wrap
-function app:settings($node as node()*, $model as map(*))
-{
-let $user := sm:id()//sm:real/sm:username/text()
-, $settings := lus:get-settings()
-, $px := doc($config:tls-data-root || "/vault/members.xml")//tei:person[@xml:id=$user]//tei:persName/text()
-return
-<div><h2>Settings for {$px}</h2>
-<h3>Most recently visited</h3>
-<ul></ul>
-<h3>Display</h3>
-<div>
-<input type="checkbox" name="theme" data-toggle="toggle" checked="true" aria-label="Dark theme"/>
-Dark theme
-</div>
-<h3>Bookmarks</h3>
-<ul>
-{for $b in doc($config:tls-user-root || $user || "/bookmarks.xml")//tei:item
-  let $segid := $b/tei:ref/@target,
-  $id := $b/@xml:id,
-  $date := xs:dateTime($b/@modified)
-  order by $date descending
-
-return
-<li id="{$id}">{lrh:format-button("delete_bm('"||$id||"')", "Delete this bookmark.", "open-iconic-master/svg/x.svg", "", "", "tls-user")}
-<a href="textview.html?location={substring($segid, 2)}">{$b/tei:ref/tei:title/text()}: {$b/tei:seg}</a></li>
-}
-</ul>
-</div>
-};
-
 declare
     %templates:wrap
 function app:welcome($node as node()*, $model as map(*)){

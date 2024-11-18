@@ -12,6 +12,7 @@ module namespace lct="http://hxwd.org/citations";
 import module namespace config="http://hxwd.org/config" at "../config.xqm";
 import module namespace tu="http://hxwd.org/utils" at "../tlsutils.xql";
 import module namespace lmd="http://hxwd.org/lib/metadata" at "metadata.xqm";
+import module namespace lrh="http://hxwd.org/lib/render-html" at "render-html.xqm";
 
 import module namespace src="http://hxwd.org/search" at "../search.xql";
 
@@ -293,6 +294,7 @@ let $creator-id := if ($node/tls:metadata/@resp) then substring($node/tls:metada
 , $concept := data($node/@concept)
 , $exemplum := if ($node/tls:metadata/@rating) then xs:int($node/tls:metadata/@rating) else 0
 , $bg := if ($exemplum > 0) then "protypical-"||$exemplum else "bg-light"
+, $marktext := if ($exemplum = 0) then "Mark this attribution as prototypical" else "Currently marked as prototypical "||$exemplum ||". Increase up to 3 then reset."
 , $resp := tu:get-member-initials($creator-id)
 , $zi := string-join($node/tei:form/tei:orth/text(), "/")
 , $creation-date := format-dateTime($node/tls:metadata/@created, "[Y0001]-[M01]-[D01]/[H01]:[m01]:[s01]")
@@ -312,7 +314,9 @@ return
 <div class="col-sm-2"><a href="concept.html?concept={$concept}{$node//tei:sense/@corresp}">{$concept}</a> {lct:set-value('concept', $concept)}</div>
 <div class="col-sm-4"><a href="textview.html?location={$target}{if ($type='remote')then '&amp;mode=remote'else()}" class="font-weight-bold">{$src, $loc}</a>&#160;{$line}{if ($tr) then (<br/>, $tr) else ()}</div>
 <div class="col-sm-2">{lct:set-value('syn-func', $sf)}<span class="font-weight-bold ml-2">{$sf}</span> {if ($sm) then ("&#160;",<em>{$sm}</em>) else ()}</div>
-<div class="col-sm-3">{$def}</div>
+<div class="col-sm-3">{$def}
+  {lrh:swl-buttons(map{'ann': 'swl', 'resp': $resp, 'user' : sm:id()//sm:real/sm:username/text(), 'creator-id': $creator-id, 'node': $node, 'zi': $zi, 'context' : 'cit', 'marktext' : $marktext})}
+</div>
 </div>
 };
 

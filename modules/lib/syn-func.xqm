@@ -79,7 +79,7 @@ return
 declare function lsf:get-sw-dispatch($word, $context, $domain, $leftword){
 let $pref := lus:get-sf-display-setting()
 return 
-( if (lpm:show-buddhist-tools()) then <ul>{lsi:ddb-lookup($word)}</ul> else (),
+( if (lpm:show-buddhist-tools()) then <ul>{lsi:ddb-lookup($word, map{})}</ul> else (),
   switch($pref)
 case 'by-syn-func' return
  lsf:get-sw-by-syn-func($word, $context, $domain, $leftword)

@@ -203,6 +203,33 @@ declare function lrh:format-button-common($onclick as xs:string, $title as xs:st
   lrh:format-button($onclick, $title, $icon, "", "close", "tls-user")
 };
 
+declare function lrh:swl-buttons($map as map(*)){
+( if (lpm:show-setting-restricted('swl-buttons', '')) then
+   ( <span class="rp-5">
+       {lrh:format-button("review_swl_dialog('" || data($map?node/@xml:id) || "')", "Review the SWL for " || $map?zi[1], "octicons/svg/unverified.svg", "small", "close", "tls-editor")}&#160;&#160;</span>,   
+    lrh:format-button("save_swl_review('" || data($map?node/@xml:id) || "')", "Approve the SWL for " || $map?zi, "octicons/svg/thumbsup.svg", "small", "close", "tls-editor")
+    ) else ()
+
+, if (not(lpm:show-setting-restricted('swl-buttons', ''))) then () else 
+   if (not($map?context='review')) then
+      if (not($map?user = $map?creator-id)) then
+   (  lrh:format-button("null()", "Resp: " || $map?resp[1] , $map?resp[2], "small", "close", "tls-user") 
+    , lrh:format-button("incr_rating('swl', '" || data($map?node/@xml:id) || "')", $map?marktext, "open-iconic-master/svg/star.svg", "small", "close", "tls-editor") 
+   )  else () else ()
+   (: every user can delete her own swls :)
+, if ($map?user = $map?creator-id or lpm:show-setting-restricted('swl-buttons', '')) then
+    if ($map?ann = 'wrl') then
+      lrh:format-button("delete_word_relation('" || data($map?node/@xml:id) || "')", "Immediately delete this WR", "open-iconic-master/svg/x.svg", "small", "close", "tls-editor")
+    else 
+      lrh:format-button("delete_swl('swl', '" || data($map?node/@xml:id) || "')", "Immediately delete this SWL for "||$map?zi[1], "open-iconic-master/svg/x.svg", "small", "close", "tls-editor")
+    else ()
+, switch($map?ann)
+   case 'wrl' return ()
+   case 'nswl' return()
+   default return ()
+)
+};
+
 (:~
 : formats a single syntactic word location for display either in a row (as in the textview, made visible by the blue eye) or as a list item, this is used in the left hand display for the annotations
 : @param $node  the tls:ann element to display
@@ -254,30 +281,7 @@ if ($anntype = "wrl") then
 <div class="col-sm-2"><span>{$node/text()}</span></div>
 <div class="col-sm-3"><a href="concept.html?concept={$concept}{$node/@corresp}" title="{$cdef}">{$concept}</a></div>
 <div class="col-sm-6"><span>WR: {$wr-rel/ancestor::tei:div[@type='word-rel-type']/tei:head/text()} /  {data($node/@p)}</span>
-{ (: buttons start -- put them in extra function, together with the other version below! :)
-if ("tls-editor"=sm:get-user-groups($user) and $wr-rel/@xml:id) then 
-
-   (: for reviews, we display the buttons in tlslib:show-att-display, so we do not need them here :)
-   if (not($context='review')) then
-   (: not as button, but because of the title string open-iconic-master/svg/person.svg :)
-   lrh:format-button("null()", "Resp: " || $resp[1] , $resp[2], "small", "close", "tls-user") else ()
-   
-else  
-   (: for my own swls: delete, otherwise approve :)
- if (($user = $creator-id) or contains($usergroups, "tls-editor" )) then 
-    lrh:format-button("delete_word_relation('" || data($wr-rel/@xml:id) || "')", "Immediately delete this WR", "open-iconic-master/svg/x.svg", "small", "close", "tls-editor")
-   else ()
-  (:  ,   
-   lrh:format-button("incr_rating('swl', '" || data($wr-rel/@xml:id) || "')", $marktext, "open-iconic-master/svg/star.svg", "small", "close", "tls-editor"),
-   if (not ($user = $creator-id)) then
-   (   
-    lrh:format-button("save_swl_review('" || data($wr-rel/@xml:id) || "')", "Approve the SWL for " || $zi, "octicons/svg/thumbsup.svg", "small", "close", "tls-editor")
-    ) else ()
-  :) 
-  
-(: buttons end :)
-}
-
+  {lrh:swl-buttons(map{'ann': $anntype, 'resp': $resp, 'user' : $user, 'creator-id': $creator-id , 'context' : $context, 'node': $wr-rel})}
 </div>
 </div>
 else
@@ -299,29 +303,7 @@ else ()}
 {if ($sm) then 
 <span><a href="browse.html?type=sem-feat&amp;id={$sm/@corresp}">{($sm)[1]/text()}</a>&#160;</span> else ()}
 <span class="ml-2">{$def}</span>
-{
-if (($user = $creator-id) or contains($usergroups, "tls-editor" )) then 
-    lrh:format-button("delete_swl('swl', '" || data($node/@xml:id) || "')", "Immediately delete this SWL for "||$zi[1], "open-iconic-master/svg/x.svg", "small", "close", "tls-editor")
-   else (),
-if ("tls-editor"=sm:get-user-groups($user) and $node/@xml:id) then 
-(
- (: for reviews, we display the buttons in tlslib:show-att-display, so we do not need them here :)
-  if (not($context='review')) then
-   (
-   (: not as button, but because of the title string open-iconic-master/svg/person.svg :)
-   lrh:format-button("null()", "Resp: " || $resp[1] , $resp[2], "small", "close", "tls-user"),
-   (: for my own swls: delete, otherwise approve :)
-   lrh:format-button("incr_rating('swl', '" || data($node/@xml:id) || "')", $marktext, "open-iconic-master/svg/star.svg", "small", "close", "tls-editor"),
-   if (not ($user = $creator-id)) then
-   (
-<span class="rp-5">
-{lrh:format-button("review_swl_dialog('" || data($node/@xml:id) || "')", "Review the SWL for " || $zi[1], "octicons/svg/unverified.svg", "small", "close", "tls-editor")}&#160;&#160;</span>,   
-    lrh:format-button("save_swl_review('" || data($node/@xml:id) || "')", "Approve the SWL for " || $zi, "octicons/svg/thumbsup.svg", "small", "close", "tls-editor")
-    ) else ()
-  ) else ()
-)
-else ()
-}
+  {lrh:swl-buttons(map{'ann': $anntype, 'resp': $resp, 'user' : $user, 'creator-id': $creator-id, 'node': $node, 'zi': $zi, 'context' : $context, 'marktext' : $marktext})}
 </div>
 </div>
 else if ($anntype eq "drug") then
@@ -329,7 +311,7 @@ else if ($anntype eq "drug") then
  <div class="col-sm-2"><span class="{$anntype}-col">drug</span></div>
  <div class="col-sm-6">{$node/text()}, Q:{data($node/@quantity)}, FL:{data($node/@flavor)}
  {
-   if (($user = $creator-id) or contains($usergroups, "tls-editor" )) then 
+   if (($user = $creator-id) or lpm:show-setting-restricted('swl-buttons', '')) then 
     lrh:format-button("delete_swl('drug', '" || data($node/@xml:id) || "')", "Immediately delete the observation "||data($node/text()), "open-iconic-master/svg/x.svg", "small", "close", "tls-editor")
    else ()
 }
@@ -358,7 +340,7 @@ return
   else ()
  )}
 {
-   if (($user = $creator-id) or contains($usergroups, "tls-editor" )) then 
+   if (($user = $creator-id) or lpm:show-setting-restricted('swl-buttons', '')) then 
     lrh:format-button("delete_swl('rdl', '" || data($node/@xml:id) || "')", "Immediately delete the observation "||data($node/@rhet-dev), "open-iconic-master/svg/x.svg", "small", "close", "tls-editor")
    else ()
 }

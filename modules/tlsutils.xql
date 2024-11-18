@@ -43,7 +43,7 @@ if (string-length($name) > 0) then $name else $uid
 
 declare function tu:get-member-initials($id){
 let $name := tu:get-member-name($id)
-return ($name, string-join(for $n in tokenize($name)
+return (string($name), string-join(for $n in tokenize($name)
            return upper-case(substring($n, 1, 1)), ""))
 };
 
