@@ -40,6 +40,8 @@ declare variable $config:repo-descriptor := doc(concat($config:app-root, "/repo.
 
 declare variable $config:expath-descriptor := doc(concat($config:app-root, "/expath-pkg.xml"))/expath:package;
 
+declare variable $config:tls-app-interface := $config:app-root || "/interface";
+
 declare variable $config:tls-data-root := substring-before($config:app-root, data($config:expath-descriptor/@abbrev)) || "tls-data";
 declare variable $config:tls-facs-root := "https://img.kanripo.org/";
 declare variable $config:tls-texts := substring-before($config:app-root, data($config:expath-descriptor/@abbrev)) || "tls-texts";

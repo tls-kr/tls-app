@@ -398,3 +398,55 @@ else ()}
 </div>
 </div>
 };
+
+
+(: some interface elements for general use :)
+
+
+
+declare function lrh:card-collapsable($map as map(*)){
+    <div class="card">
+    <div class="card-header" id="{$map?type}-head">
+      <h5 class="mb-0 mt-2">
+        <button class="btn" data-toggle="collapse" data-target="#{$map?type}-body" >
+         {$map?header}
+        </button>
+      </h5>
+      </div>
+     <div id="{$map?type}-body" class="collapse">
+     <div class="card card-body">
+     {$map?body}
+     </div>
+     </div>
+    </div>
+};
+
+
+declare function lrh:form-control-input($map){
+ <div class="{$map?col} form-group ui-widget" id="{$map?id}-group" >
+ <b>{$map?label}</b>
+ <input id="{$map?id}" class="form-control" value="{$map?value}"/>
+ {$map?extra-elements}
+ </div>
+};
+
+declare function lrh:form-control-select($map){
+ <div class="{$map?col} form-group ui-widget" id="{$map?id}-group" >
+ <b>{$map?label}</b>
+ {element select {
+ attribute class {"form-control"}
+ , attribute id {$map?id}
+ , if ($map?attributes instance of map()) then 
+   for $a in map:keys($map?attributes)
+    return
+    attribute {$a} {$map?attributes?($a)} else () 
+,  for $o in map:keys($map?option-map)
+(:    order by $map?option-map?($o):)
+    return 
+    if ($o = $map?selected) then
+    <option value="{$o}" selected='true'>{$map?option-map?($o)}</option>
+     else
+    <option value="{$o}">{$map?option-map?($o)}</option> 
+  }}
+ </div>
+};

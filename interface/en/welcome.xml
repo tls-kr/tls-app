@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<div xml:lang="en">
+        <div xml:id="for-guests">
+          <h3>Welcome to the HXWD website</h3>
+          <p>This is a website for people interested in reading and translating premodern Chinese texts. It requires some familiarity with Chinese to be useful. </p>
+          <p>While you are welcome to <a href="browse.html?type=welcome">explore the site</a> without signing in, many of the features are only available to registered users. </p>
+          <p>The <a href="https://docs.hxwd.org" target="docs">documentation</a> is still sparse, but you might still find it useful.</p>
+          <p>You can start reading the <b>
+                <a href="textview.html?location=KR1h0004">論語 Lunyu (Confucius analects)</a>
+            </b> or <br/>
+           have a look at the <b>
+                <a href="search.html?search-type=12">list of texts</a>
+            </b>
+        </p>
+          <p>Search the database:
+           <form action="search.html" class="form-inline my-2 my-lg-0" method="get">
+                 <input type="hidden" name="textid" value=""/>
+                 <input id="query-inp" name="query" class="form-control w-50 mr-sm-2 chn-font" type="search" placeholder="Search" aria-label="Search" value=""/>
+                 <span class="mr-1">in</span>
+                  <select class="form-control input-sm" name="search-type">
+                   <option selected="true" value="1">texts</option>
+                   <option value="7">titles</option>
+                   <option value="2">dictionary</option>
+                   <option value="3">translations</option>
+                   <option value="4">everything</option>
+                   <option value="10">bibliography</option>
+                 </select>
+                 <button id="search-submit" class="btn btn-outline-success my-2 my-sm-0" type="submit">
+                 <img class="icon" src="resources/icons/open-iconic-master/svg/magnifying-glass.svg"/>
+                 </button>
+                 </form>
+           </p>
+          <p>
+            <b>
+                <a href="#" data-toggle="modal" data-target="#loginDialog">
+              Login</a>
+              </b> or <br/>
+            <br/>
+            <a href="signup.html">
+                <b>Apply</b> for membership in the TLS project.</a>
+          </p>
+        </div>
+        <div xml:id="for-users">
+        <div>
+         <h3>Welcome back!</h3>
+         <p>Here are some texts you recently looked at:</p>
+         <ul>{for $l in $r return $l}</ul>
+                <p>
+                    Please acknowledge your use of TLS in your publications.
+                </p>
+        </div>
+        </div>
+</div>

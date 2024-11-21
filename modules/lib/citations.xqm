@@ -13,6 +13,7 @@ import module namespace config="http://hxwd.org/config" at "../config.xqm";
 import module namespace tu="http://hxwd.org/utils" at "../tlsutils.xql";
 import module namespace lmd="http://hxwd.org/lib/metadata" at "metadata.xqm";
 import module namespace lrh="http://hxwd.org/lib/render-html" at "render-html.xqm";
+import module namespace ltx="http://hxwd.org/taxonomy" at "taxonomy.xqm";
 
 import module namespace src="http://hxwd.org/search" at "../search.xql";
 
@@ -33,62 +34,56 @@ declare variable $lct:perspectives := map{
 
 
 declare variable $lct:grouping := map{
-"none" : "None",
 "diachronic" : "Diachronic", 
 "by-char" : "By character", 
-"by-concept" : "By Concept",
+"by-concept" : "By Concept(tree)",
+"concept" : "By Concept(flat)",
 "by-text": "By text", 
-"by-syn-func": "By Syntactical Function", 
-"by-sem-feat": "By Semantical Feature", 
+"by-syn-func": "By Syntactic Function(tree)", 
+"syn-func": "By Syntactic Function", 
+"by-sem-feat": "By Semantic Feature", 
 "by-pos": "By Part Of Speech" 
 };
-
+declare variable $lct:use-tax := ("by-concept", "diachronic", "by-syn-func");
 declare function lct:citations-form($node as node()*, $model as map(*), $item as xs:string?, $perspective as xs:string?){
 let $n := if (string-length($model?n)>0) then $model?n else 20
 return
 (
 <div class="row">
  <div class="col-md-1">x</div>
- <div class="col-md-2 form-group ui-widget" id="input-group" >
- <b>Item</b>
- <input id="input-target" class="form-control" value="{$item}"/>
- <span id="input-id-span" style="display:none;"></span>
- </div>
- <div class="col-md-3">
- <b>Perspectives:</b>
- <select class="form-control" id="select-perspective" onchange="initialize_cit_autocomplete()">
- {for $o in map:keys($lct:perspectives)
- return 
- if ($o = $perspective) then
- <option value="{$o}" selected='true'>{$lct:perspectives?($o)}</option>
- else
- <option value="{$o}">{$lct:perspectives?($o)}</option>
- }
- </select>
- </div>
+ {lrh:form-control-input(
+   map{
+    'id' : 'input-target'
+    , 'col' : 'col-md-2'
+    , 'value' : $item
+    , 'label' : 'Item:'
+    , 'extra-elements' :  <span id="input-id-span" style="display:none;"></span>
+    })}
+ {lrh:form-control-select(map{
+    'id' : 'select-perspective'
+    , 'col' : 'col-md-3'
+    , 'attributes' : map{'onchange' :'initialize_cit_autocomplete()'}
+    , 'option-map' : $lct:perspectives
+    , 'selected' : $perspective
+    , 'label' : 'Perspectives:'
+ })}
  <div class="col-md-3">
   <div class="row">
-   <div class="col">
-     <b>Grouping: Key 1</b> </div>
-   <div class="col">
-     <b>Key 2</b> </div>
+   <div class="col"><b>Grouping: Key 1</b> </div>
+   <div class="col"><b>Key 2</b> </div>
  </div>
  <div class="row">
- <div class="col">
- <select class="form-control" id="select-grouping-1">
- {for $o in map:keys($lct:grouping)
- where not ($o = 'none')
- return 
- <option value="{$o}">{$lct:grouping?($o)}</option>}
- </select>
- </div>
- <div class="col">
- <select class="form-control" id="select-grouping-2">
- {for $o in map:keys($lct:grouping)
- return 
- <option value="{$o}">{$lct:grouping?($o)}</option>}
- </select>
- </div>
+  {lrh:form-control-select(map{
+    'id' : 'select-grouping-1'
+    , 'col' : 'col'
+    , 'option-map' : $lct:grouping
+  })}
+  {lrh:form-control-select(map{
+    'id' : 'select-grouping-2'
+    , 'col' : 'col'
+    , 'selected' : 'none'
+    , 'option-map' : map:merge(($lct:grouping , map:entry('none', 'None')))
+ })}
  </div>
  </div>
  <div class="col-md-2">
@@ -142,10 +137,46 @@ if (string-length($item) > 0) then
        case "users" return $lct:coll[tls:metadata[@resp=$item]]
        case "texts" return $lct:coll[.//tls:srcline/@title[. = $item]]
        default return ()
-   return (<div class="col-md-1"/>,
-     lct:by-item($set, $map) => lct:format-result-map(1) )
+   return 
+    let $res := lct:by-item($set, $map)
+    let $k := map:keys($res)
+    , $total := sum(for $l in $k return map:get($res, $l)[1])
+   return 
+   (<div class="col-md-1"><h3>Total: {$total}</h3></div>,
+     <div class="col-md-10">
+        {if ($map?parameters?grouping = $lct:use-tax) then
+            <ul>{lct:add-n($res) => ltx:tax-sum-n() => ltx:tax-prune() => lct:format-result-tree()}</ul>
+        else lct:format-result-map($res, 1)}
+    </div>
+    )
 else
    lct:by-top($perspective, $count)
+};
+
+declare function lct:format-result-tree($node as node()) {
+ typeswitch ($node)
+ case element(tei:category) return 
+   let $s := $node/@sum
+   , $cnt := if ($s) then $s else $node/@n
+   , $desc := $node/tei:catDesc/text()
+   , $uid := util:uuid()
+   return
+   if ($s = $node/tei:category/@sum) then (<span title="{$desc}">({$desc})→</span>, for $nn in $node/node() return lct:format-result-tree($nn))
+   else
+    <li><span data-toggle="collapse" data-target="#res-map-{$uid}">{$desc} ({data($cnt)})</span>
+    <ul id="res-map-{$uid}" class="collapse container">{for $nn in $node/node() return lct:format-result-tree($nn)}</ul>
+    </li>
+ case element(tls:ann) return lct:format-citation($node, map{})   
+ case element(tei:span) return 
+   let $t := $node/text() 
+   return
+   if ($t = 'none') then () else <span>{lct:format-key($t)}</span>
+ case element(tei:debug) return ()
+ case element(tei:catDesc) return ()
+ case element(tei:div) return  for $nn in $node/node() return lct:format-result-tree($nn)
+ case element(*) return local-name($node)
+(: for $nn in $node/node() return lct:format-result-tree($nn):)
+ default return ()
 };
 
 declare function lct:by-item($set, $map){
@@ -173,11 +204,10 @@ for $a in $set
 
 declare function lct:format-result-map($map, $level){
 let $k := map:keys($map)
-, $cl := if ($level = 1) then 'col-md-10' else ''
 , $total := sum(for $l in $k return map:get($map, $l)[1])
 return
-<div id="result-map-top-{$level}" class="{$cl}">
-  <h3>Total: {$total}</h3>
+<div id="result-map-top-{$level}">
+  
   {for $l at $pos in $k
   let $cnt := map:get($map, $l)[1]
   , $pc := format-number(($cnt div $total) * 100, "0.#") 
@@ -208,7 +238,7 @@ return
 
 
 declare function lct:format-key($k){
-if (starts-with($k, 'dat')) 
+if (starts-with($k, 'dat') or starts-with($k, 'uuid')) 
  then lmd:cat-title($k)
 else
  $k
@@ -241,22 +271,24 @@ return $res
 (: we expect a tls:ann node here :)
 declare function lct:get-grouping-key($a, $group){
 let $g := if (string-length($group) > 0) then $group else "none"
-return
+let $gk :=
 switch($g)
 case "diachronic" return lmd:get-metadata($a, "tls-dates")
 case "texts"
 case "by-text" return $a//tls:srcline/@title
 case "syn-func"
-case "by-syn-func" return $a//tls:syn-func
+case "by-syn-func" return for $s in $a//tls:syn-func/@corresp return substring($s, 2)
 case "by-sem-feat" return $a//tls:sem-feat
 case "by-pos" return $a//tei:pos
 case "chars"
 case "by-char" return ($a//tei:form/tei:orth)[1]
 case "concept"
-case "by-concept" return ($a//@concept)[1]
+case "by-concept" return ($a//@concept-id)[1]
 case "users"
 case "by-user" return ($a//tls:metadata/@resp)[1]
 default return "none"
+return
+if ($gk) then $gk else "none"
 };
 
 declare function lct:get-sort-key($a, $sort){
@@ -331,3 +363,48 @@ declare function lct:set-valuex($perspective, $item){
 declare function lct:cit-count($node as node()*, $model as map(*)){
     count($lct:coll)
 };
+
+declare function local:format-map($m){
+    <div xmlns="http://www.tei-c.org/ns/1.0">{
+    for $k in map:keys($m)
+    return
+        <div>
+        <span type="group">{$k}</span>
+        {map:get($m, $k)[2]}
+        </div>
+    }</div>    
+};
+
+
+declare function lct:add-n($map as map(*)){
+let $key := map:keys($map)
+, $tax := ltx:get-taxonomy($key[1])
+return
+local:cit-add-n($map, $tax)
+};
+
+declare function local:cit-add-n($map as map(*), $n){
+  typeswitch ($n)
+  case element(tei:category) return
+   let $id := data($n/@xml:id)
+   , $l := count($map?($id))
+   , $m := $map?($id)[2]
+   return
+    element {QName(namespace-uri($n),local-name($n))} {
+    $n/@* except $n/@n,
+    if ($l > 0) then (attribute n {$l} ,
+        for $i at $pos in $map?($id)
+        return
+        typeswitch($i)
+            case map() return local:format-map ($i)
+            case element(*) return $i
+            case xs:integer return <debug>{$i}</debug>
+            case node()+ return ('seq', $pos, $i)
+            default return <debug>other</debug>
+         ) else () ,
+    for $nn in $n/node() return local:cit-add-n($map, $nn)}
+  case element(*)
+   return $n
+  default return $n
+};
+

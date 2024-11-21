@@ -1031,7 +1031,7 @@ let $query := $model?query
     case $src:search-dic return
      src:show-dic-results(map:merge(($model, map:entry("start",$start), map:entry("qc", $qc))))
     default return "Unknown search type",
-    <div class="col-sm-0">{wd:quick-search-form('title')}</div>
+    <div class="col-sm-0">{if (lpm:show-setting('wd', 'concept')) then wd:quick-search-form('title') else ()}</div>
 };
 
 declare function src:show-catalog-results($map as map(*)){
@@ -1225,7 +1225,7 @@ declare function src:show-title-results ($map as map(*)){
     let $loc := $h/ancestor::tei:TEI/@xml:id
     return
     <li><a href="textview.html?location={$loc}">{data($loc) || " " || data($h)}</a> 
-    {wd:display-qitems(data($loc),'title',data($h))}</li>}
+    {if (lpm:show-setting('wd', 'concept')) then wd:display-qitems(data($loc),'title',data($h)) else ()}</li>}
     </ul>
     <h2>Texts in the Kanseki Repository:</h2>
     <ul>{
@@ -1248,11 +1248,11 @@ declare function src:show-title-results ($map as map(*)){
       where string-length($kid) > 5
       return if ($tls) then 
            <li><a href="textview.html?location={$kid}">{data($kid) || " " || data($h)}</a> 
-           {wd:display-qitems(data($kid),'title',data($h))}
+           {if (lpm:show-setting('wd', 'concept')) then wd:display-qitems(data($kid),'title',data($h)) else ()}
            </li>
             else
           <li>{if ($av) then $but else ()}　{$kid || " " || $h/text() || " "} <span class="text-muted"><small>{ string-join($w/altid, " / ")}</small></span>  {$req} 
-           {wd:display-qitems(data($kid),'title',data($h))}
+           {if (lpm:show-setting('wd', 'concept')) then wd:display-qitems(data($kid),'title',data($h)) else ()}
            {if ($av) then 
              <span class="ml-2">{
               <a class="btn badge badge-light" target="kanripo" title="View {data($h)} in Kanseki Repository (External link)" style="background-color:paleturquoise" href="https://www.kanripo.org/text/{data($kid)}/">KR</a>}</span> 

@@ -102,8 +102,9 @@ declare function lmd:get-metadata($hit , $field as xs:string){
             default return ()
 };
 
-declare function lmd:cat-title($cat){
-let $title := string-join(doc($config:tls-texts-taxonomy)//tei:category[@xml:id=$cat]/tei:catDesc/text(), ' - ')
+declare function lmd:cat-title($id){
+let $title := collection($config:tls-data-root||"/core")//tei:category[@xml:id=$id]/tei:catDesc/text()
+(:let $title := string-join(doc($config:tls-texts-taxonomy)//tei:category[@xml:id=$cat]/tei:catDesc/text(), ' - '):)
 return
 if (string-length($title) > 0) then $title else "(Category not assigned)"
 };

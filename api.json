@@ -393,6 +393,7 @@
     },
     "/citations/{perspective}/{grouping}":{
         "get": {
+            "security": [],
             "description" : "Citations, analyzed in different forms",
             "summary": "Citations",
             "operationId" : "lct:citations",

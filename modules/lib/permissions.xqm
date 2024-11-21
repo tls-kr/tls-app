@@ -89,6 +89,10 @@ declare function lpm:tls-editor(){
  (sm:id()//sm:group/text() = ("tls-editor", "tls-admin"))
 };
 
+declare function lpm:can-edit-concept(){
+ lpm:tls-editor()
+};
+
 declare function lpm:can-search-similar-lines(){
  "dba" = sm:id()//sm:group
 };
@@ -101,7 +105,7 @@ declare function lpm:should-show-translation(){
 not(contains(sm:id()//sm:group/text(), "guest"))
 };
 
-declare function lpm:show-buddhist-tools(){
+declare function lpm:show-buddhist-tools($context){
 ("chris", "CW", "cwittern") = sm:id()//sm:real/sm:username/text()
 };
 
@@ -111,8 +115,7 @@ declare function lpm:show-setting-restricted($type as xs:string, $context as xs:
 };
 
 declare function lpm:show-setting($type as xs:string, $context as xs:string?){
- if (not(lpm:tls-editor())) then false() else
-  let $pref := lus:get-user-setting($type, $context) 
+ let $pref := lus:get-user-section($type, $context) 
  (: not sure if I need to propagate context :)
  return
  if ($pref = '0') then false() else

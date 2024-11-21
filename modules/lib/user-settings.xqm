@@ -28,10 +28,16 @@ declare namespace tls="http://hxwd.org/ns/1.0";
    <string(s), sep by ,> gives the context(s) in which to display, or the value of the setting 
 :)
 
+declare variable $lus:values := map{
+ '0' : "Don't show this at all"
+,'1' : "Show this wherever possible"
+,'context' : 'Show this in these contexts:'
+};
+
 declare variable $lus:default := map{
  'sf-display' : 'by-concept' 
 ,'swl-buttons' : '1'    
-,'wd-display' : '0'   
+,'wd' : '0'   
 ,'sig-bud' : 'KR6'   
 };
 
@@ -41,7 +47,7 @@ declare function lus:settings-top($node as node()*, $model as map(*))
 {
 let $user := sm:id()//sm:real/sm:username/text()
 , $settings := lus:get-settings()
-, $px := doc($config:tls-data-root || "/vault/members.xml")//tei:person[@xml:id=$user]//tei:persName/text()
+, $px := sm:get-account-metadata($user, xs:anyURI("http://axschema.org/namePerson"))
 return
 map{'user' : $user,
     'settings': $settings,
@@ -51,28 +57,46 @@ map{'user' : $user,
 declare function lus:user-name($node as node()*, $model as map(*)){ $model?px };
 
 
-declare
-    %templates:wrap
-function lus:settings($node as node()*, $model as map(*))
-{
-let $user := sm:id()//sm:real/sm:username/text()
-, $settings := lus:get-settings()
-, $px := doc($config:tls-data-root || "/vault/members.xml")//tei:person[@xml:id=$user]//tei:persName/text()
-return
+declare %templates:wrap function lus:settings($node as node()*, $model as map(*)) {
 <div>
-<div>
-<input type="checkbox" name="theme" data-toggle="toggle" checked="true" aria-label="Dark theme"/>
-Dark theme
-</div>
+<h2>Customizable settings for {$model?px}</h2>
+<p>There might be more to come.</p>
 </div>
 };
 
 declare function lus:settings-display($node as node()*, $model as map(*))
 {
 <div>
-<p>bla</p>
+<p>Here are settings to the place and type of items to display:</p>
+<ul>
+{for $i in doc($config:tls-app-interface||"/settings.xml")//tls:section[@type='display-options']/tls:item
+  let $id := 'select-'||$i/@type
+  , $currentvalue := lus:get-user-item($i/@type, '')
+  , $displaycontext := if ($currentvalue = ('0', '1')) then () else $currentvalue
+  return 
+  <div class="row">{
+ lrh:form-control-select(map{
+    'id' : $id
+    , 'col' : 'col-md-8'
+    , 'attributes' : map{'onchange' :"us_save_setting('"||$id||"')"}
+    , 'option-map' : $lus:values
+    , 'selected' : $currentvalue
+    , 'label' : ( $i/text() , <a class="ml-2" href="{$config:help-base-url}" title="Open documentation for this item" target="docs" role="button">?</a>)
+ })}
+ {lrh:form-control-input(
+   map{
+    'id' : 'input-'||$id
+    , 'col' : 'col-md-2'
+    , 'value' : $displaycontext
+    , 'label' : 'Context:'
+    })}
+</div>
+}
+</ul>
 </div>
 };
+
+
 
 declare function lus:settings-bookmarks($node as node()*, $model as map(*))
 {
@@ -120,10 +144,12 @@ $doc
 )
 };
 
-declare function lus:get-user-setting($type as xs:string, $context as xs:string?){
+declare function lus:get-user-section($type as xs:string, $context as xs:string?){
 let $settings := lus:get-settings()
 return
  switch($type)
+ case 'wd'
+ case 'bud-sig'
  case 'sf-display'
  case 'synfunc-buttons' return 
     let $preference := data($settings//tls:section[@type=$type]/@content)
@@ -132,7 +158,14 @@ return
  default return ""
 };
 
-declare function lus:set-user-setting($type as xs:string, $preference as xs:string){
+declare function lus:get-user-item($type as xs:string, $context as xs:string?){
+let $settings := lus:get-settings()
+, $preference := $settings//tls:item[@type=$type]/@value
+return
+if ($preference) then $preference else doc($config:tls-app-interface||"/settings.xml")//tls:item[@type=$type]/@value
+};
+
+declare function lus:set-user-section($type as xs:string, $preference as xs:string){
 let $settings := lus:get-settings()
 , $node := <section xmlns="http://hxwd.org/ns/1.0" type="{$type}" content="{$preference}"/>
 , $oldnode := $settings//tls:section[@type=$type]
@@ -150,13 +183,13 @@ update insert $node
 2024-10-24:  Make this a cycle through more options
 :)
 declare function lus:toggle-list-display($map as map(*)){
-let $pref := lus:get-user-setting('sf-display', $map?context)
+let $pref := lus:get-user-section('sf-display', $map?context)
 , $choices := ('by-concept','by-syn-func', 'by-frequency')
 , $new :=  let $tmp := index-of($choices, $pref) + 1 
             return 
              if ($tmp > count($choices)) then 1 else $tmp
 return 
-    lus:set-user-setting('sf-display', $choices[$new])
+    lus:set-user-section('sf-display', $choices[$new])
 };
 
 declare function lus:get-sf-display-setting(){
