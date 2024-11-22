@@ -19,6 +19,7 @@ import module namespace lus="http://hxwd.org/lib/user-settings" at "user-setting
 import module namespace ltp="http://hxwd.org/lib/textpanel" at "lib/textpanel.xqm";
 import module namespace lrh="http://hxwd.org/lib/render-html" at "lib/render-html.xqm";
 import module namespace lpm="http://hxwd.org/lib/permissions" at "lib/permissions.xqm";
+import module namespace lsi="http://hxwd.org/special-interest" at "lib/special-interest.xqm";
 
 import module namespace remote="http://hxwd.org/remote" at "lib/remote.xqm";
 
@@ -72,23 +73,6 @@ declare function dialogs:modal-frame($name, $map){
      </div>
 </div>
 };
-(: todo password visibility toggle  :)
-declare function local:form-input-row($name, $map){
-            <div class="form-row">
-              {if ($map?required = true()) then
-              
-                <div id="{$map?input-id}-group" class="{if (string-length($map?col-size)>0) then $map?col-size else "col-md-12"} ">
-                    <label for="{$map?input-id}"><strong>{$map?hint}</strong> </label>
-                    <input id="{$map?input-id}" type="{$map?type}" required="required"  name="{if (string-length($map?input-name)>0) then $map?input-name else $map?input-id}" class="form-control" value="{$map?input-value}"/>
-                </div>
-               else
-                <div id="{$map?input-id}-group" class="{if (string-length($map?col-size)>0) then $map?col-size else "col-md-12"} ">
-                    <label for="{$map?input-id}"><strong>{$map?hint}</strong> </label>
-                    <input id="{$map?input-id}" type="{$map?type}" name="{if (string-length($map?input-name)>0) then $map?input-name else $map?input-id}" class="form-control" value="{$map?input-value}"/>
-                </div>    
-              }  
-            </div>
-};
 
 declare function local:search-settings($name, $options){
 let $search-options := map{"search-sortmax": 5000, "search-cutoff" : 0.2, "search-ratio" : "None"}
@@ -96,7 +80,7 @@ let $search-options := map{"search-sortmax": 5000, "search-cutoff" : 0.2, "searc
      let $sval:=lus:get-settings()//tls:item[@type=$o]/@value
      , $cval := if ($sval) then $sval else map:get($search-options, $o)
      return
-     local:form-input-row($name, map{"input-id" : $o, "input-value" : $cval, "type" : "text"}) 
+     lrh:form-input-row($name, map{"input-id" : $o, "input-value" : $cval, "type" : "text"}) 
 , $buttons := ( <button type="button" class="btn btn-primary" onclick="update_setting('{$options?setting}', 'setting')">Save</button> )
 return
       dialogs:modal-frame($name, 
@@ -134,8 +118,8 @@ return
 
 (: sth is not working here. :)
 declare function local:passwd-dialog($name, $options){
-let $body := (local:form-input-row($name, map{"input-id" : "password", "hint" : "Please enter the new password:", "type" : "password", "required" : true() })
-             ,local:form-input-row($name, map{"input-id" : "passwd-2", "hint" : "Please repeat the new password:" , "type" : "password", "required" : true()}))
+let $body := (lrh:form-input-row($name, map{"input-id" : "password", "hint" : "Please enter the new password:", "type" : "password", "required" : true() })
+             ,lrh:form-input-row($name, map{"input-id" : "passwd-2", "hint" : "Please repeat the new password:" , "type" : "password", "required" : true()}))
                  
 , $buttons := (<button type="button" class="btn btn-secondary" onclick="showhide_passwd('password,passwd-2')">Show/Hide</button>,<button type="button" class="btn btn-primary" onclick="change_passwd('{$options}')">Submit</button>,<input type="hidden" name="duration" value="P7D"/>, <input type="hidden" name="user" value="{$options}"/>)
 return                 
@@ -160,7 +144,7 @@ declare function local:text-info($name, $options){
 
 
 declare function local:update-setting($name, $options){
-let $body := (local:form-input-row($name, map{"input-id" : "setting", "input-value": $options?value,  "hint" : $options?hint, "type" : "text", "required" : true()}) )
+let $body := (lrh:form-input-row($name, map{"input-id" : "setting", "input-value": $options?value,  "hint" : $options?hint, "type" : "text", "required" : true()}) )
 , $buttons := ( <button type="button" class="btn btn-primary" onclick="update_setting('{$options?setting}', 'setting')">Save</button> )
 return                 
       dialogs:modal-frame($name, 
@@ -188,6 +172,21 @@ return
       })           
 };
 
+declare function local:external-resource($name, $options){
+let $body := lsi:resource-dialog-body(map{})
+, $buttons := ( <button type="button" class="btn btn-primary" onclick="save_external('xx', 'setting')">Add</button> )
+return
+      dialogs:modal-frame($name, 
+      map{
+        "dsize" : "", 
+        "body":     $body, 
+        "buttons" : $buttons, 
+        "options" : $options,
+        "title":  ("Add new external ressource ")
+      })           
+ 
+};
+
 
 (: todo: rewrite this in a way that it has only on switch, that dispatches to specific local functions  :)
 declare function dialogs:dispatcher($para as map(*)){
@@ -198,6 +197,7 @@ return switch($para?name)
                case "text-info" return local:text-info($para?name, $options)
                case "update-setting" return local:update-setting($para?name, $options)
                case "search-settings" return local:search-settings($para?name, $options)
+               case "external-resource" return local:external-resource($para?name, $options)
                default return "Dialog not registered!"
 };
 

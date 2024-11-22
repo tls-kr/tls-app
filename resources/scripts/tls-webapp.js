@@ -2997,6 +2997,31 @@ function show_dialog(dialog_name, options){
   });  
 };
 
+function save_external(setting, val_el){
+  formData = $("#external-resource-form").serialize()
+  console.log(formData);
+  $.ajax({
+  type : "POST",
+  url : "api/responder.xql?func=lsi:save-resource",
+  data: formData,
+  success : function(resp){
+    if (resp.startsWith("Could not")) {
+    toastr.error(resp, "漢學文典 says:");
+/*    toastr.error("Could not save translation for "+line+".", "HXWD says:");        */
+    } else {
+    toastr.info("Resource saved.", "漢學文典 says:");
+    $('#external-resource').modal('hide');
+    $('#remoteDialog').html('');
+    }
+  },
+  error : function(resp){
+  console.log(resp);
+    alert("PROBLEM: "+resp.statusText + "\n " + resp.responseText);
+  }
+  });    
+};
+
+
 function change_passwd(user){
    var newpw = $("input[name='password']").val()
    $.ajax({ 

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/">
+  <ShortName hint="Short name for the resource">萌典國語</ShortName>
+  <Description hint="Longer description">萌典國語</Description>
+  <Tags hint="Enter 'char' here for a character dictionary">char</Tags>
+  <Contact hint="Your username">#username</Contact>
+  <Url type="text/html" hint="The link.  {searchTerms} has to be exactly as shown" template="https://www.moedict.tw/#{searchTerms}"/>
+  <LongName hint="Used in some menus etc.">萌典國語搜尋</LongName>
+</OpenSearchDescription>

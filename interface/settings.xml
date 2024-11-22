@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<settings xmlns="http://hxwd.org/ns/1.0" xml:id="tls-settings">
+    <section type="bookmarks"/>
+    <section type="slot-config">
+    </section>
+    <section type="sort">
+        <item created="2023-07-25T11:03:20.627+09:00" modified="2023-07-25T11:03:20.627+09:00" type="search-sortmax" value="5000"/>
+    </section>
+    <section type="search">
+        <item created="2023-12-01T15:18:39.459+09:00" modified="2023-12-01T15:18:39.459+09:00" type="search-ratio" value="None"/>
+        <item created="2023-12-01T15:18:39.484+09:00" modified="2023-12-01T15:18:39.484+09:00" type="search-cutoff" value="0.3"/>
+    </section>
+    <section type="display-options">
+        <desc>Display options control the display of optional parts of the interface.  A '1' on the attribute @value will cause the item to be display in all places where it might occur, while '0' will not show it at all. Other values, which can be a comma-separated list of targets, point to either an item in 'contexts', that defines the target, or to a category in the tls-taxonomy for texts.  </desc>
+      <section type="sf-display" content="by-concept"/>      
+      <item type="swl-buttons" value="1">Show review buttons etc. on Citations and Attributions</item>  
+      <item type="wd" value="1">Wikidata Search and Links</item>  
+      <item type="sig-bud" value="#KR6">SIG Buddhism</item>  
+      <item type="citations" value="1">Citations</item>  
+      <item type="domain-selector" value="#KR3e">Allow selection of other knowledge domains of concepts.</item>  
+      <item type="set-word-relations" value="0">Buttons that allow the setting of Word Relations.</item>  
+      <item type="display-word-relations" value="0">Show Word Relations.</item>  
+    </section>
+    <section type="contexts">
+        <desc>In this section, we describe contexts that can be linked to from the 'display-options' section</desc>
+        <item id="concept">The page displaying a concept</item> 
+        <item id="floater">The attribution floater</item> 
+        <item id="search-top">The area at the beginning of the display of search results for texts and words.</item> 
+        <item id="text-info">A section in the text info display.</item> 
+    </section>
+</settings>

@@ -217,7 +217,7 @@ declare function ltp:prepare-chunk($chunk as node()*, $map as map(*)){
        <button type="button" class="btn" onclick="page_move('{$chunk/div/nav/@last}')" title="Go to the last page"><span style="color: blue">Last</span></button>
        else ()}
        </div> 
-        {wd:quick-search-form('title')}
+        {if (lpm:show-setting('wd', 'concept')) then wd:quick-search-form('title') else ()}
       </div>
 )
 

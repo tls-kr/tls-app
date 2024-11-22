@@ -41,6 +41,8 @@ import module namespace lrh="http://hxwd.org/lib/render-html" at "lib/render-htm
 import module namespace lpm="http://hxwd.org/lib/permissions" at "lib/permissions.xqm";
 import module namespace ltp="http://hxwd.org/lib/textpanel" at "lib/textpanel.xqm";
 import module namespace lrv="http://hxwd.org/lib/review" at "lib/review.xqm";
+import module namespace i18n="http://hxwd.org/lib/i18n" at "lib/i18n.xqm";
+import module namespace ltx="http://hxwd.org/taxonomy" at "lib/taxonomy.xqm";
 
 import module namespace remote="http://hxwd.org/remote" at "lib/remote.xqm";
 
@@ -82,6 +84,20 @@ function app:page-title($node as node()*, $model as map(*)) as xs:string
 
 (:,$context := substring-before(tokenize(request:get-uri(), "/")[last()], ".html"):)
 return "TLS - " || $ts
+};
+
+declare function app:show-taxonomy($tax as xs:string) {
+let $doc :=
+  switch($tax)
+  case "concept" return doc($config:tls-data-root || "/core/concept-taxonomy.xml")
+  case "syn-func" return doc($config:tls-data-root || "/core/syntactic-functions-taxonomy.xml")
+  default return ()
+return
+<div>
+<h2>Taxonomy tree for {$config:lmap?($tax)}</h2>
+{ltx:proc-taxonomy($doc//tei:taxonomy, $tax)}
+</div>
+ 
 };
 
 (: display the taxonomy in HTML format :)
@@ -182,6 +198,8 @@ function app:browse($node as node()*, $model as map(*), $type as xs:string?, $fi
     let $filterString := if (string-length($filter) > 0) then $filter else ""
     return
     if ($type = "word") then app:browse-word($type, $filterString)
+    else if ($type = "tax") then app:show-taxonomy($mode)
+    else if ($type = "welcome") then i18n:display(map{'id': 'browse'})
     else if ($type = "taxchar") then app:browse-char($type, $filterString)
     else if ($type = "taxword") then app:browse-word($type, $filterString)
     else if ($type = "biblio") then bib:browse-biblio($type, $filterString, $mode)
@@ -193,7 +211,9 @@ function app:browse($node as node()*, $model as map(*), $type as xs:string?, $fi
    <div class="card">
     <div class="card-header" id="{$type}-card">
       <div class="row mb-0">
-      <span class="col-3"><h4>{map:get($config:lmap, $type)}</h4></span>&#160;
+      <span class="col-3"><h4>{map:get($config:lmap, $type)}  {
+      if ($type = ('concept', 'syn-func')) then (" / ", <a class="ml-2" href="browse.html?type=tax&amp;mode={$type}">Show tree</a>) else ()
+      }</h4></span>&#160;
       <span class="col-3">
       <input class="form-control" id="myInput" type="text" placeholder="Type to filter..."/>
       </span>
@@ -234,7 +254,7 @@ function app:browse($node as node()*, $model as map(*), $type as xs:string?, $fi
     ,$b := $h/tei:div[@type="source-references"]
     ,$br := if ($type = ("syn-func", "sem-feat")) then 
       for $ref in $b//tei:bibl
-      return <ul>{tlslib:display-bibl($ref)}</ul>
+      return <ul>{bib:display-bibl($ref)}</ul>
       else ()
     order by $n
     return
@@ -920,7 +940,7 @@ function app:rhetdev($node as node()*, $model as map(*), $uuid as xs:string?, $o
      <ul>
      {for $d in $rd//tei:div[@type="source-references"]//tei:bibl
      return
-     tlslib:display-bibl($d)
+     bib:display-bibl($d)
      }</ul>  
      </div>
     </div>
@@ -1089,7 +1109,7 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
      <ul>
      {for $d in $c//tei:div[@type="source-references"]//tei:bibl
      return
-     tlslib:display-bibl($d)
+     bib:display-bibl($d)
      }</ul>  
      </div>
     </div>
@@ -1159,7 +1179,7 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
     if ($pos < $len) then ($s, <br/>) else ($s)
     
     }    
-        {if ($resp) then 
+        {if ($resp[1]) then 
     <small><span class="ml-2 btn badge-secondary" title="{$resp[1]} - {$e/@tls:created}">{$resp[2]}</span></small> else ()}
 
     <small>{"  " || $wc} {if ($wc = 1) then " Attribution" else " Attributions"}</small>
@@ -1168,7 +1188,7 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
     (: move :)
     lrh:format-button("move_word('"|| $zi || "', '"|| $entry-id ||"', '"||$wc||"', 'word')", "Move the word "|| $zi || ", including all syntactic words to another concept.", "open-iconic-master/svg/move.svg", "", "", "tls-editor")
     }
-    {wd:display-qitems($entry-id, 'concept', $zi)}
+    {if (lpm:show-setting('wd', 'concept')) then wd:display-qitems($entry-id, 'concept', $zi) else ()}
     </h5>
     {if ($def) then <p class="ml-4">{$def[1]}</p> else ()}
     {if ($word-rel) then <p class="ml-4">
@@ -1179,7 +1199,7 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
          <div><button class="btn" data-toggle="collapse" data-target="#bib-{$entry-id}">Show references</button><ul id="bib-{$entry-id}" class="collapse" data-toggle="collapse">
         {for $d in $e//tei:bibl
         return
-        tlslib:display-bibl($d)
+        bib:display-bibl($d)
      }</ul></div>  
     else ()} 
     <ul><span class="font-weight-bold">Syntactic words</span>{for $sw in $e/tei:sense
@@ -1196,7 +1216,7 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
     </div>
     </div>
         <div class="col-sm-0">{tlslib:swl-form-dialog('concept', $model)}</div>
-        <div class="col-sm-1">{wd:quick-search-form('concept')}</div>
+        <div class="col-sm-1">{if (lpm:show-setting('wd', 'concept')) then wd:quick-search-form('concept') else ()}</div>
     </div>
     )
     
@@ -1509,96 +1529,10 @@ declare function app:recent-activity(){
   return $r
 };
 
-
-declare
-    %templates:wrap
-function app:settings($node as node()*, $model as map(*))
-{
-let $user := sm:id()//sm:real/sm:username/text()
-, $settings := lus:get-settings()
-, $px := doc($config:tls-data-root || "/vault/members.xml")//tei:person[@xml:id=$user]//tei:persName/text()
-return
-<div><h2>Settings for {$px}</h2>
-<h3>Most recently visited</h3>
-<ul></ul>
-<h3>Display</h3>
-<div>
-<input type="checkbox" name="theme" data-toggle="toggle" checked="true" aria-label="Dark theme"/>
-Dark theme
-</div>
-<h3>Bookmarks</h3>
-<ul>
-{for $b in doc($config:tls-user-root || $user || "/bookmarks.xml")//tei:item
-  let $segid := $b/tei:ref/@target,
-  $id := $b/@xml:id,
-  $date := xs:dateTime($b/@modified)
-  order by $date descending
-
-return
-<li id="{$id}">{lrh:format-button("delete_bm('"||$id||"')", "Delete this bookmark.", "open-iconic-master/svg/x.svg", "", "", "tls-user")}
-<a href="textview.html?location={substring($segid, 2)}">{$b/tei:ref/tei:title/text()}: {$b/tei:seg}</a></li>
-}
-</ul>
-</div>
-};
-
 declare
     %templates:wrap
 function app:welcome($node as node()*, $model as map(*)){
-let $user := sm:id()//sm:real/sm:username/text()
-  , $r := tlslib:recent-texts-list(10)
-return
-<div>
-        {if ($user = 'guest') then
-        <div>
-          <h3>Welcome to the HXWD website</h3>
-          <p>This is a website for people interested in reading and translating premodern Chinese texts. </p>
-          <p>It requires some familiarity with Chinese to be useful. </p>
-          <p>While you are welcome to explore the site without signing in, most of the features are only available to registered users. </p>
-          <p>The <a href="https://docs.hxwd.org" target="docs">documentation</a> is still sparse, but you might still find it useful.</p>
-          <p>You can start reading the <b><a href="textview.html?location=KR1h0004">論語 Lunyu (Confucius analects)</a></b> or <br/>
-           have a look at the <b><a href="search.html?search-type=12">list of texts</a></b></p>
-          <p>Search the database:   
-           <form action="search.html" class="form-inline my-2 my-lg-0" method="get">
-                 <input type="hidden" name="textid" value=""/>
-                 <input id="query-inp" name="query" class="form-control w-50 mr-sm-2 chn-font" type="search" placeholder="Search" aria-label="Search" value=""/>
-                 <span class="mr-1">in</span>
-                  <select class="form-control input-sm" name="search-type">
-                   <option selected="true" value="1">texts</option>
-                   <option value="7">titles</option>
-                   <option value="2">dictionary</option>
-                   <option value="3">translations</option>
-                   <option value="4">everything</option>
-                   <option value="10">bibliography</option>
-                 </select>
-                 <button id="search-submit" class="btn btn-outline-success my-2 my-sm-0" type="submit">
-                 <img class="icon" src="resources/icons/open-iconic-master/svg/magnifying-glass.svg"/>
-                 </button>
-                 </form>
-           </p>
-          <p>
-            <b><a href="#"  data-toggle="modal" data-target="#loginDialog">
-              Login</a>
-              </b> or <br/><br/>
-            <a href="signup.html"><b>Apply</b> for membership in the TLS project.</a>
-          </p>
-        </div>
-        else if ($r) then 
-        <div>
-         <h3>Welcome back!</h3>
-         <p>Here are some texts you recently looked at:</p>
-         <ul>{for $l in $r return $l}</ul>
-                <p>
-                    Please acknowledge your use of TLS in your publications.
-                </p>                
-        </div> else ()
-        }
-<p>
-     <span class="text-danger">This website is under development.</span>
-        </p>
-        <p>Problems and suggestions can be reported and discussed also on <a href="https://github.com/tls-kr/tls-app/issues">GitHub Issues</a></p>
-        <hr/>
-</div>
+i18n:welcome-message()
 };
 
 declare function app:stats(){

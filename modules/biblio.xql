@@ -920,3 +920,15 @@ declare function bib:get-mods-crypt-file(){
     doc($doc-path)
   return $doc
 };
+
+
+declare function bib:display-bibl($bibl as node()){
+<li><span class="font-weight-bold">{$bibl/tei:title/text()}</span>
+(<span><a class="badge" href="bibliography.html?uuid={replace($bibl/tei:ref/@target, '#', '')}">{$bibl/tei:ref}</a></span>)
+<span>p. {$bibl/tei:biblScope}</span>
+{for $p in $bibl/tei:note/tei:p return
+<p>{$p/text()}</p>}
+
+</li>
+};
+

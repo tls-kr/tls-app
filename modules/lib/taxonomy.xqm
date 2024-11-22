@@ -18,75 +18,105 @@ import module namespace src="http://hxwd.org/search" at "../search.xql";
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
 
-(: We receive the result-set and calculate the count on the nodes 
-@hits is the result set
-@genre is the desired genre 
+(: this will simply call the display as  :)
 
-in the facet search, this is how I use it
-           - create the map
-            let $map := src:facets-map($hits, $g)
-            , $tax := doc($config:tls-texts-taxonomy)//tei:category[@xml:id=$g]
-            - add the hitcount to the map , then sum them up on the different levels, finally remove the categories w/o hit
-            , $tree :=  src:facets-add-n($tax, $map) => src:facets-sum-n($map) => src:facets-prune()
-
-
-:)
-(:
-declare function ltx:by-item($set, $map){
-map:merge(
-let $key1 := $map?parameters?grouping
-, $key2 := if (string-length($map?parameters?group2) > 0) then $map?parameters?group2 else "none" 
-, $sort := $map?parameters?sort
-for $a in $set
- let $o := lct:get-grouping-key($a, $key1)
- group by $o
- let $s := lct:get-sort-key($a, $sort)
- order by $s descending
- return 
- map:entry($o, (count($a),
-  map:merge(
-   for $b in $a
-    let $o2 := lct:get-grouping-key($b, $key2[1])
-    group by $o2
-    let $s2 := lct:get-sort-key($b, $sort[1])
-    order by $s2
-    return 
- map:entry($o2, (count($b), $b))))
- ))
+declare function ltx:proc-taxonomy($node as node(), $tax){
+typeswitch($node)
+case element(tei:category) return 
+  <li><a href="{$tax}.html?uuid={$node/@xml:id}">{$node/tei:catDesc/text()}</a>
+  <ul>{for $n in $node/node() return ltx:proc-taxonomy($n, $tax)}</ul></li>
+case element(tei:catDesc) return ()
+case element(*) return 
+ for $n in $node/node() 
+ return ltx:proc-taxonomy($n, $tax)
+case text() return $node
+default return $node
 };
-:)
 
 
-(: turns a flat list to a map :) 
+(: from any category element, we look for the top of the tree :)
+declare function ltx:get-taxonomy($id as xs:string){
+    let $cat := collection($config:tls-data-root||"/core")//tei:category[@xml:id=$id]
+    return $cat/ancestor::tei:category[@rend='top']
+};
 
-declare function ltx:hits-to-map($hits, $genre){
+
+(: turns a flat list to a map :)
+(: the callback function needs to be able to extract the grouping key from the provided node  :) 
+
+declare function ltx:hits-to-map($hits as item()*, $genre as xs:string, $get-grouping-key as function(*)){
     map:merge(
     for $h in $hits
-    let $md := lmd:get-metadata($h, $genre)
+    let $md := $get-grouping-key($h, $genre)
      for $m in $md
      let $grp := $m
     group by $grp
     where string-length($grp) > 0
     return
-    map:entry($grp, (count($m), $h))
+    map:entry($grp, $h)
     )
 };
 
-declare function ltx:facets-add-n($n, $map){
+declare function local:format-tax-map($m){
+    <div xmlns="http://www.tei-c.org/ns/1.0">{
+    for $k in map:keys($m)
+    return
+        <div>
+        <span type="group">{$k}</span>
+        {map:get($m, $k)[2]}
+        </div>
+    }</div>    
+};
+
+
+declare function local:facets-add-n($map as map(*), $n, $options as map(*)){
   typeswitch ($n)
   case element(tei:category) return
-   let $id := $n/@xml:id
+   let $id := data($n/@xml:id)
+   , $l := count($map?($id))
+   , $m := $map?($id)[2]
    return
     element {QName(namespace-uri($n),local-name($n))} {
     $n/@* except $n/@n,
-    if ($map?($id)) then attribute n {$map?($id)} else (),
-    for $nn in $n/node() return ltx:facets-add-n($nn, $map)}
+    if ($l > 0) then (attribute n {$l} ,
+        for $i at $pos in $map?($id)
+        return
+        typeswitch($i)
+            case map() return local:format-tax-map ($i)
+            case element(*) return $i
+            case xs:integer return ()
+            case node()+ return ('seq', $pos, $i)
+            default return <debug>other</debug>
+         ) else () ,
+    for $nn in $n/node() return local:facets-add-n($map, $nn, $options)}
   case element(*)
    return $n
   default return $n
 };
 
-declare function ltx:facets-sum-n($n, $map){
+
+(: pass in the taxonomy, starting with the top tei:category :)
+declare function ltx:tax-add-n($map as map(*), $tax as node(), $options as map(*)){
+  typeswitch ($tax)
+  case element(tei:category) return
+   let $id := $tax/@xml:id
+   , $l := count($map?($id))
+   , $m := for $t in $map?($id) return $t
+   return
+    element {QName(namespace-uri($tax),local-name($tax))} {
+    $tax/@* except $tax/@n,
+    if ($l > 0) then (attribute n {$l} ,
+(:     if (string-length($options?grouping)>0) then 
+     (ltx:hits-to-map($m, $options?genre, $options?ggk) ) else:)
+      <res>{$map?($id)}</res> 
+    )else (),
+    for $nn in $tax/node() return ltx:tax-add-n($map, $nn, $options)}
+  case element(*)
+   return $tax
+  default return $tax
+};
+
+declare function ltx:tax-sum-n($n){
   typeswitch ($n)
   case element(tei:category) return
    let $id := $n/@xml:id
@@ -96,31 +126,42 @@ declare function ltx:facets-sum-n($n, $map){
     element {QName(namespace-uri($n),local-name($n))} {
     $n/@* except $n/@sum,
     if ($n/tei:category) then if ($sum > $nv) then attribute sum {$sum} else () else (),
-    for $nn in $n/node() return ltx:facets-sum-n($nn, $map)}
+    for $nn in $n/node() return ltx:tax-sum-n($nn)}
   case element(*)
    return $n
   default return $n
 };
 
-(: sum of characters on the same level :)
-declare function ltx:lev-sum($node){
-let $p := $node/parent::tei:category
-, $cn := $p/tei:category
-, $s := sum(for $t in $cn return 
-    if ($t/@sum) then xs:int($t/@sum)
-    else if ($t/@n) then xs:int($t/@n) 
-    else 0)
-   return $s
-};
-
-declare function ltx:facets-prune($n){
+(: remove unused categories :)
+declare function ltx:tax-prune($n){
   typeswitch ($n)
+  case element(category) return <bla>XX</bla>
   case element(tei:category) return
-   if ($n/@n or xs:int($n/@sum) > 0 ) then 
+   if (xs:int($n/@n) > 0 or xs:int($n/@sum) > 0 ) then 
     element {QName(namespace-uri($n),local-name($n))} {
     $n/@* ,
-    for $nn in $n/node() return ltx:facets-prune($nn)}
-    else ()
+    for $nn in $n/node() return ltx:tax-prune($nn)}
+    else 
+    ()
+  case element(*)
+   return $n
+  default return $n
+};
+
+(: add the hits to the taxonomy 
+
+dont need this anymore...
+:)
+declare function ltx:tax-add-hits($n, $set){
+  typeswitch ($n)
+  case element(tei:category) return
+   let $id := $n/@xml:id
+   return
+    element {QName(namespace-uri($n),local-name($n))} {
+    $n/@*
+    (: at this point, I can further process the reduced set :)
+    , <res>{$set[@concept-id=$id]}</res>
+    ,for $nn in $n/node() return ltx:tax-add-hits($nn, $set)}
   case element(*)
    return $n
   default return $n

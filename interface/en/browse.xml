@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<div class="row" xml:id="browse" lang="en">
+  <div class="col-md-2"/>
+  <div class="col-md-6">
+  <h3>Browse the database</h3>
+  <p>The following aspects of this database can be accessed through a browsing interface, which is also available from the 'Browse' menu on all pages. </p>
+  <p/>
+  <ul>
+    <li>There are many texts you can read here:
+                                <a class="dropdown-item" href="search.html?search-type=12">Texts</a>
+    </li>
+    <li>Explore the concepts that allow a unique view of the Chinese worldview:
+                                <a class="dropdown-item" href="browse.html?type=concept">Concepts</a>
+      <a class="dropdown-item" href="browse.html?type=tax&amp;mode=concept">Taxonomical tree of Concepts</a>
+      
+    </li>
+    <li>For the most frequent characters, a hierarchical view of the semantic field has been established:
+                                <a class="dropdown-item" href="browse.html?type=taxchar">Characters</a>
+      
+    </li>
+    <li>
+      For some frequent words, there is a list of concepts they are associated with:
+                                <a class="dropdown-item" href="browse.html?type=taxword">Words</a>
+    </li>
+    <li>Citations are text lines associated with a specific syntactic feature and concept, they can be analysed here.  
+                                <a class="dropdown-item" href="citations.html">Citations</a>
+    </li>
+    <li>Placing related words in opposite positions is a frequent feature of Chinese prose.  Here are the relations we found:
+                                <a class="dropdown-item" href="browse.html?type=word-rel-type">Word relations</a>
+    </li>
+    <li>A careful linguistic analysis is carried out through naming and categorizing the syntactic functions we found, these are used in the citations above: 
+                                <a class="dropdown-item" href="browse.html?type=syn-func">Syntactic functions</a>
+      <a class="dropdown-item" href="browse.html?type=tax&amp;mode=syn-func">Taxonomical tree of Syntactic functions</a>
+    </li>
+    <li>Some of these annotations also record additionally semantic aspects of the useage.
+                                <a class="dropdown-item" href="browse.html?type=sem-feat">Semantic features</a>
+      
+    </li>
+    <li>For a description of the stylistic and rhetoric layer of a text, situated beyond the words on a different layer, we use rhetorical devices.  
+                                <a class="dropdown-item" href="browse.html?type=rhet-dev">Rhetorical devices</a>
+      
+    </li>
+    <li>While the rhetorical devices are thoroughly laid out, we at some point tried to generalize this concept to allow other types of observations on chunks of texts.  This is experimental and a work in progress. 
+                                <a class="dropdown-item" href="observations.html">Observations</a>
+      
+    </li>
+    <li>Annotated bibliography
+                                <a class="dropdown-item" href="browse.html?type=biblio">Bibliography</a>
+    </li>
+  </ul>
+</div>
+</div>

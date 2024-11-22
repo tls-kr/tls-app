@@ -79,7 +79,7 @@ return
 declare function lsf:get-sw-dispatch($word, $context, $domain, $leftword){
 let $pref := lus:get-sf-display-setting()
 return 
-( if (lpm:show-buddhist-tools()) then <ul>{lsi:ddb-lookup($word)}</ul> else (),
+( if (lpm:show-buddhist-tools($context)) then <ul>{lsi:ddb-lookup($word, map{})}</ul> else (),
   switch($pref)
 case 'by-syn-func' return
  lsf:get-sw-by-syn-func($word, $context, $domain, $leftword)
@@ -140,7 +140,7 @@ declare function lsf:display-sense($sw as node(), $count as xs:int, $display-wor
     <span id="sw-{$id}" class="font-weight-bold">{$sf}</span>
     <em class="ml-2">{$sm}</em> 
     <span class="ml-2">{$def}</span>
-    {if ($resp) then 
+    {if ($resp[1]) then 
     <small><span class="ml-2 btn badge-secondary" title="{$resp[1]} - {$sw/@tls:created}">{$resp[2]}</span></small> else ()}
      <button class="btn badge badge-light ml-2" type="button" 
      data-toggle="collapse" data-target="#{$id}-resp" onclick="show_att('{$id}')">
@@ -387,7 +387,7 @@ return
 </strong>,<span id="{$wid}-{$pos}-py" title="Click here to change pinyin" onclick="assign_guangyun_dialog({{'zi':'{$zi}', 'wid':'{$wid}','py': '{$py}','concept' : '{$esc}', 'concept_id' : '{$id}', 'pos' : '{$pos}'}})">&#160;({string-join($py, "/")})&#160;</span>)
 else ""}
 <strong><a href="concept.html?uuid={$id}#{$wid}" title="{$cdef}">{$concept}</a></strong> 
- {if ($resp) then <button class="ml-2 btn badge badge-light" title="{$resp[1]} - {$wid/ancestor::tei:entry/@tls:created}">{$resp[2]}</button> else ()}
+ {if ($resp[1]) then <button class="ml-2 btn badge badge-light" title="{$resp[1]} - {$wid/ancestor::tei:entry/@tls:created}">{$resp[2]}</button> else ()}
 
 {if ($doann and sm:is-authenticated() and not(contains(sm:id()//sm:group, 'tls-test'))) then 
  if ($wid) then     
@@ -570,7 +570,7 @@ return
 </strong>,<span id="{$wid}-{$pos}-py" title="Click here to change pinyin" onclick="assign_guangyun_dialog({{'zi':'{$zi}', 'wid':'{$wid}','py': '{$py[$pos]}','concept' : '{$esc}', 'concept_id' : '{$id}', 'pos' : '{$pos}'}})">&#160;({string-join($py, "/")})&#160;</span>)
 else ""}
 <strong><a href="concept.html?uuid={$id}#{$wid}" title="{$cdef}" class="{if ($scnt[$pw] = 0) then 'text-muted' else ()}">{$concept[1]}</a></strong> 
- {if ($resp) then <button class="ml-2 btn badge badge-light" title="{$resp[1]} - {$wx/ancestor::tei:entry/@tls:created}">{$resp[2]}</button> else ()}
+ {if ($resp[1]) then <button class="ml-2 btn badge badge-light" title="{$resp[1]} - {$wx/ancestor::tei:entry/@tls:created}">{$resp[2]}</button> else ()}
 
 {if ($doann and sm:is-authenticated() and not(contains(sm:id()//sm:group, 'tls-test'))) then 
  if ($wid) then     

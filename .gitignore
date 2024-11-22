@@ -1,3 +1,4 @@
+modules/signup.xql
 build/
 node_modules/
 .existdb.json

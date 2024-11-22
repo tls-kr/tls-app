@@ -17,14 +17,14 @@ import module namespace lrh="http://hxwd.org/lib/render-html" at "render-html.xq
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 
-
+(: 2024-11-18 probably not yet activ :)
 declare function lsd:swl-form-dialog($context as xs:string, $model as map(*)) {
 <div id="swl-form" class="card ann-dialog overflow-auto">
 {if ($context = 'textview') then
  <div class="card-body">
     <h5 class="card-title"><span id="new-att-title">{if (sm:is-authenticated()) then "New Attribution:" else "Existing SW for " }<strong class="ml-2 chn-font"><span id="swl-query-span">Word or char to annotate</span>:</strong></span>
     <span id="domain-lookup-mark">
-    <span class="badge badge-info ml-2" onclick="wikidata_search('wikidata')" title="Click here for a quick search in WikiData"> WD </span>
+    { if (lpm:show-setting('wd', 'swl-dialog') != '0') then <span class="badge badge-info ml-2" onclick="wikidata_search('wikidata')" title="Click here for a quick search in WikiData"> WD </span> else ()}
     { if (lpm:can-search-similar-lines()) then <span class="badge badge-info ml-2" onclick="wikidata_search('similar')" title="Search for similar lines"> 似 </span> else ()}
     <span>　　Lookup domain:<select id="domain-select" onChange="update_swlist()"><option value="core">Core</option>{for $d in xmldb:get-child-collections($config:tls-data-root||'/domain') return <option value="{$d}">{lu:capitalize-first($d)}</option>}</select></span>
     {if (1 = 0) then
