@@ -11,6 +11,7 @@
     </li>
     <li>Explore the concepts that allow a unique view of the Chinese worldview:
                                 <a class="dropdown-item" href="browse.html?type=concept">Concepts</a>
+      <a class="dropdown-item" href="browse.html?type=tax&amp;mode=concept">Taxonomical tree of Concepts</a>
       
     </li>
     <li>For the most frequent characters, a hierarchical view of the semantic field has been established:
@@ -29,6 +30,7 @@
     </li>
     <li>A careful linguistic analysis is carried out through naming and categorizing the syntactic functions we found, these are used in the citations above: 
                                 <a class="dropdown-item" href="browse.html?type=syn-func">Syntactic functions</a>
+      <a class="dropdown-item" href="browse.html?type=tax&amp;mode=syn-func">Taxonomical tree of Syntactic functions</a>
     </li>
     <li>Some of these annotations also record additionally semantic aspects of the useage.
                                 <a class="dropdown-item" href="browse.html?type=sem-feat">Semantic features</a>

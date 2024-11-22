@@ -148,6 +148,13 @@ declare variable $config:search-map := map{
 "12" : "title list"
 };
 
+declare variable $config:lus-values := map{
+ '0' : "Don't show this at all"
+,'1' : "Show this wherever possible"
+,'context' : 'Show this in these contexts:'
+};
+
+
 declare variable $config:lmap := map{
 "zh" : "Modern Chinese",
 "och" : "Old Chinese",

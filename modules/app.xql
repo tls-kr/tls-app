@@ -42,6 +42,7 @@ import module namespace lpm="http://hxwd.org/lib/permissions" at "lib/permission
 import module namespace ltp="http://hxwd.org/lib/textpanel" at "lib/textpanel.xqm";
 import module namespace lrv="http://hxwd.org/lib/review" at "lib/review.xqm";
 import module namespace i18n="http://hxwd.org/lib/i18n" at "lib/i18n.xqm";
+import module namespace ltx="http://hxwd.org/taxonomy" at "lib/taxonomy.xqm";
 
 import module namespace remote="http://hxwd.org/remote" at "lib/remote.xqm";
 
@@ -83,6 +84,20 @@ function app:page-title($node as node()*, $model as map(*)) as xs:string
 
 (:,$context := substring-before(tokenize(request:get-uri(), "/")[last()], ".html"):)
 return "TLS - " || $ts
+};
+
+declare function app:show-taxonomy($tax as xs:string) {
+let $doc :=
+  switch($tax)
+  case "concept" return doc($config:tls-data-root || "/core/concept-taxonomy.xml")
+  case "syn-func" return doc($config:tls-data-root || "/core/syntactic-functions-taxonomy.xml")
+  default return ()
+return
+<div>
+<h2>Taxonomy tree for {$config:lmap?($tax)}</h2>
+{ltx:proc-taxonomy($doc//tei:taxonomy, $tax)}
+</div>
+ 
 };
 
 (: display the taxonomy in HTML format :)
@@ -183,6 +198,7 @@ function app:browse($node as node()*, $model as map(*), $type as xs:string?, $fi
     let $filterString := if (string-length($filter) > 0) then $filter else ""
     return
     if ($type = "word") then app:browse-word($type, $filterString)
+    else if ($type = "tax") then app:show-taxonomy($mode)
     else if ($type = "welcome") then i18n:display(map{'id': 'browse'})
     else if ($type = "taxchar") then app:browse-char($type, $filterString)
     else if ($type = "taxword") then app:browse-word($type, $filterString)
@@ -195,7 +211,9 @@ function app:browse($node as node()*, $model as map(*), $type as xs:string?, $fi
    <div class="card">
     <div class="card-header" id="{$type}-card">
       <div class="row mb-0">
-      <span class="col-3"><h4>{map:get($config:lmap, $type)} / Show tree</h4></span>&#160;
+      <span class="col-3"><h4>{map:get($config:lmap, $type)}  {
+      if ($type = ('concept', 'syn-func')) then (" / ", <a class="ml-2" href="browse.html?type=tax&amp;mode={$type}">Show tree</a>) else ()
+      }</h4></span>&#160;
       <span class="col-3">
       <input class="form-control" id="myInput" type="text" placeholder="Type to filter..."/>
       </span>

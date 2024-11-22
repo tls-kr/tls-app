@@ -16,6 +16,8 @@ import module namespace config="http://hxwd.org/config" at "../config.xqm";
 import module namespace lmd="http://hxwd.org/lib/metadata" at "metadata.xqm";
 import module namespace lu="http://hxwd.org/lib/utils" at "utils.xqm";
 import module namespace lrh="http://hxwd.org/lib/render-html" at "render-html.xqm";
+import module namespace lsi="http://hxwd.org/special-interest" at "special-interest.xqm";
+
 
 import module namespace templates="http://exist-db.org/xquery/templates" ;
 
@@ -27,12 +29,6 @@ declare namespace tls="http://hxwd.org/ns/1.0";
    1 = always on
    <string(s), sep by ,> gives the context(s) in which to display, or the value of the setting 
 :)
-
-declare variable $lus:values := map{
- '0' : "Don't show this at all"
-,'1' : "Show this wherever possible"
-,'context' : 'Show this in these contexts:'
-};
 
 declare variable $lus:default := map{
  'sf-display' : 'by-concept' 
@@ -60,12 +56,14 @@ declare function lus:user-name($node as node()*, $model as map(*)){ $model?px };
 declare %templates:wrap function lus:settings($node as node()*, $model as map(*)) {
 <div>
 <h2>Customizable settings for {$model?px}</h2>
-<p>There might be more to come.</p>
+<p>
+ <span class="text-danger"><b>Warning:</b> This is still a mockup, some actions on this page are <b>not yet activated.</b></span>
+</p>
+
 </div>
 };
 
-declare function lus:settings-display($node as node()*, $model as map(*))
-{
+declare function lus:settings-display($node as node()*, $model as map(*)){
 <div>
 <p>Here are settings to the place and type of items to display:</p>
 <ul>
@@ -79,7 +77,7 @@ declare function lus:settings-display($node as node()*, $model as map(*))
     'id' : $id
     , 'col' : 'col-md-8'
     , 'attributes' : map{'onchange' :"us_save_setting('"||$id||"')"}
-    , 'option-map' : $lus:values
+    , 'option-map' : $config:lus-values
     , 'selected' : $currentvalue
     , 'label' : ( $i/text() , <a class="ml-2" href="{$config:help-base-url}" title="Open documentation for this item" target="docs" role="button">?</a>)
  })}
@@ -98,8 +96,7 @@ declare function lus:settings-display($node as node()*, $model as map(*))
 
 
 
-declare function lus:settings-bookmarks($node as node()*, $model as map(*))
-{
+declare function lus:settings-bookmarks($node as node()*, $model as map(*)){
 <div>
 <p>Currently defined bookmarks.  Click on the <img src="resources/icons/open-iconic-master/svg/x.svg"/> to delete a bookmark.</p>
 <ul>
@@ -117,6 +114,19 @@ return
 </div>
 };
 
+declare function lus:settings-external($node as node()*, $model as map(*)){
+<div>
+<div class="row">
+<p><span class="badge" onclick="show_dialog('external-resource',{{'dummy':'3'}})"  type="button">Add</span> additional resources or <b>select</b> them to some screens.</p>
+</div>
+<div class="row">
+<div class="col">
+<span>Available resources:</span>
+{lsi:list-resources($model)}
+</div>
+</div>
+</div>
+};
 
 (:~
  : this creates a new empty stub for various user settings (if necessary) and returns the doc
@@ -201,7 +211,8 @@ return
 
 declare function lus:set-sf-display-setting($preference as xs:string){
 let $settings := lus:get-settings()
-, $node := <section xmlns="http://hxwd.org/ns/1.0" type="sf-display" content="{$preference}"/>, $oldnode := $settings//tls:section[@type='sf-display']
+, $node := <section xmlns="http://hxwd.org/ns/1.0" type="sf-display" content="{$preference}"/>
+, $oldnode := $settings//tls:section[@type='sf-display']
 return 
  if ($oldnode) then 
    update replace $oldnode with $node

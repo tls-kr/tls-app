@@ -18,6 +18,22 @@ import module namespace src="http://hxwd.org/search" at "../search.xql";
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
 
+(: this will simply call the display as  :)
+
+declare function ltx:proc-taxonomy($node as node(), $tax){
+typeswitch($node)
+case element(tei:category) return 
+  <li><a href="{$tax}.html?uuid={$node/@xml:id}">{$node/tei:catDesc/text()}</a>
+  <ul>{for $n in $node/node() return ltx:proc-taxonomy($n, $tax)}</ul></li>
+case element(tei:catDesc) return ()
+case element(*) return 
+ for $n in $node/node() 
+ return ltx:proc-taxonomy($n, $tax)
+case text() return $node
+default return $node
+};
+
+
 (: from any category element, we look for the top of the tree :)
 declare function ltx:get-taxonomy($id as xs:string){
     let $cat := collection($config:tls-data-root||"/core")//tei:category[@xml:id=$id]

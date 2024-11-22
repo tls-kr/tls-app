@@ -421,6 +421,22 @@ declare function lrh:card-collapsable($map as map(*)){
     </div>
 };
 
+declare function lrh:form-input-row($name, $map){
+            <div class="form-row">
+              {if ($map?required = true()) then
+              
+                <div id="{$map?input-id}-group" class="{if (string-length($map?col-size)>0) then $map?col-size else "col-md-12"} ">
+                    <label for="{$map?input-id}"><strong>{$map?hint}</strong> </label>
+                    <input id="{$map?input-id}" type="{$map?type}" required="required"  name="{if (string-length($map?input-name)>0) then $map?input-name else $map?input-id}" class="form-control" value="{$map?input-value}"/>
+                </div>
+               else
+                <div id="{$map?input-id}-group" class="{if (string-length($map?col-size)>0) then $map?col-size else "col-md-12"} ">
+                    <label for="{$map?input-id}"><strong>{$map?hint}</strong> </label>
+                    <input id="{$map?input-id}" type="{$map?type}" name="{if (string-length($map?input-name)>0) then $map?input-name else $map?input-id}" class="form-control" value="{$map?input-value}"/>
+                </div>    
+              }  
+            </div>
+};
 
 declare function lrh:form-control-input($map){
  <div class="{$map?col} form-group ui-widget" id="{$map?id}-group" >
