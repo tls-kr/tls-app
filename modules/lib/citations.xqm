@@ -35,16 +35,17 @@ declare variable $lct:perspectives := map{
 
 declare variable $lct:grouping := map{
 "diachronic" : "Diachronic", 
+"by-diachronic" : "Diachronic(tree)", 
 "by-char" : "By character", 
+"concept" : "By Concept",
 "by-concept" : "By Concept(tree)",
-"concept" : "By Concept(flat)",
 "by-text": "By text", 
-"by-syn-func": "By Syntactic Function(tree)", 
 "syn-func": "By Syntactic Function", 
+"by-syn-func": "By Syntactic Function(tree)", 
 "by-sem-feat": "By Semantic Feature", 
 "by-pos": "By Part Of Speech" 
 };
-declare variable $lct:use-tax := ("by-concept", "diachronic", "by-syn-func");
+declare variable $lct:use-tax := ("by-concept", "by-diachronic", "by-syn-func");
 declare function lct:citations-form($node as node()*, $model as map(*), $item as xs:string?, $perspective as xs:string?){
 let $n := if (string-length($model?n)>0) then $model?n else 20
 return
@@ -262,7 +263,7 @@ let $res := <ol >
          return
          <li pos="{$pos}" onclick="cit_set_value('{$perspective}', '{string($i?2)}')">{tu:get-member-name($i?2)} ({$i?1})</li>
        else
-        <li pos="{$pos}" onclick="cit_set_value('{$perspective}', '{string($i?2)}')">{string($i?2)} ({$i?1})</li>
+        <li pos="{$pos}" onclick="cit_set_value('{$perspective}', '{lct:format-key(string($i?2))}')">{lct:format-key(string($i?2))} ({$i?1})</li>
         }
     </ol>
 
