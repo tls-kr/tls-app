@@ -27,6 +27,7 @@ import module namespace lli="http://hxwd.org/lib/link-items" at "lib/link-items.
 import module namespace lpm="http://hxwd.org/lib/permissions" at "lib/permissions.xqm";
 import module namespace ltp="http://hxwd.org/lib/textpanel" at "lib/textpanel.xqm";
 import module namespace lsf="http://hxwd.org/lib/syn-func" at "lib/syn-func.xqm";
+import module namespace ltx="http://hxwd.org/taxonomy" at "lib/taxonomy.xqm";
 
 import module namespace log="http://hxwd.org/log" at "log.xql";
 
@@ -1049,19 +1050,24 @@ return "OK"
 };
 
 (:~
- : move W with all SW to a new concept
- @param $word : the word to move.  must exist in src-concept
- @param $src-concept: uuid of concept where the word is currently defined
- @param $trg-concept: uuid of concept where the words should be moved to, must exist and the word must not exist there already
+ : move a Word with all SW to a new concept
+ 
 :)
 declare function tlslib:move-word-to-concept($map as map(*)){
  util:declare-option("exist:serialize", "method=json media-type=application/json"),
-if ($map?type = "word") then 
-tlslib:move-entry-to-concept($map)
-else 
-tlslib:move-sw-to-concept($map)
+ switch($map?type)
+ case "word" return 
+   tlslib:move-entry-to-concept($map)
+ case "syn-func" 
+ case "concept" return 
+   ltx:move-category($map)
+ default return 
+   tlslib:move-sw-to-concept($map)
 };
 
+(:~ TODO  This can not work: src-concept is 'undefined' in the request 
+this is called from tlslib:move-word-to-concept(), activated from the move-word dialog
+:)
 declare function tlslib:move-entry-to-concept($map as map(*)){
  let $sc := (collection($config:tls-data-root || "/concepts") | collection($config:tls-data-root || "/domain"))//tei:div[@xml:id=$map?src-concept]
  ,$tc := (collection($config:tls-data-root || "/concepts") | collection($config:tls-data-root || "/domain"))//tei:div[@xml:id=$map?trg-concept]
@@ -1102,7 +1108,10 @@ declare function tlslib:move-entry-to-concept($map as map(*)){
  else map{'uuid': (), 'mes' : "ERROR: Word already exists in concept " || $tc-name || "."}
 };
 
-(: actually, move  SW , depending on $map?type  :)
+(:~ 
+actually, move  SW , depending on $map?type  
+this is called from tlslib:move-word-to-concept(), activated from the move-word dialog
+:)
 declare function tlslib:move-sw-to-concept($map as map(*)){
  let $sc := (collection($config:tls-data-root || "/concepts") | collection($config:tls-data-root || "/domain"))//tei:div[@xml:id=$map?src-concept]
  ,$tc := (collection($config:tls-data-root || "/concepts") | collection($config:tls-data-root || "/domain"))//tei:div[@xml:id=$map?trg-concept]

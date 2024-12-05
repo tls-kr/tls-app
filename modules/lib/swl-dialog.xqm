@@ -24,7 +24,7 @@ declare function lsd:swl-form-dialog($context as xs:string, $model as map(*)) {
  <div class="card-body">
     <h5 class="card-title"><span id="new-att-title">{if (sm:is-authenticated()) then "New Attribution:" else "Existing SW for " }<strong class="ml-2 chn-font"><span id="swl-query-span">Word or char to annotate</span>:</strong></span>
     <span id="domain-lookup-mark">
-    { if (lpm:show-setting('wd', 'swl-dialog') != '0') then <span class="badge badge-info ml-2" onclick="wikidata_search('wikidata')" title="Click here for a quick search in WikiData"> WD </span> else ()}
+    { if (lpm:show-setting('wd', 'swl-dialog') = true()) then <span class="badge badge-info ml-2" onclick="wikidata_search('wikidata')" title="Click here for a quick search in WikiData"> WD </span> else ()}
     { if (lpm:can-search-similar-lines()) then <span class="badge badge-info ml-2" onclick="wikidata_search('similar')" title="Search for similar lines"> 似 </span> else ()}
     <span>　　Lookup domain:<select id="domain-select" onChange="update_swlist()"><option value="core">Core</option>{for $d in xmldb:get-child-collections($config:tls-data-root||'/domain') return <option value="{$d}">{lu:capitalize-first($d)}</option>}</select></span>
     {if (1 = 0) then

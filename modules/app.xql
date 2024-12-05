@@ -43,6 +43,7 @@ import module namespace ltp="http://hxwd.org/lib/textpanel" at "lib/textpanel.xq
 import module namespace lrv="http://hxwd.org/lib/review" at "lib/review.xqm";
 import module namespace i18n="http://hxwd.org/lib/i18n" at "lib/i18n.xqm";
 import module namespace ltx="http://hxwd.org/taxonomy" at "lib/taxonomy.xqm";
+import module namespace lc="http://hxwd.org/concept" at "lib/concept.xqm";
 
 import module namespace remote="http://hxwd.org/remote" at "lib/remote.xqm";
 
@@ -239,13 +240,15 @@ function app:browse($node as node()*, $model as map(*), $type as xs:string?, $fi
     </tr></thead><tbody class="table-striped">{
     for $h in $hits
      let $domain := tokenize(util:collection-name($h), '/')[last()]
-    ,$n := if ($domain = ("concepts", "core")) then data($h/tei:head) else $domain || "::" || data($h/tei:head)
+    ,$n := if ($domain = ("concepts", "core")) then data($h/tei:head) else   $domain || "::" || data($h/tei:head)
     ,$id := $h/@xml:id
     (: editing for rhet dev postponed, because of the complicated structure. :)
     ,$edit := if (sm:id()//sm:groups/sm:group[. = "tls-editor"]  ) then 'true' else 'false'
     ,$d := $h/tei:div[@type="definition"]
     ,$def := if ($type = 'concept') then
-       ($d/tei:p, <small>{$d/tei:note}</small>) else 
+       lc:display-defintion($h/@xml:id) 
+(:       ($d/tei:p, <small>{$d/tei:note}</small>) :)
+       else 
        if ($type = 'rhet-dev') then 
        $d/tei:p
        else
@@ -270,7 +273,7 @@ function app:browse($node as node()*, $model as map(*), $type as xs:string?, $fi
         <a id="{$id}-abbr" onclick="show_use_of('{$type}', '{$id}')">{$n}</a>)
     }</td>
     <td><p id="{$id}-{if ($type = 'sem-feat') then 'sm' else if ($type = 'syn-func') then 'sf' else 'rd'}" class="sf" contenteditable="{$edit}">
-    {for $p at $pos in $def return ($p/text(), if ($pos < count($def) ) then <br/> else () ) }&#160;</p>{$br}</td>
+    {$def}&#160;</p>{$br}</td>
     <td><ul id="{$id}-resp"/><p class="altlabels" style="display:block">{string-join($al, ', ')}</p></td>
     </tr>)
     }</tbody></table></div>
@@ -354,8 +357,8 @@ declare function app:do-browse($type as xs:string?, $filter as xs:string?)
     if ($type = "concept") then 
      for $hit in collection($config:tls-data-root)//tei:div[@type=$type]
      let $domain := tokenize(util:collection-name($hit), '/')[last()],
-     $head := if ($domain = "concept") then data($hit/tei:head) else $domain || "::" || data($hit/tei:head),
-     $w := $hit//tei:entry
+     $head := if ($domain = "concept") then data($hit/tei:head) else () (:  $domain || "::" || data($hit/tei:head) :)
+     , $w := $hit//tei:entry
      where starts-with($head, $filter) and count($w) > 0
      order by $head
      return $hit

@@ -31,6 +31,8 @@ import module namespace lv="http://hxwd.org/lib/vault" at "vault.xqm";
 import module namespace lpm="http://hxwd.org/lib/permissions" at "../modules/lib/permissions.xqm";
 import module namespace ltp="http://hxwd.org/lib/textpanel" at "../modules/lib/textpanel.xqm";
 import module namespace lsf="http://hxwd.org/lib/syn-func" at "../modules/lib/syn-func.xqm";
+import module namespace lw="http://hxwd.org/word" at "../modules/lib/word.xqm";
+import module namespace ltx="http://hxwd.org/taxonomy" at "../modules/lib/taxonomy.xqm";
 
 import module namespace remote="http://hxwd.org/remote" at "../modules/lib/remote.xqm";
 
@@ -69,8 +71,9 @@ let $textid := tokenize($line-id, "_")[1],
 (: we generally use the translation from slot1 :)
 $trm := ltr:get-translations($textid),
 $trid := lrh:get-content-id($textid, 'slot1', $trm),
-$tr := $trm($trid)[1]//tei:seg[@corresp='#' || $line-id],
-$tr-resp := lmd:get-metadata($tr, "resp"),
+$tr-in := $trm($trid)[1]//tei:seg[@corresp='#' || $line-id]
+, $tr :=  if (string-length($tr-in) > 0) then $tr-in else (collection($config:tls-translation-root)//tei:seg[@corresp="#" || $line-id])[1]
+, $tr-resp := lmd:get-metadata($tr, "resp"),
 $title-en := lmd:get-metadata($tr, "title"),
 (: $line := collection($config:tls-texts-root)//tei:seg[@xml:id=$line-id],:)
 (: 2024-10-31 might have to rethink this: we are now getting all titles from the catalog, not from the text header. :)
@@ -222,9 +225,13 @@ declare function tlsapi:save-swl($line-id as xs:string, $line as xs:string, $sen
 let $notes-path := concat($config:tls-data-root, "/notes/new/")
 let $user := sm:id()//sm:real/sm:username/text()
 let $currentword := ""
-return
+, $return :=
 (:tlsapi:save-swl-with-path($line-id, $sense-id, $notes-path, $user, $currentword):)
 tlsapi:save-swl-to-docs($line-id, $line, $sense-id, $user, $currentword, $pos, $tit)
+(: update the swl count on this sense/word :)
+, $s := collection($config:tls-data-word-root)//tei:sense[@xml:id = $sense-id]
+, $update := lw:update-sense-id-ann-count($sense-id, 1)
+return $return
 
 };
 
@@ -665,7 +672,9 @@ declare function tlsapi:delete-swl($type as xs:string, $uid as xs:string) {
 if ($type eq 'swl') then 
 let $swl := collection($config:tls-data-root|| "/notes")//tls:ann[@xml:id=$uid]
 ,$link := substring(tokenize($swl/tei:link/@target)[1], 2)
+,$sid := substring(tokenize($swl/tei:link/@target)[2], 2)
 ,$res := update delete $swl
+,$update := lw:update-sense-id-ann-count($sid, -1)
 return $link
 else 
 (: here we are deleting a rhetoric device location :)
@@ -1010,6 +1019,7 @@ return
 
 
 declare function tlsapi:delete-word-from-concept($id as xs:string, $type as xs:string) {
+if ($type = ('concept', 'syn-func') ) then ltx:delete-category($id) else
 let $item := if ($type = 'word') then 
    (collection($config:tls-data-root || "/concepts") | collection($config:tls-data-root || "/domain"))//tei:entry[@xml:id=$id]
    else
