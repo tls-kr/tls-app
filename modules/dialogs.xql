@@ -293,8 +293,8 @@ declare function dialogs:new-concept-dialog($options as map(*)){
     then $options?concept-id else
     if (map:contains($options, "name")) then map:get($con:new-concepts($options?name), "id") else 
     "uuid-" || util:uuid()
-   , $def := if ($uuid) then if (map:contains($con:new-concept-defs, $uuid)) then $con:new-concept-defs($uuid) else () else ()
-   , $name := if(map:contains($options, "concept")) then $options?concept else 
+  , $def := if ($uuid) then if (map:contains($con:new-concept-defs, $uuid)) then $con:new-concept-defs($uuid) else () else ()
+  , $name := if(map:contains($options, "concept")) then $options?concept else 
     if (not($options?mode = "new" or $options?mode = "existing")) then $options?mode else ()
    return
    <div id="new-concept-dialog" class="modal" tabindex="-1" role="dialog" style="display: none;">
@@ -778,7 +778,11 @@ let $cid := if ($map?type='word') then
 , $head := if ($map?type='word') then 
              <h5>Move {$map?word} from {$cid/tei:head/text()} to another concept</h5>
            else
+             if ($map?count = '1') then
              <h5>Attach {$cid/tei:head/text()} to another concept</h5>
+             else 
+             <h5>Create new concept, attach to {$cid/tei:head/text()}</h5>
+             
 return
 <div id="move-word-dialog" class="modal" tabindex="-1" role="dialog" style="display: none;">
     <div class="modal-dialog" role="document">

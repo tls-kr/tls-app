@@ -15,9 +15,10 @@
       <section type="sf-display" content="by-concept"/>      
       <item type="swl-buttons" value="1">Show review buttons etc. on Citations and Attributions</item>  
       <item type="wd" value="1">Wikidata Search and Links</item>  
-      <item type="sig-bud" value="#KR6">SIG Buddhism</item>  
+      <item type="resources" value="1">Links to external resources</item>  
       <item type="citations" value="1">Citations</item>  
-      <item type="domain-selector" value="#KR3e">Allow selection of other knowledge domains of concepts.</item>  
+      <item type="markup" value="0">Markup buttons</item>  
+      <item type="domain-selector" value="0">Allow selection of other knowledge domains of concepts.</item>  
       <item type="set-word-relations" value="0">Buttons that allow the setting of Word Relations.</item>  
       <item type="display-word-relations" value="0">Show Word Relations.</item>  
     </section>

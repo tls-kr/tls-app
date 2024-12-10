@@ -1519,7 +1519,7 @@ function save_sset(sets){
   update_setting(el, el);
   })  
 };
-
+// this is called for search settings
 function update_setting(setting, val_el){
   var value =  $('#' + val_el).val();
   $.ajax({
@@ -1535,6 +1535,24 @@ function update_setting(setting, val_el){
   }
   });  
   $('#update-setting').modal('hide');
+};
+
+// 2024-12-09 this is using the new setting interface in user-setting.xqm
+
+function us_save_setting(section, elid){
+  var value =  $('#' + elid).val();
+  $.ajax({
+  type : "GET",
+  dataType : "html",  
+  url : "api/responder.xql?func=lus:set-user-item&section="+section+"&type=" + elid + "&preference="+value, 
+  success : function(resp){
+     if (resp.startsWith("OK")) {
+       toastr.info("Setting has been changed.", "HXWD says:");
+     } else {
+      toastr.error("A problem occurred.", "HXWD says:");
+     }
+  }
+  });      
 };
 
 function merge_word(word, wid, count, type){

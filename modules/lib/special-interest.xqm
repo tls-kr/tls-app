@@ -17,6 +17,7 @@ import module namespace lrh="http://hxwd.org/lib/render-html" at "render-html.xq
 declare namespace os="http://a9.com/-/spec/opensearch/1.1/";
 
 declare variable $lsi:resources := $config:tls-data-root||"/external/resources";
+declare variable $lsi:internal := $config:tls-data-root||"/external";
 
 declare variable $lsi:general := 
   map{"moedict" : ("MoeDict", "", "https://www.moedict.tw/#{searchTerms}"),
@@ -36,15 +37,20 @@ also add chise ids-find :: need to separate character only and word type SE.
 "https://dict.concised.moe.edu.tw/search.jsp?md=1&amp;word=%E5%A4%A2&amp;size=-1"
 :)
 declare variable $lsi:label := map{
-'buddhdic.xml' : 'DDB',
-'cjkvedic.xml' : 'CJKV'
+'buddhdic' : ('DDB', "word", "Digital Dictionary of Buddhism", "Edited by Charles Muller")
+,'cjkvedic' : ('CJKV', "word", "CJKV Character Dictionary", "Edited by Charles Muller")
+,'swjzdic' : ('SWJZ', "char", "說文解字", "TLS Version")
+,'sbgydic' : ('GY', 'char', '校正宋本廣韻', "")
 };
+
+
 
 declare function lsi:ddb-lookup($word, $map){
 for $w in collection($config:tls-data-root||"/external")//orth[. = $word]
 let $link := $w/parent::entry/href/text()
 , $def := $w/parent::entry/def/text()
-, $r := tokenize(base-uri($w), '/')[last()]
+, $r := substring-before(tokenize(base-uri($d), '/')[last()], '.xml')
+
 return <li><span class="ml-2 badge">{$lsi:label($r)}</span><a target="docs" href="{$link}">{$word}</a>:<span class="ml-2">{$def}</span></li>
 };
 
@@ -99,18 +105,35 @@ return
   (xmldb:store($lsi:resources, $uuid||".xml", $node), "OK")
 };
 
-declare function lsi:list-resources($map as map(*)){
-for $r in collection($lsi:resources)//os:OpenSearchDescription
-let $id := $r/@xml:id
+declare function lsi:resource-list($type){
+switch($type)
+case "internal-resources" return
+  for $d in collection($lsi:internal)//dict
+  return substring-before(tokenize(base-uri($d), '/')[last()], '.xml')
+case "external-resources" return
+  for $r in collection($lsi:resources)//os:OpenSearchDescription
+  return $r/@xml:id/string()
+case "guguolin" return ()
+default return ()
+};
+
+
+
+declare function lsi:list-resources-form($map as map(*)){
+for $id in lsi:resource-list($map?type)
+let $label := if($map?type = 'external-resources') then 
+               let $r := collection($lsi:resources)//os:OpenSearchDescription[@xml:id = $id] 
+               return $r/os:ShortName/text() || " (" || $r/os:Description/text() || ")" else
+              $lsi:label?($id)[1] || " (" || $lsi:label?($id)[3] || ")" 
 return
 <div class="row">
 {lrh:form-control-select(map{
     'id' : $id
     , 'col' : 'col-md-8'
-    , 'attributes' : map{'onchange' :"us_save_setting('"||$id||"')"}
+    , 'attributes' : map{'onchange' :"us_save_setting('"||$map?type||"', '"||$id||"')"}
     , 'option-map' : $config:lus-values
     , 'selected' : ''
-    , 'label' : ( $r/os:ShortName/text() || " (" || $r/os:Description/text() || ")"  , <a class="ml-2" href="{$config:help-base-url}" title="Open documentation for this item" target="docs" role="button">?</a>)
+    , 'label' : ( $label  , <a class="ml-2" href="{$config:help-base-url}" title="Open documentation for this item" target="docs" role="button">?</a>)
  })}
  {lrh:form-control-input(
    map{

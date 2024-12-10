@@ -791,7 +791,7 @@ declare function tlslib:swl-form-dialog($context as xs:string, $model as map(*))
 <div id="swl-form" class="card ann-dialog overflow-auto">
 {if ($context = 'textview') then
  <div class="card-body">
-    <h5 class="card-title"><span id="new-att-title">{if (sm:is-authenticated()) then "New Attribution:" else "Existing SW for " }<strong class="ml-2 chn-font"><span id="swl-query-span">Word or char to annotate</span>:</strong></span>
+    <h5 class="card-title"><span id="new-att-title">{if (sm:is-authenticated()) then "tlsNew Attribution:" else "tlsExisting SW for " }<strong class="ml-2 chn-font"><span id="swl-query-span">Word or char to annotate</span>:</strong></span>
     <span id="domain-lookup-mark">
     { if (lpm:show-setting('wd', 'swl-dialog')) then <span class="badge badge-info ml-2" onclick="wikidata_search('wikidata')" title="Click here for a quick search in WikiData"> WD </span> else ()}
     { if (lpm:can-search-similar-lines()) then <span class="badge badge-info ml-2" onclick="wikidata_search('similar')" title="Search for similar lines"> 似 </span> else ()}
@@ -1508,6 +1508,7 @@ declare function tlslib:linkheader($qc) {
      <span id="krx_search">{" 漢リポ: ",
      <a class="btn badge badge-light chn-font" target="kanripo" title="Search {string-join($qc, '')} in Kanseki Repository" style="background-color:paleturquoise" onclick="krx_items()">{$qc}</a>
      }</span>
+     , lrh:maybe-show-items(map{'qc' : $qc})
 )
 };
 
