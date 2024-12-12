@@ -11,6 +11,7 @@ declare namespace templates="http://exist-db.org/xquery/templates";
 
 declare namespace repo="http://exist-db.org/xquery/repo";
 declare namespace expath="http://expath.org/ns/pkg";
+declare namespace tls="http://hxwd.org/ns/1.0";
 
 (:
     Determine the application root collection from the current module load path.
@@ -167,6 +168,7 @@ declare variable $config:lmap := map{
 "taxchar" : "Taxonomy of meanings for character",
 "concept" : "Concepts",
 "definition" : "Definition",
+"altnames" : "Alternate labels",
 "notes" : "Criteria and general notes",
 "old-chinese-criteria" : "Old Chinese Criteria",
 "modern-chinese-criteria" : "Modern Chinese Criteria",
@@ -194,6 +196,8 @@ declare variable $config:lmap := map{
 "CH8" : "竹簡帛書"
 };
 
+declare variable $config:tls-ann := (collection($config:tls-data-root||"/notes/swl")|collection($config:tls-data-root||"/notes/doc"))//tls:ann;
+declare variable $config:tls-data-word-root := $config:tls-data-root || "/concepts" ;
 
 declare variable $config:circle := "resources/icons/open-iconic-master/svg/media-record.svg";
 declare variable $config:pb := "resources/icons/open-iconic-master/svg/pin.svg";

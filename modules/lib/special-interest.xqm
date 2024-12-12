@@ -15,8 +15,10 @@ import module namespace lmd="http://hxwd.org/lib/metadata" at "metadata.xqm";
 import module namespace lrh="http://hxwd.org/lib/render-html" at "render-html.xqm";
 
 declare namespace os="http://a9.com/-/spec/opensearch/1.1/";
+declare namespace tls="http://hxwd.org/ns/1.0";
 
 declare variable $lsi:resources := $config:tls-data-root||"/external/resources";
+declare variable $lsi:internal := $config:tls-data-root||"/external";
 
 declare variable $lsi:general := 
   map{"moedict" : ("MoeDict", "", "https://www.moedict.tw/#{searchTerms}"),
@@ -36,15 +38,20 @@ also add chise ids-find :: need to separate character only and word type SE.
 "https://dict.concised.moe.edu.tw/search.jsp?md=1&amp;word=%E5%A4%A2&amp;size=-1"
 :)
 declare variable $lsi:label := map{
-'buddhdic.xml' : 'DDB',
-'cjkvedic.xml' : 'CJKV'
+'buddhdic' : ('DDB', "word", "Digital Dictionary of Buddhism", "Edited by Charles Muller")
+,'cjkvedic' : ('CJKV', "word", "CJKV Character Dictionary", "Edited by Charles Muller")
+,'swjzdic' : ('SWJZ', "char", "說文解字", "TLS Version")
+,'sbgydic' : ('GY', 'char', '校正宋本廣韻', "")
 };
+
+
 
 declare function lsi:ddb-lookup($word, $map){
 for $w in collection($config:tls-data-root||"/external")//orth[. = $word]
 let $link := $w/parent::entry/href/text()
 , $def := $w/parent::entry/def/text()
-, $r := tokenize(base-uri($w), '/')[last()]
+, $r := substring-before(tokenize(base-uri($d), '/')[last()], '.xml')
+
 return <li><span class="ml-2 badge">{$lsi:label($r)}</span><a target="docs" href="{$link}">{$word}</a>:<span class="ml-2">{$def}</span></li>
 };
 
@@ -63,7 +70,12 @@ default return ()
 
 (: body for the dialog, rest is in dialogs :)
 declare function lsi:resource-dialog-body($map as map(*)){
-let $os := doc($config:tls-app-interface||"/opensearch.xml")/os:OpenSearchDescription
+let $os := if ($map?id) then 
+  doc($lsi:resources||"/" || $map?id ||".xml")/os:OpenSearchDescription
+  else
+  doc($config:tls-app-interface||"/opensearch.xml")/os:OpenSearchDescription
+, $template := map:merge(for $s in doc($config:tls-app-interface||"/opensearch.xml")/os:OpenSearchDescription/os:*
+                return map:entry(local-name($s), $s/@hint/string()) ) 
 return
 <div class="col">
 {for $s in $os/os:*
@@ -72,14 +84,14 @@ return
   lrh:form-input-row($n, 
   map{"input-id" : 'input-'||$n
      , "input-value" : if ($n = 'Url') then data($s/@template) else $s/text()
-     , "hint" : data($s/@hint)
+     , "hint" : $template?(local-name($s))
      , "type" : "text"}) 
 }
 </div>
 };
 
 declare function lsi:save-resource($map as map(*)){
-let $uuid := "uuid-" || util:uuid()
+let $uuid := if($map?id) then $map?id else "uuid-" || util:uuid()
 let $node := <OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/" xml:id="{$uuid}">
 {for $n in map:keys($map)
 (: TODO need to order this properly, according to DTD :)
@@ -91,6 +103,9 @@ let $node := <OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/"
    if ($nname = 'Url') then (
      attribute type {'text/html'},
      attribute template {$map?($n)} ) else 
+   if ($nname = 'Contact') then  
+    sm:id()//sm:real/sm:username/text()
+   else
     $map?($n)  
    } else ()
 }
@@ -99,18 +114,38 @@ return
   (xmldb:store($lsi:resources, $uuid||".xml", $node), "OK")
 };
 
-declare function lsi:list-resources($map as map(*)){
-for $r in collection($lsi:resources)//os:OpenSearchDescription
-let $id := $r/@xml:id
+declare function lsi:resource-list($type){
+switch($type)
+case "internal-resources" return
+  for $d in collection($lsi:internal)//dict
+  return substring-before(tokenize(base-uri($d), '/')[last()], '.xml')
+case "external-resources" return
+  for $r in collection($lsi:resources)//os:OpenSearchDescription
+  return $r/@xml:id/string()
+case "guguolin" return ()
+default return ()
+};
+
+
+
+declare function lsi:list-resources-form($map as map(*)){
+for $id in lsi:resource-list($map?type)
+let $label := if($map?type = 'external-resources') then 
+               let $r := collection($lsi:resources)//os:OpenSearchDescription[@xml:id = $id] 
+               return ($r/os:ShortName/text() || " (" || $r/os:Description/text() || ")"
+               , <span class="badge" onclick="show_dialog('external-resource',{{'id':'{$id}'}})"  type="button">Edit</span>) else
+              $lsi:label?($id)[1] || " (" || $lsi:label?($id)[3] || ")" 
+, $selected := local:get-user-item($id)              
 return
 <div class="row">
 {lrh:form-control-select(map{
     'id' : $id
     , 'col' : 'col-md-8'
-    , 'attributes' : map{'onchange' :"us_save_setting('"||$id||"')"}
+    , 'attributes' : map{'onchange' :"us_save_setting('"||$map?type||"', '"||$id||"')"}
     , 'option-map' : $config:lus-values
-    , 'selected' : ''
-    , 'label' : ( $r/os:ShortName/text() || " (" || $r/os:Description/text() || ")"  , <a class="ml-2" href="{$config:help-base-url}" title="Open documentation for this item" target="docs" role="button">?</a>)
+    , 'selected' : $selected
+    , 'label' : ( $label  , <a class="ml-2" href="{$config:help-base-url}" title="Open documentation for this item" target="docs" role="button">?</a>
+      )
  })}
  {lrh:form-control-input(
    map{
@@ -122,4 +157,24 @@ return
  
  </div>
 
+};
+
+(: this is duplicated from lsi, to avoid circular imports :)
+
+(:~ check if a user specified a setting, otherwise use the default setting :)
+declare function local:get-user-item($type as xs:string){
+let $settings := local:get-settings()
+, $preference := $settings//tls:item[@type=$type]/@value
+, $default := doc($config:tls-app-interface||"/settings.xml")//tls:item[@type=$type]/@value
+return
+if ($preference) then $preference else if ($default) then $default else '0'
+};
+
+
+declare function local:get-settings() {
+let $user := sm:id()//sm:real/sm:username/text()
+, $filename := "settings.xml"
+,$docpath := $config:tls-user-root || $user || "/" || $filename
+return 
+doc($docpath)
 };

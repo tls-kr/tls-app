@@ -17,10 +17,66 @@ import module namespace lmd="http://hxwd.org/lib/metadata" at "metadata.xqm";
 import module namespace lu="http://hxwd.org/lib/utils" at "utils.xqm";
 import module namespace lus="http://hxwd.org/lib/user-settings" at "user-settings.xqm";
 import module namespace lpm="http://hxwd.org/lib/permissions" at "permissions.xqm";
+import module namespace lsi="http://hxwd.org/special-interest" at "special-interest.xqm";
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace mf="http://kanripo.org/ns/KRX/Manifest/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
+declare namespace os="http://a9.com/-/spec/opensearch/1.1/";
+
+
+(:~  checks which available items should be displayed
+:)
+declare function lrh:maybe-show-items($map as map(*)){
+let $sections := ('external-resources', 'internal-resources')
+for $type in $sections
+for $id in lsi:resource-list($type)
+let $p := lus:get-user-item($id)
+
+return if ($p = '1' ) then lrh:render-extra-item($id, $map?qc) else ()
+};
+
+
+declare function lrh:render-extra-item($id, $qc){
+if ($id = map:keys($lsi:label)) then 
+ if ($lsi:label?($id)[2] = 'char') then 
+   lrh:dic-internal($id, $qc)
+ else 
+   lrh:dic-internal($id, string-join($qc))
+else 
+ (: we assume external here :)
+   lrh:dic-external($id, $qc)
+};
+
+declare function lrh:dic-internal($id, $qc){
+for $word in $qc
+for $w in doc($config:tls-data-root||"/external/" || $id ||".xml")//entry[./orth[. = $word]]
+let $link := $w/href/text()
+, $def := $w/def/text()
+, $pron := $w/pron[@lang='zh']
+return 
+if ($link) then
+<li title="{$lsi:label($id)[3]}" ><span class="ml-2 badge">{$lsi:label($id)[1]}</span><a target="docs" href="{$link}">{$word}</a><small class="text-muted">{$pron}</small>:<span class="ml-2">{$def}</span></li>
+else
+<li title="{$lsi:label($id)[3]}" ><span class="ml-2 badge">{$lsi:label($id)[1]}</span>{$word} <small class="text-muted">{$pron}</small>:<span class="ml-2">{$def}</span></li>
+};
+
+declare function lrh:dic-external($id, $qc){
+for $r in collection($lsi:resources)//os:OpenSearchDescription[@xml:id=$id]
+let $url := $r/os:Url/@template
+, $tags := tokenize($r/os:Tags)
+return
+if ('char' = $tags) then 
+ for $word in $qc
+ let $link := replace($url, '\{searchTerms\}', $word)
+ return
+ <li title="{$r/os:LongName/text()}" ><span class="ml-2 badge">{$r/os:ShortName/text()}</span><a target="docs" href="{$link}">{$word}</a></li>
+ else
+ let $link := replace($url, '\{searchTerms\}', string-join($qc))
+ return
+<li title="{$r/os:LongName/text()}" ><span class="ml-2 badge">{$r/os:ShortName/text()}</span><a target="docs" href="{$link}">{string-join($qc)}</a></li>
+
+};
 
 (:~
 : format the duration in a human readable way
@@ -205,6 +261,7 @@ declare function lrh:format-button-common($onclick as xs:string, $title as xs:st
 
 declare function lrh:swl-buttons($map as map(*)){
 ( if (lpm:show-setting-restricted('swl-buttons', '')) then
+   if ($map?ann = 'wrl') then () else
    ( <span class="rp-5">
        {lrh:format-button("review_swl_dialog('" || data($map?node/@xml:id) || "')", "Review the SWL for " || $map?zi[1], "octicons/svg/unverified.svg", "small", "close", "tls-editor")}&#160;&#160;</span>,   
     lrh:format-button("save_swl_review('" || data($map?node/@xml:id) || "')", "Approve the SWL for " || $map?zi, "octicons/svg/thumbsup.svg", "small", "close", "tls-editor")
@@ -214,7 +271,7 @@ declare function lrh:swl-buttons($map as map(*)){
    if (not($map?context='review')) then
       if (not($map?user = $map?creator-id)) then
    (  lrh:format-button("null()", "Resp: " || $map?resp[1] , $map?resp[2], "small", "close", "tls-user") 
-    , lrh:format-button("incr_rating('swl', '" || data($map?node/@xml:id) || "')", $map?marktext, "open-iconic-master/svg/star.svg", "small", "close", "tls-editor") 
+    ,  if ($map?ann = 'wrl') then () else lrh:format-button("incr_rating('swl', '" || data($map?node/@xml:id) || "')", $map?marktext, "open-iconic-master/svg/star.svg", "small", "close", "tls-editor")  
    )  else () else ()
    (: every user can delete her own swls :)
 , if ($map?user = $map?creator-id or lpm:show-setting-restricted('swl-buttons', '')) then
@@ -460,7 +517,7 @@ declare function lrh:form-control-select($map){
 (:    order by $map?option-map?($o):)
     return 
     if ($o = $map?selected) then
-    <option value="{$o}" selected='true'>{$map?option-map?($o)}</option>
+    <option value="{$o}" selected='selected'>{$map?option-map?($o)}</option>
      else
     <option value="{$o}">{$map?option-map?($o)}</option> 
   }}

@@ -12,37 +12,130 @@ module namespace ltx="http://hxwd.org/taxonomy";
 import module namespace config="http://hxwd.org/config" at "../config.xqm";
 import module namespace tu="http://hxwd.org/utils" at "../tlsutils.xql";
 import module namespace lmd="http://hxwd.org/lib/metadata" at "metadata.xqm";
+import module namespace lrh="http://hxwd.org/lib/render-html" at "render-html.xqm";
 
 import module namespace src="http://hxwd.org/search" at "../search.xql";
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
 
-(: this will simply call the display as  :)
+(:~
+get the clear text name description or definition of the category
+@catid is the xml:id of the category to be retrieved
+@taxid is the xml:id of the top-level category of the tree to be searched
+@type : desc or def
+:)
+declare function ltx:get-catdesc($catid, $taxid, $type){
+let $tax := collection($config:tls-data-root||"/core")//tei:category[@xml:id=$taxid]
+, $cat := ($tax//tei:category[@xml:id=$catid])[1]
+return
+if ($type = 'desc') then
+ string-join($cat/tei:catDesc/text())
+else
+ string-join($cat/tei:def/text())
+};
 
-declare function ltx:proc-taxonomy($node as node(), $tax){
+declare function ltx:get-subtree($catid as xs:string, $taxid as xs:string, $count as xs:int){
+let $tax := collection($config:tls-data-root||"/core")//tei:category[@xml:id=$taxid]
+, $cat := $tax//tei:category[@xml:id=$catid]
+, $n := $cat/ancestor::tei:category[position() <= $count]
+, $r := reverse (for $id at $pos in $n/@xml:id return $id/string())
+return $r
+};
+
+(: this will simply call the display as  :)
+(:~ display taxonomy as a tree, for inspection and editing :)
+declare function ltx:proc-taxonomy($node as node(), $type){
 typeswitch($node)
-case element(tei:category) return 
-  <li><a href="{$tax}.html?uuid={$node/@xml:id}">{$node/tei:catDesc/text()}</a>
-  <ul>{for $n in $node/node() return ltx:proc-taxonomy($n, $tax)}</ul></li>
+case element(tei:category) return
+  let $root := $node/ancestor::tei:taxonomy   (: $node/ancestor::tei:taxonomy :)
+  , $cor := $root//tei:category[@corresp="#"||$node/@xml:id]
+  , $label := (: if (string-length($node/tei:catDesc/text())=0) then :) $node/tei:catDesc/text() 
+(:  else "<no label>":)
+  return
+  if (starts-with($node/@xml:id, 'new')) then 
+   <li>
+   <a id="{$node/@xml:id}" href="{$node/@corresp}">{$label}</a>
+   {lrh:format-button("move_word('"|| $label || "', '"|| $node/@xml:id ||"', '1', '"||$type||"')", "Attach the concept "|| $label || " to another concept.", "open-iconic-master/svg/move.svg", "", "", "tls-editor")}
+   {if ($cor) then 
+    <ul>{for $l in $cor
+      return <li>XR <a href="#{$l/@xml:id}">{$l/tei:catDesc}</a> {$l/tei:def}</li>
+    }</ul> else () }
+   <ul>{for $n in $node/node() return ltx:proc-taxonomy($n, $type)}</ul>
+  </li> 
+  else 
+   <li>
+   {if ($node/@corresp) then 
+   <a href="{$node/@corresp}">->{$label}</a>
+    else   
+   <a id="{$node/@xml:id}" target="other" href="{$type}.html?uuid={$node/@xml:id}">{$label}</a>
+   }
+   {lrh:format-button("delete_word_from_concept('"|| $node/@xml:id || "', '"||$type||"')", "Delete the concept '"|| $label || "' from the tree, including all attached concepts.", "open-iconic-master/svg/x.svg", "", "", "tls-editor")}   
+   {lrh:format-button("move_word('"|| $label || "', '"|| $node/@xml:id ||"', '1', '"||$type||"')", "Attach the concept "|| $label || " to another concept.", "open-iconic-master/svg/move.svg", "", "", "tls-editor")}
+   {if ($cor) then 
+    <ul>{for $l in $cor
+      return <li>XR <a href="#{$l/@xml:id}">{$l/tei:catDesc}</a> {$l/tei:def}</li>
+    }</ul> else () }
+   <ul>{for $n in $node/node() return ltx:proc-taxonomy($n, $type)}</ul>
+  </li> 
 case element(tei:catDesc) return ()
+case element(tei:def) return <span class="">{$node/text()}</span>
 case element(*) return 
  for $n in $node/node() 
- return ltx:proc-taxonomy($n, $tax)
+ return ltx:proc-taxonomy($n, $type)
 case text() return $node
 default return $node
 };
 
+(:~ 
+$map?trg-concept : uuid of the concept we attach to
+$map?wid : uuid of the concept being moved. 
+:)
+declare function ltx:move-category($map as map(*)){
+let $src :=  (collection($config:tls-data-root||"/core")//tei:category[@xml:id=$map?wid])[1]
+let $trg :=  collection($config:tls-data-root||"/core")//tei:category[@xml:id=$map?trg-concept]
+return
+if ($src and $trg) then 
+  let $copy := ltx:copy-of($src)
+  return
+  ( update delete $src ,
+   update insert $copy into $trg)
+else () 
+};
 
-(: from any category element, we look for the top of the tree :)
+declare function ltx:delete-category($id){
+let $src :=  (collection($config:tls-data-root||"/core")//tei:category[@xml:id=$id])[1]
+return
+if ($src) then
+ update delete $src
+else
+ "Category not found."
+};
+
+declare function ltx:copy-of($nodes){
+for $node in $nodes
+return
+typeswitch($node)
+case element(*) return
+  element {QName(namespace-uri($node), local-name($node))} {
+  $node/@*
+  , ltx:copy-of($node/node())
+  }
+(: it seems I have to explicitly touch this node, otherwise it will be ignored. :)  
+case text() return normalize-space(string-join($node))
+default return $node  
+};
+
+(:~ from any category element, we look for the top of the tree :)
 declare function ltx:get-taxonomy($id as xs:string){
     let $cat := collection($config:tls-data-root||"/core")//tei:category[@xml:id=$id]
     return $cat/ancestor::tei:category[@rend='top']
 };
 
 
-(: turns a flat list to a map :)
-(: the callback function needs to be able to extract the grouping key from the provided node  :) 
+(:~ turns a flat list to a map 
+the callback function needs to be able to extract the grouping key from the provided node  
+:) 
 
 declare function ltx:hits-to-map($hits as item()*, $genre as xs:string, $get-grouping-key as function(*)){
     map:merge(

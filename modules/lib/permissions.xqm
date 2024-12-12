@@ -24,7 +24,10 @@ declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace mf="http://kanripo.org/ns/KRX/Manifest/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
 
-(: Checks whether the currently logged in user has editing permission for a specific text. Users have editing permission if they are
+
+
+
+(:~ Checks whether the currently logged in user has editing permission for a specific text. Users have editing permission if they are
    a member of the "tls-editor" or "tls-adming" group, or are a member of the "tls-punc" group, and have explicit permission to edit $text-id. :)
 declare function lpm:has-edit-permission($text-id as xs:string) as xs:boolean {
   if (sm:id()//sm:group = ("tls-editor", "tls-admin")) then
@@ -38,7 +41,7 @@ declare function lpm:has-edit-permission($text-id as xs:string) as xs:boolean {
         $permissions//tls:text-permissions[@text-id = $text-id]/tls:allow-review[@user-id = sm:id()//sm:username/text()]
 };
 
-(: Returns whether the 內部 should be displayed for a user. It is always shown when they are member of the "tls-editor" group, otherwise,
+(:~ Returns whether the 內部 should be displayed for a user. It is always shown when they are member of the "tls-editor" group, otherwise,
    it is shown in the textview context when a user has permission to edit that particular text. :)
 declare function lpm:should-display-navbar-review($context as xs:string, $model as map(*)) as xs:boolean {
   sm:id()//sm:group = "tls-editor" or ($context = "textview" and $model("textid") and lpm:has-edit-permission($model("textid")))

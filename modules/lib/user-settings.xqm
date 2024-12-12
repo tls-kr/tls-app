@@ -69,14 +69,14 @@ declare function lus:settings-display($node as node()*, $model as map(*)){
 <ul>
 {for $i in doc($config:tls-app-interface||"/settings.xml")//tls:section[@type='display-options']/tls:item
   let $id := 'select-'||$i/@type
-  , $currentvalue := lus:get-user-item($i/@type, '')
+  , $currentvalue := lus:get-user-item($i/@type)
   , $displaycontext := if ($currentvalue = ('0', '1')) then () else $currentvalue
   return 
   <div class="row">{
  lrh:form-control-select(map{
     'id' : $id
     , 'col' : 'col-md-8'
-    , 'attributes' : map{'onchange' :"us_save_setting('"||$id||"')"}
+    , 'attributes' : map{'onchange' :"us_save_setting('display-options','"||$id||"')"}
     , 'option-map' : $config:lus-values
     , 'selected' : $currentvalue
     , 'label' : ( $i/text() , <a class="ml-2" href="{$config:help-base-url}" title="Open documentation for this item" target="docs" role="button">?</a>)
@@ -117,12 +117,15 @@ return
 declare function lus:settings-external($node as node()*, $model as map(*)){
 <div>
 <div class="row">
-<p><span class="badge" onclick="show_dialog('external-resource',{{'dummy':'3'}})"  type="button">Add</span> additional resources or <b>select</b> them to some screens.</p>
+<p><span class="badge" onclick="show_dialog('external-resource',{{'dummy':'3'}})"  type="button">Add</span> additional resources or <b>select</b> which to show.</p>
 </div>
 <div class="row">
 <div class="col">
 <span>Available resources:</span>
-{lsi:list-resources($model)}
+<h3>Basic</h3>
+{lsi:list-resources-form(map{'type' : 'internal-resources'})}
+<h3>Additional</h3>
+{lsi:list-resources-form(map{'type' : 'external-resources'})}
 </div>
 </div>
 </div>
@@ -167,12 +170,34 @@ return
      if ($preference) then $preference else $lus:default?($type)
  default return ""
 };
-
-declare function lus:get-user-item($type as xs:string, $context as xs:string?){
+(:~ check if a user specified a setting, otherwise use the default setting :)
+declare function lus:get-user-item($type as xs:string){
 let $settings := lus:get-settings()
 , $preference := $settings//tls:item[@type=$type]/@value
+, $default := doc($config:tls-app-interface||"/settings.xml")//tls:item[@type=$type]/@value
 return
-if ($preference) then $preference else doc($config:tls-app-interface||"/settings.xml")//tls:item[@type=$type]/@value
+if ($preference) then $preference else if ($default) then $default else '0'
+};
+
+declare function lus:set-user-item($map as map(*)){
+let $settings := lus:get-settings()
+, $oldnode := $settings//tls:item[@type=$map?type]
+, $oldsection := $settings//tls:section[@type=$map?section]
+, $upditem := <item xmlns="http://hxwd.org/ns/1.0" created="{$oldnode/@created}" modified="{current-dateTime()}" type="{$map?type}" value="{$map?preference}"/>
+, $newitem := <item xmlns="http://hxwd.org/ns/1.0" created="{current-dateTime()}" modified="{current-dateTime()}" type="{$map?type}" value="{$map?preference}"/>
+, $newsection := <section xmlns="http://hxwd.org/ns/1.0" type="{$map?section}"><item xmlns="http://hxwd.org/ns/1.0" created="{current-dateTime()}" modified="{current-dateTime()}" type="{$map?type}" value="{$map?preference}"/></section>
+
+return 
+(
+ if ($oldnode) then 
+   update replace $oldnode with $upditem
+ else 
+  if ($oldsection) then
+    update insert $newitem  into  $oldsection
+  else  
+    update insert $newsection into  $settings/tls:settings
+, "OK"
+)
 };
 
 declare function lus:set-user-section($type as xs:string, $preference as xs:string){

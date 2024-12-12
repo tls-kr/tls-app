@@ -27,6 +27,7 @@ import module namespace lli="http://hxwd.org/lib/link-items" at "lib/link-items.
 import module namespace lpm="http://hxwd.org/lib/permissions" at "lib/permissions.xqm";
 import module namespace ltp="http://hxwd.org/lib/textpanel" at "lib/textpanel.xqm";
 import module namespace lsf="http://hxwd.org/lib/syn-func" at "lib/syn-func.xqm";
+import module namespace ltx="http://hxwd.org/taxonomy" at "lib/taxonomy.xqm";
 
 import module namespace log="http://hxwd.org/log" at "log.xql";
 
@@ -790,7 +791,7 @@ declare function tlslib:swl-form-dialog($context as xs:string, $model as map(*))
 <div id="swl-form" class="card ann-dialog overflow-auto">
 {if ($context = 'textview') then
  <div class="card-body">
-    <h5 class="card-title"><span id="new-att-title">{if (sm:is-authenticated()) then "New Attribution:" else "Existing SW for " }<strong class="ml-2 chn-font"><span id="swl-query-span">Word or char to annotate</span>:</strong></span>
+    <h5 class="card-title"><span id="new-att-title">{if (sm:is-authenticated()) then "tlsNew Attribution:" else "tlsExisting SW for " }<strong class="ml-2 chn-font"><span id="swl-query-span">Word or char to annotate</span>:</strong></span>
     <span id="domain-lookup-mark">
     { if (lpm:show-setting('wd', 'swl-dialog')) then <span class="badge badge-info ml-2" onclick="wikidata_search('wikidata')" title="Click here for a quick search in WikiData"> WD </span> else ()}
     { if (lpm:can-search-similar-lines()) then <span class="badge badge-info ml-2" onclick="wikidata_search('similar')" title="Search for similar lines"> 似 </span> else ()}
@@ -1049,19 +1050,24 @@ return "OK"
 };
 
 (:~
- : move W with all SW to a new concept
- @param $word : the word to move.  must exist in src-concept
- @param $src-concept: uuid of concept where the word is currently defined
- @param $trg-concept: uuid of concept where the words should be moved to, must exist and the word must not exist there already
+ : move a Word with all SW to a new concept
+ 
 :)
 declare function tlslib:move-word-to-concept($map as map(*)){
  util:declare-option("exist:serialize", "method=json media-type=application/json"),
-if ($map?type = "word") then 
-tlslib:move-entry-to-concept($map)
-else 
-tlslib:move-sw-to-concept($map)
+ switch($map?type)
+ case "word" return 
+   tlslib:move-entry-to-concept($map)
+ case "syn-func" 
+ case "concept" return 
+   ltx:move-category($map)
+ default return 
+   tlslib:move-sw-to-concept($map)
 };
 
+(:~ TODO  This can not work: src-concept is 'undefined' in the request 
+this is called from tlslib:move-word-to-concept(), activated from the move-word dialog
+:)
 declare function tlslib:move-entry-to-concept($map as map(*)){
  let $sc := (collection($config:tls-data-root || "/concepts") | collection($config:tls-data-root || "/domain"))//tei:div[@xml:id=$map?src-concept]
  ,$tc := (collection($config:tls-data-root || "/concepts") | collection($config:tls-data-root || "/domain"))//tei:div[@xml:id=$map?trg-concept]
@@ -1102,7 +1108,10 @@ declare function tlslib:move-entry-to-concept($map as map(*)){
  else map{'uuid': (), 'mes' : "ERROR: Word already exists in concept " || $tc-name || "."}
 };
 
-(: actually, move  SW , depending on $map?type  :)
+(:~ 
+actually, move  SW , depending on $map?type  
+this is called from tlslib:move-word-to-concept(), activated from the move-word dialog
+:)
 declare function tlslib:move-sw-to-concept($map as map(*)){
  let $sc := (collection($config:tls-data-root || "/concepts") | collection($config:tls-data-root || "/domain"))//tei:div[@xml:id=$map?src-concept]
  ,$tc := (collection($config:tls-data-root || "/concepts") | collection($config:tls-data-root || "/domain"))//tei:div[@xml:id=$map?trg-concept]
@@ -1485,20 +1494,12 @@ declare function tlslib:linkheader($qc) {
      for $c in $qc return
      tlslib:guoxuedashi($c)
      }</span>,:)
-     tlslib:guguolin($qc)
-     , <span class="btn badge badge-light chn-font">Zi:</span>,
-     for $c in $qc return
-      <a class="btn badge badge-light chn-font" style="background-color:paleturquoise"  target="dict" title="Search zi.tools for {$c} (External link)" href="https://zi.tools/zi/{$c}">{$c}</a>, "　",
-     (:    var url = "http://www.kaom.net/z_hmy_zidian88.php?word={string-join($qc, '')}&mode=word&bianti=no&page=no"
- :)
-     <span>{" 詞典: ",
-     <a class="btn badge badge-light chn-font" target="dict" title="Search {$qc} in HY dictionary (External link)" style="background-color:paleturquoise" href="http://www.kaom.net/hemoye/z_hmy_zidian88.php?word={string-join($qc, '')}&amp;mode=word&amp;bianti=no&amp;page=no">{$qc}</a>
-     }　</span>
-     
+     tlslib:guguolin($qc)     
      ,
      <span id="krx_search">{" 漢リポ: ",
      <a class="btn badge badge-light chn-font" target="kanripo" title="Search {string-join($qc, '')} in Kanseki Repository" style="background-color:paleturquoise" onclick="krx_items()">{$qc}</a>
      }</span>
+     , lrh:maybe-show-items(map{'qc' : $qc})
 )
 };
 

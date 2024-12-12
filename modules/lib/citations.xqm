@@ -20,7 +20,6 @@ import module namespace src="http://hxwd.org/search" at "../search.xql";
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
 
-declare variable $lct:coll := (collection($config:tls-data-root||"/notes/swl")|collection($config:tls-data-root||"/notes/doc"))//tls:ann;
 
 declare variable $lct:perspectives := map{
 'chars' : 'Characters',
@@ -132,11 +131,11 @@ return
 if (string-length($item) > 0) then
    let $set :=
      switch ($perspective)
-       case "chars" return $lct:coll[tei:form/tei:orth[. = $item]]
-       case "concept" return $lct:coll[@concept = $item]
-       case "syn-func" return $lct:coll[.//tls:syn-func[. = $item]]
-       case "users" return $lct:coll[tls:metadata[@resp=$item]]
-       case "texts" return $lct:coll[.//tls:srcline/@title[. = $item]]
+       case "chars" return $config:tls-ann[tei:form/tei:orth[. = $item]]
+       case "concept" return $config:tls-ann[@concept = $item]
+       case "syn-func" return $config:tls-ann[.//tls:syn-func[. = $item]]
+       case "users" return $config:tls-ann[tls:metadata[@resp=$item]]
+       case "texts" return $config:tls-ann[.//tls:srcline/@title[. = $item]]
        default return ()
    return 
     let $res := lct:by-item($set, $map)
@@ -246,7 +245,7 @@ else
 };
 
 declare function lct:by-top($perspective, $n){
-let $l := subsequence( for $a in $lct:coll
+let $l := subsequence( for $a in $config:tls-ann
         let $o := lct:get-grouping-key($a, $perspective)
         group by $o
         let $cnt := count($a)
@@ -274,6 +273,7 @@ declare function lct:get-grouping-key($a, $group){
 let $g := if (string-length($group) > 0) then $group else "none"
 let $gk :=
 switch($g)
+case "by-diachronic"
 case "diachronic" return lmd:get-metadata($a, "tls-dates")
 case "texts"
 case "by-text" return $a//tls:srcline/@title
@@ -304,7 +304,7 @@ return $s
 };
 
 declare function lct:recent($n){
-let $ann := $lct:coll//tls:ann
+let $ann := $config:tls-ann//tls:ann
 , $l := subsequence(
 for $a in $ann
  let $o := ($a//tls:metadata/@created)[1]
@@ -362,7 +362,7 @@ declare function lct:set-valuex($perspective, $item){
 };
 
 declare function lct:cit-count($node as node()*, $model as map(*)){
-    count($lct:coll)
+    count($config:tls-ann)
 };
 
 declare function local:format-map($m){

@@ -719,7 +719,11 @@ function show_swls_for_line(line_id){
 function save_swl_line(sense_id, line_id, pos){
 var line = $( "#swl-line-text-span" ).text();
 var tit = $( "#nb-text-title" ).text();
+do_save_swl_line(sense_id, line_id, pos, line, tit);
+}
 
+function do_save_swl_line(sense_id, line_id, pos, line, tit){
+toastr.info("Saving the attribution...", "HXWD says:")
 $.ajax({
   type : "PUT",
   dataType : "html",
@@ -1223,6 +1227,31 @@ function initialize_autocomplete_nc(){
     } );
 };
 
+function initialize_autocomplete_type(tp){
+    $( "#select-concept" ).autocomplete({
+      appendTo: "#select-concept-group",
+      source: function( request, response ) {
+        $.ajax( {
+          url: "api/autocomplete.xql",
+          dataType: "jsonp",
+          data: {
+            term: request.term,
+	        type: tp
+          },
+          success: function( data ) {
+            response( data );
+          }
+        } );
+      },
+      minLength: 2,
+      select: function( event, ui ) {
+        $("#concept-id-span" ).html(ui.item.id);     
+        console.log( "Selected: " + ui.item.value + " aka " + ui.item.id );
+      }
+    } );
+};
+
+
 function initialize_autocomplete(){
     $( "#select-concept" ).autocomplete({
       appendTo: "#select-concept-group",
@@ -1490,7 +1519,7 @@ function save_sset(sets){
   update_setting(el, el);
   })  
 };
-
+// this is called for search settings
 function update_setting(setting, val_el){
   var value =  $('#' + val_el).val();
   $.ajax({
@@ -1506,6 +1535,24 @@ function update_setting(setting, val_el){
   }
   });  
   $('#update-setting').modal('hide');
+};
+
+// 2024-12-09 this is using the new setting interface in user-setting.xqm
+
+function us_save_setting(section, elid){
+  var value =  $('#' + elid).val();
+  $.ajax({
+  type : "GET",
+  dataType : "html",  
+  url : "api/responder.xql?func=lus:set-user-item&section="+section+"&type=" + elid + "&preference="+value, 
+  success : function(resp){
+     if (resp.startsWith("OK")) {
+       toastr.info("Setting has been changed.", "HXWD says:");
+     } else {
+      toastr.error("A problem occurred.", "HXWD says:");
+     }
+  }
+  });      
 };
 
 function merge_word(word, wid, count, type){
@@ -1556,7 +1603,8 @@ function move_word(word, wid, count, type){
   $('#remoteDialog').html(resp);
   console.log("Initializing autocomplete functions");
   // lets see if this works better
-  initialize_autocomplete();
+  initialize_autocomplete_type(type)
+//    initialize_autocomplete();
   $('#move-word-dialog').modal('show');
   }
   });
@@ -1644,6 +1692,7 @@ function incr_rating(type, uid){
 function delete_swl(type, uid){
     var strconfirm = true // confirm("Do you really want to delete this attribution?");
     if (strconfirm == true) {
+     toastr.info("Deleting the attribution...", "HXWD says:")
      $.ajax({
      type : "GET",
      dataType : "html",  
@@ -2997,12 +3046,12 @@ function show_dialog(dialog_name, options){
   });  
 };
 
-function save_external(setting, val_el){
+function save_external(uuid, val_el){
   formData = $("#external-resource-form").serialize()
   console.log(formData);
   $.ajax({
   type : "POST",
-  url : "api/responder.xql?func=lsi:save-resource",
+  url : "api/responder.xql?func=lsi:save-resource&id="+uuid,
   data: formData,
   success : function(resp){
     if (resp.startsWith("Could not")) {

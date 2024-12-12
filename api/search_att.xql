@@ -70,7 +70,9 @@ return
 <div class="col-sm-2">
  <a href="textview.html?location={$target}" class="font-weight-bold">{$src, $loc}</a>
      { if (sm:is-authenticated()) then 
-     <button title="{$label}" class="btn badge badge-primary ml-2" type="button" onclick="save_swl_line('{$sense-id}','{$target}')">Use</button>
+      let $posx := string-length(substring-before($line, $o)) + 1
+      return
+     <button title="{$label}" class="btn badge badge-primary ml-2" type="button" onclick="do_save_swl_line('{$sense-id}','{$target}', '{$posx}', '{$line}', '{$src}' )">Use</button>
       else () }</div>
 <div class="col-sm-3"><span data-target="{$target}" data-toggle="popover">{
          substring-before($line, $o), 

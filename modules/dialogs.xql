@@ -2,7 +2,7 @@ xquery version "3.1";
 (:~
 : This module provides the functions that produce dialogs
 
-: @author Christian Wittern  cwittern@yahoo.com
+: @author Christian Wittern  cwittern at yahoo.com
 : @version 1.0
 :)
 module namespace dialogs="http://hxwd.org/dialogs"; 
@@ -51,6 +51,9 @@ declare variable $dialogs:lmap := map{
 , "passwd-dialog" : map{"title" : "Change Password"}                         
 };
 
+(:~
+Frame for a modal dialog. The name is used in the id of the dialog and is passed along from the show_dialog javascript functiion
+:)
 
 declare function dialogs:modal-frame($name, $map){
 <div id="{$name}" class="modal" tabindex="-1" role="dialog" style="display: none;">
@@ -74,6 +77,9 @@ declare function dialogs:modal-frame($name, $map){
 </div>
 };
 
+(:~ 
+User setting for limiting the maximal number of search results
+:)
 declare function local:search-settings($name, $options){
 let $search-options := map{"search-sortmax": 5000, "search-cutoff" : 0.2, "search-ratio" : "None"}
 , $body := for $o in map:keys($search-options)  
@@ -93,6 +99,9 @@ return
       })           
  
 };
+(:~ 
+Displays the dialog with information about the translation
+:)
 
 declare function local:tr-info-dialog($name, $options){
 let $body := ltr:transinfo($options?trid)
@@ -116,7 +125,9 @@ return
 };
 
 
-(: sth is not working here. :)
+(:~
+Change password.  
+sth is not working here. :)
 declare function local:passwd-dialog($name, $options){
 let $body := (lrh:form-input-row($name, map{"input-id" : "password", "hint" : "Please enter the new password:", "type" : "password", "required" : true() })
              ,lrh:form-input-row($name, map{"input-id" : "passwd-2", "hint" : "Please repeat the new password:" , "type" : "password", "required" : true()}))
@@ -133,6 +144,10 @@ return
       })           
 };
 
+(:~ 
+Information about text.  Updated for remote texts.
+:)
+
 declare function local:text-info($name, $options){
   dialogs:modal-frame($name, 
       map{
@@ -142,6 +157,9 @@ declare function local:text-info($name, $options){
       })           
 };
 
+(:~ 
+Change a user setting.  2024-11-25: Needs update for new settings format. 
+:)
 
 declare function local:update-setting($name, $options){
 let $body := (lrh:form-input-row($name, map{"input-id" : "setting", "input-value": $options?value,  "hint" : $options?hint, "type" : "text", "required" : true()}) )
@@ -171,10 +189,16 @@ return
         "title":  ""
       })           
 };
+(:~ 
+Add a new ressource that can be used from various places in the database.
+:)
 
 declare function local:external-resource($name, $options){
-let $body := lsi:resource-dialog-body(map{})
-, $buttons := ( <button type="button" class="btn btn-primary" onclick="save_external('xx', 'setting')">Add</button> )
+let $body := lsi:resource-dialog-body($options)
+, $buttons := if ($options?id) 
+          then  ( <button type="button" class="btn btn-primary" onclick="save_external('{$options?id}', 'setting')">Save</button> ) 
+          else ( <button type="button" class="btn btn-primary" onclick="save_external('xx', 'setting')">Add</button> )
+, $title := if ($options?id) then "Edit external ressource " else "Add new external ressource "
 return
       dialogs:modal-frame($name, 
       map{
@@ -182,13 +206,14 @@ return
         "body":     $body, 
         "buttons" : $buttons, 
         "options" : $options,
-        "title":  ("Add new external ressource ")
+        "title":  $title
       })           
  
 };
 
 
-(: todo: rewrite this in a way that it has only on switch, that dispatches to specific local functions  :)
+(:~  This is the entry function, called from the javascript frontend:)
+
 declare function dialogs:dispatcher($para as map(*)){
 let $options := parse-json($para?options)
 return switch($para?name)
@@ -202,7 +227,9 @@ return switch($para?name)
 };
 
 
-(: 2021-11-30: extending this functionality to cover observations of type block defined in facts.xml :)
+(:~
+Add a new observation: rhet-dev or other
+2021-11-30: extending this functionality to cover observations of type block defined in facts.xml :)
 
 declare function dialogs:add-rd-dialog($options as map(*)){
  let $blocktypes := collection($config:tls-data-root)//tei:TEI[@xml:id="facts-def"]//tei:body/tei:div[@type='block']
@@ -258,6 +285,8 @@ declare function dialogs:add-rd-dialog($options as map(*)){
  </div>
 };
 
+(:~ Add new concept. [[TODO]]  2024-11-25:  Needs update  :)
+
 declare function dialogs:new-concept-dialog($options as map(*)){
  let $ex := collection($config:tls-data-root || "/concepts")//tei:head[. = $options?concept]
  return
@@ -267,8 +296,8 @@ declare function dialogs:new-concept-dialog($options as map(*)){
     then $options?concept-id else
     if (map:contains($options, "name")) then map:get($con:new-concepts($options?name), "id") else 
     "uuid-" || util:uuid()
-   , $def := if ($uuid) then if (map:contains($con:new-concept-defs, $uuid)) then $con:new-concept-defs($uuid) else () else ()
-   , $name := if(map:contains($options, "concept")) then $options?concept else 
+  , $def := if ($uuid) then if (map:contains($con:new-concept-defs, $uuid)) then $con:new-concept-defs($uuid) else () else ()
+  , $name := if(map:contains($options, "concept")) then $options?concept else 
     if (not($options?mode = "new" or $options?mode = "existing")) then $options?mode else ()
    return
    <div id="new-concept-dialog" class="modal" tabindex="-1" role="dialog" style="display: none;">
@@ -352,6 +381,8 @@ declare function dialogs:new-concept-dialog($options as map(*)){
 </div>
 
 };
+
+(:~ This is implementing a peer review for a swl :)
 
 declare function dialogs:review-swl-dialog($uuid as xs:string){
  let $swl := collection($config:tls-data-root || "/notes")//tls:ann[@xml:id=$uuid],
@@ -488,6 +519,8 @@ return
     
 </div>    
 };
+
+(:~ Add or update a new pinyin reading for a word:)
 
 declare function dialogs:update-gloss($para as map(*)){
 let $type := if ($para?type) then $para?type else "concept"
@@ -737,14 +770,27 @@ declare function dialogs:dialog-stub(){
      </div>
 </div>
 };
-
+(:~ 
+  Originally for moving a word to a different concept, but now also for attaching a concept to a different place in the concept hierarchy
+:)
 declare function dialogs:move-word($map as map(*)){
-let $cid := collection($config:tls-data-root||"/concepts")//tei:*[@xml:id=$map?wid]/ancestor::tei:div[@type="concept"]
+let $cid := if ($map?type='word') then 
+             collection($config:tls-data-root||"/concepts")//tei:*[@xml:id=$map?wid]/ancestor::tei:div[@type="concept"] 
+            else 
+             collection($config:tls-data-root||"/concepts")//tei:div[@xml:id=$map?wid] 
+, $head := if ($map?type='word') then 
+             <h5>Move {$map?word} from {$cid/tei:head/text()} to another concept</h5>
+           else
+             if ($map?count = '1') then
+             <h5>Attach {$cid/tei:head/text()} to another concept</h5>
+             else 
+             <h5>Create new concept, attach to {$cid/tei:head/text()}</h5>
+             
 return
 <div id="move-word-dialog" class="modal" tabindex="-1" role="dialog" style="display: none;">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
-            <div class="modal-header"><h5>Move {$map?word} from {$cid/tei:head/text()} to another concept</h5>
+            <div class="modal-header">{$head}
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close" title="Close">x</button>
             </div>
             <div class="modal-body">
@@ -754,7 +800,13 @@ return
                 <div id="select-concept-group" class="form-group ui-widget">
                     <input id="select-concept" class="form-control" required="true" value=""/>
                 </div>
-            <p>There are {$map?count} attributions, so this might take a while.</p>
+            {
+              if (xs:int($map?count) > 1) then    
+               <p>There are {$map?count} attributions, so this might take a while.</p>
+               else if ($map?type = 'concept') then
+               <p>The concept will be moved with all attached concepts.  </p>
+               else ()
+            }
             </div>
             </div>
             <div class="modal-footer">
