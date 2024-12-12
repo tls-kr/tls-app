@@ -1494,16 +1494,7 @@ declare function tlslib:linkheader($qc) {
      for $c in $qc return
      tlslib:guoxuedashi($c)
      }</span>,:)
-     tlslib:guguolin($qc)
-     , <span class="btn badge badge-light chn-font">Zi:</span>,
-     for $c in $qc return
-      <a class="btn badge badge-light chn-font" style="background-color:paleturquoise"  target="dict" title="Search zi.tools for {$c} (External link)" href="https://zi.tools/zi/{$c}">{$c}</a>, "　",
-     (:    var url = "http://www.kaom.net/z_hmy_zidian88.php?word={string-join($qc, '')}&mode=word&bianti=no&page=no"
- :)
-     <span>{" 詞典: ",
-     <a class="btn badge badge-light chn-font" target="dict" title="Search {$qc} in HY dictionary (External link)" style="background-color:paleturquoise" href="http://www.kaom.net/hemoye/z_hmy_zidian88.php?word={string-join($qc, '')}&amp;mode=word&amp;bianti=no&amp;page=no">{$qc}</a>
-     }　</span>
-     
+     tlslib:guguolin($qc)     
      ,
      <span id="krx_search">{" 漢リポ: ",
      <a class="btn badge badge-light chn-font" target="kanripo" title="Search {string-join($qc, '')} in Kanseki Repository" style="background-color:paleturquoise" onclick="krx_items()">{$qc}</a>

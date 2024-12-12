@@ -517,7 +517,7 @@ declare function lrh:form-control-select($map){
 (:    order by $map?option-map?($o):)
     return 
     if ($o = $map?selected) then
-    <option value="{$o}" selected='true'>{$map?option-map?($o)}</option>
+    <option value="{$o}" selected='selected'>{$map?option-map?($o)}</option>
      else
     <option value="{$o}">{$map?option-map?($o)}</option> 
   }}

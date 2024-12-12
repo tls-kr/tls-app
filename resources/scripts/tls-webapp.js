@@ -3046,12 +3046,12 @@ function show_dialog(dialog_name, options){
   });  
 };
 
-function save_external(setting, val_el){
+function save_external(uuid, val_el){
   formData = $("#external-resource-form").serialize()
   console.log(formData);
   $.ajax({
   type : "POST",
-  url : "api/responder.xql?func=lsi:save-resource",
+  url : "api/responder.xql?func=lsi:save-resource&id="+uuid,
   data: formData,
   success : function(resp){
     if (resp.startsWith("Could not")) {

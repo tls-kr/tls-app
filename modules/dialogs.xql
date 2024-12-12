@@ -194,8 +194,11 @@ Add a new ressource that can be used from various places in the database.
 :)
 
 declare function local:external-resource($name, $options){
-let $body := lsi:resource-dialog-body(map{})
-, $buttons := ( <button type="button" class="btn btn-primary" onclick="save_external('xx', 'setting')">Add</button> )
+let $body := lsi:resource-dialog-body($options)
+, $buttons := if ($options?id) 
+          then  ( <button type="button" class="btn btn-primary" onclick="save_external('{$options?id}', 'setting')">Save</button> ) 
+          else ( <button type="button" class="btn btn-primary" onclick="save_external('xx', 'setting')">Add</button> )
+, $title := if ($options?id) then "Edit external ressource " else "Add new external ressource "
 return
       dialogs:modal-frame($name, 
       map{
@@ -203,7 +206,7 @@ return
         "body":     $body, 
         "buttons" : $buttons, 
         "options" : $options,
-        "title":  ("Add new external ressource ")
+        "title":  $title
       })           
  
 };
