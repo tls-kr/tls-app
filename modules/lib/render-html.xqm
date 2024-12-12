@@ -523,3 +523,53 @@ declare function lrh:form-control-select($map){
   }}
  </div>
 };
+
+declare function lrh:settings-display($node as node()*, $model as map(*)){
+<div>
+<p>Here are settings to the place and type of items to display:</p>
+<ul>
+{for $i in doc($config:tls-app-interface||"/settings.xml")//tls:section[@type='display-options']/tls:item
+  let $id := 'select-'||$i/@type
+  , $currentvalue := lus:get-user-item($i/@type)
+  , $displaycontext := if ($currentvalue = ('0', '1')) then () else $currentvalue
+  return 
+  <div class="row">{
+ lrh:form-control-select(map{
+    'id' : $id
+    , 'col' : 'col-md-8'
+    , 'attributes' : map{'onchange' :"us_save_setting('display-options','"||$id||"')"}
+    , 'option-map' : $config:lus-values
+    , 'selected' : $currentvalue
+    , 'label' : ( $i/text() , <a class="ml-2" href="{$config:help-base-url}" title="Open documentation for this item" target="docs" role="button">?</a>)
+ })}
+ {lrh:form-control-input(
+   map{
+    'id' : 'input-'||$id
+    , 'col' : 'col-md-2'
+    , 'value' : $displaycontext
+    , 'label' : 'Context:'
+    })}
+</div>
+}
+</ul>
+</div>
+};
+
+
+declare function lrh:settings-bookmarks($node as node()*, $model as map(*)){
+<div>
+<p>Currently defined bookmarks.  Click on the <img src="resources/icons/open-iconic-master/svg/x.svg"/> to delete a bookmark.</p>
+<ul>
+{for $b in doc($config:tls-user-root || $model?user || "/bookmarks.xml")//tei:item
+  let $segid := $b/tei:ref/@target,
+  $id := $b/@xml:id,
+  $date := xs:dateTime($b/@modified)
+  order by $date descending
+
+return
+<li id="{$id}">{lrh:format-button("delete_bm('"||$id||"')", "Delete this bookmark.", "open-iconic-master/svg/x.svg", "", "", "tls-user")}
+<a href="textview.html?location={substring($segid, 2)}">{$b/tei:ref/tei:title/text()}: {$b/tei:seg}</a></li>
+}
+</ul>
+</div>
+};

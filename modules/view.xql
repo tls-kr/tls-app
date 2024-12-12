@@ -18,6 +18,8 @@ import module namespace sgn="http://hxwd.org/signup" at "signup.xql";
 import module namespace lsf="http://hxwd.org/lib/syn-func" at "lib/syn-func.xqm";
 import module namespace lct="http://hxwd.org/citations" at "lib/citations.xqm";
 import module namespace lus="http://hxwd.org/lib/user-settings" at "lib/user-settings.xqm";
+import module namespace lrh="http://hxwd.org/lib/render-html" at "lib/render-html.xqm";
+
 import module namespace lc="http://hxwd.org/concept" at "lib/concept.xqm";
 
 declare namespace output = "http://www.w3.org/2010/xslt-xquery-serialization";
