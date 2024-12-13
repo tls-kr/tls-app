@@ -44,6 +44,13 @@ let $tax := collection($config:tls-data-root||"/core")//tei:category[@xml:id=$ta
 return $r
 };
 
+declare function ltx:get-children($catid as xs:string, $taxid as xs:string){
+let $tax := collection($config:tls-data-root||"/core")//tei:category[@xml:id=$taxid]
+, $cat := $tax//tei:category[@xml:id=$catid]
+return
+for $id in $cat/tei:category/@xml:id return $id/string() 
+};
+
 (: this will simply call the display as  :)
 (:~ display taxonomy as a tree, for inspection and editing :)
 declare function ltx:proc-taxonomy($node as node(), $type){

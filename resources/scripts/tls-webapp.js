@@ -1752,7 +1752,7 @@ $( ".sf").keyup(function ( event ) {
     console.log("tab", $(this).data('before') , "h", sf)
     if ($(this).data('before') !== sf){    
         // we keep the end of the id to distinguish different use cases
-        var dat = $(this).html();
+        var dat = $(this).text();
         save_sf_def (sfid.slice(0, -3), dat, sfid.slice(-3));
         $(this).data('before', sf);
     }}

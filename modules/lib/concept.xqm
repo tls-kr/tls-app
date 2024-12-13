@@ -142,7 +142,7 @@ case element(tei:div) return
         (lc:display-card(
          map{'type': $type
          ,'node' : $node
-         ,'list' : $node//tei:list[not(@type = ("taxonymy"))]
+         ,'list' : $node//tei:list
          ,'show' : $map?show
          }) )
        case "words" return 
@@ -255,32 +255,43 @@ declare function lc:display-pointer-list($l){
 let $tax-type := 'tls-concepts-top'
 return
 for $p in $l
-     order by $p/@type
+     (:order by $p/@type:)
      return
      (<h5 class="ml-2">
      {map:get($config:lmap, data($p/@type))}
-     </h5>,
+     </h5>
      (: we assume that clicking here implies an interest in the ontology, so we load in open state:)
-     <ul>
-     {for $r in $p//tei:ref 
+     ,<ul>{
+     for $r in $p//tei:ref 
      let $lk := replace($r/@target, "#", "")
      , $def := ltx:get-catdesc($lk, $tax-type, 'def')
      return
      (<li>
      <a class="badge badge-light" href="concept.html?uuid={$lk}&amp;ontshow=true">{$r/text()}</a>
-     <small class="ml-2" style="display:inline;">{$def}</small>
-     <ul>{
+     <small class="ml-2" style="display:inline;">{$def}</small> </li>
+     ,
      if ($p[@type = "hypernymy"]) then
+      <ul>{
       for $x at $pos in ltx:get-subtree($lk, $tax-type, 3)
       let $desc := ltx:get-catdesc($x, $tax-type, 'desc')
       let $dex := ltx:get-catdesc($x, $tax-type, 'def')
       return
-      <li class="ml-{$pos + 1}"><span><a  class="badge badge-light" href="concept.html?uuid={$x}&amp;ontshow=true">{$desc}</a>
-     <small style="display:inline;">　{$dex}</small></span></li>     
-     else ()
+       <li class="ml-{$pos + 1}"><span><a  class="badge badge-light" href="concept.html?uuid={$x}&amp;ontshow=true">{$desc}</a>
+     <small style="display:inline;">　{$dex}</small></span></li>
      }</ul>
-     </li>)} 
-     </ul>)
+     else if ($p[@type = "taxonymy"]) then
+      <ul>{
+      for $x in ltx:get-children($lk, $tax-type)
+      let $desc := ltx:get-catdesc($x, $tax-type, 'desc')
+      let $dex := ltx:get-catdesc($x, $tax-type, 'def')
+      return
+       <li class="ml-2"><span><a  class="badge badge-light" href="concept.html?uuid={$x}&amp;ontshow=true">{$desc}</a>
+     <small style="display:inline;">　{$dex}</small></span></li>
+     }</ul>
+     else ()
+     )
+     }</ul>
+     )
 };
 
 (: also in bib, where it belongs :)
