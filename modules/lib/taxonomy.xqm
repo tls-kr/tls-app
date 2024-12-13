@@ -13,11 +13,12 @@ import module namespace config="http://hxwd.org/config" at "../config.xqm";
 import module namespace tu="http://hxwd.org/utils" at "../tlsutils.xql";
 import module namespace lmd="http://hxwd.org/lib/metadata" at "metadata.xqm";
 import module namespace lrh="http://hxwd.org/lib/render-html" at "render-html.xqm";
+import module namespace lpm="http://hxwd.org/lib/permissions" at "permissions.xqm";
 
 import module namespace src="http://hxwd.org/search" at "../search.xql";
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
-declare namespace tls="http://hxwd.org/ns/1.0";
+declare namespace tls= "http://hxwd.org/ns/1.0";
 
 (:~
 get the clear text name description or definition of the category
@@ -79,7 +80,10 @@ case element(tei:category) return
    <ul>{for $n in $node/node() return ltx:proc-taxonomy($n, $type)}</ul>
   </li> 
 case element(tei:catDesc) return ()
-case element(tei:def) return <span class="">{$node/text()}</span>
+case element(tei:def) return 
+  let $edit := if (lpm:can-edit-concept()) then 'true' else 'false'
+  return
+   <span id="{$node/parent::tei:category/@xml:id}-tx" class="sf" contenteditable="{$edit}">{$node/text()}</span>
 case element(*) return 
  for $n in $node/node() 
  return ltx:proc-taxonomy($n, $type)
@@ -239,6 +243,22 @@ declare function ltx:tax-prune($n){
   case element(*)
    return $n
   default return $n
+};
+
+(:~ 
+Save an update to the tei:def element.   This is called from save_sf_def on leaving the contenteditable element, and routed here from tlsapi:save-sf-def when $map?type is '-tx'
+
+:)
+declare function ltx:save-def($map){
+let $cat := collection($config:tls-data-root||"/core")//tei:category[@xml:id=$map?id]
+, $def := $cat/tei:def
+, $newdef := <def xmlns="http://www.tei-c.org/ns/1.0">{normalize-space($map?def)}</def>
+return
+if ($def) then 
+ update replace $def with $newdef
+else if ($cat) then
+ update insert $newdef into $cat
+else () 
 };
 
 (: add the hits to the taxonomy 
