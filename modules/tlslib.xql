@@ -915,7 +915,7 @@ return
  : 2020-02-26 it seems this belongs to tlsapi
  :)
  
-declare function tlslib:display-sense($sw as node(), $count as xs:int, $display-word as xs:boolean){
+declare function tlslib:display-sense($sw as node(), $count as xs:int?, $display-word as xs:boolean){
     let $id := if ($sw/@xml:id) then data($sw/@xml:id) else substring($sw/@corresp, 2),
     $sf := ($sw//tls:syn-func/text())[1],
     $sm := $sw//tls:sem-feat/text(),

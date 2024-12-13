@@ -144,6 +144,7 @@ return $c
 };
 
 declare function lw:do-update($n, $c){
+if (lpm:is-testuser()) then () else
  if ($n/@n) then 
    update replace $n/@n with $c
  else
