@@ -1434,7 +1434,7 @@ return (
 2021-03-21: updating rhet-dev definitions, these contain multiple paragraphs.  What a mess!
 :)
 declare function tlsapi:save-sf-def($map as map(*)){
-
+if ($map?type='-tx') then ltx:save-def($map) else
 let $type := $map?type
 , $sfdoc := if ($type ='-sf') 
   then doc($config:tls-data-root || "/core/syntactic-functions.xml")
