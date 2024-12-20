@@ -146,7 +146,8 @@ case element(tei:div) return
          ,'show' : $map?show
          }) )
        case "words" return 
-       let $ws := $node//tei:entry
+(:       let $ws := $node//tei:entry:)
+       let $ws := lw:get-words-by-concept-id($node/ancestor::tei:div[@type='concept']/@xml:id)
        return
       <div id="word-content" class="card">
        <div class="card-body">
@@ -158,7 +159,7 @@ case element(tei:div) return
         return
         lw:display-word($e, map:merge(($map, 
         map{
-         'concept' : $node/parent::tei:div/tei:head/text()
+         'concept' : $e/@tls:concept/string()
          ,'ann' : $wc
         }))) }
        </div></div></div>

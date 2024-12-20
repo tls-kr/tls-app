@@ -11,6 +11,7 @@ xquery version "3.1";
 module namespace tu="http://hxwd.org/utils";
 
 import module namespace config="http://hxwd.org/config" at "config.xqm";
+import module namespace dbu="http://exist-db.org/xquery/utility/db" at "db-utility.xqm";
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
@@ -79,4 +80,11 @@ return
           else $default
      default return ("No setting available for "||$value)
      
+};
+
+declare function tu:uuid-to-path($base, $uuid){
+let $u := tokenize($uuid, '-')[2] => substring(1, 1)
+
+return dbu:ensure-collection($base || "/" || $u)
+
 };

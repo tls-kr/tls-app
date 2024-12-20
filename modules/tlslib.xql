@@ -273,13 +273,13 @@ typeswitch ($node)
   case element(tei:ref) return
      let $id := substring($node/@target, 2),
      $char := tokenize($node/ancestor::tei:div[1]/tei:head/text(), "\s")[1],
-     $swl := collection($config:tls-data-root)//tei:div[@xml:id=$id]//tei:entry[tei:form/tei:orth[. = $char]]//tei:sense
+     $swl := collection($config:tls-data-word-root)//tei:entry[@tls:concept-id=$id and tei:form/tei:orth[. = $char]]//tei:sense
       (: this is the concept originally defined in the taxononomy file! :)
      , $entry-id := $swl/ancestor::tei:entry/@xml:id
      , $swl-count := count($swl)
      (: do not take the concept name from the taxonomy, it might have been changed! :)
-     , $concept := (if ($swl-count = 0) then $node/text() else $swl/ancestor::tei:div[@type='concept']/tei:head/text()) => string-join() => normalize-space() 
-     , $cdef := $swl/ancestor::tei:div/tei:div[@type="definition"]/tei:p/text()
+     , $concept := (if ($swl-count = 0) then $node/text() else $swl/ancestor::tei:entry/@tls:concept ) => string-join() => normalize-space() 
+     , $cdef := ltx:get-catdesc($id, 'tls-concepts-top', 'def')
      , $e := string-length($edit) > 0
      return
       if ($e) then
@@ -324,7 +324,12 @@ return data($c/ancestor::tei:div[@type='concept']/@xml:id)
 : @map  ??
 : returns a map of entry elements and their concept-id and concept name
 : used by app:get_sw($node, $model, $word)
+2024-12-20:  Probably not needed anymore
+
+used by tlslib:char-tax-stub  and tlslib:char-tax-newconcepts
+
 :)
+
 declare function tlslib:getwords($word as xs:string, $map as map(*))
 {
 map:merge(
@@ -333,6 +338,8 @@ map:merge(
    map:entry(string($s/ancestor::tei:entry/@xml:id), (string($s/ancestor::tei:div/@xml:id), string($s/ancestor::tei:div/tei:head)))
  )
 };
+
+
 
 
 (: format the app for display in the segment :)
@@ -1061,14 +1068,26 @@ declare function tlslib:move-word-to-concept($map as map(*)){
  case "syn-func" 
  case "concept" return 
    ltx:move-category($map)
+ case "sw" return
+   tlslib:move-sw-to-concept($map)
  default return 
    tlslib:move-sw-to-concept($map)
+};
+
+declare function tlslib:move-entry-to-concept($map as map(*)){
+ let $sc := collection($config:tls-data-word-root)//tei:entry[@tls:concept-id=$map?src-concept]
+ ,$tc := (collection($config:tls-data-root || "/concepts") | collection($config:tls-data-root || "/domain"))//tei:div[@xml:id=$map?trg-concept]
+ ,$tc-name := $tc/tei:head/text()
+ return
+   (update replace $sc/@tls:concept-id with $map?trg-concept
+   , update replace $sc/@tls:concept with $tc-name
+   )
 };
 
 (:~ TODO  This can not work: src-concept is 'undefined' in the request 
 this is called from tlslib:move-word-to-concept(), activated from the move-word dialog
 :)
-declare function tlslib:move-entry-to-concept($map as map(*)){
+declare function tlslib:move-entry-to-concept-old($map as map(*)){
  let $sc := (collection($config:tls-data-root || "/concepts") | collection($config:tls-data-root || "/domain"))//tei:div[@xml:id=$map?src-concept]
  ,$tc := (collection($config:tls-data-root || "/concepts") | collection($config:tls-data-root || "/domain"))//tei:div[@xml:id=$map?trg-concept]
  ,$tc-name := $tc/tei:head/text()
@@ -1107,12 +1126,35 @@ declare function tlslib:move-entry-to-concept($map as map(*)){
  ) else "NO!! no words div in concept file"
  else map{'uuid': (), 'mes' : "ERROR: Word already exists in concept " || $tc-name || "."}
 };
-
+ 
+declare function tlslib:move-sw-to-concept($map as map(*)){
+ (: $map?wid is actually the id of the sense element we want to move :)
+ let $sc := collection($config:tls-data-word-root)//tei:sense[@xml:id=$map?wid]
+ let $te := collection($config:tls-data-word-root)//tei:entry[@tls:concept-id=$map?trg-concept and .//tei:orth[. = $map?word]]
+ ,$tc-name := $te/@tls:concept/string()
+return
+ if ($te) then 
+   (update insert $sc into $te
+   , update delete $sc )
+  else
+  (: here, I might want to create an entry with this sense in the superentry :)
+   let $se := $sc/ancestor::tei:superEntry
+   ,$tc := (collection($config:tls-data-root || "/concepts") | collection($config:tls-data-root || "/domain"))//tei:div[@xml:id=$map?trg-concept]
+   ,$tc-name := $tc/tei:head/text()
+   , $uid := "uuid-" || util:uuid()
+   , $form := $sc/ancestor::tei:entry/tei:form
+   ,$new := <entry tls:concept="{$tc-name}" tls:concept-id="{$map?trg-concept}" xml:id="{$uuid}">{$form}{$sc}
+   </entry>
+   return
+    (update insert $new into $se
+    , update delete $sc 
+, "Not yet tested")
+};
 (:~ 
 actually, move  SW , depending on $map?type  
 this is called from tlslib:move-word-to-concept(), activated from the move-word dialog
 :)
-declare function tlslib:move-sw-to-concept($map as map(*)){
+declare function tlslib:move-sw-to-concept-old($map as map(*)){
  let $sc := (collection($config:tls-data-root || "/concepts") | collection($config:tls-data-root || "/domain"))//tei:div[@xml:id=$map?src-concept]
  ,$tc := (collection($config:tls-data-root || "/concepts") | collection($config:tls-data-root || "/domain"))//tei:div[@xml:id=$map?trg-concept]
  ,$tc-name := $tc/tei:head/text()
@@ -1666,6 +1708,7 @@ declare function tlslib:segid2sequence($start as xs:string, $end as xs:string){
 
 (:~
 : this is called from tlsapi:save-rdl to analyze the lines of a recipe and exract the drugs
+2024-12-20: TODO this needs update
 :)
  
 
@@ -1897,10 +1940,10 @@ declare function tlslib:display-word-rel($word-rel, $char, $cname){
     , $wrid := ($wr/tei:div[@type="word-rel-ref"]/@xml:id)[1]
     , $count := count($wr//tei:item[@p="left-word"]/@textline)
     , $oid := substring(($wr//tei:list/tei:item/@corresp[not(. = "#" || $entry-id)])[1], 2)
-    , $oword := collection($config:tls-data-root||"/concepts")//tei:entry[@xml:id=$oid]
+    , $oword := collection($config:tls-data-word-root)//tei:entry[@xml:id=$oid]
     , $other := string-join($oword/tei:form/tei:orth/text() , " / ")
-    , $cid := $oword/ancestor::tei:div[@type='concept']/@xml:id
-    , $concept := $oword/ancestor::tei:div[@type='concept']/tei:head/text()
+    , $cid := $oword/@tls:concept-id/string()
+    , $concept := $oword/@tls:concept/string()
     , $uuid := substring(util:uuid(), 1, 16)
     , $tnam := data(($wr//tei:list/tei:item[@corresp = "#" || $entry-id]/@concept)[1])
     , $show := (string-length($entry-id) > 0) and (if (string-length($cname) > 1) then $cname = $tnam else true())

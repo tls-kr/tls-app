@@ -358,8 +358,8 @@ declare function app:do-browse($type as xs:string?, $filter as xs:string?)
      for $hit in collection($config:tls-data-root)//tei:div[@type=$type]
      let $domain := tokenize(util:collection-name($hit), '/')[last()],
      $head := if ($domain = "concept") then data($hit/tei:head) else () (:  $domain || "::" || data($hit/tei:head) :)
-     , $w := $hit//tei:entry
-     where starts-with($head, $filter) and count($w) > 0
+(:     , $w := $hit//tei:entry:)
+     where starts-with($head, $filter) (: and count($w) > 0 :)
      order by $head
      return $hit
     else 
@@ -1794,7 +1794,15 @@ function app:syllables($node as node()*, $model as map(*), $uuid as xs:string?, 
      </div>
      <div><h4>TLS Usage: Words using {$zi}</h4>
      <ul>
-     {for $z in (collection($config:tls-data-root || "/concepts") | collection($config:tls-data-root || "/domain"))//tei:entry[.//tei:orth[. = $zi//text()]]
+     {for $z in collection($config:tls-data-word-root)//tei:entry[.//tei:orth [. = $zi]]
+     return
+     <li>{$zi}　<a href="concept.html?uuid={$z/@tls:concept-id}#{$z/@xml:id}">{$z/@tls:concept/string()}</a></li>
+      
+     }
+     </ul>
+     <!-- this is already disactivated, although the above seems not to work... -->
+     <ul>
+     {for $z in (collection($config:tls-data-root || "/xconcepts") | collection($config:tls-data-root || "/domain"))//tei:entry[.//tei:orth[. = $zi//text()]]
      let $c:= $z/ancestor::tei:div[@type="concept"]
      , $w:= $z/ancestor::tei:entry
      return
