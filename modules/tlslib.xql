@@ -300,7 +300,7 @@ typeswitch ($node)
       <ul class="list-unstyled collapse" id="{$id}-swl"> 
       {for $sw in $swl
       (: we dont check for attribution count, so pass -1  :)
-      return tlslib:display-sense($sw, -1, false())}
+      return tlslib:display-sense($sw, xs:int($sw/@n), false())}
       </ul>
       </span>
   case text() return
@@ -952,7 +952,7 @@ declare function tlslib:display-sense($sw as node(), $count as xs:int?, $display
       if ($count = 0) then
       lrh:format-button("delete_word_from_concept('"|| $id || "')", "Delete the syntactic word "|| $sf || ".", "open-iconic-master/svg/x.svg", "", "", "tls-editor") else 
       if ($count > 0) then (
-      lrh:format-button("move_word('"|| $char || "', '"|| $id ||"', '"||$count||"')", "Move the SW  '"|| $sf || "' including "|| $count ||"attribution(s) to a different concept.", "open-iconic-master/svg/move.svg", "", "", "tls-editor") ,      
+      lrh:format-button("move_word('"|| $char || "', '"|| $id ||"', '"||$count||"', 'sw')", "Move the SW  '"|| $sf || "' including "|| $count ||" attribution(s) to a different concept.", "open-iconic-master/svg/move.svg", "", "", "tls-editor") ,      
       lrh:format-button("merge_word('"|| $sf || "', '"|| $id ||"', '"||$count||"')", "Delete the SW '"|| $sf || "' and merge "|| $count ||"attribution(s) to a different SW.", "open-iconic-master/svg/wrench.svg", "", "", "tls-editor")       
       )
       else ()
@@ -1075,9 +1075,16 @@ declare function tlslib:move-word-to-concept($map as map(*)){
 };
 
 declare function tlslib:move-entry-to-concept($map as map(*)){
- let $sc := collection($config:tls-data-word-root)//tei:entry[@tls:concept-id=$map?src-concept]
+ let $sc := collection($config:tls-data-word-root)//tei:entry[.//tei:orth= $map?word and @tls:concept-id=$map?src-concept]
  ,$tc := (collection($config:tls-data-root || "/concepts") | collection($config:tls-data-root || "/domain"))//tei:div[@xml:id=$map?trg-concept]
  ,$tc-name := $tc/tei:head/text()
+ ,$update-swl := tlslib:update-swl-concepts(
+    map{'src-concept' : $map?src-concept
+    , 'tc-name' : $tc-name
+    , 'sc-name' : $sc/@concept/string()
+    , 'trg-concept': $map?trg-concept
+    , 'word' : $map?word
+    })
  return
    (update replace $sc/@tls:concept-id with $map?trg-concept
    , update replace $sc/@tls:concept with $tc-name
@@ -1087,13 +1094,8 @@ declare function tlslib:move-entry-to-concept($map as map(*)){
 (:~ TODO  This can not work: src-concept is 'undefined' in the request 
 this is called from tlslib:move-word-to-concept(), activated from the move-word dialog
 :)
-declare function tlslib:move-entry-to-concept-old($map as map(*)){
- let $sc := (collection($config:tls-data-root || "/concepts") | collection($config:tls-data-root || "/domain"))//tei:div[@xml:id=$map?src-concept]
- ,$tc := (collection($config:tls-data-root || "/concepts") | collection($config:tls-data-root || "/domain"))//tei:div[@xml:id=$map?trg-concept]
- ,$tc-name := $tc/tei:head/text()
- ,$sc-name := $sc/tei:head/text()
- ,$sw := $sc//tei:orth[. = $map?word]/ancestor::tei:entry
- ,$swl := for $a in collection($config:tls-data-root||"/notes")//tls:ann[@concept-id=$map?src-concept] 
+declare function tlslib:update-swl-concepts($map as map(*)){
+ let $swl := for $a in collection($config:tls-data-root||"/notes")//tls:ann[@concept-id=$map?src-concept] 
         let $wx := $a//tei:orth[. = $map?word]
         where ($wx)
         return $a
@@ -1102,29 +1104,21 @@ declare function tlslib:move-entry-to-concept-old($map as map(*)){
  ,$cm := substring(string(current-date()), 1, 7)
  ,$rdoc := lv:get-crypt-file("changes")
  ,$rec := <respStmt xml:id="{$resp-uuid}" xmlns="http://www.tei-c.org/ns/1.0" resp="#{$user}"><name>{$user}</name><resp notBefore="{current-dateTime()}">started moving {$map?word} and {count($swl)} attribution(s) from 
- <ref corresp="#{$map?src-concept}">{$sc-name}</ref>to <ref corresp="#{$map?trg-concept}">{$tc-name}</ref>. </resp></respStmt>
+ <ref corresp="#{$map?src-concept}">{$map?sc-name}</ref>to <ref corresp="#{$map?trg-concept}">{$map?tc-name}</ref>. </resp></respStmt>
  return
- if ($sc and count($tc//tei:orth[. = $map?word]) = 0) then 
-   let $tw := $tc//tei:div[@type="words"]
-   return
-     if ($tw) then (
-       update insert $rec into $rdoc//tei:p[@xml:id="del-" || $cm || "-start"],
-       update insert $sw into $tw,
-       update delete $sw,
      for $a in $swl 
        return
      (
      if ($a/tls:metadata/@concept) then 
-     update replace $a/tls:metadata/@concept with $tc-name else
-     update insert attribute concept {$tc-name}  into $a ,
+     update replace $a/tls:metadata/@concept with $map?tc-name else
+     update insert attribute concept {$map?tc-name}  into $a ,
      if ($a/tls:metadata/@concept-id) then 
      update replace $a/tls:metadata/@concept-id with $map?trg-concept else
      update insert attribute concept-id {$map?trg-concept}  into $a ,
-     map {'uuid': $resp-uuid,  'mes' : "OK! Moved " || $map?word || " and "|| count($swl) ||" attribution(s) to concept " || $tc-name || ".'"} 
+     update insert $rec into $rdoc//tei:p[@xml:id='del-'||$cm || '-start'],
+     map {'uuid': $resp-uuid,  'mes' : "OK! Moved " || $map?word || " and "|| count($swl) ||" attribution(s) to concept " || $map?tc-name || ".'"} 
      )
  
- ) else "NO!! no words div in concept file"
- else map{'uuid': (), 'mes' : "ERROR: Word already exists in concept " || $tc-name || "."}
 };
  
 declare function tlslib:move-sw-to-concept($map as map(*)){
@@ -1143,7 +1137,7 @@ return
    ,$tc-name := $tc/tei:head/text()
    , $uid := "uuid-" || util:uuid()
    , $form := $sc/ancestor::tei:entry/tei:form
-   ,$new := <entry tls:concept="{$tc-name}" tls:concept-id="{$map?trg-concept}" xml:id="{$uuid}">{$form}{$sc}
+   ,$new := <entry tls:concept="{$tc-name}" tls:concept-id="{$map?trg-concept}" xml:id="{$uid}">{$form}{$sc}
    </entry>
    return
     (update insert $new into $se

@@ -1603,7 +1603,7 @@ function move_word(word, wid, count, type){
   $('#remoteDialog').html(resp);
   console.log("Initializing autocomplete functions");
   // lets see if this works better
-  initialize_autocomplete_type(type)
+  initialize_autocomplete_type('concept')
 //    initialize_autocomplete();
   $('#move-word-dialog').modal('show');
   }
