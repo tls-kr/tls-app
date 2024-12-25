@@ -305,5 +305,8 @@ declare function lc:display-bibl($bibl as node()){
 </li>
 };
 
+declare function lc:get-synonym-def($concept-id){
+collection($config:tls-data-root||"/concepts")//tei:div[@xml:id = $concept-id]//tei:div[@type="old-chinese-criteria"]//tei:p
+};
 
 declare function lc:alt-stub($node as node()*, $model as map(*)){};

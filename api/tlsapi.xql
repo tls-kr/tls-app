@@ -78,9 +78,9 @@ $title-en := lmd:get-metadata($tr, "title"),
 (: $line := collection($config:tls-texts-root)//tei:seg[@xml:id=$line-id],:)
 (: 2024-10-31 might have to rethink this: we are now getting all titles from the catalog, not from the text header. :)
 $title := lmd:get-metadata-from-catalog($line-id, "title"),
-$sense := collection($config:tls-data-root)//tei:sense[@xml:id=$sense-id],
-$concept := $sense/ancestor::tei:div/tei:head/text(),
-$concept-id := $sense/ancestor::tei:div/@xml:id, 
+$sense := collection($config:tls-data-word-root)//tei:sense[@xml:id=$sense-id],
+$concept := $sense/ancestor::tei:entry/@tls:concept/string(),
+$concept-id := $sense/ancestor::tei:entry/@tls:concept-id, 
 $wordtmp := $sense/parent::tei:entry/tei:form/tei:orth/text(),
 (:$word := string-join(if (count($wordtmp) = 1) then $wordtmp else 
         for $w in $wordtmp
@@ -462,8 +462,8 @@ return
 (: Save a new SW to an existing concept.   UPDATE: word is also created if ncessessary :) 
 declare function tlsapi:save-newsw($rpara as map(*)) {
  let $user := sm:id()//sm:real/sm:username/text()
- let $concept-word := collection($config:tls-data-root)//tei:div[@xml:id=$rpara?concept-id]//tei:entry[@xml:id=$rpara?wuid],
- $concept-doc := if ($concept-word) then $concept-word else collection($config:tls-data-root)//tei:div[@xml:id=$rpara?concept-id]//tei:div[@type="words"],
+ let $concept-word := collection($config:tls-data-word-root)//tei:entry[@xml:id=$rpara?wuid and @tls:concept-id=$rpara?concept-id],
+ $concept-doc := if ($concept-word) then $concept-word else collection($config:tls-data-word-root)//tei:superEntry[.//tei:orth=$rpara?word],
  $wuid := if ($concept-word) then $rpara?wuid else "uuid-" || util:uuid(),
  $semfeat-id := if ($rpara?semfeat = "xx" or $rpara?semfeat = "") then 
  (
@@ -485,9 +485,9 @@ xmlns:tls="http://hxwd.org/ns/1.0">
   <tls:sem-feat corresp="#{$semfeat-id}">{$rpara?semfeat-val}</tls:sem-feat>
   else ()}
   </gramGrp>
-  <def>{$rpara?def}</def></sense>,
- $newnode := if ($concept-word) then $newsense else
- <entry type="word" xml:id="{$wuid}" xmlns="http://www.tei-c.org/ns/1.0" >
+  <def>{$rpara?def}</def></sense>
+ ,$newnode := if ($concept-word) then $newsense else
+ <entry type="word" xml:id="{$wuid}" xmlns="http://www.tei-c.org/ns/1.0" tls:concept="{$rpara?concept-val}" tls:concept-id="{$rpara?concept-id}" >
   <form><orth>{$rpara?word}</orth>
   <pron xml:lang="zh-Latn-x-pinyin">{$rpara?py}</pron>
   </form>
@@ -502,13 +502,18 @@ if (string-length($rpara?synfunc-val) = 0) then
 <sense_id>not_saved</sense_id>
 <result>No syntactic function given</result>
 </response>
-else
+else if ($concept-doc) then
 <response>
 <user>{$user}</user>
 <result>{update insert $newnode into $concept-doc}</result>
 <sense_id>{$suid}</sense_id>
 </response>
-
+else 
+<response>
+<user>{$user}</user>
+<sense_id>not_saved</sense_id>
+<result>Superentry for {$rpara?word} does not exist.</result>
+</response>
 };
 
 (: todo actually delete the form :)
@@ -594,8 +599,8 @@ declare function tlsapi:save-to-concept($rpara as map(*)) {
 
 let $user := sm:id()//sm:real/sm:username/text()
 let $form := tlslib:make-form($rpara?guangyun-id, $rpara?word),
- 
- $concept-doc := collection($config:tls-data-root)//tei:div[@xml:id=$rpara?concept-id]//tei:div[@type="words"],
+ $concept-word := collection($config:tls-data-word-root)//tei:entry[@xml:id=$rpara?wuid and @tls:concept-id=$rpara?concept-id],
+ $concept-doc := if ($concept-word) then $concept-word else collection($config:tls-data-word-root)//tei:superEntry[.//tei:orth=$rpara?word],
  $wuid := concat("uuid-", util:uuid()),
  $suid := concat("uuid-", util:uuid()),
  $newnode :=

@@ -15,6 +15,7 @@ import module namespace lus="http://hxwd.org/lib/user-settings" at "user-setting
 import module namespace lsi="http://hxwd.org/special-interest" at "special-interest.xqm";
 import module namespace lpm="http://hxwd.org/lib/permissions" at "permissions.xqm";
 import module namespace ltx="http://hxwd.org/taxonomy" at "taxonomy.xqm";
+import module namespace lc="http://hxwd.org/concept" at "concept.xqm";
 
 import module namespace lrh="http://hxwd.org/lib/render-html" at "render-html.xqm";
 
@@ -32,7 +33,7 @@ declare
 function lsf:syn-func($node as node()*, $model as map(*), $uuid as xs:string?){
 let $sf := doc($config:tls-data-root||"/core/syntactic-functions.xml")//tei:div[@xml:id = $uuid]
 , $rel := doc($config:tls-data-root||"/core/syntactic-functions.xml")//tei:ref[@target= "#" || $uuid]
-, $lexent := collection($config:tls-data-root||"/concepts")//tls:syn-func[@corresp="#" || $uuid]
+, $lexent := collection($config:tls-data-word-root)//tls:syn-func[@corresp="#" || $uuid]
 , $atts := collection($config:tls-data-root||"/notes")//tls:syn-func[@corresp="#" || $uuid]
 return
 <div class="row">
@@ -378,7 +379,7 @@ $concept := $s?4,
 $esc := replace($concept[1], "'", "\\'"),
 $scnt := count($w),
 $syn := collection($config:tls-data-root)//tei:div[@xml:id = $id]//tei:div[@type="old-chinese-criteria"]//tei:p,
-$wx := collection($config:tls-data-root)//tei:entry[@xml:id = $wid]
+$wx := collection($config:tls-data-word-root)//tei:entry[@xml:id = $wid]
 , $global-def := ""
 order by $concept ascending
 return
@@ -496,16 +497,93 @@ else ()
 };
 
 (: This displays the list of words by concept in the right hand popup pane (floater)  :)
+declare function lsf:get-sw-by-concept-new($word as xs:string, $context as xs:string, $domain as xs:string, $leftword as xs:string) as item()* {
+let $w-context :=  ($context = "dic") or contains($context, "concept") 
+let $map := map{'word' : $word, 'domain' : $domain, 'context' : $context}
+, $list := lsf:get-sw-list($map)
+, $doann := contains($context, 'textview')  (: the page we were called from can annotate :)
+, $user := sm:id()//sm:real/sm:username/text()
+, $edit := sm:id()//sm:groups/sm:group[. = "tls-editor"] and $doann
+, $sum := sum(for $a in $list return $a?12 )
+for $w at $pos in $list
+  let $c := $w?4
+  group by $c
+  order by $c  
+  let $zi := $w[1]?1
+  , $wid := $w[1]?3
+  , $py := $w[1]?2
+  , $concept-id := $w[1]?5
+  , $cdef := ltx:get-catdesc($concept-id, 'tls-concepts-top', 'def')
+  , $concept := $w[1]?4
+  , $esc := $concept
+  , $resp := $w[1]?13
+  , $scnt := 1
+  , $syn := lc:get-synonym-def($concept-id)
+return
+<li class="mb-3 chn-font">
+{if ($zi) then
+(: todo : check for permissions :)
+(<strong>
+{ if ( $w-context = false() )  then <a href="char.html?char={$zi}" title="Click here to go to the taxonomy for {$zi}"><span id="{$wid}-{$pos}-zi">{$zi}</span></a> else <span id="{$wid}-{$pos}-zi">{$zi}</span>}
+</strong>,<span id="{$wid}-{$pos}-py" title="Click here to change pinyin" onclick="assign_guangyun_dialog({{'zi':'{$zi}', 'wid':'{$wid}','py': '{$py}','concept' : '{$concept}', 'concept_id' : '{$concept-id}', 'pos' : '{$pos}'}})">&#160;({string-join($py, "/")})&#160;</span>)
+else ""}
+<strong><a href="concept.html?uuid={$concept-id}#{$wid}" title="{$cdef}" class="{if ($scnt = 0) then 'text-muted' else ()}">{$concept}</a></strong> 
+ {if ($resp[1]) then 
+  <button class="ml-2 btn badge badge-light" title="{$resp[1]}">{$resp[2]}</button> 
+  else ()}
+
+{if (( contains($context, 'textview')  and sm:is-authenticated() and not(contains(sm:id()//sm:group, 'tls-test')))) then 
+ if ($wid) then     
+      if (string-length($leftword) = 0) then
+     (<button class="btn badge badge-secondary ml-2" type="button" 
+ onclick="show_newsw({{'wid':'{$wid}','py': '{string-join($py, "/")}','concept' : '{$esc}', 'concept_id' : '{$concept-id}'}})">
+           New SW
+      </button>,
+      <button title="Start defining a word relation by setting the left word" class="btn badge badge-secondary ml-2" type="button" onclick="set_leftword({{'wid':'{$wid}', 'concept' : '{$esc}', 'concept_id' : '{$concept-id}'}})">LW</button>)
+      else
+      <button title="Set the right word of word relation for {$leftword}" class="btn badge badge-primary ml-2" type="button" onclick="set_rightword({{'wid':'{$wid}', 'concept' : '{$esc}', 'concept_id' : '{$concept-id}'}})">RW</button>
+else 
+<button class="btn badge badge-secondary ml-2" type="button" 
+onclick="show_newsw({{'wid':'xx', 'py': '{string-join($py, "/")}','concept' : '{$concept}', 'concept_id' : '{$concept-id}'}})">
+           New Word
+      </button>
+   else ()}
+
+{if ($scnt > 0) then      
+<span>      
+ {if ($context = 'dic') then wd:display-qitems($wid, $context, $zi) else ()}
+{if (count($syn) > 0) then
+<button title="Click to view {count($syn)} synonyms" class="btn badge badge-info ml-2" data-toggle="collapse" data-target="#{$wid}-syn">SYN</button> else 
+if ($edit) then 
+<button title="Click to add synonyms" class="btn" onclick="new_syn_dialog({{'char' : '{$zi}','concept' : '{$concept}', 'concept_id' : '{$concept-id}'}})">＋</button>
+else ()
+}
+<button title="click to reveal TODO syntactic words" class="btn badge badge-light" type="button" data-toggle="collapse" data-target="#{$wid}-concept">{$scnt}</button>
+<ul class="list-unstyled collapse" id="{$wid}-syn" style="swl-bullet">{
+for $l in $syn
+return
+<li>{$l}</li>
+}
+</ul>
+</span>
+
+
+else ()
+}
+</li>
+
+};
+
 declare function lsf:get-sw-by-concept($word as xs:string, $context as xs:string, $domain as xs:string, $leftword as xs:string) as item()* {
 let $w-context := ($context = "dic") or contains($context, "concept")
 , $coll := if ($domain = ("core", "undefined")) then "/concepts/" else "/domain/"||$domain
 let $words-tmp := if ($w-context) then 
-  collection($config:tls-data-root||$coll)//tei:orth[contains(. , $word)]
+  collection($config:tls-data-word-root)//tei:orth[contains(. , $word)]
   else
-  collection($config:tls-data-root||$coll)//tei:entry/tei:form/tei:orth[. = $word]
+  collection($config:tls-data-word-root)//tei:entry/tei:form/tei:orth[. = $word]
   (: this is to filter out characters that occur multiple times in a entry definition (usually with different pronounciations, however we actually might want to get rid of them :)
 , $words := for $w in $words-tmp
-   let $e := $w/ancestor::tei:entry
+   let $e := $w/ancestor::tei:entry/@tls-concept
    group by $e
    return $w[1]
 let $user := sm:id()//sm:real/sm:username/text()
@@ -524,9 +602,10 @@ let $user := sm:id()//sm:real/sm:username/text()
         ) else ()    
     ,
     for $w in $words
-    let $concept := $w/ancestor::tei:div/tei:head/text(),
-    $wid := $w/ancestor::tei:entry/@xml:id,
-    $concept-id := $w/ancestor::tei:div/@xml:id,
+    let $entry := $w/ancestor::tei:entry
+    let $concept := $entry/@tls:concept/string(),
+    $wid := $entry/@xml:id,
+    $concept-id := $entry/@tls:concept-id,
     $py := $w/parent::tei:form/tei:pron[starts-with(@xml:lang, 'zh-Latn')]/text(),
     $zi := $w/parent::tei:form/tei:orth/text(),
     $cwid := concat(data($concept-id), "::", data($wid))
@@ -536,23 +615,18 @@ let $user := sm:id()//sm:real/sm:username/text()
 return
 if (map:size($wm) > 0) then
 for $id in map:keys($wm)
-let $concept := map:get($wm($id), "concept"),
-(:$w := map:get($wm($id), "w"):)
-(:$w := collection(concat($config:tls-data-root, '/concepts/'))//tei:entry[@xml:id = $cid[2]]//tei:orth:)
-$w := collection($config:tls-data-root||$coll)//tei:div[@xml:id = $id]//tei:orth[. = $word]
-,$cdef := $w/ancestor::tei:div/tei:div[@type="definition"]/tei:p/text(),
-$form := $w/parent::tei:form/@corresp,
+let $concept := map:get($wm($id), "concept")[1]
+, $w := collection($config:tls-data-word-root)//tei:orth[. = $word]
+, $cdef := ltx:get-catdesc($id, 'tls-concepts-top', 'def')
+, $form := $w/parent::tei:form/@corresp,
 $z := map:get($wm($id), "zi")
-(:$py := for $p in map:get($wm($id), "py")
-        return normalize-space($p):)
-(:group by $concept:)
 order by $concept[1]
 return
 (: since I used "order by" for populating the map, some values are sequences now, need to disentangle that here  :)
 for $zi at $pos in distinct-values($z) 
 (: there might be more than one entry that has the char $zi, so $wx is a sequence of one or more
  we need to loop through these entries:)
-for $wx at $pw in (collection($config:tls-data-root||$coll)//tei:div[@xml:id = $id]//tei:orth[. = $zi])[1]
+for $wx at $pw in (collection($config:tls-data-word-root)//tei:entry[@tls:concept-id=$id]//tei:orth[. = $zi])
 (: we take only the first, because for multiple readings of the same char, we have two entries here :)
 
 
@@ -560,7 +634,7 @@ let $scnt := for $w1 in $wx return
            count($w1/ancestor::tei:entry/tei:sense),
 $resp := tu:get-member-initials($wx/ancestor::tei:entry/@resp),
 $wid := $wx/ancestor::tei:entry/@xml:id,
-$syn := $wx/ancestor::tei:div[@xml:id = $id]//tei:div[@type="old-chinese-criteria"]//tei:p,
+$syn := lc:get-synonym-def($id),
 $py := for $pp in $wx/ancestor::tei:entry/tei:form[tei:orth[.=$zi]]/tei:pron[@xml:lang="zh-Latn-x-pinyin"] return normalize-space($pp),
 $global-def := $wx/ancestor::tei:entry/tei:def,
 $esc := replace($concept[1], "'", "\\'")
