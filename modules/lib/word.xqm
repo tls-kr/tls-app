@@ -28,8 +28,15 @@ declare namespace tls="http://hxwd.org/ns/1.0";
 
 (: prepare for moving words out of concept  :)
 declare function lw:get-words($concept){
- $concept//tei:entry
+let $entries := collection($config:tls-data-word-root)//tei:entry[@tls:concept-id=$concept/@xml:id]
+return $entries
 };
+
+declare function lw:get-words-by-concept-id($cid){
+let $entries := collection($config:tls-data-word-root)//tei:entry[@tls:concept-id=$cid]
+return $entries
+};
+
 
 declare function lw:display-word($e, $map){
 let $update := if ($e/@n) then () else lw:update-word-ann-count($e)
@@ -107,6 +114,7 @@ let $zi := string-join($e/tei:form/tei:orth, " / ")
 
 };
 
+(:~ This is called after adding/deleting an attribution to update the total count accordingly :)
 declare function lw:update-sense-id-ann-count($sid, $cnt){
 let $s := collection($config:tls-data-word-root)//tei:sense[@xml:id=$sid]
   , $p := $s/parent::tei:entry

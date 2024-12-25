@@ -14,6 +14,7 @@ import module namespace tu="http://hxwd.org/utils" at "../tlsutils.xql";
 import module namespace lus="http://hxwd.org/lib/user-settings" at "user-settings.xqm";
 import module namespace lsi="http://hxwd.org/special-interest" at "special-interest.xqm";
 import module namespace lpm="http://hxwd.org/lib/permissions" at "permissions.xqm";
+import module namespace ltx="http://hxwd.org/taxonomy" at "taxonomy.xqm";
 
 import module namespace lrh="http://hxwd.org/lib/render-html" at "render-html.xqm";
 
@@ -96,33 +97,32 @@ default return
 (: produce the list and return as array  
 required: word, domain, context
 :)
+
 declare function lsf:get-sw-list($map as map(*)){
 let $w-context := ($map?context = "dic") or contains($map?context, "concept")
-let $coll := if ($map?domain = ("core", "undefined")) then "/concepts/" else "/domain/"||$map?domain
 let $ws := if ($w-context) then  
-      collection($config:tls-data-root||$coll)//tei:entry[.//tei:orth[contains(. , $map?word)]]/tei:sense
+      collection($config:tls-data-word-root)//tei:entry[.//tei:orth[contains(. , $map?word)]]/tei:sense
     else 
-      collection($config:tls-data-root||$coll)//tei:entry[.//tei:orth[. = $map?word]]/tei:sense
+      collection($config:tls-data-word-root)//tei:entry[.//tei:orth[. = $map?word]]/tei:sense
   for $w in $ws
-  let $concept := $w/ancestor::tei:div/tei:head/text(),
-      $cdef := $w/ancestor::tei:div/tei:div[@type="definition"]/tei:p/text(),
-(:      $esc := replace($concept, "'", "\\'"),:)
-      $wid := $w/ancestor::tei:entry/@xml:id,
-      $concept-id := $w/ancestor::tei:div/@xml:id,
-      $py := $w/ancestor::tei:entry/tei:form/tei:pron[starts-with(@xml:lang, 'zh-Latn')]/text(),
-      $zi := $w/ancestor::tei:entry/tei:form/tei:orth/text(),
-(:      $cwid := concat(data($concept-id), "::", data($wid)),:)
-      $sid := $w/@xml:id,
-      $sfs := ($w//tls:syn-func)[1],
-      $sfid := substring(($sfs/@corresp), 2),
-      $atts := count(collection(concat($config:tls-data-root, '/notes/'))//tls:ann[tei:sense/@corresp = "#" || $sid]),
-      $def := $w//tei:def/text(),
-      $sm := $w//tls:sem-feat/text(),
-      $smid := substring($sm/@corresp, 2)
+  let $concept := $w/@tls-concept/string()
+      , $concept-id := $w/@tls:concept-id/string()
+      , $cdef := ltx:get-catdesc($concept-id, 'tls-concepts-top', 'def')
+      , $wid := $w/ancestor::tei:entry/@xml:id
+      , $py := $w/ancestor::tei:entry/tei:form/tei:pron[starts-with(@xml:lang, 'zh-Latn')]/text()
+      , $zi := $w/ancestor::tei:entry/tei:form/tei:orth/text()
+      , $sid := $w/@xml:id
+      , $sfs := ($w//tls:syn-func)[1]
+      , $sfid := substring(($sfs/@corresp), 2)
+      , $atts := xs:int($w/@n)
+      , $def := $w//tei:def/text()
+      , $sm := $w//tls:sem-feat/text()
+      , $smid := substring($sm/@corresp, 2)
 return
 (:1    2     3     4          5           6     7      8    9      10    11    12    13:)
 [$zi, $py, $wid, $concept, $concept-id, $sfs, $sfid, $sm, $smid, $sid, $def, $atts, $w/@resp]
 };
+
 
 (: colors : #FFC647 (goldenrod), 
 #5220DD

@@ -197,7 +197,7 @@ declare variable $config:lmap := map{
 };
 
 declare variable $config:tls-ann := (collection($config:tls-data-root||"/notes/swl")|collection($config:tls-data-root||"/notes/doc"))//tls:ann;
-declare variable $config:tls-data-word-root := $config:tls-data-root || "/concepts" ;
+declare variable $config:tls-data-word-root := $config:tls-data-root || "/words" ;
 
 declare variable $config:circle := "resources/icons/open-iconic-master/svg/media-record.svg";
 declare variable $config:pb := "resources/icons/open-iconic-master/svg/pin.svg";

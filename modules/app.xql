@@ -358,8 +358,8 @@ declare function app:do-browse($type as xs:string?, $filter as xs:string?)
      for $hit in collection($config:tls-data-root)//tei:div[@type=$type]
      let $domain := tokenize(util:collection-name($hit), '/')[last()],
      $head := if ($domain = "concept") then data($hit/tei:head) else () (:  $domain || "::" || data($hit/tei:head) :)
-     , $w := $hit//tei:entry
-     where starts-with($head, $filter) and count($w) > 0
+(:     , $w := $hit//tei:entry:)
+     where starts-with($head, $filter) (: and count($w) > 0 :)
      order by $head
      return $hit
     else 
@@ -1259,7 +1259,7 @@ src="resources/icons/open-iconic-master/svg/person.svg"/>{sm:id()//sm:real/sm:us
 <a onclick="show_dialog('passwd-dialog', '{$me}')" class="dropdown-item bg-warning">Change Password</a>
 -->
 <a class="dropdown-item" href="settings.html">Settings</a>
-<a class="dropdown-item" href="https://join.slack.com/t/tls-7al8577/shared_invite/zt-1h6hfirdt-8EdFCAxsQalvCIdIs3OK6w">Feedback channel</a>
+<a class="dropdown-item" href="https://github.com/tls-kr/tls-app/issues">Report problems</a>
 </div>
 </li>
 else
@@ -1792,13 +1792,12 @@ function app:syllables($node as node()*, $model as map(*), $uuid as xs:string?, 
      <div><h5>Same phonetic</h5></div>
      -->
      </div>
-     <div><h4>TLS Usage: Words using {$zi}</h4>
+     <div><h4>TLS Usage: Words using {$zi/text()}</h4>
      <ul>
-     {for $z in (collection($config:tls-data-root || "/concepts") | collection($config:tls-data-root || "/domain"))//tei:entry[.//tei:orth[. = $zi//text()]]
-     let $c:= $z/ancestor::tei:div[@type="concept"]
-     , $w:= $z/ancestor::tei:entry
+     {for $z in collection($config:tls-data-word-root)//tei:entry[.//tei:orth [. = $zi/text()]]
      return
-     <li>{$zi}　<a href="concept.html?uuid={$c/@xml:id}#{$z/@xml:id}">{$c/tei:head/text()}</a></li>}
+     <li>{$zi}　<a href="concept.html?uuid={$z/@tls:concept-id}#{$z/@xml:id}">{$z/@tls:concept/string()}</a></li>
+     }
      </ul>
      </div>
      <!-- end of card content -->
