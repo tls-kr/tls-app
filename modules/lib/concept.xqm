@@ -134,8 +134,11 @@ case element(tei:div) return
        case "old-chinese-criteria"  
        case "huang-jingui"
        case "modern-chinese-criteria" return
+        let $key := $node/ancestor::tei:div[@type='concept']/@xml:id/string()
+        , $edit := if (lpm:can-edit-concept()) then 'true' else 'false'
+        return
          (<h5 class="ml-2 mt-2">{map:get($config:lmap, $type)}</h5>
-         ,<div lang="en-GB" contenteditable="{$map?edit}" style="white-space: pre-wrap;" class="nedit" id="{$type}_{$map?key}-nt">
+         ,<div lang="en-GB" contenteditable="{$edit}" style="white-space: pre-wrap;" class="nedit" id="{$type}_{$key}-nt">
          {lc:display($node/node(), $map)}
          </div>)
        case "pointers" return

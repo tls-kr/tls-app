@@ -578,14 +578,14 @@ declare function lsf:get-sw-by-concept($word as xs:string, $context as xs:string
 let $w-context := ($context = "dic") or contains($context, "concept")
 , $coll := if ($domain = ("core", "undefined")) then "/concepts/" else "/domain/"||$domain
 let $words-tmp := if ($w-context) then 
-  collection($config:tls-data-word-root)//tei:orth[contains(. , $word)]
+  collection($config:tls-data-word-root)//tei:orth[./ancestor::tei:entry and contains(. , $word)]
   else
   collection($config:tls-data-word-root)//tei:entry/tei:form/tei:orth[. = $word]
   (: this is to filter out characters that occur multiple times in a entry definition (usually with different pronounciations, however we actually might want to get rid of them :)
 , $words := for $w in $words-tmp
    let $e := $w/ancestor::tei:entry/@tls-concept
    group by $e
-   return $w[1]
+   return $w
 let $user := sm:id()//sm:real/sm:username/text()
 , $doann := contains($context, 'textview')  (: the page we were called from can annotate :)
 , $edit := sm:id()//sm:groups/sm:group[. = "tls-editor"] and $doann
@@ -605,7 +605,7 @@ let $user := sm:id()//sm:real/sm:username/text()
     let $entry := $w/ancestor::tei:entry
     let $concept := $entry/@tls:concept/string(),
     $wid := $entry/@xml:id,
-    $concept-id := $entry/@tls:concept-id,
+    $concept-id := $entry/@tls:concept-id/string() (:  if ($entry/@tls:concept-id) then $entry/@tls:concept-id/string() else "xx" :),
     $py := $w/parent::tei:form/tei:pron[starts-with(@xml:lang, 'zh-Latn')]/text(),
     $zi := $w/parent::tei:form/tei:orth/text(),
     $cwid := concat(data($concept-id), "::", data($wid))
