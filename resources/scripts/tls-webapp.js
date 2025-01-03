@@ -975,7 +975,7 @@ function get_sw(sel, xid, line){
    var domain = $('#domain-select').val();
    var tsel = window.getSelection();
    var r = [tsel.anchorOffset, tsel.focusOffset]
-   var pos = Math.min.apply(Math, r);
+   var pos = Math.min.apply(Math, r) + 1;
    var len = Math.max.apply(Math, r);
    console.log("selection: ", sel, pos);
    var url = "http://www.kaom.net/hemoye/z_hmy_zidian88.php?"+"word="+encodeURI(sel)+"&mode=word&bianti=no&page=no";
