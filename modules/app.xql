@@ -450,9 +450,9 @@ let $query-needing-measurement := (: insert query or function call here :)
      if (string-length($location) > 0) then 
 (:     tlslib:display-chunk($dispseg, $model, $prec, $foll):)
       try {
-      
+      if ($dispseg) then
       tlslib:display-chunk($dispseg, $model, $prec, $foll)
-      
+      else "No text segment found: " || $location
       } catch * {"An error occurred, can't display text. Code:" || count($dispseg) || " (dispseg)" }      
     else 
     app:textlist()
@@ -1501,7 +1501,7 @@ declare
 function app:footer($node as node()*, $model as map(*)){
             <div class="container">
                 <span id="copyright"/>
-                    <p>Copyright TLS Project 2024, licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/" title="Creative Commons Attribution-ShareAlike 4.0 International License">CC BY SA</a> license (except some translations)</p>
+                    <p>Copyright TLS Project 2025, licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/" title="Creative Commons Attribution-ShareAlike 4.0 International License">CC BY SA</a> license (except some translations)</p>
                 <p>Developed at the <strong>Center for Innovative Informatics of the Humanities, Institute for Research in Humanities, Kyoto University</strong>, with support from the 
                 <strong>Dean for Research, Department of East Asian Studies</strong>, and
                 <strong>Program in East Asian Studies, Princeton University</strong>.</p>    

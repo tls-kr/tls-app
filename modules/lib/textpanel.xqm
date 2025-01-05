@@ -304,7 +304,7 @@ return
    $seg/node()}
 else
 <div class="{$zhclass}{if ($seg/@type='comm') then ' tls-comm' else if($locked) then 'locked' else '' }" style="{if ($seg/@type='bcj') then 'color:red' else ()}" lang="{$lang}" id="{$segid}" >{
-lrh:proc-seg($seg, map{"punc" : true(), "textid" : $textid})
+try {lrh:proc-seg($seg, map{"punc" : true(), "textid" : $textid}) } catch * {$seg/text()}
 }
 <!-- data-tei="{ util:node-id($seg) }" -->
 </div>

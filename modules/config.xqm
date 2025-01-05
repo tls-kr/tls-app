@@ -59,7 +59,7 @@ declare variable $config:tls-log-collection := "/db/users/tls-admin/logs";
 declare variable $config:tls-add-titles := substring-before($config:app-root, data($config:expath-descriptor/@abbrev)) || "tls-texts/meta/krp-titles.xml";
 declare variable $config:tls-twjp-vardb := $config:tls-data-root || "/external/twjp-vardb.xml";
 declare variable $config:tls-uni-vardb  := $config:tls-data-root || "/external/univardb.xml";
-declare variable $config:exide-url :=  concat(request:get-scheme(), "://", 
+declare variable $config:exide-url :=  concat("https://", 
                             if (request:get-server-name()='localhost') then 'hxwd.org' else request:get-server-name(), 
                             ':8443', "/exist/apps/eXide/index.html");
 declare variable $config:tls-manifests := 
@@ -76,6 +76,13 @@ declare variable $config:help-map := map{
 'textview' : '2-User-manual/The-textview-page',
 'floater' : '2-User-manual/The-attribution-floater',
 'citation' : '2-User-manual/Citations'
+};
+
+declare variable $config:navmap := map{
+1 : ( '<<', 'First page'),
+2 : ( '<', 'Previous page'),
+3 : ( '>', 'Next page'),
+4 : ( '>>', 'Last page')
 };
 
 declare variable $config:seg-split-tokens := '[，。：．；？﹖！，』」/、]';

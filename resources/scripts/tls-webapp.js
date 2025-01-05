@@ -2474,6 +2474,17 @@ function do_quick_search(start, count, stype, mode, target){
   $('#swl-select').html("Please wait ...");  
 };
 
+function do_tr_search(input, trid, start, count){
+    var word = $("input[name="+input+"]").val();       
+    var target = 'trans';
+$.get("api/responder.xql?func=quick-search&query="+word+"&trid="+trid+"&start="+start+"&count="+count+"&search-type=3&target="+target, 
+      "html", 
+    function(resp){
+         $('#tr-search-results').html(resp);
+        }
+    )
+  $('#tr-search-results').html("Searching, please wait ...");  
+};
 
 
 // delete_zi_from_word('uuid-f1f8819f-cfae-4128-a9ed-8e9586c9e146','1','咳欬')

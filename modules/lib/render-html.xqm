@@ -111,6 +111,23 @@ declare function lrh:display-row($map as map(*)){
   </div>  
 };
 
+declare function lrh:simple-input-row($map as map(*)){
+  (<div class="row">
+    <div class="col-sm-1">{$map?col1}</div>
+    <div class="col-sm-4" title="{$map?col2-tit}"><span class="font-weight-bold float-right">{$map?col2}</span></div>
+    <div class="col-sm-5" id="{$map?input-id}-group" >
+     <input id="{$map?input-id}" type="{$map?type}" name="{$map?input-id}" class="form-control" value="{$map?input-value}"/>
+     </div>
+    <div class="col-sm-2">
+     <button id="tr-search-button" type="button" class="btn btn-outline-success sm-2" onclick="do_tr_search('{$map?input-id}', '{$map?trid}', '1', '25')">
+     <img class="icon" src="resources/icons/open-iconic-master/svg/magnifying-glass.svg"/></button>
+   </div>    
+ </div>,
+ <div class="row">
+  <div class="col-sm-12"  id="tr-search-results"></div>
+ </div>
+) 
+};
 
 declare function lrh:get-content-id($textid as xs:string, $slot as xs:string, $tr as map(*)){
    let $show-transl := lpm:should-show-translation()
