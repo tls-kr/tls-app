@@ -38,7 +38,11 @@ declare variable $ltr:tr-map-indices := map{
 };
 
 declare function ltr:get-translation-file($trid as xs:string){
-let $trfile := ltr:get-tr-collections()//tei:TEI[@xml:id=$trid]
+let $user := sm:id()//sm:real/sm:username/text()
+let $tru := collection($config:tls-user-root|| $user || "/translations")/tei:TEI[@xml:id=$trid]
+, $trc := collection($config:tls-translation-root)//tei:TEI[@xml:id=$trid]
+, $rn := collection($config:tls-data-root||"/notes/research")//tei:TEI[@xml:id=$trid]
+, $trfile := if ($tru) then $tru else if ($trc) then $trc else $rn
 return $trfile
 };
 
@@ -245,7 +249,7 @@ if (not($vis="option3")) then
 };
 
 declare function ltr:transinfo($trid){
-let $trfile := ltr:get-tr-collections()//tei:TEI[@xml:id=$trid]
+let $trfile := ltr:get-translation-file($trid)
 , $segs := $trfile//tei:seg
 , $trm := map:merge( for $s in $segs 
            let $resp := replace(normalize-space($s/@resp), "#", "")
@@ -268,6 +272,7 @@ return
                                   "Visible to TLS Project members" else
                                    "Visibily to current user only" })
   ,lrh:display-row(map{"col2" : "Translated Lines", "col3" : count($segs)})
+  ,lrh:simple-input-row(map{"col2": "Search translation", "input-id" : "search-tr", "trid" : $trid})
   ,lrh:display-row(map{"col2" : "Translators/Operators", 
                       "col2-tit" : "This shows the person responsible in the system, not necessarily the original translator", 
                       "col3" : $trs})
@@ -356,7 +361,8 @@ declare function ltr:render-translation-submenu($textid as xs:string, $slot as x
 </div>
 };
 
-declare function ltr:get-tr-collections(){
+(: don't use, use get-translation- :) 
+declare function ltr:get-tr-collections-wrong(){
 let $user := sm:id()//sm:real/sm:username/text()
 , $t1 := collection($config:tls-user-root || $user || "/translations")
 , $t2 := collection($config:tls-translation-root)
@@ -552,4 +558,53 @@ declare function ltr:reload-selector($map as map(*)){
  ltr:render-translation-submenu($textid, $slot, $map?content-id, $tr)
 };
 
+declare function local:highlight($string, $query){
+let $r  := analyze-string($string, $query)
+for $m in $r/fn:*
+return
+ if (local-name($m) = 'non-match') then $m/text()
+ else <mark>{$m/text()}</mark>
+};
 
+declare function ltr:search-translation($map as map(*)){
+ let $user := sm:id()//sm:real/sm:username/text()
+, $dataroot := ltr:get-translation-file($map?trid)
+, $start := if ($map?start) then xs:int($map?start) else 1
+, $count := if ($map?count) then xs:int($map?count) else 25
+, $w:= if (string-length($map?query) > 0) then $dataroot//tei:seg[contains(. , $map?query)] else $dataroot//tei:seg[string-length(.) > 0]
+, $m := subsequence($w, $start, $count) 
+, $res := 
+for $tr at $pos in $m
+let $segid := substring($tr/@corresp, 2)
+, $loc := try {xs:int((tokenize($segid, "_")[3] => tokenize("-"))[1])} catch * {0}
+, $seg := collection($config:tls-texts-root)//tei:seg[@xml:id=$segid]
+, $line := try {lrh:proc-seg($seg, map{"punc" : true()}) } catch * {$seg/text()} 
+, $title := lmd:get-metadata($seg, 'head')
+, $trtext := if (string-length($map?query) > 0) then local:highlight(string-join($tr/text()), $map?query) else string-join($tr/text())
+return
+<div class="row table-striped">
+<div class="col-sm-2">({$pos + $start - 1}) <a href="textview.html?location={$segid}{if ($map?type='remote')then '&amp;mode=remote'else()}" class="font-weight-bold">{$title, $loc}</a></div>
+<div class="col-sm-3"><span data-target="{$segid}" data-toggle="popover">{$line}</span></div>
+<div class="col-sm-7"><span>{$trtext}</span></div>
+</div>
+return
+($res
+, if (count($w) >  $count) then  
+let $nav :=
+ for $i at $pos in (
+     1, 
+     if ($start - $count > 0) then $start - $count else -1, 
+     if (($start + $count) < count($w)) then ($start + $count) else -1, 
+     ((count($w) idiv $count) * $count)  )
+ return
+  if ($i = -1) then () else 
+  <button type="button" class="btn btn-primary" title="{$config:navmap?($pos)[2]}" onclick="do_tr_search('search-tr', '{$map?trid}', '{$i}', '{$count}')">{$config:navmap?($pos)[1]}</button> 
+return
+<div class="row">
+<div class="col-sm-2">Total {count($w)}</div>
+<div class="col-sm-3">{$nav}</div>
+</div>
+else ()
+)
+
+};

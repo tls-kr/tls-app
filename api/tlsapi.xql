@@ -1538,6 +1538,7 @@ else ()
 };
 
 declare function tlsapi:quick-search($map as map(*)){
+ if ($map?target = 'trans') then ltr:search-translation($map) else 
  let $cat := map:merge(for $c in tokenize($map?filter, ";") 
                            let $ck := tokenize($c, ":")
                            return map:entry($ck[1], $ck[2]))
