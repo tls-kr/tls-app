@@ -572,6 +572,13 @@ declare function lrh:settings-display($node as node()*, $model as map(*)){
 </div>
 };
 
+(:~ render a help link for the context given as key
+:)
+declare function lrh:help-link($key as xs:string){
+   let $link := $config:help-map?($key)
+   return
+  <a class="nav-link" href="{$config:help-base-url}{$link}"  target="docs" role="button">Help<img class="icon"  src="resources/icons/help.svg"/></a>
+};
 
 declare function lrh:settings-bookmarks($node as node()*, $model as map(*)){
 <div>

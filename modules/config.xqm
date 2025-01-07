@@ -75,7 +75,8 @@ declare variable $config:help-map := map{
 'search' : '2-User-manual/Search-results',
 'textview' : '2-User-manual/The-textview-page',
 'floater' : '2-User-manual/The-attribution-floater',
-'citation' : '2-User-manual/Citations'
+'citation' : '2-User-manual/Citations',
+'concepts' : '1-General-introduction/Concepts'
 };
 
 declare variable $config:navmap := map{

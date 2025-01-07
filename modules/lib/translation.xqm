@@ -580,7 +580,7 @@ let $segid := substring($tr/@corresp, 2)
 , $seg := collection($config:tls-texts-root)//tei:seg[@xml:id=$segid]
 , $line := try {lrh:proc-seg($seg, map{"punc" : true()}) } catch * {$seg/text()} 
 , $title := lmd:get-metadata($seg, 'head')
-, $trtext := if (string-length($map?query) > 0) then local:highlight(string-join($tr/text()), $map?query) else string-join($tr/text())
+, $trtext := if (string-length($map?query) > 0 and  matches($map?query, "^[A-Za-z]*$")) then local:highlight(string-join($tr/text()), $map?query) else string-join($tr/text())
 return
 <div class="row table-striped">
 <div class="col-sm-2">({$pos + $start - 1}) <a href="textview.html?location={$segid}{if ($map?type='remote')then '&amp;mode=remote'else()}" class="font-weight-bold">{$title, $loc}</a></div>

@@ -27,6 +27,10 @@ import module namespace src="http://hxwd.org/search" at "../search.xql";
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
 
+declare function local:get-key($node as node()){
+ $node/ancestor-or-self::tei:div[@type='concept']/@xml:id/string()
+};
+
 declare function lc:concept-top($node as node()*, $model as map(*), $concept as xs:string?, $uuid as xs:string?, $ontshow as xs:string?, $bychar as xs:boolean?)
 {
 let $user := sm:id()//sm:real/sm:username/text()
@@ -134,7 +138,7 @@ case element(tei:div) return
        case "old-chinese-criteria"  
        case "huang-jingui"
        case "modern-chinese-criteria" return
-        let $key := $node/ancestor::tei:div[@type='concept']/@xml:id/string()
+        let $key := local:get-key($node)
         , $edit := if (lpm:can-edit-concept()) then 'true' else 'false'
         return
          (<h5 class="ml-2 mt-2">{map:get($config:lmap, $type)}</h5>
@@ -259,6 +263,7 @@ declare function lc:display-pointer-list($l){
 let $tax-type := 'tls-concepts-top'
 return
 for $p in $l
+      let $othersubtrees := if ($p[@type = "hypernymy"]) then ltx:get-other-subtrees(local:get-key($p), $tax-type, 3) else ()
      (:order by $p/@type:)
      return
      (<h5 class="ml-2">
@@ -266,6 +271,27 @@ for $p in $l
      </h5>
      (: we assume that clicking here implies an interest in the ontology, so we load in open state:)
      ,<ul>{
+     if ($p[@type = "hypernymy"]) then
+(:      <ul>{:)
+      for $x at $pos in ltx:get-subtree(local:get-key($p), $tax-type, 3)
+      let $desc := ltx:get-catdesc($x, $tax-type, 'desc')
+      let $dex := ltx:get-catdesc($x, $tax-type, 'def')
+      return
+       <li class="ml-{$pos + 1}"><span><a  class="badge badge-light" href="concept.html?uuid={$x}&amp;ontshow=true">{$desc}</a>
+     <small style="display:inline;">　{$dex}</small></span></li>
+(:     }</ul>:)
+     else if ($p[@type = "taxonymy"]) then
+(:      <ul>{:)
+      for $x in ltx:get-children(local:get-key($p), $tax-type)
+      let $desc := ltx:get-catdesc($x, $tax-type, 'desc')
+      let $dex := ltx:get-catdesc($x, $tax-type, 'def')
+      , $badge := if (starts-with($x, 'new')) then 'badge-dark' else 'badge-light'
+      , $xid := if (starts-with($x, 'new')) then ltx:get-true-cat($x, $tax-type) else $x
+      return
+       <li class="ml-2"><span><a  class="badge {$badge}" href="concept.html?uuid={$xid}&amp;ontshow=true">{$desc}</a>
+     <small style="display:inline;">　{$dex}</small></span></li>
+(:     }</ul>:)
+     else 
      for $r in $p//tei:ref 
      let $lk := replace($r/@target, "#", "")
      , $def := ltx:get-catdesc($lk, $tax-type, 'def')
@@ -273,28 +299,19 @@ for $p in $l
      (<li>
      <a class="badge badge-light" href="concept.html?uuid={$lk}&amp;ontshow=true">{$r/text()}</a>
      <small class="ml-2" style="display:inline;">{$def}</small> </li>
-     ,
-     if ($p[@type = "hypernymy"]) then
-      <ul>{
-      for $x at $pos in ltx:get-subtree($lk, $tax-type, 3)
-      let $desc := ltx:get-catdesc($x, $tax-type, 'desc')
-      let $dex := ltx:get-catdesc($x, $tax-type, 'def')
-      return
-       <li class="ml-{$pos + 1}"><span><a  class="badge badge-light" href="concept.html?uuid={$x}&amp;ontshow=true">{$desc}</a>
-     <small style="display:inline;">　{$dex}</small></span></li>
-     }</ul>
-     else if ($p[@type = "taxonymy"]) then
-      <ul>{
-      for $x in ltx:get-children($lk, $tax-type)
-      let $desc := ltx:get-catdesc($x, $tax-type, 'desc')
-      let $dex := ltx:get-catdesc($x, $tax-type, 'def')
-      return
-       <li class="ml-2"><span><a  class="badge badge-light" href="concept.html?uuid={$x}&amp;ontshow=true">{$desc}</a>
-     <small style="display:inline;">　{$dex}</small></span></li>
-     }</ul>
-     else ()
      )
      }</ul>
+     , if ($othersubtrees[1]) then 
+     (<h5 class="ml-2">Other Hypernyms</h5>
+     , <ul>{for $x at $pos in $othersubtrees
+       let $desc := ltx:get-catdesc($x, $tax-type, 'desc')
+       let $dex := ltx:get-catdesc($x, $tax-type, 'def')
+       return
+        <li class="ml-{$pos + 1}"><span><a  class="badge badge-light" href="concept.html?uuid={$x}&amp;ontshow=true">{$desc}</a>
+     <small style="display:inline;">　{$dex}</small></span></li>
+     }</ul>)
+     else ()
+
      )
 };
 
