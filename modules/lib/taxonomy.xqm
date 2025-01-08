@@ -20,6 +20,7 @@ import module namespace src="http://hxwd.org/search" at "../search.xql";
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls= "http://hxwd.org/ns/1.0";
 
+
 (:~
 get the clear text name description or definition of the category
 @catid is the xml:id of the category to be retrieved
@@ -35,13 +36,50 @@ if ($type = 'desc') then
 else
  string-join($cat/tei:def/text())
 };
-
+(:~ 
+get the subtree for a given category 
+:)
 declare function ltx:get-subtree($catid as xs:string, $taxid as xs:string, $count as xs:int){
 let $tax := collection($config:tls-data-root||"/core")//tei:category[@xml:id=$taxid]
 , $cat := $tax//tei:category[@xml:id=$catid]
 , $n := $cat/ancestor::tei:category[position() <= $count]
 , $r := reverse (for $id at $pos in $n/@xml:id return $id/string())
 return $r
+};
+
+(:~ 
+get the subtrees that reference this category outside of the main hierarchy
+for concepts, taxid is 'tls-concepts-top'; 
+$count is the depth requested
+:)
+declare function ltx:get-other-subtrees($catid as xs:string, $taxid as xs:string, $count as xs:int){
+let $tax := collection($config:tls-data-root||"/core")//tei:category[@xml:id=$taxid]
+, $cat := $tax//tei:category[@corresp="#"||$catid]
+, $s := for $c in $cat
+let $n := $c/ancestor::tei:category[position() <= $count]
+, $r := reverse (for $id at $pos in $n/@xml:id return $id/string())
+return $r
+return $s
+};
+
+(:~ for pseudo categories, get the real category :)
+declare function ltx:get-true-cat($catid as xs:string, $taxid as xs:string){
+let $tax := collection($config:tls-data-root||"/core")//tei:category[@xml:id=$taxid]
+, $cat := $tax//tei:category[@xml:id=$catid]
+, $realcat := substring($cat/@corresp, 2)
+return
+if ($realcat) then $realcat else "not-defined"
+};
+
+
+(:~
+get the children that do not have real concept-id s -- candidates for deletion?
+:)
+declare function ltx:get-new-children-as-node($catid as xs:string, $taxid as xs:string){
+let $tax := collection($config:tls-data-root||"/core")//tei:category[@xml:id=$taxid]
+, $cat := $tax//tei:category[@xml:id=$catid]
+return
+$cat//tei:category[starts-with(@xml:id, 'new')]
 };
 
 declare function ltx:get-children($catid as xs:string, $taxid as xs:string){

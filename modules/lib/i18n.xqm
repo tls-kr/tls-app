@@ -35,6 +35,7 @@ return
                 </p>                
         </div>
       }  
+      <p><a href="browse.html?type=welcome">Browse the database </a></p>
 <p>
      <span class="text-danger">This website is under development.</span>
         </p>

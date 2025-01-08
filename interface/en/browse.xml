@@ -9,7 +9,9 @@
     <li>There are many texts you can read here:
                                 <a class="dropdown-item" href="search.html?search-type=12">Texts</a>
     </li>
-    <li>Explore the concepts that allow a unique view of the Chinese worldview:
+    <li>Explore the concepts that provide a unique window into the traditional Chinese worldview: <a data-template="lrh:help-link" data-parameter="concept" target="docs" href="https://docs.hxwd.org/1-General-introduction/Concepts" title="About concepts">
+                    <img class="icon" src="resources/icons/help.svg"/>
+                </a>
                                 <a class="dropdown-item" href="browse.html?type=concept">Concepts</a>
       <a class="dropdown-item" href="browse.html?type=tax&amp;mode=concept">Taxonomical tree of Concepts</a>
       
