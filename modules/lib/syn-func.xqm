@@ -580,7 +580,7 @@ let $w-context := ($context = "dic") or contains($context, "concept")
 let $words-tmp := if ($w-context) then 
   collection($config:tls-data-word-root)//tei:orth[./ancestor::tei:entry and contains(. , $word)]
   else
-  collection($config:tls-data-word-root)//tei:entry/tei:form/tei:orth[. = $word]
+  (collection($config:tls-data-word-root)//tei:entry/tei:form)/tei:orth[. = $word]
   (: this is to filter out characters that occur multiple times in a entry definition (usually with different pronounciations, however we actually might want to get rid of them :)
 , $words := for $w in $words-tmp
    let $e := $w/ancestor::tei:entry/@tls-concept
@@ -605,6 +605,7 @@ let $user := sm:id()//sm:real/sm:username/text()
     let $entry := $w/ancestor::tei:entry
     let $concept := $entry/@tls:concept/string(),
     $wid := $entry/@xml:id,
+    $f := ($entry/tei:form[./tei:orth=$w])[1],
     $concept-id := $entry/@tls:concept-id/string() (:  if ($entry/@tls:concept-id) then $entry/@tls:concept-id/string() else "xx" :),
     $py := $w/parent::tei:form/tei:pron[starts-with(@xml:lang, 'zh-Latn')]/text(),
     $zi := $w/parent::tei:form/tei:orth/text(),
@@ -626,7 +627,7 @@ return
 for $zi at $pos in distinct-values($z) 
 (: there might be more than one entry that has the char $zi, so $wx is a sequence of one or more
  we need to loop through these entries:)
-for $wx at $pw in (collection($config:tls-data-word-root)//tei:entry[@tls:concept-id=$id]//tei:orth[. = $zi])
+for $wx at $pw in (collection($config:tls-data-word-root)//tei:entry[@tls:concept-id=$id]//tei:orth[. = $zi])[1]
 (: we take only the first, because for multiple readings of the same char, we have two entries here :)
 
 
@@ -635,8 +636,8 @@ let $scnt := for $w1 in $wx return
 $resp := tu:get-member-initials($wx/ancestor::tei:entry/@resp),
 $wid := $wx/ancestor::tei:entry/@xml:id,
 $syn := lc:get-synonym-def($id),
-$py := for $pp in $wx/ancestor::tei:entry/tei:form[tei:orth[.=$zi]]/tei:pron[@xml:lang="zh-Latn-x-pinyin"] return normalize-space($pp),
-$global-def := $wx/ancestor::tei:entry/tei:def,
+$py := distinct-values(for $pp in $wx/ancestor::tei:entry/tei:form[tei:orth[.=$zi]]/tei:pron[@xml:lang="zh-Latn-x-pinyin"] return normalize-space($pp)),
+$global-def := ($wx/ancestor::tei:entry/tei:def)[1],
 $esc := replace($concept[1], "'", "\\'")
 return
 <li class="mb-3 chn-font">
@@ -699,7 +700,8 @@ $sid := $s/@xml:id,
 $sresp := tu:get-member-initials($s/@resp),
 $clicksf := if ($edit) then concat("get_sf('" , $sid , "', 'syn-func')") else "",
 $clicksm := if ($edit) then concat("get_sf('" , $sid , "', 'sem-feat')") else "",
-$atts := count(collection(concat($config:tls-data-root, '/notes/'))//tls:ann[tei:sense/@corresp = "#" || $sid])
+(:$atts := count(collection(concat($config:tls-data-root, '/notes/'))//tls:ann[tei:sense/@corresp = "#" || $sid]):)
+$atts := $s/@n/string()
 order by $sf
 (:  :)
 return
