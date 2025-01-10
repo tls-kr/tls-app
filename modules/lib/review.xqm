@@ -20,6 +20,7 @@ import module namespace lv="http://hxwd.org/lib/vault" at "vault.xqm";
 import module namespace lus="http://hxwd.org/lib/user-settings" at "user-settings.xqm";
 import module namespace lvs="http://hxwd.org/lib/visits" at "visits.xqm";
 import module namespace lpm="http://hxwd.org/lib/permissions" at "permissions.xqm";
+import module namespace ltx="http://hxwd.org/taxonomy"  at "taxonomy.xqm";
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tx="http://exist-db.org/tls";
@@ -32,7 +33,8 @@ let $user := "#" || sm:id()//sm:username
 "missing-pinyin" : "Concepts with missing pinyin reading",
 "duplicate" : "Concepts with duplicate word entries",
 "no-dates" : "Texts with no dates assigned",
-"visits"  : "Recent visits"
+"visits"  : "Recent visits",
+"taxonomy-issues"  : "Issues with the concept taxonomy"
 }
 return
 <div>
@@ -44,6 +46,7 @@ return
  case "duplicate" return lrv:review-duplicate()
  case "no-dates" return lrv:review-no-dates()
  case "visits" return lvs:list-visits()
+ case "taxonomy-issues" return ltx:taxonomy-issues()
  default return 
   for $i in map:keys($issues)
   order by $i

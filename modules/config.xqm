@@ -183,6 +183,8 @@ declare variable $config:lmap := map{
 "taxonymy" : "Hyponym",
 "antonymy" : "Antonym",
 "hypernymy" : "Hypernym",
+"mereonymy" : "Part of",
+"holonym" : "Has part",
 "see" : "See also",
 "source-references" : "Bibliography",
 "warring-states-currency" : "Warring States Currency",

@@ -16,6 +16,9 @@ import module namespace lus="http://hxwd.org/lib/user-settings" at "../modules/l
 import module namespace ltr="http://hxwd.org/lib/translation" at "../modules/lib/translation.xqm";
 import module namespace lli="http://hxwd.org/lib/link-items" at "../modules/lib/link-items.xqm";
 import module namespace lsi="http://hxwd.org/special-interest" at "../modules/lib/special-interest.xqm";
+import module namespace ltg="http://hxwd.org/tags"    at "../modules/lib/tags.xqm";
+(:import module namespace lc ="http://hxwd.org/concept" at "../modules/lib/concept.xqm";:)
+import module namespace ltx="http://hxwd.org/taxonomy"at "../modules/lib/taxonomy.xqm";
 
 declare namespace output = "http://www.w3.org/2010/xslt-xquery-serialization";
 (:import module namespace console="http://exist-db.org/xquery/console";:)
@@ -49,7 +52,7 @@ return <li>{$h}:{request:get-header($h)}</li>
 }</ul>
 )
 else
-if (matches($func, "^(dialogs|tlslib|wd|bib|sgn|txc|ltr|lli|lus|lsi)")) then
+if (matches($func, "^(dialogs|tlslib|wd|bib|sgn|txc|ltr|lli|lus|lsi|ltg|ltx)")) then
  util:eval($func || "($resmap)" )
 else
  util:eval("tlsapi:" ||  $func || "($resmap)" )
