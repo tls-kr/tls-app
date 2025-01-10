@@ -14,6 +14,8 @@ import module namespace tu="http://hxwd.org/utils" at "../tlsutils.xql";
 import module namespace lmd="http://hxwd.org/lib/metadata" at "metadata.xqm";
 import module namespace lrh="http://hxwd.org/lib/render-html" at "render-html.xqm";
 import module namespace ltx="http://hxwd.org/taxonomy" at "taxonomy.xqm";
+import module namespace lpm="http://hxwd.org/lib/permissions" at "permissions.xqm";
+import module namespace ltg="http://hxwd.org/tags" at "tags.xqm";
 
 import module namespace src="http://hxwd.org/search" at "../search.xql";
 
@@ -50,7 +52,7 @@ let $n := if (string-length($model?n)>0) then $model?n else 20
 return
 (
 <div class="row">
- <div class="col-md-1">x</div>
+ <div class="col-md-1"></div>
  {lrh:form-control-input(
    map{
     'id' : 'input-target'
@@ -218,28 +220,32 @@ return
   order by $cc descending
   return
   <div id="res-map-{$level}-{$pos}">
-  {if ($l = 'none') then () else <h3 data-toggle="collapse" data-target="#res-map-{$uid}">{lct:format-key($l)} {$cd}</h3>}
+  {if ($l = 'none') then () else (<h3 data-toggle="collapse" data-target="#res-map-{$uid}">{lct:format-key($l)} {$cd}</h3> )}
   <div id="res-map-{$uid}" class="{$class}">
 {for $e at $epos in map:get($map, $l)
  return
   typeswitch($e[1])
    case xs:int return 
-    for $f in $e return lct:format-citation($f[2], map{})
-    case element(tls:ann) return 
-   for $f in $e return lct:format-citation($f, map{})
+    (for $f in $e return lct:format-citation($f[2], map{}) )
+   case element(tls:ann) return 
+    (for $f in $e return lct:format-citation($f, map{})    )
    case map() return lct:format-result-map($e, $level+1)
    default return ()
-}
+}{if ($l = 'none') then () else if (lpm:can-use-linked-items()) then ltg:tag-actions($uid) else ()}
 </div>
 </div>
 }
 </div>
 };
 
-
+(:~ 
+get the name for the key, not exactly elegant //
+:)
 declare function lct:format-key($k){
-if (starts-with($k, 'dat') or starts-with($k, 'uuid')) 
- then lmd:cat-title($k)
+if (starts-with($k, 'dat') ) 
+ then ltx:get-catdesc($k, 'tls-dates', 'desc')
+else if (starts-with($k, 'uuid')) 
+ then ltx:get-catdesc($k, 'tls-concepts-top', 'desc')
 else
  $k
 };
@@ -341,9 +347,10 @@ let $creator-id := if ($node/tls:metadata/@resp) then substring($node/tls:metada
 , $sf := $node//tls:syn-func/text()
 , $sm := $node//tls:sem-feat/text()
 , $def := $node//tei:def/text()
+, $attid := $node/@xml:id/string()
 return
 <div class="row {$bg}">
-<div class="col-sm-1" title="{$creation-date}"><span class="chn-font">{$zi}</span> ({$pr}){lct:set-value('chars', $zi)}</div>
+<div class="col-sm-1" title="{$creation-date}">{ if (lpm:can-use-linked-items()) then <input class="form-check-input" type="checkbox" name="res-check" value="" id="res-{$attid}"/> else ()}<span class="chn-font">{$zi}</span> ({$pr}){lct:set-value('chars', $zi)}</div>
 <div class="col-sm-2"><a href="concept.html?concept={$concept}{$node//tei:sense/@corresp}">{$concept}</a> {lct:set-value('concept', $concept)}</div>
 <div class="col-sm-4"><a href="textview.html?location={$target}{if ($type='remote')then '&amp;mode=remote'else()}" class="font-weight-bold">{$src, $loc}</a>&#160;{$line}{if ($tr) then (<br/>, $tr) else ()}</div>
 <div class="col-sm-2">{lct:set-value('syn-func', $sf)}<span class="font-weight-bold ml-2">{$sf}</span> {if ($sm) then ("&#160;",<em>{$sm}</em>) else ()}</div>

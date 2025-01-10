@@ -258,6 +258,22 @@ declare function lc:display-card($map){
       }
     </div>
 };
+declare function lc:display-children($tax-type, $seq, $type){
+      for $x at $pos in $seq
+      let $desc := ltx:get-catdesc($x, $tax-type, 'desc')
+      let $dex := ltx:get-catdesc($x, $tax-type, 'def')
+      , $badge := if (starts-with($x, 'new')) then 'badge-dark' else 'badge-light'
+      , $xid := if (starts-with($x, 'new')) then ltx:get-true-cat($x, $tax-type) else $x
+      , $npos := if ($type = 'taxonymy') then '2' else $pos + 1
+      , $cd := ltx:get-children($x, $tax-type)
+      , $anc := ltx:get-ancestors($x, $tax-type)
+      , $ann := ltx:get-ancestors-new($x, $tax-type)
+      return
+       <li class="ml-{$npos}"><span><a  class="badge {$badge}" href="concept.html?uuid={$xid}&amp;ontshow=true">{$desc}</a>
+       {if ($x = $xid) then () else (<span class="text-muted" title="Click here to restore as primary concept" onclick="modify_category('{$x}', 'swap')">{$x}</span>
+       , if (lpm:can-edit-concept()) then lrh:format-button("delete_word_from_concept('"|| $x || "', 'concept')", "Delete the concept '"|| $desc || "' from the tree, including all attached concepts.", "open-iconic-master/svg/x.svg", "", "", "tls-editor") else ()  )}
+     <small style="display:inline;">　{$dex}</small></span> (anc: {count($anc)}/{count($ann)}, child: {count($cd)})</li>
+};
 
 declare function lc:display-pointer-list($l){
 let $tax-type := 'tls-concepts-top'
@@ -273,42 +289,31 @@ for $p in $l
      ,<ul>{
      if ($p[@type = "hypernymy"]) then
 (:      <ul>{:)
-      for $x at $pos in ltx:get-subtree(local:get-key($p), $tax-type, 3)
-      let $desc := ltx:get-catdesc($x, $tax-type, 'desc')
-      let $dex := ltx:get-catdesc($x, $tax-type, 'def')
-      return
-       <li class="ml-{$pos + 1}"><span><a  class="badge badge-light" href="concept.html?uuid={$x}&amp;ontshow=true">{$desc}</a>
-     <small style="display:inline;">　{$dex}</small></span></li>
+      lc:display-children($tax-type, ltx:get-subtree(local:get-key($p), $tax-type, 3), $p/@type)
+
 (:     }</ul>:)
      else if ($p[@type = "taxonymy"]) then
-(:      <ul>{:)
-      for $x in ltx:get-children(local:get-key($p), $tax-type)
-      let $desc := ltx:get-catdesc($x, $tax-type, 'desc')
-      let $dex := ltx:get-catdesc($x, $tax-type, 'def')
-      , $badge := if (starts-with($x, 'new')) then 'badge-dark' else 'badge-light'
-      , $xid := if (starts-with($x, 'new')) then ltx:get-true-cat($x, $tax-type) else $x
-      return
-       <li class="ml-2"><span><a  class="badge {$badge}" href="concept.html?uuid={$xid}&amp;ontshow=true">{$desc}</a>
-     <small style="display:inline;">　{$dex}</small></span></li>
+(:      <ul>{:) 
+     lc:display-children($tax-type, ltx:get-children(local:get-key($p), $tax-type), $p/@type)
 (:     }</ul>:)
      else 
      for $r in $p//tei:ref 
      let $lk := replace($r/@target, "#", "")
      , $def := ltx:get-catdesc($lk, $tax-type, 'def')
+     , $desc := $r/text()
+     , $cid := local:get-key($p)
      return
      (<li>
-     <a class="badge badge-light" href="concept.html?uuid={$lk}&amp;ontshow=true">{$r/text()}</a>
+     <a class="badge badge-light" href="concept.html?uuid={$lk}&amp;ontshow=true">{$desc}</a>
+     {lrh:format-button("delete_word_from_concept('"|| $cid || "', 'local-concept', '"||$lk||"')", "Delete the concept '"|| $desc || "' from the tree, including all attached concepts.", "open-iconic-master/svg/x.svg", "", "", "tls-editor") }
      <small class="ml-2" style="display:inline;">{$def}</small> </li>
      )
      }</ul>
      , if ($othersubtrees[1]) then 
      (<h5 class="ml-2">Other Hypernyms</h5>
-     , <ul>{for $x at $pos in $othersubtrees
-       let $desc := ltx:get-catdesc($x, $tax-type, 'desc')
-       let $dex := ltx:get-catdesc($x, $tax-type, 'def')
-       return
-        <li class="ml-{$pos + 1}"><span><a  class="badge badge-light" href="concept.html?uuid={$x}&amp;ontshow=true">{$desc}</a>
-     <small style="display:inline;">　{$dex}</small></span></li>
+     , <ul>{     
+     lc:display-children($tax-type, $othersubtrees, 'other')
+
      }</ul>)
      else ()
 
@@ -328,5 +333,7 @@ declare function lc:display-bibl($bibl as node()){
 declare function lc:get-synonym-def($concept-id){
 collection($config:tls-data-root||"/concepts")//tei:div[@xml:id = $concept-id]//tei:div[@type="old-chinese-criteria"]//tei:p
 };
+
+
 
 declare function lc:alt-stub($node as node()*, $model as map(*)){};

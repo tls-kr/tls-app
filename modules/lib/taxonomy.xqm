@@ -82,6 +82,18 @@ return
 $cat//tei:category[starts-with(@xml:id, 'new')]
 };
 
+declare function ltx:get-ancestors($catid as xs:string, $taxid as xs:string){
+let $tax := collection($config:tls-data-root||"/core")//tei:category[@xml:id=$taxid]
+, $cat := $tax//tei:category[@xml:id=$catid]
+return
+for $id in $cat/ancestor::tei:category/@xml:id return $id/string() 
+};
+
+declare function ltx:get-ancestors-new($catid as xs:string, $taxid as xs:string){
+for $id in ltx:get-ancestors($catid, $taxid ) 
+ where starts-with($id, 'new')
+ return $id
+};
 declare function ltx:get-children($catid as xs:string, $taxid as xs:string){
 let $tax := collection($config:tls-data-root||"/core")//tei:category[@xml:id=$taxid]
 , $cat := $tax//tei:category[@xml:id=$catid]
@@ -152,6 +164,7 @@ if ($src and $trg) then
 else () 
 };
 
+(: this is called from api/delete_word_from_concept  :)
 declare function ltx:delete-category($id){
 let $src :=  (collection($config:tls-data-root||"/core")//tei:category[@xml:id=$id])[1]
 return
@@ -159,6 +172,23 @@ if ($src) then
  update delete $src
 else
  "Category not found."
+};
+(: directly called from js through responder.xql 
+cid := id of category
+action:= 'swap' -> make @corresp the xml:id (restore to this state)
+:)
+declare function ltx:modify-category($map){
+let $cat := (collection($config:tls-data-root||"/core")//tei:category[@xml:id=$map?cid])
+return
+switch($map?action)
+case 'swap' return
+  let $id := substring($cat/@corresp, 2)
+  , $newcat :=  collection($config:tls-data-root||"/core")//tei:category[@xml:id=$id]
+  , $node := <category xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$id}">{$cat/node()}</category>
+  return if ($newcat) then "Can not swap, ID already exists." else  (update replace $cat with $node, "OK")
+case 'remove' return
+  ltx:delete-category($map?cid)
+default return "Action" || $map?action || " not defined."
 };
 
 declare function ltx:copy-of($nodes){
@@ -304,6 +334,23 @@ if ($def) then
 else if ($cat) then
  update insert $newdef into $cat
 else () 
+};
+
+(:~ 
+Special page for listing and correcting issues with taxonomies, especially concepts
+:)
+declare function ltx:taxonomy-issues(){
+for $c in collection($config:tls-data-root||"/core")//tei:category/@corresp
+let $g := $c/string()
+group by $g
+let $cnt := count($c)
+, $id := substring($c[1], 2)
+, $nid := $c[1]/parent::tei:category/@xml:id
+, $desc := ltx:get-catdesc($nid, 'tls-concepts-top', 'desc')
+where $cnt > 1
+order by $cnt descending
+return
+<li><a href="concept.html?uuid={$id}&amp;ontshow=true">{$desc}</a> ({$cnt})</li>
 };
 
 (: add the hits to the taxonomy 

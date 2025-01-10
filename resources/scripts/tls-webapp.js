@@ -1650,11 +1650,12 @@ function move_word_done(uuid, word){
     
 }
 // delete word from concept 
-function delete_word_from_concept(wid, type){
+// for type local-concept, ref is the reference to the item that needs to be deleted
+function delete_word_from_concept(wid, type, ref){
     $.ajax({
      type : "GET",
      dataType : "html",  
-     url : "api/delete_word_from_concept.xql?wid=" + wid+"&type="+type, 
+     url : "api/delete_word_from_concept.xql?wid=" + wid+"&type="+type+"&ref="+ref, 
      success : function(resp){
      if (resp.length > 2){
          toastr.info(resp, "HXWD says:");     
@@ -1665,6 +1666,23 @@ function delete_word_from_concept(wid, type){
    }
   })  
 };
+
+// delete word from concept 
+function modify_category(cid, action){
+    $.ajax({
+     type : "PUT",
+     dataType : "html",  
+     url : "api/responder.xql?func=ltx:modify-category&cid="+cid+"&action="+action, 
+     success : function(resp){
+     if (resp.length > 2){
+         toastr.info(resp, "HXWD says:");     
+     } else {
+         toastr.info("Concept has been modified/deleted. Please reload page to see the effect.", "HXWD says:");     
+     }
+   }
+  })  
+};
+
 
 // increase rating of the attribution; this is the star on the attributions
 // for the moment, type is 'swl', but ...
@@ -2932,6 +2950,33 @@ function bibref_attach(action){
      $('#'+fname).modal('hide');     
 };
 
+function tag_selected_items(uid){
+    var items = $('input[name=res-check]:checked').attr('id')
+    var arr = [];
+        $.each($("input[name='res-check']:checked"), function(){
+                  arr.push($(this).attr('id'));
+         });
+//    alert("Your selected items are: " + arr.join(", "));
+  var tag = encodeURI($("input[id=tag-input-"+uid+"]").val());
+  var tag_id = $("#tag-id-span-"+uid).text();
+  var tag_ns = $("#tag-name-space-"+uid+" option:selected").val()
+  if (arr.length > 0) { 
+  $.ajax({
+  type : "GET",
+  dataType : "html",  
+  url : "api/responder.xql?func=ltg:save-tags&tag="+tag.replace("#", "$")+"&tag_id="+tag_id+"&tag_ns="+tag_ns+"&items="+arr.join(","), 
+  success : function(resp){
+    toastr.info("Tag "+tag+" for "+ arr.length +" item(s) saved.", "漢學文典 says:");
+  },
+  error : function(resp){
+   console.log(resp)
+   alert("PROBLEM"+resp);
+  }
+
+  }); 
+  }  
+//    alert(items)
+};
 
 function show_new_link_dialog(){
     var items = $('input[name=res-check]:checked').attr('id')

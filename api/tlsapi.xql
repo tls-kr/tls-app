@@ -50,7 +50,7 @@ Data for the callback function used for autocompletion
 :)
 declare function tlsapi:autocomplete($type as xs:string, $term as xs:string){
 let $callback := request:get-parameter("callback", "xx")
-let $payload := 
+let $payload := if ($type = 'tag') then () else
   for $t in collection($config:tls-data-root)//tei:div[@type=$type]/tei:head
   where contains($t/text(), $term)
   order by string-length($t/text()) ascending
@@ -605,7 +605,7 @@ let $form := tlslib:make-form($rpara?guangyun-id, $rpara?word),
  $suid := concat("uuid-", util:uuid()),
  $newnode :=
 <entry xmlns="http://www.tei-c.org/ns/1.0" 
-xmlns:tls="http://hxwd.org/ns/1.0"
+xmlns:tls="http://hxwd.org/ns/1.0" tls:concept="{$rpara?concept-val}" tls:concept-id="{$rpara?concept-id}"
 type="word" xml:id="{$wuid}" resp="#{$user}" tls:created="{current-dateTime()}">
 {$form}
 <sense xml:id="{$suid}" resp="#{$user}" tls:created="{current-dateTime()}">
@@ -1021,10 +1021,23 @@ return
               </div>
 </div>
 };
+(: this is for pointers which are not resolved using the tree.  Sometimes the entries are duplicated or wrong, this is to remove them  :)
+declare function local:remove-concept-local ($id, $ref){
+let $c :=    (collection($config:tls-data-root || "/concepts") | collection($config:tls-data-root || "/domain"))//tei:div[@xml:id=$id]
+, $pointer := ($c//tei:ref[@target='#'||$ref])[1]
+, $item := $pointer/parent::tei:item
+return (update delete $item , "OK")
+};
+(:~
+types are
+ concept, syn-func : deletes category from the tree
+ word : (not functional, this would need to remove the entry from the word file
+ local-concept: removes the concept from the concept document
+:)
 
-
-declare function tlsapi:delete-word-from-concept($id as xs:string, $type as xs:string) {
+declare function tlsapi:delete-word-from-concept($id as xs:string, $type as xs:string, $ref as xs:string?) {
 if ($type = ('concept', 'syn-func') ) then ltx:delete-category($id) else
+   if ($type = 'local-concept') then local:remove-concept-local ($id, $ref) else 
 let $item := if ($type = 'word') then 
    (collection($config:tls-data-root || "/concepts") | collection($config:tls-data-root || "/domain"))//tei:entry[@xml:id=$id]
    else
