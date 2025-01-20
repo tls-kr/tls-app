@@ -85,9 +85,9 @@ let $zi := string-join($e/tei:form/tei:orth, " / ")
 
     <small>{"  " || $e/@n} {if ($map?ann = 1) then " Attribution" else " Attributions"}</small>
     {if ($map?ann = 0) then
-    lrh:format-button("delete_word_from_concept('"|| $entry-id || "', 'word')", "Delete the word "|| $zi || ", including all syntactic words.", "open-iconic-master/svg/x.svg", "", "", "tls-editor") else 
+    lrh:format-button("delete_word_from_concept('"|| $entry-id || "', 'word')", "Delete the word "|| $zi || ", including all syntactic words.", "open-iconic-master/svg/x.svg", "", "", "tls-editor-x") else 
     (: move :)
-    lrh:format-button("move_word('"|| $zi || "', '"|| $entry-id ||"', '"||$map?ann||"', 'word')", "Move the word "|| $zi || ", including all syntactic words to another concept.", "open-iconic-master/svg/move.svg", "", "", "tls-editor")
+    lrh:format-button("move_word('"|| $zi || "', '"|| $entry-id ||"', '"||$map?ann||"', 'word')", "Move the word "|| $zi || ", including all syntactic words to another concept.", "open-iconic-master/svg/move.svg", "", "", "tls-editor-x")
     }
     {if (lpm:show-setting('wd', 'concept')) then wd:display-qitems($entry-id, 'concept', $zi) else ()}
     </h5>
@@ -158,3 +158,17 @@ if (lpm:is-testuser()) then () else
  else
    update insert attribute n {$c} into $n
 };
+
+declare function lw:make-super-entry($word){
+
+let $uid := "uuid-" || util:uuid()
+, $se :=
+    <superEntry xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$uid}" n="1">
+    <form>
+        <orth>{$word}</orth>
+    </form>    
+    </superEntry>    
+ , $path := tu:uuid-to-path('/db/apps/tls-data/words', $uid)
+return xmldb:store($path, $uid || ".xml", $se)
+
+};  

@@ -18,6 +18,9 @@ import module namespace tlslib="http://hxwd.org/lib" at "../tlslib.xql";
 
 (: this module will get the desired language from a global configuration or the browser session and will select  the appropriate files  :)
 
+(: url for github issues  https://api.github.com/repos/tls-kr/tls-app/issues?labels=RFC 
+this returns JSON that can be parsed and injected in the page.
+:)
 
 declare function i18n:welcome-message(){
 let $user := sm:id()//sm:real/sm:username/text()

@@ -25,6 +25,6 @@ let $rpara := map {"concept-id" : request:get-parameter("concept", "xx"),
  "semfeat-val" : request:get-parameter("semfeat-val", "xx"),
  "def" : request:get-parameter("def", "xx")
 }
-
+, $rparax := ""
 return
 tlsapi:save-to-concept($rpara)

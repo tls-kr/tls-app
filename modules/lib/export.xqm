@@ -39,3 +39,26 @@ declare function lxp:process-segs($map){
  )
 };
 
+declare function lxp:process-all-segs($map){
+ let $segs := lu:get-seg-sequence-by-id($map?start-seg-id, $map?end-seg-id)
+ , $textid := tokenize($map?start-seg-id, "_")[1]
+ , $tr := for $t in ltr:find-translators($textid) return $t/ancestor::tei:TEI
+ return
+ (
+ for $seg in $segs
+ let $s := string-join(lrh:proc-seg($seg, map{'punc' : 'yes'}) ) => normalize-space()
+ , $sid := $seg/@xml:id
+ , $trs := for $ts in $tr//tei:seg[@corresp="#"||$sid]
+          let $trid := lmd:get-metadata($ts, "textid")
+          , $date := lmd:get-metadata($ts, "date")[1]
+          order by $date
+          return $ts
+
+ return $map?format-function($s, $trs, map{}) 
+ , "&#10;[[https://hxwd.org/textview.html?location=" || $map?start-seg-id || "][" || lmd:get-metadata($segs[1], "title") || "/" || lmd:get-metadata($segs[1], "head") || "]]"
+ , "" || ltr:translation-cit-from-id($map?trans-id)
+ , "&#10;"
+ , "&#10;"
+ )
+};
+

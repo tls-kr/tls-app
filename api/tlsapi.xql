@@ -600,13 +600,15 @@ declare function tlsapi:save-to-concept($rpara as map(*)) {
 let $user := sm:id()//sm:real/sm:username/text()
 let $form := tlslib:make-form($rpara?guangyun-id, $rpara?word),
  $concept-word := collection($config:tls-data-word-root)//tei:entry[@xml:id=$rpara?wuid and @tls:concept-id=$rpara?concept-id],
- $concept-doc := if ($concept-word) then $concept-word else collection($config:tls-data-word-root)//tei:superEntry[.//tei:orth=$rpara?word],
+ $super-entry := collection($config:tls-data-word-root)//tei:superEntry[.//tei:orth=$rpara?word],
+ $concept-doc := if ($concept-word) then $concept-word else 
+   if ($super-entry) then $super-entry else doc(lw:make-super-entry($rpara?word))/tei:superEntry,
  $wuid := concat("uuid-", util:uuid()),
  $suid := concat("uuid-", util:uuid()),
  $newnode :=
 <entry xmlns="http://www.tei-c.org/ns/1.0" 
 xmlns:tls="http://hxwd.org/ns/1.0" tls:concept="{$rpara?concept-val}" tls:concept-id="{$rpara?concept-id}"
-type="word" xml:id="{$wuid}" resp="#{$user}" tls:created="{current-dateTime()}">
+type="word" xml:id="{$wuid}" resp="#{$user}" tls:created="{current-dateTime()}" n="1">
 {$form}
 <sense xml:id="{$suid}" resp="#{$user}" tls:created="{current-dateTime()}">
 <gramGrp><pos>{upper-case(substring($rpara?synfunc-val, 1,1))}</pos>

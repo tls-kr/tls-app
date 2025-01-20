@@ -70,7 +70,7 @@ declare function lgrp:group-collocation($seq as xs:string* , $options as map(*))
 (:    let $key := $s||$g:)
     let $search-type := if (string-length($options?textid) > 0) then 5 else 1
     return
-    <li data-cnt="{$cnt}">|<a href="search.html?query={$key}&amp;textid={$options?textid}&amp;search-type={$search-type}">{$key}</a>|{$cnt}|
+    <li data-cnt="{$cnt}"><a href="search.html?query={$key}&amp;textid={$options?textid}&amp;search-type={$search-type}">{$key}</a>
     <button title="click to reveal" class="btn badge badge-light" type="button" data-toggle="collapse" data-target="#{$key}--{$options?level}">{$cnt}</button>
     <ul id="{$key}--{$options?level}" class="collapse">
     {lgrp:group-collocation($t, map{"key" : $key, "cutoff" : $options?cutoff, "textid" : $options?textid, "level" : $options?level + 1, "max-level" : $options?max-level, "cnt" : $cnt, "pos" : $pos})}</ul>

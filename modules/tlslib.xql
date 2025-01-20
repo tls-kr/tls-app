@@ -950,10 +950,10 @@ declare function tlslib:display-sense($sw as node(), $count as xs:int?, $display
       <img class="icon-small" src="resources/icons/open-iconic-master/svg/magnifying-glass.svg"/>
       </button> else (),
       if ($count = 0) then
-      lrh:format-button("delete_word_from_concept('"|| $id || "')", "Delete the syntactic word "|| $sf || ".", "open-iconic-master/svg/x.svg", "", "", "tls-editor") else 
+      lrh:format-button("delete_word_from_concept('"|| $id || "')", "Delete the syntactic word "|| $sf || ".", "open-iconic-master/svg/x.svg", "", "", "tls-editor-x") else 
       if ($count > 0) then (
-      lrh:format-button("move_word('"|| $char || "', '"|| $id ||"', '"||$count||"', 'sw')", "Move the SW  '"|| $sf || "' including "|| $count ||" attribution(s) to a different concept.", "open-iconic-master/svg/move.svg", "", "", "tls-editor") ,      
-      lrh:format-button("merge_word('"|| $sf || "', '"|| $id ||"', '"||$count||"')", "Delete the SW '"|| $sf || "' and merge "|| $count ||"attribution(s) to a different SW.", "open-iconic-master/svg/wrench.svg", "", "", "tls-editor")       
+      lrh:format-button("move_word('"|| $char || "', '"|| $id ||"', '"||$count||"', 'sw')", "Move the SW  '"|| $sf || "' including "|| $count ||" attribution(s) to a different concept.", "open-iconic-master/svg/move.svg", "", "", "tls-editor-x") ,      
+      lrh:format-button("merge_word('"|| $sf || "', '"|| $id ||"', '"||$count||"')", "Delete the SW '"|| $sf || "' and merge "|| $count ||"attribution(s) to a different SW.", "open-iconic-master/svg/wrench.svg", "", "", "tls-editor-x")       
       )
       else ()
       }
