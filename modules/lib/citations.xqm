@@ -136,7 +136,7 @@ if (string-length($item) > 0) then
        case "chars" return $config:tls-ann[tei:form/tei:orth[. = $item]]
        case "concept" return $config:tls-ann[@concept = $item]
        case "syn-func" return $config:tls-ann[.//tls:syn-func[. = $item]]
-       case "users" return $config:tls-ann[tls:metadata[@resp=$item]]
+       case "users" return $config:tls-ann[tls:metadata[@resp="#"||$item]]
        case "texts" return $config:tls-ann[.//tls:srcline/@title[. = $item]]
        default return ()
    return 

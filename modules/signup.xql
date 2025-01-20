@@ -9,6 +9,7 @@ xquery version "3.1";
 :    - the user fills in a form with the relevant data (name, email, password etc) and submits
 :    - We will vet the request and upon approval, send a mail to the user with a token for verification
 :    - The user clicks on the token and completes the registration
+
 :)
 
 module namespace sgn="http://hxwd.org/signup"; 
