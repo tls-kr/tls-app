@@ -28,6 +28,7 @@ import module namespace lpm="http://hxwd.org/lib/permissions" at "lib/permission
 import module namespace ltp="http://hxwd.org/lib/textpanel" at "lib/textpanel.xqm";
 import module namespace lsf="http://hxwd.org/lib/syn-func" at "lib/syn-func.xqm";
 import module namespace ltx="http://hxwd.org/taxonomy" at "lib/taxonomy.xqm";
+import module namespace lw="http://hxwd.org/word" at "lib/word.xqm";
 
 import module namespace log="http://hxwd.org/log" at "log.xql";
 
@@ -300,7 +301,7 @@ typeswitch ($node)
       <ul class="list-unstyled collapse" id="{$id}-swl"> 
       {for $sw in $swl
       (: we dont check for attribution count, so pass -1  :)
-      return tlslib:display-sense($sw, xs:int($sw/@n), false())}
+      return lw:display-sense($sw, xs:int($sw/@n), false())}
       </ul>
       </span>
   case text() return
@@ -915,54 +916,6 @@ return
     $targetseg
 };
 
- (:~ 
- : called from function tlsapi:show-use-of($uid as xs:string, $type as xs:string), which is called via XHR from concept.html and char.html through 
- : tls-app.js -> show_use_of(type, uid) 
- : @param $sw the tei:sense to display 
- : 2020-02-26 it seems this belongs to tlsapi
- :)
- 
-declare function tlslib:display-sense($sw as node(), $count as xs:int?, $display-word as xs:boolean){
-    let $id := if ($sw/@xml:id) then data($sw/@xml:id) else substring($sw/@corresp, 2),
-    $sf := ($sw//tls:syn-func/text())[1],
-    $sm := $sw//tls:sem-feat/text(),
-    $user := sm:id()//sm:real/sm:username/text(),
-    $def := $sw//tei:def/text(),
-    $char := $sw/preceding-sibling::tei:form[1]/tei:orth/text()
-    , $resp := tu:get-member-initials($sw/@resp)
-    return
-    <li id="{$id}">
-    {if ($display-word) then <span class="ml-2">{$char}</span> else ()}
-    <span id="sw-{$id}" class="font-weight-bold">{$sf}</span>
-    <em class="ml-2">{$sm}</em> 
-    <span class="ml-2">{$def}</span>
-    {if ($resp[1]) then 
-    <small><span class="ml-2 btn badge-secondary" title="{$resp[1]} - {$sw/@tls:created}">{$resp[2]}</span></small> else ()}
-     <button class="btn badge badge-light ml-2" type="button" 
-     data-toggle="collapse" data-target="#{$id}-resp" onclick="show_att('{$id}')">
-          {if ($count > -1) then $count else ()}
-          {if ($count = 1) then " Attribution" else  " Attributions" }
-      </button>
-     {if ($user = "guest") then () else 
-      if ($count != -1 and not($display-word)) then
-     <button title="Search for this word" class="btn badge btn-outline-success ml-2" type="button" 
-     data-toggle="collapse" data-target="#{$id}-resp1" onclick="search_and_att('{$id}')">
-      <img class="icon-small" src="resources/icons/open-iconic-master/svg/magnifying-glass.svg"/>
-      </button> else (),
-      if ($count = 0) then
-      lrh:format-button("delete_word_from_concept('"|| $id || "')", "Delete the syntactic word "|| $sf || ".", "open-iconic-master/svg/x.svg", "", "", "tls-editor-x") else 
-      if ($count > 0) then (
-      lrh:format-button("move_word('"|| $char || "', '"|| $id ||"', '"||$count||"', 'sw')", "Move the SW  '"|| $sf || "' including "|| $count ||" attribution(s) to a different concept.", "open-iconic-master/svg/move.svg", "", "", "tls-editor-x") ,      
-      lrh:format-button("merge_word('"|| $sf || "', '"|| $id ||"', '"||$count||"')", "Delete the SW '"|| $sf || "' and merge "|| $count ||"attribution(s) to a different SW.", "open-iconic-master/svg/wrench.svg", "", "", "tls-editor-x")       
-      )
-      else ()
-      }
-      <div id="{$id}-resp" class="collapse container"></div>
-      <div id="{$id}-resp1" class="collapse container"></div>
-    </li>
- 
- };
-
 (:~
 : called from tlsapi:save-sf($sense-id as xs:string, $synfunc-id as xs:string, $synfunc-val as xs:string, $def as xs:string)
  : 2020-02-26 it seems this belongs to tlsapi
@@ -1032,9 +985,10 @@ else ()
 
 
 declare function tlslib:merge-sw-word($map as map(*)){
-let $sw := collection($config:tls-data-root||"/concepts")//tei:*[@xml:id=$map?wid]
-, $target := collection($config:tls-data-root||"/concepts")//tei:*[@xml:id=$map?target]
-,$user := sm:id()//sm:real/sm:username/text()
+let $sw := collection($config:tls-data-word-root)//tei:*[@xml:id=$map?wid]
+, $target := collection($config:tls-data-word-root)//tei:*[@xml:id=$map?target]
+, $user := sm:id()//sm:real/sm:username/text()
+, $swcount-update := lw:update-sense-id-ann-count($map?target, $sw/@n) 
 , $r :=
 for $s in collection($config:tls-data-root||"/notes")//tei:sense[@corresp="#" || $map?wid] 
  let $newsense := 
@@ -1743,7 +1697,7 @@ for $s in subsequence($seq, 2)
 (: retrieve the pron for this entry (given through its id) :)
 
 declare function tlslib:pron-for-entry($uuid){
-let $f := collection($config:tls-data-root||"/concepts")//tei:entry[@xml:id=$uuid]/tei:form
+let $f := collection($config:tls-data-word-root)//tei:entry[@xml:id=$uuid]/tei:form
 return
 $f
 };
@@ -1926,35 +1880,6 @@ declare function tlslib:generate-new-line-id($base-id as xs:string, $index as xs
     tlslib:generate-new-line-id($base-id, $index, 0)
 };
 
-(: we get a nodeset of wr to display :)
-declare function tlslib:display-word-rel($word-rel, $char, $cname){
-<ul><span class="font-weight-bold">Word relations</span>{for $wr in $word-rel 
-    let $wrt := $wr/ancestor::tei:div[@type="word-rel-type"]/tei:head/text()
-    , $entry-id := substring(($wr//tei:item[. = $char])[1]/@corresp, 2)
-    , $wrid := ($wr/tei:div[@type="word-rel-ref"]/@xml:id)[1]
-    , $count := count($wr//tei:item[@p="left-word"]/@textline)
-    , $oid := substring(($wr//tei:list/tei:item/@corresp[not(. = "#" || $entry-id)])[1], 2)
-    , $oword := collection($config:tls-data-word-root)//tei:entry[@xml:id=$oid]
-    , $other := string-join($oword/tei:form/tei:orth/text() , " / ")
-    , $cid := $oword/@tls:concept-id/string()
-    , $concept := $oword/@tls:concept/string()
-    , $uuid := substring(util:uuid(), 1, 16)
-    , $tnam := data(($wr//tei:list/tei:item[@corresp = "#" || $entry-id]/@concept)[1])
-    , $show := (string-length($entry-id) > 0) and (if (string-length($cname) > 1) then $cname = $tnam else true())
-    where $show
-    return 
-    <li><span class="font-weight-bold"><a href="browse.html?type=word-rel-type&amp;mode={$wrt}#{$wrid}">{$wrt}</a></span>: {if (string-length($cname) > 1) then () else <span>({$tnam})</span>}<a title="{$concept}" href="concept.html?uuid={$cid}#{$oid}">{$other}/{$concept}</a>{$oword/tei:def[1]}
-         <button class="btn badge badge-light ml-2" type="button" 
-     data-toggle="collapse" data-target="#{$wrid}-{$uuid}-resp" onclick="show_wr('{$wrid}', '{$uuid}')">
-          {if ($count) then ( $count ,
-          if ($count = 1) then " Attribution" else  " Attributions")
-          else ()}
-      </button>
-    <div id="{$wrid}-{$uuid}-resp" class="collapse container"></div>
-
-</li>
-    }</ul>
-};
 
 declare function tlslib:word-rel-table($map as map(*)){
 let $rels := collection($config:tls-data-root)//tei:TEI[@xml:id="word-relations"]//tei:body/tei:div[@xml:id=$map?reltype]

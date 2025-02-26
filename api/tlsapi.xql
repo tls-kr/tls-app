@@ -520,7 +520,7 @@ else
 declare function tlsapi:delete-zi-from-word($rpara as map(*)){
 (: &wid="+wid+"&pos="+pos+"&char="+ch, "html",  :)
 let $pos := xs:int($rpara?pos)
-let $orth := (collection($config:tls-data-root || "/concepts") | collection($config:tls-data-root || "/domain"))//tei:entry[@xml:id=$rpara?wid]/tei:form[$pos]/tei:orth[.=$rpara?char]
+let $orth := collection($config:tls-data-word-root)//tei:entry[@xml:id=$rpara?wid]/tei:form[$pos]/tei:orth[.=$rpara?char]
 , $form := $orth/ancestor::tei:form
 return
 (update delete $form, "OK")
@@ -548,7 +548,7 @@ if (starts-with($wid, "uuid")) then
    else
 
   if (count($gc) = string-length($zi)) then
-    let $word := (collection($config:tls-data-root || "/concepts") | collection($config:tls-data-root || "/domain"))//tei:entry[@xml:id=$wid]
+    let $word := collection($config:tls-data-word-root)//tei:entry[@xml:id=$wid]
     , $oldform := $word/tei:form[tei:orth[. = $rpara?char]]
     , $newform := tlslib:make-form(string-join($gc, "xxx"), $zi)
     , $save := if ($oldform) then (update replace $oldform with $newform) else ()
@@ -1041,9 +1041,9 @@ declare function tlsapi:delete-word-from-concept($id as xs:string, $type as xs:s
 if ($type = ('concept', 'syn-func') ) then ltx:delete-category($id) else
    if ($type = 'local-concept') then local:remove-concept-local ($id, $ref) else 
 let $item := if ($type = 'word') then 
-   (collection($config:tls-data-root || "/concepts") | collection($config:tls-data-root || "/domain"))//tei:entry[@xml:id=$id]
+   collection($config:tls-data-word-root)//tei:entry[@xml:id=$id]
    else
-   (collection($config:tls-data-root || "/concepts") | collection($config:tls-data-root || "/domain"))//tei:sense[@xml:id=$id]
+   collection($config:tls-data-word-root)//tei:sense[@xml:id=$id]
 ,$itemcount := sum(
     if ($type = 'word') then
       for $i in $item/tei:sense
@@ -1075,7 +1075,7 @@ for $r in subsequence($res, 1, 30)
   , $cr := $sw/@corresp
   group by $cr
   return
-  tlslib:display-sense($sw[1], -1, true())
+  lw:display-sense($sw[1], -1, true())
 )  
 else 
 

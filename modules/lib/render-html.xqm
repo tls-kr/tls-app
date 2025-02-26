@@ -543,7 +543,7 @@ declare function lrh:form-control-select($map){
 
 declare function lrh:settings-display($node as node()*, $model as map(*)){
 <div>
-<p>Here are settings to the place and type of items to display:</p>
+<p>Here are settings to the place, type and number of items to display:</p>
 <ul>
 {for $i in doc($config:tls-app-interface||"/settings.xml")//tls:section[@type='display-options']/tls:item
   let $id := 'select-'||$i/@type

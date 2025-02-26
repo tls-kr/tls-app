@@ -1668,7 +1668,6 @@ function delete_word_from_concept(wid, type, ref){
   })  
 };
 
-// delete word from concept 
 function modify_category(cid, action){
     $.ajax({
      type : "PUT",
@@ -2045,7 +2044,8 @@ function ctl_p(line, lineid, trid){
    {
    console.log("No nid: ", tlid);
    $('#nextpagebutton').trigger("click");
-//   more_display_lines(lineid, tab - 1)    
+/*    more_display_lines(lineid, tab - 1)    
+    set_keyup()*/
    }
 //   $("[tabindex='" + tab.toString() + "']").focus()
 };

@@ -20,7 +20,7 @@ let $sense-id := request:get-parameter("sense-id", "uuid-20c9da30-27bc-4b0a-ab0a
 , $count := request:get-parameter("count", "100", false())
 , $mode  :=  request:get-parameter("mode", "date", false())
 ,$sense := collection($config:tls-data-root)//tei:sense[@xml:id = $sense-id]
-,$concept-id := $sense/ancestor::tei:div[@type='concept']/@xml:id
+,$concept-id := $sense/ancestor::tei:entry/@tls:concept-id/string()
 ,$ann := for $c in collection($config:tls-data-root||"/notes")//tls:ann[@concept-id=$concept-id]
      return $c//tls:srcline/@target
 ,$label := concat($sense/tei:gramGrp/tls:syn-func, " ", $sense/tei:gramGrp/tls:sem-feat, " ", $sense/tei:def)

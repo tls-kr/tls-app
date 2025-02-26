@@ -2,7 +2,7 @@ xquery version "3.1";
 
 (:~
  : Library module for user settings
- :
+ : (display of interface is in render-html.xqm
  : @author Christian Wittern
  : @date 2023-10-24
  :)
@@ -57,7 +57,7 @@ declare %templates:wrap function lus:settings($node as node()*, $model as map(*)
 <div>
 <h2>Customizable settings for {$model?px}</h2>
 <p>
- <span class="text-danger"><b>Warning:</b> This is still a mockup, some actions on this page are <b>not yet activated.</b></span>
+ 
 </p>
 
 </div>

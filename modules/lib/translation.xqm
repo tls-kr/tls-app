@@ -414,6 +414,8 @@ return
 {for $ts in $tr//tei:seg[@corresp="#"||$sid]
 let $trid := lmd:get-metadata($ts, "textid")
 , $date := lmd:get-metadata($ts, "date")[1]
+, $type := $ts/ancestor::tei:TEI/@type/string()
+where $type = 'transl'
 order by $date
 return
 <li><span class="text-muted">{lmd:get-metadata($ts, "title")} by {lmd:get-metadata($ts, "resp")} ({$date})</span>
