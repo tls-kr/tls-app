@@ -225,11 +225,9 @@ declare function tlsapi:save-swl($line-id as xs:string, $line as xs:string, $sen
 let $notes-path := concat($config:tls-data-root, "/notes/new/")
 let $user := sm:id()//sm:real/sm:username/text()
 let $currentword := ""
-, $return :=
-(:tlsapi:save-swl-with-path($line-id, $sense-id, $notes-path, $user, $currentword):)
-tlsapi:save-swl-to-docs($line-id, $line, $sense-id, $user, $currentword, $pos, $tit)
+, $return := tlsapi:save-swl-to-docs($line-id, $line, $sense-id, $user, $currentword, $pos, $tit)
 (: update the swl count on this sense/word :)
-, $s := collection($config:tls-data-word-root)//tei:sense[@xml:id = $sense-id]
+(:, $s := collection($config:tls-data-word-root)//tei:sense[@xml:id = $sense-id]:)
 , $update := lw:update-sense-id-ann-count($sense-id, 1)
 return $return
 
@@ -478,7 +476,7 @@ declare function tlsapi:save-newsw($rpara as map(*)) {
  $suid := concat("uuid-", util:uuid()),
  $newsense := 
 <sense xml:id="{$suid}" resp="#{$user}" tls:created="{current-dateTime()}" xmlns="http://www.tei-c.org/ns/1.0" 
-xmlns:tls="http://hxwd.org/ns/1.0">
+xmlns:tls="http://hxwd.org/ns/1.0" n="0">
 <gramGrp><pos>{upper-case(substring($rpara?synfunc-val, 1,1))}</pos>
   <tls:syn-func corresp="#{$rpara?synfunc}">{translate($rpara?synfunc-val, ' ', '+')}</tls:syn-func>
   {if (string-length($rpara?semfeat-val) > 0 ) then 
@@ -487,7 +485,7 @@ xmlns:tls="http://hxwd.org/ns/1.0">
   </gramGrp>
   <def>{$rpara?def}</def></sense>
  ,$newnode := if ($concept-word) then $newsense else
- <entry type="word" xml:id="{$wuid}" xmlns="http://www.tei-c.org/ns/1.0" tls:concept="{$rpara?concept-val}" tls:concept-id="{$rpara?concept-id}" >
+ <entry type="word" xml:id="{$wuid}" xmlns="http://www.tei-c.org/ns/1.0" tls:concept="{$rpara?concept-val}" tls:concept-id="{$rpara?concept-id}" n="0">
   <form><orth>{$rpara?word}</orth>
   <pron xml:lang="zh-Latn-x-pinyin">{$rpara?py}</pron>
   </form>
