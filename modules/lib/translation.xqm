@@ -20,6 +20,7 @@ import module namespace lv="http://hxwd.org/lib/vault" at "vault.xqm";
 import module namespace lus="http://hxwd.org/lib/user-settings" at "user-settings.xqm";
 import module namespace lvs="http://hxwd.org/lib/visits" at "visits.xqm";
 import module namespace lpm="http://hxwd.org/lib/permissions" at "permissions.xqm";
+import module namespace dbu="http://exist-db.org/xquery/utility/db" at "../db-utility.xqm";
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace mf="http://kanripo.org/ns/KRX/Manifest/1.0";
@@ -140,7 +141,16 @@ return ($vis, $oldvis, $trid)
 };
 
 (: 2022-02-21 - moved this from tlsapi to allow non-api use :)
-declare function ltr:store-new-translation($lang as xs:string, $txtid as xs:string, $translator as xs:string, $trtitle as xs:string, $bibl as xs:string, $vis as xs:string, $copy as xs:string, $type as xs:string, $rel-id as xs:string){
+declare function ltr:store-new-translation(
+  $lang as xs:string, 
+  $txtid as xs:string, 
+  $translator as xs:string, 
+  $trtitle as xs:string, 
+  $bibl as xs:string, 
+  $vis as xs:string, 
+  $copy as xs:string, 
+  $type as xs:string, 
+  $rel-id as xs:string)  {
   let $user := sm:id()//sm:real/sm:username/text()
   ,$fullname := sm:id()//sm:real/sm:fullname/text()
   ,$uuid := util:uuid()
@@ -153,20 +163,25 @@ declare function ltr:store-new-translation($lang as xs:string, $txtid as xs:stri
   ,$cat := if ($vis = "option4") then () else 
     (: 2024-10-31 here we would update the header to mark the availability of a translation, but this does not work for remote files, so we just ignore it for now :)
     try {lmd:checkCat($txt,  "tr-" || $lang) } catch * {()}
-  ,$trcoll := if ($vis="option3") then $config:tls-user-root || $user || "/translations" 
-    else if ($vis = "option4") then $config:tls-data-root || "/notes/research" 
-    else $config:tls-translation-root || "/" || $lang
-  ,$trcollavailable := xmldb:collection-available($trcoll) or 
+  ,$trcoll := if ($vis="option3") then 
+      $config:tls-user-root || $user || "/translations" 
+    else if ($vis = "option4") then 
+      $config:tls-data-root || "/notes/research" 
+    else if ($copy = ("option3", "option4")) then 
+      $config:tls-translation-root || "/non-free/" || $lang
+    else     
+      $config:tls-translation-root || "/" || $lang
+  ,$trcollavailable := dbu:ensure-collection($trcoll) or 
    (if ($vis="option3") then
-    xmldb:create-collection($config:tls-user-root || $user, "translations")
+    dbu:ensure-collection($config:tls-user-root || $user || "/translations")
    else
-   (xmldb:create-collection($config:tls-translation-root, $lang),
+   (dbu:ensure-collection($config:tls-translation-root || "/" || $lang),
     sm:chmod(xs:anyURI($trcoll), "rwxrwxr--"),
 (:    sm:chown(xs:anyURI($trcoll), "tls"),:)
     sm:chgrp(xs:anyURI($trcoll), "tls-user")
     )
   )
-  , $trx := if (not($translator = "yy")) then $translator else if ($vis = "option3") then $fullname else "TLS Project"
+  , $trx := if (not($translator = "yy")) then $translator else if ($vis = "option3") then          $fullname else "TLS Project"
   , $doc := 
     doc(xmldb:store($trcoll, $newid || ".xml", 
    <TEI xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$newid}" type="{$type}">
