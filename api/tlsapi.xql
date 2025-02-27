@@ -922,12 +922,12 @@ return
               </div>             
             </div>
             <h6 class="font-weight-bold">Visibility</h6>
-              <p>We hope and expect that the work will be available to all TLS users.  However, we realize there are reasons to keep it private, even if temporarily. You can change this later.</p>
+              <p>We hope and expect that the work will be available to all TLS users.  However, we realize there are reasons to keep it private, even if temporarily. </p>
            <div class="form-row">
              <div class="form-group col-md-4">
              <div class="form-check">
              {if ($vis = "option1") then 
-              <input class="form-check-input" type="radio" name="visradio" id="visrad1" value="option1" checked="true"/>
+              <input class="form-check-input" type="radio" name="visradio" id="visrad1" value="option1"/>
               else
               <input class="form-check-input" type="radio" name="visradio" id="visrad1" value="option1"/>}
              <label class="form-check-label" for="visrad1">
@@ -936,8 +936,8 @@ return
               </div>
              </div> 
              <div class="form-group col-md-4">
-             <div class="form-check disabled">
-            <input class="form-check-input" type="radio" name="visradio" id="visrad2" value="option2" disabled="true"/>
+             <div class="form-check">
+            <input class="form-check-input" type="radio" name="visradio" id="visrad2" value="option2" checked="true"/>
             <label class="form-check-label" for="visrad2">Show to registered users</label>
                </div>
               </div>
@@ -974,7 +974,7 @@ return
               else
               <input class="form-check-input" type="radio" name="copradio" id="coprad1" value="option1"/>}
              <label class="form-check-label" for="coprad1">
-               No copyright
+               Public domain
              </label>
               </div>
              </div> 
@@ -1009,7 +1009,7 @@ return
            </div>
 </div>
 
-<p class="text-muted">Save the translation, then you can select this translation for input after reloading the page.</p>
+<p class="text-muted">Save the translation, then you can select this translation for input <b>after reloading the page.</b></p>
             <div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
