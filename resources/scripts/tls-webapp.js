@@ -373,8 +373,7 @@ function more_display_lines(lineid, tab){
   dataType : "html",
   url : "api/responder.xql?lineid="+thisid+"&cnt="+cnt+"&func=morelines", 
   success : function(resp){
-      plineid = lineid.split('.').join('\\.')
-      $("#"+plineid+"-swl").parent().after(resp);
+      $("#"+lineid+"-swl").parent().after(resp);
       console.log("LID", lineid, plineid);
       npid = $("[tabindex='" + np.toString() + "']").attr('id').replace(/-slot.|-tr|-ex/, '')
       $('#nextpagebutton').on('click', function()
