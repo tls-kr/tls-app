@@ -44,6 +44,7 @@ import module namespace lrv="http://hxwd.org/lib/review" at "lib/review.xqm";
 import module namespace i18n="http://hxwd.org/lib/i18n" at "lib/i18n.xqm";
 import module namespace ltx="http://hxwd.org/taxonomy" at "lib/taxonomy.xqm";
 import module namespace lc="http://hxwd.org/concept" at "lib/concept.xqm";
+import module namespace lw="http://hxwd.org/word" at "lib/word.xqm";
 
 import module namespace remote="http://hxwd.org/remote" at "lib/remote.xqm";
 
@@ -661,7 +662,7 @@ function app:char-info($node as node()*, $model as map(*), $char as xs:string?, 
     <li><span><a href="concept.html?uuid={$c/ancestor::tei:div[@type='concept']/@xml:id}">{$c/ancestor::tei:div[@type='concept']/tei:head/text()}</a><br/>{$c}</span></li>
     }</ul></p> else ()
     ,if ($word-rel) then 
-    <p class="ml-4">{tlslib:display-word-rel($word-rel, $char, "")}</p> else ()
+    <p class="ml-4">{lw:display-word-rel($word-rel, $char, "")}</p> else ()
     }
     </div>
     </div>
@@ -1196,7 +1197,7 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
     {if ($def) then <p class="ml-4">{$def[1]}</p> else ()}
     {if ($word-rel) then <p class="ml-4">
     {let $char := $e/tei:form/tei:orth[1]/text()
-    return tlslib:display-word-rel($word-rel, $char, $c/tei:head/text())}
+    return lw:display-word-rel($word-rel, $char, $c/tei:head/text())}
     </p> else ()}
     {if ($e//tei:listBibl) then 
          <div><button class="btn" data-toggle="collapse" data-target="#bib-{$entry-id}">Show references</button><ul id="bib-{$entry-id}" class="collapse" data-toggle="collapse">
@@ -1210,7 +1211,7 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
     $sm := lower-case($sw//tls:sem-feat/text())
     order by $sf || $sm
     return
-    tlslib:display-sense($sw, count($ann//tei:sense[@corresp="#" || $sw/@xml:id]), false())
+    lw:display-sense($sw, count($ann//tei:sense[@corresp="#" || $sw/@xml:id]), false())
     }</ul>
     </div>
     }

@@ -775,16 +775,18 @@ declare function dialogs:dialog-stub(){
 :)
 declare function dialogs:move-word($map as map(*)){
 let $cid := if ($map?type='word') then 
-             collection($config:tls-data-root||"/concepts")//tei:*[@xml:id=$map?wid]/ancestor::tei:div[@type="concept"] 
-            else 
+             collection($config:tls-data-word-root)//tei:*[@xml:id=$map?wid]/ancestor::tei:entry/@concept/string() 
+            else if ($map?type='sw') then
+collection($config:tls-data-word-root)//tei:*[@xml:id=$map?wid]/ancestor::tei:entry/tei:form/tei:orth/text()                                   
+            else  
              collection($config:tls-data-root||"/concepts")//tei:div[@xml:id=$map?wid] 
 , $head := if ($map?type='word') then 
-             <h5>Move {$map?word} from {$cid/tei:head/text()} to another concept</h5>
+             <h5>Move {$map?word} from {$cid} to another concept</h5>
            else
-             if ($map?count = '1') then
-             <h5>Attach {$cid/tei:head/text()} to another concept</h5>
+             if ($map?count eq '1' or $map?type = 'sw') then
+             <h5>Attach {$cid} to another concept</h5>
              else 
-             <h5>Create new concept, attach to {$cid/tei:head/text()}</h5>
+             <h5>Create new concept, attach to {$cid}</h5>
              
 return
 <div id="move-word-dialog" class="modal" tabindex="-1" role="dialog" style="display: none;">
@@ -819,7 +821,7 @@ return
 };
 
 declare function dialogs:merge-word($map as map(*)){
-let $eid := collection($config:tls-data-root||"/concepts")//tei:*[@xml:id=$map?wid]/ancestor::tei:entry
+let $eid := collection($config:tls-data-word-root)//tei:*[@xml:id=$map?wid]/ancestor::tei:entry
 return
 <div id="merge-word-dialog" class="modal" tabindex="-1" role="dialog" style="display: none;">
     <div class="modal-dialog" role="document">
@@ -840,7 +842,8 @@ return
               </div>
             
             <div>
-            <p>There are {$map?count} attributions, so this might take a while.</p>
+            <p>There are {$map?count} attributions, so this might take a while.<br/>
+            <b>Careful:</b> this can not be undone.</p>
             </div>
             </div>
             <div class="modal-footer">

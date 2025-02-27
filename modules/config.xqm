@@ -318,7 +318,7 @@ declare variable $config:ed-img-map := map{
 ,"W" : "buddhist/"
 ,"T" : "buddhist/"
 ,"X" : "buddhist/"
- 
+,"DZZ" : "buddhist/"
 };
 
 declare variable $config:wits :=

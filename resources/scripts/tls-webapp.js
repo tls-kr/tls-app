@@ -373,8 +373,9 @@ function more_display_lines(lineid, tab){
   dataType : "html",
   url : "api/responder.xql?lineid="+thisid+"&cnt="+cnt+"&func=morelines", 
   success : function(resp){
-      $("#"+lineid+"-swl").parent().after(resp);
-      console.log("LID", lineid);
+      plineid = lineid.split('.').join('\\.')
+      $("#"+plineid+"-swl").parent().after(resp);
+      console.log("LID", lineid, plineid);
       npid = $("[tabindex='" + np.toString() + "']").attr('id').replace(/-slot.|-tr|-ex/, '')
       $('#nextpagebutton').on('click', function()
         {page_move(npid+'&amp;prec=1&amp;foll=29');}
@@ -1667,7 +1668,6 @@ function delete_word_from_concept(wid, type, ref){
   })  
 };
 
-// delete word from concept 
 function modify_category(cid, action){
     $.ajax({
      type : "PUT",
@@ -1825,7 +1825,7 @@ $( ".nedit" ).blur(function (event) {
     var tr = $(this).text()
     console.log("blur", $(this).data('before') , "h", tr)
     if ($(this).data('before') !== tr){    
-         cname = confirm("Unsaved data exist, do you want to save?");
+         cname = confirm("Unsaved data exist, do you want to save (nedit)?");
          if (cname){
            var savedata = $(this).html()
            save_note(nid, savedata);
@@ -1881,9 +1881,9 @@ $( ".tr" ).blur(function (event) {
     var line = document.getElementById( lineid ).innerText;
     var tr = $(this).text()
     var lang = $(this).attr('lang');
-    console.log("blur", $(this).data('before') , "h", tr)
+//    console.log("blur", $(this).data('before') , "h", tr)
     if ($(this).data('before') !== tr){    
-         cname = confirm("Unsaved data exist, do you want to save?");
+         cname = confirm("Unsaved data exist, do you want to save? (tr)");
          if (cname){
            if (lang == 'zho') {
                save_zh(trid, line)
@@ -1899,7 +1899,6 @@ $( ".tr" ).blur(function (event) {
     }
   dirty = false;
 });
-
 
 $( ".tr" ).keyup(function( event ) {
 }).keydown(function( event ) {
@@ -1924,6 +1923,11 @@ $( ".tr" ).keyup(function( event ) {
      event.preventDefault();
      quick_search();   
     } else
+    if (event.which == 80) { // the key is ctrl-p
+     dirty = false;
+     event.preventDefault();
+     ctl_p(line, lineid, trid);   
+    } else
     if (event.which == 191 || event.which == 173){
      event.preventDefault();
      var sw = document.getElementById( lineid + "-swl" ).parentNode;
@@ -1933,6 +1937,7 @@ $( ".tr" ).keyup(function( event ) {
           sw.style.display = "block";
       }
 //      console.log(sw);      
+// 188 : comma, 190: perios
     } else if (event.which == 188 || event.which == 190){
         event.preventDefault();
         var sel = $( "#swl-query-span" ).text();
@@ -2008,6 +2013,43 @@ $( ".tr" ).keyup(function( event ) {
   }
 });
 };
+
+
+function ctl_p(line, lineid, trid){
+    console.log('Ctlp pressed');
+//   var blurf = $( ".tr" ).blur;
+//   $( ".tr" ).blur(function(){});
+   var tsel = window.getSelection();
+   var tlid = trid.split(".").join("\\.")
+   var dat = $('#'+tlid).text();
+   var pos = tsel.focusOffset;
+   var tr_cur = dat.slice(0,pos)
+   var tr_next = dat.slice(pos, dat.length)
+   var tab = parseInt($("#"+tlid).attr("tabindex")) + 1;
+   try {
+    var nid = $("[tabindex='" + tab.toString() + "']").attr('id').split(".").join("\\.");
+   
+//   console.log("selection: ", dat, pos, dat.slice(pos, dat.length));
+   console.log("selection: ", tlid, nid);
+   if (nid.length > 0) {
+   save_tr(trid, tr_cur, line)
+   $('#'+tlid).text(tr_cur);
+   dirty = false;
+   tab = parseInt($("#"+tlid).attr("tabindex")) + 1;
+   $("[tabindex='" + tab.toString() + "']").text(tr_next)
+   save_tr(nid, tr_next, 'xx')
+   dirty = false;
+   }
+   } catch(err) 
+   {
+   console.log("No nid: ", tlid);
+   $('#nextpagebutton').trigger("click");
+/*    more_display_lines(lineid, tab - 1)    
+    set_keyup()*/
+   }
+//   $("[tabindex='" + tab.toString() + "']").focus()
+};
+
 
 // this does the actual save
 // the backend actually also saves the language, which defaults to "en", param is lang
