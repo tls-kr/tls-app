@@ -643,12 +643,13 @@ return
                 <div id="input-cat-group">
                     <label for="input-nb"><strong>Catalog category:</strong> </label>
                 <select id="select-text-cat" class="form-control" multiple="true">{for $c in $cat 
+                where string-length($c/@xml:id) > 3
                 order by $c/@xml:id ascending
                 return 
                 if ($c/@xml:id = $textcat) then 
-                <option value="{$c/@xml:id}" selected="true">{$c/tei:catDesc/text()}</option>
+                <option value="{$c/@xml:id}" selected="true">{$c/@xml:id/string()}　{$c/tei:catDesc/text()}</option>
                 else
-                <option value="{$c/@xml:id}">{$c/tei:catDesc/text()}</option>}</select>
+                <option value="{$c/@xml:id}">{$c/@xml:id/string()}　{$c/tei:catDesc/text()}</option>}</select>
                 </div>
                 <!--
                 <div id="input-src-group">
