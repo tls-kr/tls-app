@@ -535,25 +535,30 @@ return
 };
 
 declare function ltr:save-tr($trid as xs:string, $tr-to-save as xs:string, $lang as xs:string, $user as xs:string){
+let $current-user := sm:id()//sm:real/sm:username/text()
 let $id := substring-before($trid, '-slot')
 ,$txtid := tokenize($id, "_")[1]
 ,$tr := ltr:get-translations($txtid)
 ,$slot := 'slot' || substring-after($trid, 'slot')
 ,$content-id := lrh:get-content-id($txtid, $slot, $tr)
 ,$transl := $tr($content-id)[1]
-,$seg := <seg xmlns="http://www.tei-c.org/ns/1.0" corresp="#{$id}" xml:lang="{$lang}" resp="#{$user}" modified="{current-dateTime()}">{$tr-to-save}</seg>
+,$seg := <seg xmlns="http://www.tei-c.org/ns/1.0" corresp="#{$id}" xml:lang="{$lang}" resp="#{$user}" modified="{current-dateTime()}">{normalize-space($tr-to-save)}</seg>
 ,$node := $transl//tei:seg[@corresp="#" || $id]
+,$prev-user := substring($node/@resp, 2)
 ,$targetseg := lu:get-seg($id)
 ,$visit := if ($targetseg) then lvs:record-visit($targetseg) else lvs:record-visit-remote($id, '')
 return
-if ($node) then (
+if ($node) then 
+  (: if we get a new translation from AI, we want to *replace* only if the previous user is also AI  :)
+  if ($user = $prev-user or $current-user = $user ) then 
+ (
  update insert attribute modified {current-dateTime()} into $node,
  update insert attribute resp-del {"#" || $user} into $node,
  update insert attribute src-id {$content-id} into $node,
  update insert $node into (lv:get-crypt-file("trans")//tei:div/tei:p[last()])[1],
 (: The return values are wrong: update always returns the empty sequence :)
  if (update replace $node[1] with $seg) then () else "Success. Updated translation." 
-)
+) else ()
 else 
 if ($transl//tei:p[@xml:id=concat($txtid, "-start")]) then 
   update insert $seg  into $transl//tei:p[@xml:id=concat($txtid, "-start")] 

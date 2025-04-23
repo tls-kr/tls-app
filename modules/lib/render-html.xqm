@@ -248,6 +248,22 @@ string-join(
 , '\n')
 };
 
+declare function lrh:multiple-segs-plain-with-no($loc as xs:string, $prec as xs:int, $foll as xs:int){
+let $dseg := lu:get-targetsegs($loc, $prec, $foll)
+return
+string-join(
+  for $s at $p in $dseg
+  return
+  (
+  format-number($p, '[00]'),
+  normalize-space(
+  string-join( 
+    lrh:proc-seg($s, map{"punc" : true(), "lpb" : false()}), 
+    ''))
+)
+, '')
+};
+
 (: button, mostly at the right side, in which case class will be "close" :)
 declare function lrh:format-button($onclick as xs:string, $title as xs:string, $icon as xs:string, $style as xs:string, $class as xs:string, $groups as xs:string+){
  let $usergroups := sm:id()//sm:group/text()
