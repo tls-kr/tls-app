@@ -57,7 +57,7 @@ declare function lpm:can-write-debug-log(){
 };
 
 declare function lpm:can-use-ai(){
- "dbax" = sm:id()//sm:group
+ "dba" = sm:id()//sm:group
 };
 
 declare function lpm:can-delete-applications(){

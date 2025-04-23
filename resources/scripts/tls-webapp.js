@@ -472,11 +472,14 @@ function get_tr_for_page(slot, myid, ai){
     reload_selector(slot, myid);   
    }
   });
-  if (ai = 'undefined') {
+  console.log("ai:" + ai)
+  if (typeof ai == 'undefined') {
+  toastr.info("Translation change requested. Please wait a moment.", "HXWD says:")        
   } else {
   toastr.info("Translation draft requested. Please wait a moment.", "HXWD says:")        
   }
 };
+
 // called from tranlation dropdown in toprow
 // slot is slot1 or slot2, 
 function new_translation(slot){

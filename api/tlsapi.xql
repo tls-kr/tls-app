@@ -159,8 +159,6 @@ let $docname :=  $textid || "-ann.xml"
 )
 
 let $targetnode := collection($targetcoll)//tei:seg[@xml:id=$line-id]
-,$texturi := if (starts-with($textid, "CH")) then 
-                xs:anyURI($config:tls-texts-root || "/chant/" || substring($textid, 1, 3) || "/" || $textid || ".xml") else ()
 
 return 
 if (sm:has-access($targetcoll, "w")) then
@@ -175,7 +173,6 @@ else
 (: ,data($newswl/@xml:id):)
  ,sm:chmod(xs:anyURI($targetcoll || "/" || $docname), "rwxrwxr--")
  (: for the CHANT files: grant access when attribution is made :)
- ,if ($texturi) then sm:chmod($texturi, "rwxrwxr--") else ()
  , "Attribution has been saved. Thank you for your contribution."
  )
  else "No access"
