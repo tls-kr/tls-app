@@ -126,7 +126,7 @@ declare variable $config:status-map := map{
 
 declare variable $config:languages := map{
 "en" : "English",
-"zh" : "Chinese",
+"zh" : "modern Chinese",
 "de" : "German",
 "fr" : "French",
 "cs" : "Czech",
@@ -135,7 +135,7 @@ declare variable $config:languages := map{
 "it" : "Italian",
 "la" : "Latin",
 "ogr" : "Old Greek",
-"ja" : "Japanese",
+"ja" : "modern Japanese",
 "ja-ku" : "Japanese Kundoku",
 "sk" : "Slovak",
 "da" : "Danish",
