@@ -836,6 +836,7 @@ declare function tlsapi:goto-translation-seg($map as map(*)){
 (:~
 : Dialog for new translation stub
 : $trid in the case of updating the translation metadata
+current-dateTime()
 :)
 
 declare function tlsapi:new-translation($slot as xs:string, $loc as xs:string?, $trid as xs:string?){
@@ -844,7 +845,7 @@ let $tru := collection($config:tls-user-root|| $user || "/translations")/tei:TEI
 , $trc := collection($config:tls-translation-root)//tei:TEI[@xml:id=$trid]
 , $trfile := if ($tru) then $tru else $trc
 , $vis := if ($tru) then "option3" else "option1"
-, $cop := data($trfile//tei:availability/@status)
+, $cop := if ($trfile//tei:availability/@status) then data($trfile//tei:availability/@status) else "2"
 , $ref := substring($trfile//tei:ref/@target, 2)
 , $segcount := count($trfile//tei:seg)
 let $textid := tokenize($loc, "_")[1],
@@ -852,6 +853,8 @@ $title := lmd:get-metadata-from-catalog($loc, "title"),
 $tr := ltr:get-translations($textid)
 , $type := $trfile/@type
 , $trlg := if ($trfile//tei:sourceDesc//tei:lang/@xml:lang) then data($trfile//tei:sourceDesc//tei:lang/@xml:lang) else "en"
+, $creator := if ($trfile//tei:titleStmt/tei:editor[@role='translator']/text()) then $trfile//tei:titleStmt/tei:editor[@role='translator']/text() else "TLS Project"
+, $biblio := if ($trfile//tei:sourceDesc/tei:bibl) then normalize-space(string-join($trfile//tei:sourceDesc/tei:bibl/text(), '')) else substring(string(current-dateTime()), 1, 4)
 return
 <div id="new-translation-dialog" class="modal" tabindex="-1" role="dialog" style="display: none;">
     <div class="modal-dialog modal-lg" role="document">
@@ -899,7 +902,7 @@ return
               </div>
               <div id="select-transl-group" class="form-group ui-widget col-md-3">
                   <label for="select-transl">Creator (if it is not you:-): </label>
-                  <input id="select-transl" class="form-control" value="{$trfile//tei:titleStmt/tei:editor[@role='translator']/text()}"/>
+                  <input id="select-transl" class="form-control" value="{$creator}"/>
               </div>
               <div id="select-type-group1" class="form-group ui-widget col-md-6">
                  <label for="select-rel">For comments, are they related to a translation?</label>
@@ -924,7 +927,7 @@ return
              <div class="form-group col-md-4">
              <div class="form-check">
              {if ($vis = "option1") then 
-              <input class="form-check-input" type="radio" name="visradio" id="visrad1" value="option1"/>
+              <input class="form-check-input" type="radio" name="visradio" id="visrad1" value="option1" />
               else
               <input class="form-check-input" type="radio" name="visradio" id="visrad1" value="option1"/>}
              <label class="form-check-label" for="visrad1">
@@ -959,7 +962,7 @@ return
               </div>
               <div id="select-concept-group" class="form-group ui-widget col-md-6" >
                     <label for="input-biblio" >Publisher, place and year</label>
-                    <input id="input-biblio" class="form-control" value="{normalize-space(string-join($trfile//tei:sourceDesc/tei:bibl/text(), ''))}"/>
+                    <input id="input-biblio" class="form-control" value="{$biblio}"/>
               </div>
               </div>
 
