@@ -818,12 +818,13 @@ declare function tlslib:swl-form-dialog($context as xs:string, $model as map(*))
     </h5>
     <h6 class="text-muted">At:  <span id="swl-line-id-span" class="ml-2">Id of line</span>&#160;
     {lrh:format-button-common("bookmark_this_line()","Bookmark this location", "open-iconic-master/svg/bookmark.svg"), 
-     if ($model("textid") and lpm:has-edit-permission($model("textid"))) then 
-      lrh:format-button("display_punc_dialog('x-get-line-id')", "Edit properties of this text segment", "octicons/svg/lock.svg", "", "close", ("tls-editor", "tls-punc"))
-     else (),
+      if ($model("textid") and lpm:has-edit-permission($model("textid"))) then 
+       lrh:format-button("display_punc_dialog('x-get-line-id')", "Edit properties of this text segment", "octicons/svg/lock.svg", "", "close", ("tls-editor", "tls-punc"))
+      else (),
       lrh:format-button("display_named_dialog('x-get-line-id', 'pb-dialog')", "Add page break of a witness edition before selected character", "octicons/svg/milestone.svg", "", "close", ("tls-editor", "tls-punc")),
-      lrh:format-button("display_named_dialog('x-get-line-id', 'edit-app-dialog')", "Add content of variant edition for selected character", "octicons/svg/note.svg", "", "close", ("tls-editor", "tls-punc"))
-      
+      lrh:format-button("display_named_dialog('x-get-line-id', 'edit-app-dialog')", "Add content of variant edition for selected character", "octicons/svg/note.svg", "", "close", ("tls-editor", "tls-punc")),
+      <span>Hi there</span>,
+      lrh:format-button("copyUrl()", "Copy URL of this line", "octicons/svg/link.svg", "", "close", ("tls-user"))      
      }</h6>
     <h6 class="text-muted">Line: <span id="swl-line-text-span" class="ml-2 chn-font">Text of line</span>
      {lrh:format-button-common("window.open('"||$config:help-base-url||$config:help-map?floater||"', 'docs')","Click here to display the manual for this screen", "help.svg")}    

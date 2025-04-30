@@ -2445,6 +2445,18 @@ function copyToClipboard(element) {
     focused.focus();
 }
 
+
+function copyUrl() {
+    var text = $("#swl-line-id-span").text();
+    var baseUrl = window.location.origin + window.location.pathname;
+    var url = baseUrl + '?location=' + text
+    navigator.clipboard.writeText(url).then(() => {
+      alert("URL:\n"+ url + "\ncopied to clipboard!");
+    }).catch(err => {
+      console.error("Failed to copy: ", err);
+    });
+}
+
 /* Wikidata related stuff */
 
 // this function is called from a link, without direct text input / the type of id depends on the item given in context
