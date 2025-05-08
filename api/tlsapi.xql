@@ -259,6 +259,7 @@ $para := map{
 "pinyin" : if ($rpara?py = "xx") then $swl/tei:form/tei:pron[@xml:lang="zh-Latn-x-pinyin"]/text() else $rpara?py,
 "def" : data($swl//tei:sense/tei:def/text()),
 "wid" : $rpara?wid,
+"type" : $rpara?type,
 "title" : if ($rpara?type = "concept") then "" else 
           if ($rpara?type = "swl") then "Editing Attribution for" else
           ""
@@ -1370,8 +1371,7 @@ declare function tlsapi:get-facs-for-page($map as map(*)){
  </div>
 };
 
-
-declare function tlsapi:save-new-concept($map as map(*)){
+declare function local:make-pointers($map){
 let $ont-ant := if ($map?ont_ant) then 
   <list type="antonymy" xmlns="http://www.tei-c.org/ns/1.0" >
   {for $e in tokenize($map?ont_ant, "xxx")
@@ -1407,8 +1407,17 @@ let $ont-ant := if ($map?ont_ant) then
    <item xmlns="http://www.tei-c.org/ns/1.0"><ref target="#{$f[2]}">{$f[1]}</ref></item>
   }
   </list>
-  else (),
-  $labels := if ($map?labels) then 
+  else ()
+  return
+  <div type="pointers" xmlns="http://www.tei-c.org/ns/1.0" >
+    {$ont-ant,$ont-hyp,$ont-see,$ont-tax}
+  </div>
+};
+
+declare function tlsapi:save-new-concept($map as map(*)){
+let $pointers := local:make-pointers($map)
+,  $user := sm:id()//sm:real/sm:username/text()
+  , $labels := if ($map?labels) then 
   <list type="altnames" xmlns="http://www.tei-c.org/ns/1.0" >
   {for $l in tokenize($map?labels, ",")
   return 
@@ -1430,15 +1439,19 @@ let $new-concept := (
  <div type="old-chinese-criteria"><p>{$map?crit}</p></div>
  <div type="modern-chinese-criteria"><p>{$map?notes}</p></div>
 </div>    
-<div type="pointers">
-{$ont-ant,$ont-hyp,$ont-see,$ont-tax}
-</div>
+{$pointers}
 <div type="source-references">
         <listBibl>
         </listBibl>
     </div>
 <div type="words">
 </div>
+<tls:metadata resp="#{$user}" created="{current-dateTime()}">
+<respStmt>
+<resp>added</resp>
+<name notBefore ="{current-dateTime()}">{$user}</name>
+</respStmt>
+</tls:metadata>
 </div>)
 let $uri := xmldb:store($config:tls-data-root || "/concepts", translate($map?concept, ' ', '_') ||".xml", $new-concept)
 return (
@@ -1447,6 +1460,55 @@ return (
     sm:chgrp(xs:anyURI($uri), "tls-user")
     )
 };
+
+declare function tlsapi:save-new-rhet-dev($map as map(*)){
+let $rhet-dev := doc($config:tls-data-root||"/core/rhetorical-devices.xml")
+,  $user := sm:id()//sm:real/sm:username/text()
+ return 
+ if ($rhet-dev//tei:head[. = $map?concept]) then "Rhetorical device exists, aborting" else
+let $pointers := local:make-pointers($map)
+  , $labels := if ($map?labels) then 
+  <list type="altnames" xmlns="http://www.tei-c.org/ns/1.0" >
+  {for $l in tokenize($map?labels, ",")
+  return 
+   <item xmlns="http://www.tei-c.org/ns/1.0">{normalize-space($l)}</item>
+  }
+  </list> else (),
+ $och := if ($map?och) then <item xmlns="http://www.tei-c.org/ns/1.0" xml:lang="och">{$map?och}</item> else (),
+ $zh := if ($map?zh) then <item xmlns="http://www.tei-c.org/ns/1.0" xml:lang="zh">{$map?zh}</item> else (),
+ $uuid := if ($map?concept_id) then $map?concept_id else "uuid-" || util:uuid()
+
+  (: <?xml-model href="../schema/tls.rnc" type="application/relax-ng-compact-syntax"?>, :)
+let $new-concept := (
+<div xmlns="http://www.tei-c.org/ns/1.0" type="rhet-dev" xml:id="{$uuid}">
+<head>{$map?concept}</head>{$labels}
+<list type="translations">{$och,$zh}</list>
+<div type="definition">
+<p>{$map?def}</p></div>
+<div type="notes">    
+ <div type="old-chinese-criteria"><p>{$map?crit}</p></div>
+ <div type="modern-chinese-criteria"><p>{$map?notes}</p></div>
+</div>    
+{$pointers}
+<div type="source-references">
+        <listBibl>
+        </listBibl>
+    </div>
+<tls:metadata resp="#{$user}" created="{current-dateTime()}">
+<respStmt>
+<resp>added</resp>
+<name notBefore ="{current-dateTime()}">{$user}</name>
+</respStmt>
+</tls:metadata>
+</div>)
+
+return (
+   update insert $new-concept into $rhet-dev//tei:body
+    )
+};
+
+
+
 (: originally written for saving the sf-definitions in browse mode 
 2020-10-14: updated for editing also the concept definitions in browse mode
 2021-03-21: updating rhet-dev definitions, these contain multiple paragraphs.  What a mess!

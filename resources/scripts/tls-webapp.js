@@ -766,11 +766,13 @@ function show_new_concept(mode, py){
   var word = $("#swl-query-span").text();
   var line_id= $( "#swl-line-id-span" ).text();  
   var line = $( "#swl-line-text-span" ).text();
-  if (mode == "new"){
+  if (mode == "rhet-dev"){
+       var uri = "api/get_swl.xql?type=rhet-dev&word="+word+"&concept="+py+"&line-id="+line_id+"&line="+line;       
+  } else if (mode == "new"){
       cname = prompt("Please enter the name of the new concept:", "");
       if (cname){
-       var uri = "api/get_swl.xql?type=concept&word="+word+"&concept="+cname+"&line-id="+line_id+"&line="+line;      } 
-       else {var uri = null}
+       var uri = "api/get_swl.xql?type=concept&word="+word+"&concept="+cname+"&line-id="+line_id+"&line="+line;      
+       } else {var uri = null}
   } else if (mode == "existing") {
       var uri = "api/get_swl.xql?type=concept&word="+word+"&mode="+mode+"&line-id="+line_id+"&line="+line;
   } else {
@@ -793,8 +795,13 @@ function show_new_concept(mode, py){
     $('#editSWLDialog').modal('show');       
    } else {
    $('#remDialog2').html(resp);
-    initialize_autocomplete_nc();
-     console.log("Initializing autocomplete nc functions");
+    if (mode == "rhet-dev") {
+     initialize_autocomplete_nc(mode);
+     console.log("Initializing autocomplete type functions");
+    } else {
+     initialize_autocomplete_nc('concept');       
+     console.log("Initializing autocomplete type functions");
+    }
     $('#new-concept-dialog').modal('show');
    }
    }
@@ -1206,7 +1213,7 @@ function initialize_sf_autocomplete(type){
 };
 
 
-function initialize_autocomplete_nc(){
+function initialize_autocomplete_nc(tp){
     $( "#select-concept-nc" ).autocomplete({
       appendTo: "#select-concept-group-nc",
       source: function( request, response ) {
@@ -1215,7 +1222,7 @@ function initialize_autocomplete_nc(){
           dataType: "jsonp",
           data: {
             term: request.term.toUpperCase(),
-	        type: "concept"
+	        type: tp
           },
           success: function( data ) {
             response( data );
@@ -2282,6 +2289,10 @@ function save_rdl(word, lineid, line){
   var rdid = $("#rhetdev-id-span").text();
   var note = $("#input-note").val();
   var type = $('#block-type').val();
+  if (type === "rhetdev" && rdid.length === 0){
+    make_new = prompt('No existing rhetorical device selected. Do you want to create a new one?', rd)
+    show_new_concept("rhet-dev", make_new)
+  } else {  
   $.ajax({
   type : "PUT",
   dataType : "html",
@@ -2300,7 +2311,7 @@ function save_rdl(word, lineid, line){
  //   alert("PROBLEM: "+resp.statusText + "\n " + resp.responseText);
   }
   });    
-    
+  } 
 };
 
 // new concept definition dialog etc.
@@ -2365,7 +2376,9 @@ function reset_tax(){
     $(".staging-span").html("")
 }
 
-function save_new_concept (uuid, concept){
+// type can be concept or rhet-dev (2025-05-08)
+
+function save_new_concept (uuid, concept, type){
   var och_val = $("#name-och" ).val();
   var zh_val = $("#name-zh" ).val();
   var def_val = $("#input-def" ).val();
@@ -2391,7 +2404,7 @@ function save_new_concept (uuid, concept){
   $.ajax({
   type : "PUT",
   dataType : "html",
-  url : "api/responder.xql?func=save-new-concept&concept_id="+uuid+"&concept="+concept+"&crit="+crit_val+"&def="+def_val+"&notes="+notes_val+"&ont_ant="+ont_ant+"&ont_hyp="+ont_hyp+"&ont_see="+ont_see+"&ont_tax="+ont_tax+"&labels="+labels+"&och="+och_val+"&zh="+zh_val,
+  url : "api/responder.xql?func=save-new-"+type+"&concept_id="+uuid+"&concept="+concept+"&crit="+crit_val+"&def="+def_val+"&notes="+notes_val+"&ont_ant="+ont_ant+"&ont_hyp="+ont_hyp+"&ont_see="+ont_see+"&ont_tax="+ont_tax+"&labels="+labels+"&och="+och_val+"&zh="+zh_val,
   success : function(resp){
     $( "#new-concept-dialog" ).modal('hide');      
     toastr.info("New concept " + concept + " saved.", "HXWD says:");

@@ -211,6 +211,20 @@ return
  
 };
 
+declare function local:add-tag($name, $options){
+let $body := (lrh:form-input-row($name, map{"input-id" : "add-tag", "input-value": $options?value,  "hint" : $options?hint, "type" : "text", "required" : true()}) )
+, $buttons := ( <button type="button" class="btn btn-primary" onclick="save_tag('{$options?setting}', 'setting')">Save</button> )
+return                 
+      dialogs:modal-frame($name, 
+      map{
+        "dsize" : "", 
+        "body": $body, 
+        "buttons" : $buttons, 
+        "options" : $options,
+        "title":  "Add tag for " || $options?setting
+      })           
+};
+
 
 (:~  This is the entry function, called from the javascript frontend:)
 
@@ -220,6 +234,7 @@ return switch($para?name)
                case "tr-info-dialog" return local:tr-info-dialog($para?name, $options)
                case "passwd-dialog" return local:passwd-dialog($para?name, $options)
                case "text-info" return local:text-info($para?name, $options)
+               case "add-tag" return local:add-tag($para?name, $options)
                case "update-setting" return local:update-setting($para?name, $options)
                case "search-settings" return local:search-settings($para?name, $options)
                case "external-resource" return local:external-resource($para?name, $options)
@@ -288,9 +303,15 @@ declare function dialogs:add-rd-dialog($options as map(*)){
 (:~ Add new concept. [[TODO]]  2024-11-25:  Needs update  :)
 
 declare function dialogs:new-concept-dialog($options as map(*)){
- let $ex := collection($config:tls-data-root || "/concepts")//tei:head[. = $options?concept]
+ let $tmap := map{'concept' : "Concept", 'rhet-dev': "Rhetorical Device"}
+ let $target := $options?type
+ 
+ let $ex := if ($target = 'concept') then 
+    collection($config:tls-data-root || "/concepts")//tei:head[. = $options?concept]
+    else 
+    doc($config:tls-data-root||"/core/rhetorical-devices.xml")//tei:head[. = $options?rhet-dev]
  return
- if ($ex) then "Concept exists!" else 
+ if ($ex) then $tmap?($target) || " exists!" else 
 
  let $uuid := if (map:contains($options, "concept-id")) 
     then $options?concept-id else
@@ -303,7 +324,7 @@ declare function dialogs:new-concept-dialog($options as map(*)){
    <div id="new-concept-dialog" class="modal" tabindex="-1" role="dialog" style="display: none;">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
-            <div class="modal-header"><h5>Define a new concept: <span class="font-weight-bold">{$name}</span></h5>
+            <div class="modal-header"><h5>Define a new {$tmap?($target)}: <span class="font-weight-bold">{$name}</span></h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close" title="Close">x</button>
             </div>
             <div class="modal-body">
@@ -324,12 +345,12 @@ declare function dialogs:new-concept-dialog($options as map(*)){
               </div>
               <div id="select-name-group" class="form-group ui-widget col-md-6">
                  <label for="select-name" class="font-weight-bold">Alternate labels</label>
-                 <small class="text-muted"><br/>Comma separated list of other names for this concept</small>
+                 <small class="text-muted"><br/>Comma separated list of other names for this {lower-case($tmap?($target))}</small>
                  <input id="select-labels" class="form-control" required="true" value=""></input>
                  <span id="name-id-span" style="display:none;">{$uuid}</span>
               </div>
             </div>
-            <h6 class="font-weight-bold">Place this concept within the ontology</h6>
+            <h6 class="font-weight-bold">Place this {lower-case($tmap?($target))} within the ontology</h6>
             <div id="staging" style="display:none;" class="form-row">
               <div id="stag-taxonymy" class="col-md-3"><label class="font-weight-bold mr-3" for="stag-taxonymy">Hypernym</label><span id="stag-taxonymy-span" class="staging-span"></span></div>
               <div id="stag-antonymy"  class="col-md-3"><label  class="font-weight-bold  mr-3" for="stag-antonymy">Antonymy</label><span id="stag-antonymy-span"  class="staging-span"></span></div>
@@ -351,7 +372,7 @@ declare function dialogs:new-concept-dialog($options as map(*)){
                  </select>                 
               </div>
               <div id="select-concept-group-nc" class="form-group ui-widget col-md-4">
-                 <label for="select-concept-nc">Name of related concept: </label>
+                 <label for="select-concept-nc">Name of related {lower-case($tmap?($target))}: </label>
                  <input id="select-concept-nc" class="form-control" required="true" value=""/>
                  <span id="concept-id-span-nc" style="display:none;"></span>
                 </div>
@@ -374,7 +395,7 @@ declare function dialogs:new-concept-dialog($options as map(*)){
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="save_new_concept('{$uuid}', '{$name}')">Save New Concept</button>
+                <button type="button" class="btn btn-primary" onclick="save_new_concept('{$uuid}', '{$name}', '{$target}')">Save New {$tmap?($target)}</button>
            </div>
          </div>
      </div>
