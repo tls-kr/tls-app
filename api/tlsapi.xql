@@ -1458,6 +1458,7 @@ return (
     sm:chmod(xs:anyURI($uri), "rwxrwxr--"),
 (:    sm:chown(xs:anyURI($uri), "tls"),:)
     sm:chgrp(xs:anyURI($uri), "tls-user")
+    , $uuid
     )
 };
 
@@ -1504,6 +1505,7 @@ let $new-concept := (
 
 return (
    update insert $new-concept into $rhet-dev//tei:body
+   , $uuid
     )
 };
 

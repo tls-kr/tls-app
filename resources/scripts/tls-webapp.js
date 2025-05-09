@@ -2408,6 +2408,7 @@ function save_new_concept (uuid, concept, type){
   success : function(resp){
     $( "#new-concept-dialog" ).modal('hide');      
     toastr.info("New concept " + concept + " saved.", "HXWD says:");
+    $("#rhetdev-id-span").text(resp)
   },
   error : function(resp){
   console.log(resp);

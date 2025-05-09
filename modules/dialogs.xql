@@ -382,6 +382,7 @@ declare function dialogs:new-concept-dialog($options as map(*)){
                 <button class="btn btn-secondary" type="button" onclick="reset_tax()" title="Remove the selected concepts from the ontology and start fresh" id="reset-to-pointers">Reset</button>
               </div>   
               </div>  
+            {if ($target = 'concept') then 
             <div class="form-row">
               <div id="input-crit-group" class="col-md-6">
                     <label for="input-crit" class="font-weight-bold">Old Chinese Criteria </label>
@@ -391,7 +392,7 @@ declare function dialogs:new-concept-dialog($options as map(*)){
                     <label for="input-notes" class="font-weight-bold">Modern Chinese Criteria &amp; other notes</label>
                     <textarea id="input-notes" class="form-control"></textarea>                   
               </div>
-            </div>
+            </div> else ()}
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
