@@ -34,9 +34,9 @@ declare variable $dialogs:lmap := map{
 "old-chinese-criteria" : "Old Chinese Criteria",
 "modern-chinese-criteria" : "Modern Chinese Criteria",
 "tax-def" : map{
-"taxonymy" : "Hypernym",
+"taxonymy" : "Hyponym",
+"hypernymy" : "Hypernym",
 "antonymy" : "Antonym",
-"hypernymy" : "Hyponym",
 "see" : "See also"},
 "source-references" : "Bibliography",
 "warring-states-currency" : "Warring States Currency",
@@ -307,41 +307,44 @@ declare function dialogs:new-concept-dialog($options as map(*)){
  let $target := $options?type
  
  let $ex := if ($target = 'concept') then 
-    collection($config:tls-data-root || "/concepts")//tei:head[. = $options?concept]
+    collection($config:tls-data-root || "/concepts")//tei:div[tei:head[. = $options?concept]]
     else 
-    doc($config:tls-data-root||"/core/rhetorical-devices.xml")//tei:head[. = $options?rhet-dev]
+    doc($config:tls-data-root||"/core/rhetorical-devices.xml")//tei:div[tei:head[. = $options?concept]]
  return
- if ($ex) then $tmap?($target) || " exists!" else 
+(: if ($ex) then $tmap?($target) || " exists!" else :)
 
  let $uuid := if (map:contains($options, "concept-id")) 
     then $options?concept-id else
     if (map:contains($options, "name")) then map:get($con:new-concepts($options?name), "id") else 
     "uuid-" || util:uuid()
-  , $def := if ($uuid) then if (map:contains($con:new-concept-defs, $uuid)) then $con:new-concept-defs($uuid) else () else ()
+  , $bibs := $ex//tei:listBibl/tei:bibl  
+  , $notes := for $d in $ex/tei:note[@type="note"]/tei:p return normalize-space($d/text()) 
+  , $def := if ($ex) then for $d in $ex/tei:div[@type="definition"]/tei:p return normalize-space($d/text()) else
+    if ($uuid) then if (map:contains($con:new-concept-defs, $uuid)) then $con:new-concept-defs($uuid) else () else ()
   , $name := if(map:contains($options, "concept")) then $options?concept else 
     if (not($options?mode = "new" or $options?mode = "existing")) then $options?mode else ()
    return
    <div id="new-concept-dialog" class="modal" tabindex="-1" role="dialog" style="display: none;">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
-            <div class="modal-header"><h5>Define a new {$tmap?($target)}: <span class="font-weight-bold">{$name}</span></h5>
+            <div class="modal-header"><h5>Define/Edit a new {$tmap?($target)}: <span class="font-weight-bold">{$name}</span></h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close" title="Close">x</button>
             </div>
             <div class="modal-body">
             <div class="form-row">
               <div id="input-def-group" class="col-md-6">
                  <label for="name-och" class="font-weight-bold">Old Chinese name:</label>
-                 <input id="name-och" class="form-control" required="true" value=""></input>
+                 <input id="name-och" class="form-control" required="true" value="{$ex/tei:list[@type="translations"]/tei:item[@xml:lang='och']/text()}"/>
               </div>
               <div id="input-def-group" class="col-md-6">
                  <label for="name-zh" class="font-weight-bold">Modern Chinese name:</label>
-                 <input id="name-zh" class="form-control" required="true" value=""></input>
+                 <input id="name-zh" class="form-control" required="true" value="{$ex/tei:list[@type="translations"]/tei:item[@xml:lang='zh']/text()}"/>
               </div>
             </div>
             <div class="form-row">
               <div id="input-def-group" class="col-md-6">
                     <label for="input-def" class="font-weight-bold">Definition </label>
-                    <textarea id="input-def" class="form-control">{$def}</textarea>                   
+                    <textarea id="input-def" class="form-control">{string-join($def, '&#xA;&#xA;')}</textarea>                   
               </div>
               <div id="select-name-group" class="form-group ui-widget col-md-6">
                  <label for="select-name" class="font-weight-bold">Alternate labels</label>
@@ -351,12 +354,18 @@ declare function dialogs:new-concept-dialog($options as map(*)){
               </div>
             </div>
             <h6 class="font-weight-bold">Place this {lower-case($tmap?($target))} within the ontology</h6>
-            <div id="staging" style="display:none;" class="form-row">
-              <div id="stag-taxonymy" class="col-md-3"><label class="font-weight-bold mr-3" for="stag-taxonymy">Hypernym</label><span id="stag-taxonymy-span" class="staging-span"></span></div>
-              <div id="stag-antonymy"  class="col-md-3"><label  class="font-weight-bold  mr-3" for="stag-antonymy">Antonymy</label><span id="stag-antonymy-span"  class="staging-span"></span></div>
-              <div id="stag-hypernymy"  class="col-md-3"><label  class="font-weight-bold  mr-3" for="stag-hypernymy">Hyponym</label><span id="stag-hypernymy-span"  class="staging-span"></span></div>
-              <div id="stag-see"  class="col-md-3"><label  class="font-weight-bold  mr-3" for="stag-see">See also</label><span id="stag-see-span" class="staging-span"></span></div>
-            </div>
+            <div id="staging" style="display:true;" class="form-row">
+                    {for $l in map:keys($dialogs:lmap?tax-def)
+                    let $it := $ex//tei:list[@type=$l]/tei:item/tei:ref
+                    return
+              <div id="stag-{$l}"  class="col-md-3"><label  class="font-weight-bold  mr-3" for="stag-{$l}">{$dialogs:lmap?tax-def($l)}</label>
+              <span id="stag-{$l}-span"  class="staging-span">{if ($it) then
+              for $i in $it
+              return
+              <span class="badge badge-dark staged" data-cid="{substring($i/@target, 2)}" >{$i/text()}</span>
+              else ()}</span></div>
+                   } 
+             </div>
             <div class="form-row">
               <div id="select-tax-group" class="form-group col-md-4">
                 <label for="select-tax">Type of relation: </label>
@@ -381,7 +390,35 @@ declare function dialogs:new-concept-dialog($options as map(*)){
                 <button class="btn btn-primary" type="button" onclick="add_to_tax()" id="add-to-pointers">Add to ontology</button>
                 <button class="btn btn-secondary" type="button" onclick="reset_tax()" title="Remove the selected concepts from the ontology and start fresh" id="reset-to-pointers">Reset</button>
               </div>   
-              </div>  
+              </div>
+            <!-- source references -->
+            <h6 class="font-weight-bold">Source references</h6>
+            <div class="form-row">
+              <div id="input-bibl-group-id" class="col-md-3">
+                    <label for="input-bibl-id" class="font-weight-bold">ID</label>
+              </div>
+              <div id="input-bibl-group-tit" class="col-md-6">
+                    <label for="input-bibl-tit" class="font-weight-bold">Title</label>
+              </div>
+              <div id="input-bibl-group-pg" class="col-md-3">
+                    <label for="input-bibl-pg" class="font-weight-bold">Page</label>
+                <span id="add-line" class="float-right badge badge-light" onclick="con_add_new_line({count($bibs) + 1}, 'bibl-group-{count($bibs)}')">Add new Ref.</span>
+            </div>
+            </div>
+            {if (not($bibs)) then <div class="form-row" id="bibl-group-0"/> else for $b at $pos in  $ex//tei:listBibl/tei:bibl 
+            return
+            <div class="form-row" id="bibl-group-{$pos}">
+              <div id="input-bibl-group-id-{$pos}" class="col-md-3">
+                    <input id="input-bibl-id-{$pos}" data-cid="{$b/tei:ref/@target}" class="form-control" value="{normalize-space($b/tei:ref/text())}"/>                   
+              </div>
+              <div id="input-bibl-group-tit-{$pos}" class="col-md-6">
+                    <input id="input-bibl-tit-{$pos}" class="form-control" value="{$b/tei:title/text()}"/>                   
+              </div>
+              <div id="input-bibl-group-pg-{$pos}" class="col-md-3">
+                    <input id="input-bibl-pg-{$pos}" class="form-control" value="{$b/tei:biblScope/text()}"/>                   
+              </div>
+            </div>
+            }
             {if ($target = 'concept') then 
             <div class="form-row">
               <div id="input-crit-group" class="col-md-6">
@@ -392,7 +429,14 @@ declare function dialogs:new-concept-dialog($options as map(*)){
                     <label for="input-notes" class="font-weight-bold">Modern Chinese Criteria &amp; other notes</label>
                     <textarea id="input-notes" class="form-control"></textarea>                   
               </div>
-            </div> else ()}
+            </div> else 
+            <div class="form-row">
+              <div id="input-crit-group" class="col-md-12">
+                    <label for="input-crit" class="font-weight-bold">Notes</label>
+                    <textarea id="input-crit" class="form-control">{string-join($notes, '&#xA;&#xA;')}</textarea>                   
+              </div>
+            </div>            
+            }
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>

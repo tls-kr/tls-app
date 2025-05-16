@@ -209,7 +209,6 @@ let $k := map:keys($map)
 , $total := sum(for $l in $k return map:get($map, $l)[1])
 return
 <div id="result-map-top-{$level}">
-  
   {for $l at $pos in $k
   let $cnt := map:get($map, $l)[1]
   , $pc := format-number(($cnt div $total) * 100, "0.#") 
@@ -231,7 +230,8 @@ return
     (for $f in $e return lct:format-citation($f, map{})    )
    case map() return lct:format-result-map($e, $level+1)
    default return ()
-}{if ($l = 'none') then () else if (lpm:can-use-linked-items()) then ltg:tag-actions($uid) else ()}
+}
+{if ($l = 'none') then () else if (lpm:can-use-linked-items()) then <div class="float-right">Select items to apply these actions: {ltg:tag-actions($uid)}</div> else ()}
 </div>
 </div>
 }
@@ -350,18 +350,20 @@ let $creator-id := if ($node/tls:metadata/@resp) then substring($node/tls:metada
 , $attid := $node/@xml:id/string()
 return
 <div class="row {$bg}">
-<div class="col-sm-1" title="{$creation-date}">{ if (lpm:can-use-linked-items()) then <input class="form-check-input" type="checkbox" name="res-check" value="" id="res-{$attid}"/> else ()}<span class="chn-font">{$zi}</span> ({$pr}){lct:set-value('chars', $zi)}</div>
-<div class="col-sm-2"><a href="concept.html?concept={$concept}{$node//tei:sense/@corresp}">{$concept}</a> {lct:set-value('concept', $concept)}</div>
+<div class="col-sm-1" title="{$creation-date}"><span class="chn-font">{$zi}</span> ({$pr}){lct:set-value('chars', $zi)}</div>
+<div class="col-sm-1"><a href="concept.html?concept={$concept}{$node//tei:sense/@corresp}">{$concept}</a> {lct:set-value('concept', $concept)}</div>
 <div class="col-sm-4"><a href="textview.html?location={$target}{if ($type='remote')then '&amp;mode=remote'else()}" class="font-weight-bold">{$src, $loc}</a>&#160;{$line}{if ($tr) then (<br/>, $tr) else ()}</div>
-<div class="col-sm-2">{lct:set-value('syn-func', $sf)}<span class="font-weight-bold ml-2">{$sf}</span> {if ($sm) then ("&#160;",<em>{$sm}</em>) else ()}</div>
+<div class="col-sm-2"><span class="font-weight-bold ml-2">{$sf}</span> {if ($sm) then ("&#160;",<em>{$sm}</em>) else ()} {lct:set-value('syn-func', $sf)}</div>
 <div class="col-sm-3">{$def}
   {lrh:swl-buttons(map{'ann': 'swl', 'resp': $resp, 'user' : sm:id()//sm:real/sm:username/text(), 'creator-id': $creator-id, 'node': $node, 'zi': $zi, 'context' : 'cit', 'marktext' : $marktext})}
+  <span><br/>{"{"|| $creator-id ||"}　", $creation-date}</span>
 </div>
+<div class="col-sm-1" title="tags">{ if (lpm:can-use-linked-items()) then <input class="form-check-input" type="checkbox" name="res-check" value="" id="res-{$attid}"/> else ()}{ltg:show-tags($node, map{})}</div>
 </div>
 };
 
 declare function lct:set-value($perspective, $item){
-<span class="btn badge badge-light" onclick="cit_set_value('{$perspective}', '{$item}')">CIT</span>
+<span class="btn badge badge-light" onclick="cit_set_value('{$perspective}', '{$item}')" title="set the item and perspective to this value">CIT</span>
 };
 
 declare function lct:set-valuex($perspective, $item){

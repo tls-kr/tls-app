@@ -335,7 +335,7 @@ declare function ltr:render-translation-submenu($textid as xs:string, $slot as x
             (<button class="btn btn-secondary dropdown-toggle" type="button" id="ddm-{$slot}" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
             {$label}
             </button>,
-            if (lpm:can-use-ai() and contains($label, 'Translation by TLS Project')) then <button type="button" class="btn btn-primary" title="Get translation draft" onclick="get_tr_for_page('{$slot}', '{$trid}', '{$tr($trid)[$ltr:tr-map-indices?lang-label]}')">AI</button> else ()
+            if (lpm:can-use-ai() and contains($label, 'Translation by AI - ')) then <button type="button" class="btn btn-primary" title="Get translation from AI" onclick="get_tr_for_page('{$slot}', '{$trid}', '{$tr($trid)[$ltr:tr-map-indices?lang-label]}')">AI</button> else ()
             )
          }   
     <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
