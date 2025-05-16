@@ -318,7 +318,7 @@ declare function dialogs:new-concept-dialog($options as map(*)){
     if (map:contains($options, "name")) then map:get($con:new-concepts($options?name), "id") else 
     "uuid-" || util:uuid()
   , $bibs := $ex//tei:listBibl/tei:bibl  
-  , $notes := for $d in $ex/tei:note[@type="note"]/tei:p return normalize-space($d/text()) 
+  , $notes := for $d in $ex/tei:note/tei:p return normalize-space($d/text()) 
   , $def := if ($ex) then for $d in $ex/tei:div[@type="definition"]/tei:p return normalize-space($d/text()) else
     if ($uuid) then if (map:contains($con:new-concept-defs, $uuid)) then $con:new-concept-defs($uuid) else () else ()
   , $name := if(map:contains($options, "concept")) then $options?concept else 
@@ -344,7 +344,7 @@ declare function dialogs:new-concept-dialog($options as map(*)){
             <div class="form-row">
               <div id="input-def-group" class="col-md-6">
                     <label for="input-def" class="font-weight-bold">Definition </label>
-                    <textarea id="input-def" class="form-control">{string-join($def, '&#xA;&#xA;')}</textarea>                   
+                    <textarea id="input-def" class="form-control">{string-join($def, '&#xA;')}</textarea>                   
               </div>
               <div id="select-name-group" class="form-group ui-widget col-md-6">
                  <label for="select-name" class="font-weight-bold">Alternate labels</label>
@@ -409,7 +409,7 @@ declare function dialogs:new-concept-dialog($options as map(*)){
             return
             <div class="form-row" id="bibl-group-{$pos}">
               <div id="input-bibl-group-id-{$pos}" class="col-md-3">
-                    <input id="input-bibl-id-{$pos}" data-cid="{$b/tei:ref/@target}" class="form-control" value="{normalize-space($b/tei:ref/text())}"/>                   
+                    <input id="input-bibl-id-{$pos}" data-cid="{$b/tei:ref/@target}" class="bibl form-control" value="{normalize-space($b/tei:ref/text())}"/>                   
               </div>
               <div id="input-bibl-group-tit-{$pos}" class="col-md-6">
                     <input id="input-bibl-tit-{$pos}" class="form-control" value="{$b/tei:title/text()}"/>                   
@@ -433,7 +433,7 @@ declare function dialogs:new-concept-dialog($options as map(*)){
             <div class="form-row">
               <div id="input-crit-group" class="col-md-12">
                     <label for="input-crit" class="font-weight-bold">Notes</label>
-                    <textarea id="input-crit" class="form-control">{string-join($notes, '&#xA;&#xA;')}</textarea>                   
+                    <textarea id="input-crit" class="form-control">{string-join($notes, '&#xA;')}</textarea>                   
               </div>
             </div>            
             }

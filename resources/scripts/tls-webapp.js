@@ -2404,11 +2404,13 @@ function reset_tax(){
     $(".staging-span").html("")
 }
 
+// this adds a new input line for bibliographic reference and initializes autocomplete
+
 function con_add_new_line(n, lid){
  var m = n+1;
  var newline = `<div class="form-row" id="bibl-group-${n}">\
               <div id="input-bibl-group-id-${n}" class="ui-widget col-md-3">\
-                    <input id="input-bibl-id-${n}" data-cid="" class="form-control" value=""/>\
+                    <input id="input-bibl-id-${n}" data-cid="" class="bibl form-control" value=""/>\
               </div>\
               <div id="input-bibl-group-tit-${n}" class="col-md-6">\
                     <input id="input-bibl-tit-${n}" class="form-control" value=""/>\
@@ -2430,8 +2432,8 @@ function con_add_new_line(n, lid){
 function save_new_concept (uuid, concept, type){
   var och_val = $("#name-och" ).val();
   var zh_val = $("#name-zh" ).val();
-  var def_val = $("#input-def" ).val();
-  var crit_val = $("#input-crit" ).val();
+  var def_val = $("#input-def" ).val().replaceAll('\n', '$x$') ;
+  var crit_val = $("#input-crit" ).val().replaceAll('\n', '$x$');
   var notes_val = $("#input-notes" ).val();
   var ont_ant = $("#stag-antonymy-span .staged").map(function(){
     if ($(this).attr("data-cid")){
@@ -2450,10 +2452,17 @@ function save_new_concept (uuid, concept, type){
       return $(this).text() + "::" + $(this).attr("data-cid");
     } else {return "yyy"} }).get().join("xxx");
   var labels = $("#select-labels").val();
+  var bibl = $(".bibl").map (function() {if ($(this).attr("data-cid")){
+      tid = $(this).attr('id');
+      tit = $("#" + tid.replace('-id-', '-tit-')).val();
+      pag = $("#" + tid.replace('-id-', '-pg-')).val();
+      return $(this).attr("data-cid") + "::" + $(this).val() + "::" +  tit + "::" + pag;
+    } else {return "yyy"} }).get( ).join("xxx");
+  console.log('bibl', bibl);
   $.ajax({
   type : "PUT",
   dataType : "html",
-  url : "api/responder.xql?func=save-new-"+type+"&concept_id="+uuid+"&concept="+concept+"&crit="+crit_val+"&def="+def_val+"&notes="+notes_val+"&ont_ant="+ont_ant+"&ont_hyp="+ont_hyp+"&ont_see="+ont_see+"&ont_tax="+ont_tax+"&labels="+labels+"&och="+och_val+"&zh="+zh_val,
+  url : "api/responder.xql?func=save-new-"+type+"&concept_id="+uuid+"&concept="+concept+"&crit="+crit_val+"&def="+def_val+"&notes="+notes_val+"&ont_ant="+ont_ant+"&ont_hyp="+ont_hyp+"&ont_see="+ont_see+"&ont_tax="+ont_tax+"&labels="+labels+"&och="+och_val+"&zh="+zh_val+"&bibl="+bibl,
   success : function(resp){
     $( "#new-concept-dialog" ).modal('hide');      
     toastr.info("New item " + concept + " saved.", "HXWD says:");
