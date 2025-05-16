@@ -1482,6 +1482,12 @@ let $rhet-dev := doc($config:tls-data-root||"/core/rhetorical-devices.xml")
    <item xmlns="http://www.tei-c.org/ns/1.0">{normalize-space($l)}</item>
   }
   </list> else (),
+ $bibl := <listBibl xmlns="http://www.tei-c.org/ns/1.0">{
+    for $b in tokenize($map?bibl, 'xxx')
+     let $x := tokenize($b, '::')
+     return 
+     <bibl><ref target="#{$x[1]}">{$x[2]}</ref><title>{$x[3]}</title><biblScope unit="page">{$x[4]}</biblScope></bibl>
+     }</listBibl>, 
  $och := if ($map?och) then <item xmlns="http://www.tei-c.org/ns/1.0" xml:lang="och">{$map?och}</item> else (),
  $zh := if ($map?zh) then <item xmlns="http://www.tei-c.org/ns/1.0" xml:lang="zh">{$map?zh}</item> else (),
  $uuid := if ($ex) then $ex/@xml:id else 
@@ -1489,33 +1495,32 @@ let $rhet-dev := doc($config:tls-data-root||"/core/rhetorical-devices.xml")
                 "uuid-" || util:uuid()
 
   (: <?xml-model href="../schema/tls.rnc" type="application/relax-ng-compact-syntax"?>, :)
-let $new-concept := (
+let $new-concept := 
 <div xmlns="http://www.tei-c.org/ns/1.0" type="rhet-dev" xml:id="{$uuid}">
 <head>{$map?concept}</head>{$labels}
 <list type="translations">{$och,$zh}</list>
 <div type="definition">
-<p>{$map?def}</p></div>
-<div type="notes">    
- <div type="old-chinese-criteria"><p>{$map?crit}</p></div>
- <div type="modern-chinese-criteria"><p>{$map?notes}</p></div>
-</div>    
+{for $p in tokenize($map?def, '\$x\$') return <p>{$p}</p>}
+</div>
 {$pointers}
+<note>{for $p in tokenize($map?crit, '\$x\$') return <p>{$p}</p>}</note>
 <div type="source-references">
-        <listBibl>
-        </listBibl>
-    </div>
+{$bibl}
+</div>
 <tls:metadata resp="#{$user}" created="{current-dateTime()}">
 <respStmt>
 <resp>added</resp>
 <name notBefore ="{current-dateTime()}">{$user}</name>
 </respStmt>
 </tls:metadata>
-</div>)
-
-return (
+</div>
+, $save := if ($ex) then 
+   update replace $ex with $new-concept else
    update insert $new-concept into $rhet-dev//tei:body
-   , $uuid
-    )
+return  
+
+$uuid
+    
 };
 
 
