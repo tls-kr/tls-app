@@ -18,16 +18,18 @@ import module namespace lrh="http://hxwd.org/lib/render-html" at "render-html.xq
 declare namespace output = "http://www.w3.org/2010/xslt-xquery-serialization";
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 
-declare variable $ai:config := if(doc('../../ai-config.xml')) then doc('../../ai-config.xml') else <response status="fail"><message>Load config.xml file please.</message></response>;
+declare variable $ai:config := if(doc('../../ai-config.xml')) then doc('../../ai-config.xml') else <response status="fail"><message>Load ai-config.xml file please.</message></response>;
 
 declare variable $ai:model := "gemini-2.0-flash";
+declare variable $ai:key := $ai:config//gemini-config/api-token/text();
+declare variable $ai:temp-path := "/db/groups/tls-user/";
 
 declare function ai:query($map){
-    let $url := 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key='||$ai:key
+    let $url := 'https://generativelanguage.googleapis.com/v1beta/models/'||$ai:model||':generateContent?key='||$ai:key
     , $content-type := <http:header name="Content-type" value="application/json"/>
     , $lang := if ($map?lang) then $map?lang else "English"
     , $body := '{
-    "system_instruction" : {"parts" : [ {"text" : "Translate from classical Chinese to '|| $lang || '.  The text contains page numbers like [001], these should be passed through unchanged. "}]},
+    "system_instruction" : {"parts" : [ {"text" : "Translate from classical Chinese to '|| $lang || '.  The text contains page numbers like [001], these should be passed through unchanged. Names etc. should be returned using Hànyǔ Pīnyīn with tone marks. "}]},
     "contents": [{"parts": [{ "text" : "' || $map?user-prompt || '" }]  }] }'
 return
     
@@ -81,8 +83,8 @@ let $loc := replace($loc_in, "-swl", "")
 , $dseg := lu:get-targetsegs($loc, $prec + 3, $foll + 3)
 , $user-prompt := lrh:multiple-segs-plain-with-no($loc,  $prec + 3 , $foll + 3)
 , $query := ai:query(map{'user-prompt' : $user-prompt, 'lang' : $lg/text()})
-, $temp := xmldb:store('/db', $resp-file, $query[2])
-, $res := if ($query[1]/@status = '200') then ai:parse-response('/db/' || $resp-file) else map{"type": "error", "content" : "400"}
+, $temp := xmldb:store($ai:temp-path, $resp-file, $query[2])
+, $res := if ($query[1]/@status = '200') then ai:parse-response($ai:temp-path || $resp-file) else map{"type": "error", "content" : "400"}
 , $save-tr := if ($res?type = 'error') then () else ai:save-response($dseg, $res, $slot, $lg/@xml:lang) 
 , $ret :=  
    map:merge(for $seg in $dseg 

@@ -1354,6 +1354,34 @@ function initialize_autocomplete_rd(){
     } );
 };
 
+function initialize_autocomplete_bib(n){
+    $( "#input-bibl-id-"+n ).autocomplete({
+      appendTo: "#input-bibl-group-id-"+n,
+      source: function( request, response ) {
+        $.ajax( {
+          url: "api/autocomplete.xql",
+          dataType: "jsonp",
+          data: {
+            term: request.term.toUpperCase(),
+	        type: "bibl"
+          },
+          success: function( data ) {
+            response( data );
+          }
+        } );
+      },
+      minLength: 2,
+      select: function( event, ui ) {
+        var id = ui.item.value.split('__')[0];
+        $("#input-bibl-id-"+n ).attr('data-cid', ui.item.id);
+        $("#input-bibl-tit-"+n ).val(ui.item.value.split('__')[1]);
+        console.log( "Selected: " + id + " aka " + ui.item.id );
+        $("#input-bibl-id-"+n ).val(id);   
+        event.preventDefault();
+      }
+    } );
+};
+
 
 // add this anonyomous function to the #new-concept dialog, so that on hiding 
 // its content gets cleared away.
@@ -2315,14 +2343,14 @@ function save_rdl(word, lineid, line){
 };
 
 // new concept definition dialog etc.
-function new_concept_dialog(){
+function new_concept_dialog(type, head){
      $.ajax({
      type : "GET",
      dataType : "html",  
-     url : "api/responder.xql?func=new-concept-dialog", 
+     url : "api/responder.xql?func=dialogs:new-concept-dialog&type="+type+"&concept="+head, 
      success : function(resp){
      $('#remoteDialog').html(resp);
-     initialize_autocomplete();
+     initialize_autocomplete_nc(type);
      $('#new-concept-dialog').modal('show');
    }
   });
@@ -2376,6 +2404,27 @@ function reset_tax(){
     $(".staging-span").html("")
 }
 
+function con_add_new_line(n, lid){
+ var m = n+1;
+ var newline = `<div class="form-row" id="bibl-group-${n}">\
+              <div id="input-bibl-group-id-${n}" class="ui-widget col-md-3">\
+                    <input id="input-bibl-id-${n}" data-cid="" class="form-control" value=""/>\
+              </div>\
+              <div id="input-bibl-group-tit-${n}" class="col-md-6">\
+                    <input id="input-bibl-tit-${n}" class="form-control" value=""/>\
+              </div>\
+              <div id="input-bibl-group-pg-${n}" class="col-md-3">\
+                    <input id="input-bibl-pg-${n}" class="form-control" value=""/>\
+              </div>\
+            </div>`;
+ $("#"+lid).after(newline);
+ $('#add-line').attr('onclick', `con_add_new_line(${m}, 'bibl-group-${n}')`);
+ initialize_autocomplete_bib(n);
+ var new_width = $("#input-crit-group").outerWidth()
+ $('#input-bibl-group-id-'+n+' > input.ui-autocomplete-input').css('width', new_width)
+};
+
+
 // type can be concept or rhet-dev (2025-05-08)
 
 function save_new_concept (uuid, concept, type){
@@ -2407,7 +2456,7 @@ function save_new_concept (uuid, concept, type){
   url : "api/responder.xql?func=save-new-"+type+"&concept_id="+uuid+"&concept="+concept+"&crit="+crit_val+"&def="+def_val+"&notes="+notes_val+"&ont_ant="+ont_ant+"&ont_hyp="+ont_hyp+"&ont_see="+ont_see+"&ont_tax="+ont_tax+"&labels="+labels+"&och="+och_val+"&zh="+zh_val,
   success : function(resp){
     $( "#new-concept-dialog" ).modal('hide');      
-    toastr.info("New concept " + concept + " saved.", "HXWD says:");
+    toastr.info("New item " + concept + " saved.", "HXWD says:");
     $("#rhetdev-id-span").text(resp)
   },
   error : function(resp){

@@ -846,12 +846,14 @@ function app:rhetdev($node as node()*, $model as map(*), $uuid as xs:string?, $o
     $edit := if (sm:id()//sm:groups/sm:group[. = "tls-editor"]) then 'true' else 'false',
     $tr := $rd//tei:list[@type="translations"]//tei:item
     ,$rdlcnt := count(collection($config:tls-data-root || "/notes/rdl")//tls:span[@rhet-dev-id=$key])
+    , $head := $rd/tei:head/text()
     return 
     <div class="row" id="rhetdev-id" data-id="{$key}" >
     <div class="card col-sm-12" style="max-width: 1000px;background-color:honeydew;">
     <div class="card-body" >
-    <h4 class="card-title">{$rd/tei:head/text()}&#160;&#160;{for $t in $tr return 
+    <h4 class="card-title">{$head}&#160;&#160;{for $t in $tr return 
       <span class="badge badge-light" title="{map:get($config:lmap, $t/@xml:lang)}">{$t/text()}</span>} 
+      <button class="btn float-right" onclick="new_concept_dialog('rhet-dev', '{$head}')">Edit</button>
       </h4>
     <div class="card-text" id="rd-test" >{for $p in $rd/tei:div[@type="definition"]//tei:p/text() return <p>{$p}</p>}</div>
     <div id="rhetdev-content" class="accordion">

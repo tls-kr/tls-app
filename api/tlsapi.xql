@@ -51,11 +51,19 @@ Data for the callback function used for autocompletion
 declare function tlsapi:autocomplete($type as xs:string, $term as xs:string){
 let $callback := request:get-parameter("callback", "xx")
 let $payload := if ($type = 'tag') then () else
-  for $t in collection($config:tls-data-root)//tei:div[@type=$type]/tei:head
-  where contains($t/text(), $term)
-  order by string-length($t/text()) ascending
-  return
-  concat('{"id": "', $t/ancestor::tei:div[1]/@xml:id, '", "label": "', $t/text(), '"}')
+  if ($type = 'bibl') then 
+    for $t in collection($config:tls-data-root)//mods:note[@type='bibliographic-reference']
+     let $tit := ($t/ancestor::mods:mods//mods:title)[1]
+     where contains($t/text(), $term)
+     order by string-length($t/text()) ascending
+     return
+    concat('{"id": "', $t/ancestor::mods:mods/@ID, '", "label": "', $t/text()||'__'||$tit, '"}')
+  else
+    for $t in collection($config:tls-data-root)//tei:div[@type=$type]/tei:head
+    where contains($t/text(), $term)
+    order by string-length($t/text()) ascending
+    return
+    concat('{"id": "', $t/ancestor::tei:div[1]/@xml:id, '", "label": "', $t/text(), '"}')
 return 
 concat($callback, "([", string-join($payload, ","), "]);")
 };
@@ -902,7 +910,7 @@ return
                  </select>                 
               </div>
               <div id="select-transl-group" class="form-group ui-widget col-md-3">
-                  <label for="select-transl">Creator (if it is not you:-): </label>
+                  <label for="select-transl">Creator: <span class="badge badge-primary" title="AI translation file" onclick="$('#select-transl').val('AI - Gemini')">AI</span></label>
                   <input id="select-transl" class="form-control" value="{$creator}"/>
               </div>
               <div id="select-type-group1" class="form-group ui-widget col-md-6">
@@ -1464,11 +1472,10 @@ return (
 
 declare function tlsapi:save-new-rhet-dev($map as map(*)){
 let $rhet-dev := doc($config:tls-data-root||"/core/rhetorical-devices.xml")
-,  $user := sm:id()//sm:real/sm:username/text()
- return 
- if ($rhet-dev//tei:head[. = $map?concept]) then "Rhetorical device exists, aborting" else
-let $pointers := local:make-pointers($map)
-  , $labels := if ($map?labels) then 
+, $user := sm:id()//sm:real/sm:username/text()
+, $ex := if ($rhet-dev//tei:head[. = $map?concept]) then $rhet-dev//tei:head[. = $map?concept]/parent::tei:div else ()
+, $pointers := local:make-pointers($map)
+, $labels := if ($map?labels) then 
   <list type="altnames" xmlns="http://www.tei-c.org/ns/1.0" >
   {for $l in tokenize($map?labels, ",")
   return 
@@ -1477,7 +1484,9 @@ let $pointers := local:make-pointers($map)
   </list> else (),
  $och := if ($map?och) then <item xmlns="http://www.tei-c.org/ns/1.0" xml:lang="och">{$map?och}</item> else (),
  $zh := if ($map?zh) then <item xmlns="http://www.tei-c.org/ns/1.0" xml:lang="zh">{$map?zh}</item> else (),
- $uuid := if ($map?concept_id) then $map?concept_id else "uuid-" || util:uuid()
+ $uuid := if ($ex) then $ex/@xml:id else 
+             if ($map?concept_id) then $map?concept_id else 
+                "uuid-" || util:uuid()
 
   (: <?xml-model href="../schema/tls.rnc" type="application/relax-ng-compact-syntax"?>, :)
 let $new-concept := (

@@ -293,9 +293,11 @@ declare function lrh:format-button-common($onclick as xs:string, $title as xs:st
 };
 
 declare function lrh:swl-buttons($map as map(*)){
-( if (lpm:show-setting-restricted('swl-buttons', '')) then
+(
+if (lpm:show-setting-restricted('swl-buttons', '')) then
    if ($map?ann = 'wrl') then () else
-   ( <span class="rp-5">
+   ( 
+   <span class="rp-5">
        {lrh:format-button("review_swl_dialog('" || data($map?node/@xml:id) || "')", "Review the SWL for " || $map?zi[1], "octicons/svg/unverified.svg", "small", "close", "tls-editor")}&#160;&#160;</span>,   
     lrh:format-button("save_swl_review('" || data($map?node/@xml:id) || "')", "Approve the SWL for " || $map?zi, "octicons/svg/thumbsup.svg", "small", "close", "tls-editor")
     ) else ()
@@ -328,6 +330,7 @@ declare function lrh:swl-buttons($map as map(*)){
 : 2021-10-15: also display other annotation types (e.g. rhetorical devices etc.)
 : 2024-11-06 moved here from tlslib
 :)
+
 declare function lrh:format-swl($node as node(), $options as map(*)){
 let $user := sm:id()//sm:real/sm:username/text(),
 $usergroups := sm:get-user-groups($user),
@@ -382,8 +385,7 @@ if ($anntype eq "nswl") then
 else ()}
 <div class="col-sm-2"><span class="zh chn-font">{$czi}</span> ({$cpy})
 {if  ("tls-admin.x" = sm:get-user-groups($user)) then (data(($node//tls:srcline/@pos)[1]),
- <a href="{
-      concat($config:exide-url, "?open=", document-uri(root($node)))}">eXide</a>)
+ <a href="{concat($config:exide-url, "?open=", document-uri(root($node)))}">eXide</a>)
       else ()
   }    
 </div>

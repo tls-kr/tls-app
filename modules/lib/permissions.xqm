@@ -49,7 +49,8 @@ declare function lpm:should-display-navbar-review($context as xs:string, $model 
 
 declare function lpm:can-use-linked-items(){
 (: "dba" = sm:id()//sm:group:)
-false()
+(:false():)
+true()
 };
 
 declare function lpm:can-write-debug-log(){
@@ -57,7 +58,7 @@ declare function lpm:can-write-debug-log(){
 };
 
 declare function lpm:can-use-ai(){
- "dba" = sm:id()//sm:group
+ "tls-user" = sm:id()//sm:group
 };
 
 declare function lpm:can-delete-applications(){
@@ -114,11 +115,12 @@ declare function lpm:show-buddhist-tools($context){
 };
 
 declare function lpm:show-setting-restricted($type as xs:string, $context as xs:string?){
- if (not(lpm:tls-editor())) then false() else
- lpm:show-setting($type, $context)
+ if (not(lpm:tls-editor())) then false() else lpm:show-setting($type, $context)
 };
 
 declare function lpm:show-setting($type as xs:string, $context as xs:string?){
+if ($type = 'swl-buttons') then true()
+else
  let $pref := lus:get-user-section($type, $context) 
  (: not sure if I need to propagate context :)
  return
