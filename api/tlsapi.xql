@@ -1488,7 +1488,7 @@ let $rhet-dev := doc($config:tls-data-root||"/core/rhetorical-devices.xml")
      return 
      <bibl><ref target="#{$x[1]}">{$x[2]}</ref><title>{$x[3]}</title><biblScope unit="page">{$x[4]}</biblScope></bibl>
      }</listBibl>, 
- $och := if ($map?och) then <item xmlns="http://www.tei-c.org/ns/1.0" xml:lang="och">{$map?och}</item> else (),
+ $och := if ($map?och and not ($map?och = 'undefined')) then <item xmlns="http://www.tei-c.org/ns/1.0" xml:lang="och">{$map?och}</item> else (),
  $zh := if ($map?zh) then <item xmlns="http://www.tei-c.org/ns/1.0" xml:lang="zh">{$map?zh}</item> else (),
  $uuid := if ($ex) then $ex/@xml:id else 
              if ($map?concept_id) then $map?concept_id else 
@@ -1507,11 +1507,19 @@ let $new-concept :=
 <div type="source-references">
 {$bibl}
 </div>
-<tls:metadata resp="#{$user}" created="{current-dateTime()}">
+<tls:metadata resp="{if ($ex/tls:metadata) then $ex/tls:metadata/@resp else '#'||$user}" 
+              created="{if ($ex/tls:metadata) then $ex/tls:metadata/@created else current-dateTime()}" modified="{current-dateTime()}">
+{if ($ex) then ($ex/tls:metadata/tei:respStmt, 
+<respStmt>
+<resp>modified</resp>
+<name notBefore ="{current-dateTime()}">{$user}</name>
+</respStmt>
+) else 
 <respStmt>
 <resp>added</resp>
 <name notBefore ="{current-dateTime()}">{$user}</name>
 </respStmt>
+}
 </tls:metadata>
 </div>
 , $save := if ($ex) then 

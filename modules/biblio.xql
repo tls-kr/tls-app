@@ -523,7 +523,8 @@ declare function bib:mods2map($n as node()*){
 declare function bib:new-entry-dialog($map as map(*)){
  let $uuid :=  if (string-length($map?uuid) > 0) then $map?uuid else "uuid-" || util:uuid()
    , $mods := collection($config:tls-data-root||"/bibliography")//mods:mods[@ID=$uuid]
-   , $lang := if ($mods//mods:titleInfo[@script="Hant"]) then "chi" else "eng"
+   , $lang := if ($mods//mods:languageTerm[@type="code"]) then $mods//mods:languageTerm[@type="code"]/text() else 
+       if ($mods//mods:titleInfo/@lang) then $mods//mods:titleInfo/@lang else "chi"
    , $rt := if ($mods//mods:roleTerm) then $mods//mods:roleTerm else <roleTerm xmlns="http://www.loc.gov/mods/v3"></roleTerm>
    , $mt := if ($mods//mods:topic) then $mods//mods:topic else <topic xmlns="http://www.loc.gov/mods/v3"></topic>
    , $genre := if (string-length($mods//mods:genre/text()) > 0) then $mods//mods:genre/text() else "book" 
@@ -623,17 +624,18 @@ declare function bib:new-entry-dialog($map as map(*)){
            <div class="form-row">
               <div id="input-resp-group" class="col-md-6">
                  <small class="text-muted">Title (transcribed)</small>
-                 <input name="title-latn" class="form-control"  value="{$mods/mods:titleInfo[@script='Latn'  and @lang='chi']/mods:title}"></input>
+                 <input name="title-latn" class="form-control"  value="{$mods/mods:titleInfo[@script='Latn'  and @lang='chi']/mods:title/text()}"></input>
               </div>
               <div id="input-resp-group" class="col-md-6">
                  <small class="text-muted">Title (characters)</small>
-                 <input name="title-hant" class="form-control"  value="{$mods/mods:titleInfo[@script='Hant']/mods:title}"></input>
+                 <input name="title-hant" class="form-control"  value="{$mods/mods:titleInfo[@script='Hant']/mods:title/text()}"></input>
               </div>
            </div>     
            <div class="form-row">
-              <div id="input-resp-group" class="col-md-6">
-                 <small class="text-muted">Title in English</small>
-                 <input name="title-eng" class="form-control"  value="{$mods/mods:titleInfo[@type='translated' and not(@lang='chi')]/mods:title}"></input>
+              <div id="input-resp-group" class="col-md-12">
+                 <small class="text-muted">Title (translated or original)</small>
+                 <input name="title-eng" class="form-control"  value="{$mods/mods:titleInfo[not(@lang='chi')]/mods:title/text()}{
+                 if ($mods/mods:titleInfo[not(@lang='chi')]/mods:subTitle) then (' - ' || $mods/mods:titleInfo[not(@lang='chi')]/mods:subTitle/text()) else ()}"></input>
               </div>
             </div>
             <h6  class="font-weight-bold">Details</h6>
@@ -643,11 +645,11 @@ declare function bib:new-entry-dialog($map as map(*)){
                <small class="text-muted">Publisher (transcribed)</small>                 
                  <input name="book-pub-latn" class="form-control" value="{$mods/mods:originInfo/mods:publisher[not(@script='Hant')]}"></input>
               </div>
-              <div class="col-md-3 book" style="{if ($genre='article') then 'display:none' else ''}">
-               <small class="text-muted">Publisher (characters)</small>                 
+              <div class="col-md-2 book" style="{if ($genre='article') then 'display:none' else ''}">
+               <small class="text-muted">Publ. (characters)</small>                 
                  <input name="book-pub-hant" class="form-control"  value="{$mods/mods:originInfo/mods:publisher[@script='Hant']}"></input>
               </div>
-              <div class="col-md-2 book" style="{if ($genre='article') then 'display:none' else ''}">
+              <div class="col-md-3 book" style="{if ($genre='article') then 'display:none' else ''}">
                <small class="text-muted">Place (transcribed)</small>                 
                  <input name="book-place-latn" class="form-control"  value="{$mods/mods:originInfo//mods:placeTerm[not(@script='Hant')]}"></input>
               </div>
@@ -764,7 +766,7 @@ let $rt := for $l in map:keys($map)
    this would mean to replace / update the sourceDesc
   :)
   () else ()
-let $mods := <mods xmlns="http://www.loc.gov/mods/v3" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ID="{$map?uuid}" version="3.6" xsi:schemaLocation="http://www.loc.gov/mods/v3 http://cluster-schemas.uni-hd.de/modsCluster.xsd" resp="{$user}" modified="{current-dateTime()}">
+let $mods := <mods xmlns="http://www.loc.gov/mods/v3" xmlns:tls="http://hxwd.org/ns/1.0" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ID="{$map?uuid}" version="3.6" xsi:schemaLocation="http://www.loc.gov/mods/v3 https://www.loc.gov/standards/mods/v3/mods.xsd" resp="{$user}" modified="{current-dateTime()}">
 <language>
 <languageTerm type="text">{$bib:c2l?($lang)}</languageTerm>
 <languageTerm type="code" authority="iso639-2b">{$lang}</languageTerm>
@@ -772,14 +774,17 @@ let $mods := <mods xmlns="http://www.loc.gov/mods/v3" xmlns:xlink="http://www.w3
 
 {for $r in $rt return
 let $pos := tokenize($r, "-")[last()]
+, $fnl := $map?("fam-name-latn-"||$pos)
+, $fnc := $map?("fam-name-hant-"||$pos)
+where string-length($fnc || $fnl) > 0
 return
 <name type="personal">
 {if ($map?("fam-name-latn-"||$pos)) then
-<namePart type="family" lang="{$lang}" transliteration="chinese/ala-lc" script="Latn">{$map?("fam-name-latn-"||$pos)}</namePart> else ()}
+<namePart type="family" lang="{$lang}" transliteration="chinese/ala-lc" script="Latn">{$fnl}</namePart> else ()}
 {if ($map?("giv-name-latn-"||$pos)) then
 <namePart type="given" lang="{$lang}" transliteration="chinese/ala-lc" script="Latn">{$map?("giv-name-latn-"||$pos)}</namePart> else ()}
 {if ($map?("fam-name-hant-"||$pos)) then
-<namePart type="family" lang="{$lang}" script="Hant">{$map?("fam-name-hant-"||$pos)}</namePart> else ()}
+<namePart type="family" lang="{$lang}" script="Hant">{$fnc}</namePart> else ()}
 {if ($map?("giv-name-hant-"||$pos)) then
 <namePart type="given" lang="{$lang}" script="Hant">{$map?("giv-name-hant-"||$pos)}</namePart> else ()}
 <role>
@@ -796,7 +801,7 @@ return
 <title>{$map?title-latn}</title>
 </titleInfo> else ()}
 {if (string-length($map?title-eng) > 0) then
-<titleInfo lang="eng" script="Latn">
+<titleInfo lang="{$lang}" script="Latn">
 <title>{$map?title-eng}</title>
 </titleInfo> else ()}
 {if ($genre = ("article", "chapter")) then 
@@ -825,16 +830,16 @@ else
 <originInfo>
 {if (string-length($map?book-place-hant) > 0) then
 <place>
-<placeTerm lang="{$lang}" type="text" script="Hant">{$map?book-place-hant}</placeTerm>
+<placeTerm lang="{$lang}" script="Hant">{$map?book-place-hant}</placeTerm>
 </place> else ()}
 {if (string-length($map?book-place-latn) > 0) then
 <place>
-<placeTerm lang="{$lang}" type="text" script="Latn">{$map?book-place-latn}</placeTerm>
+<placeTerm lang="{$lang}" script="Latn">{$map?book-place-latn}</placeTerm>
 </place>else ()}
 {if (string-length($map?book-pub-hant) > 0) then
-<publisher lang="{$lang}" type="text" script="Latn">{$map?book-pub-hant}</publisher> else ()}
+<publisher lang="{$lang}" script="Latn">{$map?book-pub-hant}</publisher> else ()}
 {if (string-length($map?book-pub-latn) > 0) then
-<publisher lang="{$lang}" type="text" script="Latn">{$map?book-pub-latn}</publisher> else ()}
+<publisher lang="{$lang}" script="Latn">{$map?book-pub-latn}</publisher> else ()}
 <dateIssued encoding="w3cdtf">{$date}</dateIssued>
 <issuance>monographic</issuance>
 </originInfo>,

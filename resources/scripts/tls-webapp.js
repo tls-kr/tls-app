@@ -2415,9 +2415,12 @@ function con_add_new_line(n, lid){
               <div id="input-bibl-group-tit-${n}" class="col-md-6">\
                     <input id="input-bibl-tit-${n}" class="form-control" value=""/>\
               </div>\
-              <div id="input-bibl-group-pg-${n}" class="col-md-3">\
+              <div id="input-bibl-group-pg-${n}" class="col-md-2">\
                     <input id="input-bibl-pg-${n}" class="form-control" value=""/>\
               </div>\
+              <div class="col-md-1">\
+                <span id="rem-line-${n}" title="Remove this line" class="float-right badge badge-light mt-2" onclick="bib_remove_line('bibl-group-${n}')">X</span>\
+            </div>\
             </div>`;
  $("#"+lid).after(newline);
  $('#add-line').attr('onclick', `con_add_new_line(${m}, 'bibl-group-${n}')`);
@@ -2467,12 +2470,15 @@ function save_new_concept (uuid, concept, type){
     $( "#new-concept-dialog" ).modal('hide');      
     toastr.info("New item " + concept + " saved.", "HXWD says:");
     $("#rhetdev-id-span").text(resp)
+//   window.location.reload(true)
   },
   error : function(resp){
   console.log(resp);
-    alert("PROBLEM: "+resp.statusText + "\n " + resp.responseText);
+//    alert("PROBLEM: "+resp.statusText + "\n " + resp.responseText);
+//   window.location.reload(true)
   }
-  });    
+  }
+   );    
 };
 
 // delete syntactic function or semantic feature (called from browse page)

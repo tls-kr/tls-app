@@ -28,7 +28,8 @@ return remote:call-remote-get(map{'server': $krp, 'path': $path})
 
 
 declare function remote:get-segs($map as map(*)){
-let $path:= "?location="||$map?location||"&amp;prec="||$map?prec||"&amp;foll="||$map?foll||"&amp;type=skeleton"
+let $type := if ($map?type) then $map?type else 'skeleton'
+let $path:= "?location="||$map?location||"&amp;prec="||$map?prec||"&amp;foll="||$map?foll||"&amp;type="||$type
 , $krp := "https://hxwd.org/krx/preview"
 return remote:call-remote-get(map{'server': $krp, 'path': $path})
 };

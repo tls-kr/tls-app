@@ -250,7 +250,10 @@ string-join(
 
 declare function lrh:multiple-segs-plain-with-no($loc as xs:string, $prec as xs:int, $foll as xs:int){
 let $dseg := lu:get-targetsegs($loc, $prec, $foll)
-return
+return lrh:multiple-segs-plain-dseg($dseg) 
+};
+
+declare function lrh:multiple-segs-plain-dseg($dseg){
 string-join(
   for $s at $p in $dseg
   return
