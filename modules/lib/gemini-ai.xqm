@@ -14,6 +14,7 @@ import module namespace http="http://expath.org/ns/http-client";
 import module namespace lu="http://hxwd.org/lib/utils" at "utils.xqm";
 import module namespace ltr="http://hxwd.org/lib/translation" at "translation.xqm";
 import module namespace lrh="http://hxwd.org/lib/render-html" at "render-html.xqm";
+import module namespace lrm="http://hxwd.org/remote" at "remote.xqm";
 
 declare namespace output = "http://www.w3.org/2010/xslt-xquery-serialization";
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
@@ -80,8 +81,8 @@ let $loc := replace($loc_in, "-swl", "")
 , $troot := $transl($content-id)[1] 
 , $lg := $troot//tei:bibl[@corresp="#"||$textid]/following-sibling::tei:lang 
 , $edtp := if (contains($content-id, "_")) then xs:boolean(1) else xs:boolean(0)
-, $dseg := lu:get-targetsegs($loc, $prec + 3, $foll + 3)
-, $user-prompt := lrh:multiple-segs-plain-with-no($loc,  $prec + 3 , $foll + 3)
+, $dseg := if ($troot//tei:sourceDesc//tei:ref[@type='remote']) then (lrm:get-segs(map{'location' : $loc, 'prec': $prec + 3, 'foll': $foll +3, 'type': 'raw'})//tei:seg) else lu:get-targetsegs($loc, $prec + 3, $foll + 3)
+, $user-prompt := lrh:multiple-segs-plain-dseg($dseg)
 , $query := ai:query(map{'user-prompt' : $user-prompt, 'lang' : $lg/text()})
 , $temp := xmldb:store($ai:temp-path, $resp-file, $query[2])
 , $res := if ($query[1]/@status = '200') then ai:parse-response($ai:temp-path || $resp-file) else map{"type": "error", "content" : "400"}

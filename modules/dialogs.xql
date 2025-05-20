@@ -331,6 +331,7 @@ declare function dialogs:new-concept-dialog($options as map(*)){
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close" title="Close">x</button>
             </div>
             <div class="modal-body">
+            {if ($target = 'concept') then 
             <div class="form-row">
               <div id="input-def-group" class="col-md-6">
                  <label for="name-och" class="font-weight-bold">Old Chinese name:</label>
@@ -341,6 +342,22 @@ declare function dialogs:new-concept-dialog($options as map(*)){
                  <input id="name-zh" class="form-control" required="true" value="{$ex/tei:list[@type="translations"]/tei:item[@xml:lang='zh']/text()}"/>
               </div>
             </div>
+            else 
+             <div class="form-row">
+                 <input id="name-och" style="display:none;" class="form-control" value=""/>
+                 <span id="name-id-span" style="display:none;">{$uuid}</span>
+              <div id="input-def-group" class="col-md-6">
+                 <label for="name-zh" class="font-weight-bold">Chinese name:</label>
+                 <input id="name-zh" class="form-control" required="true" value="{$ex/tei:list[@type="translations"]/tei:item[@xml:lang='zh']/text()}"/>
+              </div>
+              <div id="select-name-group" class="form-group ui-widget col-md-6">
+                 <label for="select-name" class="font-weight-bold">Alternate labels</label>
+                 <input id="select-labels" class="form-control" required="true" value=""></input>
+                 <small class="text-muted">Comma separated list of other names for this {lower-case($tmap?($target))}</small>
+              </div>
+            </div>
+            }
+            {if ($target = 'concept') then 
             <div class="form-row">
               <div id="input-def-group" class="col-md-6">
                     <label for="input-def" class="font-weight-bold">Definition </label>
@@ -353,7 +370,15 @@ declare function dialogs:new-concept-dialog($options as map(*)){
                  <span id="name-id-span" style="display:none;">{$uuid}</span>
               </div>
             </div>
-            <h6 class="font-weight-bold">Place this {lower-case($tmap?($target))} within the ontology</h6>
+            else 
+            <div class="form-row">
+              <div id="input-def-group" class="col-md-12">
+                    <label for="input-def" class="font-weight-bold">Definition </label>
+                    <textarea rows="{max((count($def)*2,3) )}"  id="input-def" class="form-control">{string-join($def, '&#xA;')}</textarea>                   
+              </div>
+            </div>
+            }
+            <h6 class="font-weight-bold mt-3" >Place this {lower-case($tmap?($target))} within the ontology</h6>
             <div id="staging" style="display:true;" class="form-row">
                     {for $l in map:keys($dialogs:lmap?tax-def)
                     let $it := $ex//tei:list[@type=$l]/tei:item/tei:ref
@@ -402,20 +427,23 @@ declare function dialogs:new-concept-dialog($options as map(*)){
               </div>
               <div id="input-bibl-group-pg" class="col-md-3">
                     <label for="input-bibl-pg" class="font-weight-bold">Page</label>
-                <span id="add-line" class="float-right badge badge-light" onclick="con_add_new_line({count($bibs) + 1}, 'bibl-group-{count($bibs)}')">Add new Ref.</span>
+                <span id="add-line" class="float-right badge badge-light mt-2" onclick="con_add_new_line({count($bibs) + 1}, 'bibl-group-{count($bibs)}')">Add new Ref.</span>
             </div>
             </div>
             {if (not($bibs)) then <div class="form-row" id="bibl-group-0"/> else for $b at $pos in  $ex//tei:listBibl/tei:bibl 
             return
             <div class="form-row" id="bibl-group-{$pos}">
               <div id="input-bibl-group-id-{$pos}" class="col-md-3">
-                    <input id="input-bibl-id-{$pos}" data-cid="{$b/tei:ref/@target}" class="bibl form-control" value="{normalize-space($b/tei:ref/text())}"/>                   
+                    <input id="input-bibl-id-{$pos}" data-cid="{substring($b/tei:ref/@target, 2)}" class="bibl form-control" value="{normalize-space($b/tei:ref/text())}"/>                   
               </div>
               <div id="input-bibl-group-tit-{$pos}" class="col-md-6">
                     <input id="input-bibl-tit-{$pos}" class="form-control" value="{$b/tei:title/text()}"/>                   
               </div>
-              <div id="input-bibl-group-pg-{$pos}" class="col-md-3">
+              <div id="input-bibl-group-pg-{$pos}" class="col-md-2">
                     <input id="input-bibl-pg-{$pos}" class="form-control" value="{$b/tei:biblScope/text()}"/>                   
+              </div>       
+              <div class="col-md-1">
+                    <span id="rem-line-{$pos}" title="Remove this line" class="float-right badge badge-light mt-2" onclick="bib_remove_line('bibl-group-{$pos}')">X</span>
               </div>
             </div>
             }
@@ -433,14 +461,14 @@ declare function dialogs:new-concept-dialog($options as map(*)){
             <div class="form-row">
               <div id="input-crit-group" class="col-md-12">
                     <label for="input-crit" class="font-weight-bold">Notes</label>
-                    <textarea id="input-crit" class="form-control">{string-join($notes, '&#xA;')}</textarea>                   
+                    <textarea rows="{max((count($notes)*2,3) )}"  id="input-crit" class="form-control">{string-join($notes, '&#xA;')}</textarea>                   
               </div>
             </div>            
             }
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="save_new_concept('{$uuid}', '{$name}', '{$target}')">Save New {$tmap?($target)}</button>
+                <button type="button" class="btn btn-primary" onclick="save_new_concept('{$uuid}', '{$name}', '{$target}')">Save {$tmap?($target)}</button>
            </div>
          </div>
      </div>

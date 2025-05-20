@@ -111,7 +111,6 @@ declare function ltp:annotation-types($type as xs:string){
 TODO: move this
       $visit := lvs:record-visit($targetseg),
       {tlslib:textinfo($model?textid)}
-
 :)
 
 declare function ltp:prepare-chunk($chunk as node()*, $map as map(*)){
@@ -131,7 +130,7 @@ declare function ltp:prepare-chunk($chunk as node()*, $map as map(*)){
       , $show-transl := lpm:should-show-translation()
       , $show-variants := xs:boolean(1)
       , $textid := data($chunk/div/info/@textid)
-      , $visit := lvs:record-visit-remote(data($tseg/@xml:id), $tseg/text())
+      , $visit := lvs:record-visit-remote(data($tseg/@xml:id), string-join($tseg/text(), ''))
       , $tr := if (lpm:should-show-translation()) then 
          if (string-length($facs) > 0) then map:merge((ltr:get-translations($textid), 
             for $edx in tokenize($chunk/div/pb/@eds)
