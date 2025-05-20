@@ -76,7 +76,8 @@ declare variable $config:help-map := map{
 'textview' : '2-User-manual/The-textview-page',
 'floater' : '2-User-manual/The-attribution-floater',
 'citation' : '2-User-manual/Citations',
-'concepts' : '1-General-introduction/Concepts'
+'concepts' : '1-General-introduction/Concepts',
+'rhet-dev' : '2-User-manual/Browsing-Rhetorical-Devices'
 };
 
 declare variable $config:navmap := map{
@@ -175,6 +176,7 @@ declare variable $config:lmap := map{
 "char" : "Chars",
 "taxchar" : "Taxonomy of meanings for character",
 "concept" : "Concepts",
+"rhet-dev" : "Rhetorical Devices",
 "definition" : "Definition",
 "altnames" : "Alternate labels",
 "notes" : "Criteria and general notes",

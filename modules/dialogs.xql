@@ -432,8 +432,8 @@ declare function dialogs:new-concept-dialog($options as map(*)){
             </div>
             {if (not($bibs)) then <div class="form-row" id="bibl-group-0"/> else for $b at $pos in  $ex//tei:listBibl/tei:bibl 
             return
-            <div class="form-row" id="bibl-group-{$pos}">
-              <div id="input-bibl-group-id-{$pos}" class="col-md-3">
+            (<div id="bibl-group-{$pos}"><div class="form-row"  style="border-top-style:solid;">
+              <div id="input-bibl-group-id-{$pos}" class="col-md-3" >
                     <input id="input-bibl-id-{$pos}" data-cid="{substring($b/tei:ref/@target, 2)}" class="bibl form-control" value="{normalize-space($b/tei:ref/text())}"/>                   
               </div>
               <div id="input-bibl-group-tit-{$pos}" class="col-md-6">
@@ -446,9 +446,19 @@ declare function dialogs:new-concept-dialog($options as map(*)){
                     <span id="rem-line-{$pos}" title="Remove this line" class="float-right badge badge-light mt-2" onclick="bib_remove_line('bibl-group-{$pos}')">X</span>
               </div>
             </div>
+            <div class="form-row">
+              <div class="col-md-1">
+              <span class="badge badge-light mt-2">Note:</span>
+              </div>
+              <div id="input-bibl-group-not-{$pos}" class="col-md-11">
+                    <input id="input-bibl-not-{$pos}" class="form-control" value="{$b/tei:note/tei:p/text()}"/>                   
+              </div>
+            </div>
+            </div>
+            )
             }
             {if ($target = 'concept') then 
-            <div class="form-row">
+            <div class="form-row"  style="border-top-style:solid;">
               <div id="input-crit-group" class="col-md-6">
                     <label for="input-crit" class="font-weight-bold">Old Chinese Criteria </label>
                     <textarea id="input-crit" class="form-control"></textarea>                   
@@ -458,7 +468,7 @@ declare function dialogs:new-concept-dialog($options as map(*)){
                     <textarea id="input-notes" class="form-control"></textarea>                   
               </div>
             </div> else 
-            <div class="form-row">
+            <div class="form-row"  style="border-top-style:solid;">
               <div id="input-crit-group" class="col-md-12">
                     <label for="input-crit" class="font-weight-bold">Notes</label>
                     <textarea rows="{max((count($notes)*2,3) )}"  id="input-crit" class="form-control">{string-join($notes, '&#xA;')}</textarea>                   

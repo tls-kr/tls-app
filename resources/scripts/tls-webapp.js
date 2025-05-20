@@ -2408,7 +2408,7 @@ function reset_tax(){
 
 function con_add_new_line(n, lid){
  var m = n+1;
- var newline = `<div class="form-row" id="bibl-group-${n}">\
+ var newline = `<div id="bibl-group-${n}"><div class="form-row" style="border-top-style:solid;">\
               <div id="input-bibl-group-id-${n}" class="ui-widget col-md-3">\
                     <input id="input-bibl-id-${n}" data-cid="" class="bibl form-control" value=""/>\
               </div>\
@@ -2420,8 +2420,18 @@ function con_add_new_line(n, lid){
               </div>\
               <div class="col-md-1">\
                 <span id="rem-line-${n}" title="Remove this line" class="float-right badge badge-light mt-2" onclick="bib_remove_line('bibl-group-${n}')">X</span>\
+              </div>\
             </div>\
-            </div>`;
+            <div class="form-row">\
+              <div class="col-md-1">\
+               <span class="badge badge-light mt-2">Note:</span>\
+              </div>\
+              <div id="input-bibl-group-not-${n}" class="col-md-11">\
+                    <input id="input-bibl-not-${n}" class="form-control" value=""/>\
+              </div>\
+            </div>\
+            </div>\
+            `;
  $("#"+lid).after(newline);
  $('#add-line').attr('onclick', `con_add_new_line(${m}, 'bibl-group-${n}')`);
  initialize_autocomplete_bib(n);
@@ -2459,7 +2469,8 @@ function save_new_concept (uuid, concept, type){
       tid = $(this).attr('id');
       tit = $("#" + tid.replace('-id-', '-tit-')).val();
       pag = $("#" + tid.replace('-id-', '-pg-')).val();
-      return $(this).attr("data-cid") + "::" + $(this).val() + "::" +  tit + "::" + pag;
+      not = $("#" + tid.replace('-id-', '-not-')).val();
+      return $(this).attr("data-cid") + "::" + $(this).val() + "::" +  tit + "::" + pag + "::" + not;
     } else {return "yyy"} }).get( ).join("xxx");
   console.log('bibl', bibl);
   $.ajax({
