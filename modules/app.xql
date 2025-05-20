@@ -213,7 +213,7 @@ function app:browse($node as node()*, $model as map(*), $type as xs:string?, $fi
    <div class="card">
     <div class="card-header" id="{$type}-card">
       <div class="row mb-0">
-      <span class="col-3"><h4>{map:get($config:lmap, $type)}  {
+      <span class="col-3"><h4><strong>{map:get($config:lmap, $type)}</strong>  {
       if ($type = ('concept', 'syn-func')) then (" / ", <a class="ml-2" href="browse.html?type=tax&amp;mode={$type}">Show tree</a>) else ()
       }</h4></span>&#160;
       <span class="col-3">
@@ -922,7 +922,7 @@ function app:rhetdev($node as node()*, $model as map(*), $uuid as xs:string?, $o
     <div class="card">
     <div class="card-header" id="notes-head">
       <h5 class="mb-0 mt-2">
-        <button class="btn" data-toggle="collapse" data-target="#notes" >Notes ({string-length($rd//tei:note)} characters)</button>
+        <button class="btn" data-toggle="collapse" data-target="#notes" >Notes ({string-length($rd/tei:note)} characters)</button>
       </h5>
       </div>
      <div id="notes" class="collapse" data-parent="#rhetdev-content">

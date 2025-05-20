@@ -1486,7 +1486,8 @@ let $rhet-dev := doc($config:tls-data-root||"/core/rhetorical-devices.xml")
     for $b in tokenize($map?bibl, 'xxx')
      let $x := tokenize($b, '::')
      return 
-     <bibl><ref target="#{$x[1]}">{$x[2]}</ref><title>{$x[3]}</title><biblScope unit="page">{$x[4]}</biblScope></bibl>
+     <bibl><ref target="#{$x[1]}">{$x[2]}</ref><title>{$x[3]}</title><biblScope unit="page">{$x[4]}</biblScope>
+     {if (string-length($x[5]) > 0) then <note><p>{$x[5]}</p></note> else ()}</bibl>
      }</listBibl>, 
  $och := if ($map?och and not ($map?och = 'undefined')) then <item xmlns="http://www.tei-c.org/ns/1.0" xml:lang="och">{$map?och}</item> else (),
  $zh := if ($map?zh) then <item xmlns="http://www.tei-c.org/ns/1.0" xml:lang="zh">{$map?zh}</item> else (),
