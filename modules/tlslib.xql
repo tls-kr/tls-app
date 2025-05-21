@@ -47,6 +47,7 @@ declare function tlslib:annotation-types($type as xs:string){
   let $map := 
  map{'nswl' : ('Grammar', 'Syntactic Word Location'), 
      'rdl' : ('Rhetoric', 'Rhetoric Device Location'),
+     'wrl' : ('WordRel', 'Word Relation Location'),
      'drug' : ('本草', 'Drug Location')}
  return
  if (count($map($type))> 0) then $map($type) else ( collection($config:tls-data-root)//tei:TEI[@xml:id="facts-def"]//tei:div[@xml:id=$type]/tei:head/text(), '')
