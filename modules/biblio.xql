@@ -325,20 +325,35 @@ else ()
 <div class="row">
 <div class="col-sm-2"/>
 <div class="col-sm-2"><span class="font-weight-bold float-right">Referred from</span></div>
-<div class="col-sm-5">{for $t in collection($config:tls-data-root)//tei:ref[@target="#"||$uuid] 
-         let $cid := $t/ancestor::tei:div/@xml:id
-         , $name := $t/ancestor::tei:div/tei:head/text()
-         , $entry := $t/ancestor::tei:entry,
-         $type := ($t/ancestor::tei:body/tei:div)[1]/@type
+<div class="col-sm-5">{(: there are duplicates, so we remove them first :) 
+         let $entries := 
+            for $t in collection($config:tls-data-root)//tei:ref[@target="#"||$uuid] 
+             let $entry := $t/ancestor::tei:entry
+             group by $entry
+             return
+              if ($entry) then $t[1] else $t
+         for $t in $entries     
+         let $entry := $t/ancestor::tei:entry
+         let $cid := if ($entry) then $entry[1]/@tls:concept-id else  $t/ancestor::tei:div/@xml:id
+         , $name := if ($entry) then $entry[1]/@tls:concept/string() else $t/ancestor::tei:div/tei:head/text() 
+         (: concepts do not have a body... so this becomes empty :)
+         , $type := ($t/ancestor::tei:body/tei:div)[1]/@type
+         , $page := if ($t/parent::tei:bibl/tei:biblScope) then " (p." || $t/parent::tei:bibl/tei:biblScope/text()||")" else ()
+         , $note_raw := string-join( for $p in $t/parent::tei:bibl/tei:note/tei:p return normalize-space($p), '&#xA;')
+         , $note := <span class="text-muted">{if (string-length($note_raw) > 50) then "[" || substring($note_raw, 50) || "...]" else 
+          if (string-length($note_raw) > 0) then "["|| $note_raw || "]" else ()}</span>
          order by $name
 return 
+<span>{(
 if ($type eq "rhet-dev") then 
-<a class="badge badge-pill badge-light" href="{$type}.html?uuid={$cid}">{$name}</a>
+<a class="badge badge-pill badge-secondary" href="{$type}.html?uuid={$cid}">{$name}</a>
 else
 if ($type = ("syn-func", "sem-feat")) then
-<a class="badge badge-pill badge-light" href="browse.html?type={$type}#{$cid}">{$name}</a>
+<a class="badge badge-pill badge-dark" href="browse.html?type={$type}#{$cid}">{$name}</a>
 else
 <a class="badge badge-pill badge-light" href="concept.html?uuid={$cid}#{$entry/@xml:id}">{$name}{if ($entry) then ": " || string-join($entry//tei:orth, '/') else ()}</a>
+,$page, $note)
+}</span>
 }</div>
 </div>
   

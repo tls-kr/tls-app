@@ -372,7 +372,7 @@ $zi := string-join($node/tei:form/tei:orth/text(), "/")
 return
 if ($type = "row") then
 if ($anntype = "wrl") then 
-<div class="row {$bg} {$anntype}">
+<div class="row {$bg} nswl">
 <div class="col-sm-1"><span class="{$anntype}-col">●</span></div>
 <div class="col-sm-2"><span>{$node/text()}</span></div>
 <div class="col-sm-3"><a href="concept.html?concept={$concept}{$node/@corresp}" title="{$cdef}">{$concept}</a></div>
