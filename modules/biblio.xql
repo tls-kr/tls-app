@@ -287,7 +287,12 @@ return
 <div class="row">
 <div class="col-sm-2"/>
 <div class="col-sm-2"><span class="font-weight-bold float-right">Details</span></div>
+{if ($m//mods:issuance='continuing') then
+<div class="col-sm-5">(publication){string-join($m/mods:relatedItem//mods:title/text(), ' / ')}: (details){
+    string-join(($m/mods:relatedItem//mods:part/mods:date/text(), $m/mods:relatedItem//mods:part/mods:detail//text(), $m/mods:relatedItem/mods:part/mods:extent//text() ) , ',') }</div>
+else 
 <div class="col-sm-5">(place){$m//mods:place/mods:placeTerm/text()}: (publisher){$m//mods:publisher/text()}, {$m//mods:dateIssued/text(),$m//mods:copyrightDate/text()}</div>
+}
 </div>
 <div class="row">
 <div class="col-sm-2"/>
@@ -683,12 +688,12 @@ declare function bib:new-entry-dialog($map as map(*)){
                  <input name="art-hant" class="form-control"  value="{$mods//mods:relatedItem/mods:titleInfo[@script='Hant']/mods:title}"></input>
               </div>
               <div class="col-md-2 article" style="{if (not($genre='article')) then 'display:none' else ''}">
-               <small class="text-muted">Volume</small>                 
+               <small class="text-muted">Volume/Issue</small>                 
                  <input name="art-vol" class="form-control"  value="{$mods//mods:relatedItem//mods:detail[@type='volume']}"></input>
               </div>
               <div class="col-md-2">
                <small class="text-muted">Pages</small>                 
-                 <input name="art-page" class="form-control" value="{$mods//mods:relatedItem/mods:extent[@unit='pages']}"></input>
+                 <input name="art-page" class="form-control" value="{$mods//mods:relatedItem//mods:extent[@unit='pages']//text()}"></input>
               </div>
             </div>
             {if (string-length($textid) > 0) then
@@ -734,7 +739,7 @@ declare function bib:new-entry-dialog($map as map(*)){
              }
              <div id="new-topic" class="col-md-2"><span onclick="bib_add_topic({count($mt) + 1}, 'topic-field-{count($mt)}')">Add topic</span></div>
             </div>
-            <h6  class="font-weight-bold">Notes</h6>
+            <h6  class="font-weight-bold">Comments</h6>
             <div class="form-row">
               <div id="input-notes-group" class="col-md-12">
                     <textarea name="input-notes" class="form-control">{$mods//mods:note[@type='general']/text()}</textarea>                   

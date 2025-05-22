@@ -603,7 +603,7 @@ declare function lrh:help-link($key as xs:string){
 
 declare function lrh:settings-bookmarks($node as node()*, $model as map(*)){
 <div>
-<p>Currently defined bookmarks.  Click on the <img src="resources/icons/open-iconic-master/svg/x.svg"/> to delete a bookmark.</p>
+<p>Here are your currently defined bookmarks.  Bookmarks register a <b>specific location</b> in a text for you to come back any time.  If you <a href="{$config:help-base-url}{$config:help-map?rating}"  target="docs" >rate<img class="icon"  src="resources/icons/help.svg"/></a> a text, you can access the <b>most recent location</b> through red-star<span class="bold" style="color:red;">★</span> menu above. <br/>   In the list below, click on the <img src="resources/icons/open-iconic-master/svg/x.svg"/> to delete a bookmark.</p>
 <ul>
 {for $b in doc($config:tls-user-root || $model?user || "/bookmarks.xml")//tei:item
   let $segid := $b/tei:ref/@target,

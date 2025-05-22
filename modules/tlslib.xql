@@ -824,7 +824,6 @@ declare function tlslib:swl-form-dialog($context as xs:string, $model as map(*))
       else (),
       lrh:format-button("display_named_dialog('x-get-line-id', 'pb-dialog')", "Add page break of a witness edition before selected character", "octicons/svg/milestone.svg", "", "close", ("tls-editor", "tls-punc")),
       lrh:format-button("display_named_dialog('x-get-line-id', 'edit-app-dialog')", "Add content of variant edition for selected character", "octicons/svg/note.svg", "", "close", ("tls-editor", "tls-punc")),
-      <span>Hi there</span>,
       lrh:format-button("copyUrl()", "Copy URL of this line", "octicons/svg/link.svg", "", "close", ("tls-user"))      
      }</h6>
     <h6 class="text-muted">Line: <span id="swl-line-text-span" class="ml-2 chn-font">Text of line</span>
