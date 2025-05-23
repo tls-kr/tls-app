@@ -1714,7 +1714,7 @@ for $sh in $h/preceding-sibling::tei:seg[position()<4] return lrh:proc-seg($sh, 
         lrh:proc-seg($h, map{"punc" : true(), "textid" : $textid}),
         (: this is a hack, it will probably show the most recent translation if there are more, but we want to make this predictable... :)
         for $sh in $h/following-sibling::tei:seg[position()<4] return lrh:proc-seg($sh, map{"punc" : true(), "textid" : $textid }),
-        if ($tr) then (<br/>, $tr) else ()}</div>
+        if ($tr) then (for $t in $tr[position()<4] return (<br/>,' - ', string-join($t, '') ) ) else ()}</div>
 </div>
 }
 <nav aria-label="Page navigation">
@@ -1816,14 +1816,19 @@ $target := substring($obs/tei:ref/@target, 2)
 order by $date descending
 where string-length($obs) > 0
 return $obs
-for $obs in subsequence($show, 1, 5) return
+for $obs in subsequence($show, 1, 10) return
 <li title="Created {$obs/@resp} at {$obs/@modified}"><span class="font-weight-bold"><a href="textview.html?location={substring(data($obs/tls:text[@role='span-start']/tls:srcline/@target),2)}">{data($obs/@name)}</a></span><span class="text-muted">({data($obs/tls:text[@role='span-start']/tls:srcline/@title)})</span>
 {if ($obs//tls:contents) then 
 <ul>{
 for $d in $obs//tls:contents/tls:drug return
 <li><a href="concept.html?uuid={$d/@concept-id}{$d/@ref}">{$d/text()}</a><span class="text-muted">({data($d/@quantity)}, {data($d/@flavor)})</span></li>
 }</ul>
-else ()}
+else if ($obs/tls:note) then 
+for $n in $obs/tls:note
+return
+<span><br/>{$n}</span>
+else ()
+}
 </li>
 }</ul>
 };

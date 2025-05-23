@@ -1586,13 +1586,13 @@ return
          <div class="row">
            <div class="col-sm-1"/>
            <div class="col-sm-2"><span class="font-weight-bold float-right">Edition:</span></div>
-           <div class="col-sm-9"><span class="sm">{lmd:get-metadata($d, "edition")}</span></div>　
+           <div class="col-sm-9"><span class="sm" id="textinfo-edition">{lmd:get-metadata($d, "edition")}</span></div>　
          </div>  
          <div class="row">
            <div class="col-sm-1"/>
            <div class="col-sm-2"><span class="font-weight-bold float-right">Catalog category:</span></div>
            <div class="col-sm-9"><span class="sm" id="text-cat" data-text-cat="{$cat}">{lmd:cat-title($cat)}</span>
-           {if (sm:is-authenticated()) then <span class="badge badge-pill badge-light" onclick="edit_textcat('{$textid}')">Edit category</span> else ()} </div>　
+           {if (sm:is-authenticated() and $d) then <span class="badge badge-pill badge-light" onclick="edit_textcat('{$textid}')">Edit category</span> else ()} </div>　
          </div>  
          <div class="row">
            <div class="col-sm-1"/>
@@ -1600,11 +1600,11 @@ return
            <div class="col-sm-9"><span class="sm badge badge-pill" id="date-cat" data-date-cat="{$datecat}">{lmd:cat-title($datecat)}</span>　{
            if ($date) then 
             (<span id="textdate-outer"><span id="textdate" data-not-before="{$date/@notBefore}" data-not-after="{$date/@notAfter}">{$date/text()}<span id="textdate-note" class="text-muted">{$date/note/text()}</span></span></span>,
-            if (sm:is-authenticated()) then <span class="badge badge-pill badge-light" onclick="edit_textdate('{$textid}')">Edit date</span> else 
+            if (sm:is-authenticated() and $d) then <span class="badge badge-pill badge-light" onclick="edit_textdate('{$textid}')">Edit date</span> else 
             ()
             ) 
            else
-           if (sm:is-authenticated()) then (<span id="textdate-outer"><span id="textdate">　</span></span>,<span class="badge badge-pill badge-light" onclick="edit_textdate('{$textid}')">Add date</span>) else 
+           if (sm:is-authenticated() and $d) then (<span id="textdate-outer"><span id="textdate">　</span></span>,<span class="badge badge-pill badge-light" onclick="edit_textdate('{$textid}')">Add date</span>) else 
             "　"}　</div>
          </div>
          <div class="row">
@@ -1617,12 +1617,12 @@ return
          <div class="row">        
            <div class="col-sm-1"/>
            <div class="col-sm-2"><span class="font-weight-bold float-right">Textlength:</span></div>
-           <div class="col-sm-9"><span>{$charcount} characters.</span></div>
+           <div class="col-sm-9"><span id="textinfo-charcount">{$charcount} characters.</span></div>
          </div>   
          <div class="row">
            <div class="col-sm-1"/>
            <div class="col-sm-2"><span class="font-weight-bold float-right">Comment:</span></div>
-           <div class="col-sm-9"><span class="tr-x" id="{$textid}-com" contenteditable="true">　</span></div>    
+           <div class="col-sm-9"><span class="tr-x" id="{$textid}-com" contenteditable="{if ($d) then 'true' else ''}">　</span></div>    
          </div>  
          <div class="row">
            <div class="col-sm-1"/>
@@ -1642,7 +1642,7 @@ return
              <span class="badge badge-pill badge-light">{data($r/@xml:id)}:{$r/text()}<br/></span>
              }</span>
            }</span>
-           { if (sm:is-authenticated()) then <a class="badge badge-pill badge-light"  href="search.html?query={lu:get-title($textid)}&amp;textid={$textid}&amp;search-type=10" title="Add new reference">Add reference to source or witness</a> else ()}</div>    
+           { if (sm:is-authenticated() and $d) then <a class="badge badge-pill badge-light"  href="search.html?query={lu:get-title($textid)}&amp;textid={$textid}&amp;search-type=10" title="Add new reference">Add reference to source or witness</a> else ()}</div>    
          </div>  
       </div>
 };

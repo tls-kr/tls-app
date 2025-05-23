@@ -78,6 +78,7 @@ declare variable $config:help-map := map{
 'citation' : '2-User-manual/Citations',
 'concepts' : '1-General-introduction/Concepts',
 'rhet-dev' : '2-User-manual/Browsing-Rhetorical-Devices'
+,'rating' : '2-User-manual/Rating-a-text'
 };
 
 declare variable $config:navmap := map{
