@@ -1179,9 +1179,9 @@ declare function src:show-text-results($map as map(*)){
         <td class="chn-font">{ try { 
         for $sh in $h/preceding-sibling::tei:seg[position()<4] return lrh:proc-seg($sh,map{"punc" : true()}),
         lrh:proc-seg($h, map{"punc" : true()}),
-        (: this is a hack, it will probably show the most recent translation if there are more, but we want to make this predictable... :)
         for $sh in $h/following-sibling::tei:seg[position()<4] return lrh:proc-seg($sh, map{"punc" : true()})} catch * {()}}
-        {if (exists($tr)) then (<br/>,"..." , $tr[last()] , "...") else ()
+        {(: showing multiple translations only works if the filter above is off.  Make it customizable? :)
+        if (exists($tr)) then ( for $t in $tr[position()<4] return (<br/>,"..." , string-join($t, '') , "...") ) else ()
         } </td>
         }
         </tr>
