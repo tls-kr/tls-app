@@ -48,6 +48,8 @@ else
    lrh:dic-external($id, $qc)
 };
 
+declare function lrh:dummy(){};
+
 declare function lrh:dic-internal($id, $qc){
 for $word in $qc
 for $w in doc($config:tls-data-root||"/external/" || $id ||".xml")//entry[./orth[. = $word]]
@@ -75,7 +77,6 @@ if ('char' = $tags) then
  let $link := replace($url, '\{searchTerms\}', string-join($qc))
  return
 <li title="{$r/os:LongName/text()}" ><span class="ml-2 badge">{$r/os:ShortName/text()}</span><a target="docs" href="{$link}">{string-join($qc)}</a></li>
-
 };
 
 (:~
@@ -295,34 +296,54 @@ declare function lrh:format-button-common($onclick as xs:string, $title as xs:st
   lrh:format-button($onclick, $title, $icon, "", "close", "tls-user")
 };
 
-declare function lrh:swl-buttons($map as map(*)){
-(
-if (lpm:show-setting-restricted('swl-buttons', '')) then
-   if ($map?ann = 'wrl') then () else
-   ( 
-   <span class="rp-5">
-       {lrh:format-button("review_swl_dialog('" || data($map?node/@xml:id) || "')", "Review the SWL for " || $map?zi[1], "octicons/svg/unverified.svg", "small", "close", "tls-editor")}&#160;&#160;</span>,   
-    lrh:format-button("save_swl_review('" || data($map?node/@xml:id) || "')", "Approve the SWL for " || $map?zi, "octicons/svg/thumbsup.svg", "small", "close", "tls-editor")
-    ) else ()
-
-, if (not(lpm:show-setting-restricted('swl-buttons', ''))) then () else 
-   if (not($map?context='review')) then
-      if (not($map?user = $map?creator-id)) then
-   (  lrh:format-button("null()", "Resp: " || $map?resp[1] , $map?resp[2], "small", "close", "tls-user") 
-    ,  if ($map?ann = 'wrl') then () else lrh:format-button("incr_rating('swl', '" || data($map?node/@xml:id) || "')", $map?marktext, "open-iconic-master/svg/star.svg", "small", "close", "tls-editor")  
-   )  else () else ()
-   (: every user can delete her own swls :)
-, if ($map?user = $map?creator-id or lpm:show-setting-restricted('swl-buttons', '')) then
-    if ($map?ann = 'wrl') then
-      lrh:format-button("delete_word_relation('" || data($map?node/@xml:id) || "')", "Immediately delete this WR", "open-iconic-master/svg/x.svg", "small", "close", "tls-editor")
-    else 
-      lrh:format-button("delete_swl('swl', '" || data($map?node/@xml:id) || "')", "Immediately delete this SWL for "||$map?zi[1], "open-iconic-master/svg/x.svg", "small", "close", "tls-editor")
-    else ()
-, switch($map?ann)
-   case 'wrl' return ()
-   case 'nswl' return()
+(:~ 
+  We determine here, which buttons should be actually shown for a SWL/WRL, depending on the 
+  $map?ann nwsl or wrl
+  $map?user 
+  $map?creator-id
+  $map?context
+  emitting a sequence of button names 
+:)
+declare function lrh:make-swl-button-list($map as map(*)){
+ let $right := lpm:show-setting-restricted('swl-buttons', $map?context)
+ return
+ ('resp',
+ switch($map?ann)
+   case 'wrl' return if ($right) then 'delete-wrl' else ()
+   case 'nswl' return
+     if ($right) then 
+       if ($map?context = 'review') then () 
+       else ('review-dialog', 'save-review', 'rating', 'delete-swl') 
+     else 
+       if ($map?user = $map?creator-id) then 'delete-swl' else ()
    default return ()
-)
+ )
+};
+
+(: lrh:show-att is not using this :)
+
+declare function lrh:swl-buttons($map as map(*)){
+let $list := lrh:make-swl-button-list($map)
+for $l in $list
+return
+switch($l)
+ case 'review-dialog' return 
+       lrh:format-button("review_swl_dialog('" || data($map?node/@xml:id) || "')", "Review the SWL for " || $map?zi[1], "octicons/svg/unverified.svg", "small", "close", 
+       "tls-editor")
+ case 'resp' return
+      lrh:format-button("null()", "Resp: " || $map?resp[1] , $map?resp[2], "small", "close", "tls-user") 
+ case 'save-review' return
+      lrh:format-button("save_swl_review('" || data($map?node/@xml:id) || "')", "Approve the SWL for " || $map?zi, "octicons/svg/thumbsup.svg", "small", "close",
+      "tls-editor")
+ case 'delete-swl' return
+       lrh:format-button("delete_swl('swl', '" || data($map?node/@xml:id) || "')", "Immediately delete this SWL for "||$map?zi[1], "open-iconic-master/svg/x.svg",
+       "small", "close", "tls-editor")
+ case 'delete-wrl' return
+       lrh:format-button("delete_word_relation('" || data($map?node/@xml:id) || "')", "Immediately delete this WR", "open-iconic-master/svg/x.svg", 
+       "small", "close", "tls-editor")
+ case 'rating' return
+       lrh:format-button("incr_rating('swl', '" || data($map?node/@xml:id) || "')", $map?marktext, "open-iconic-master/svg/star.svg", "small", "close", "tls-editor")  
+ default return ()
 };
 
 (:~
@@ -342,7 +363,9 @@ $anntype := if (local-name($node)='ann') then "nswl" else
                if (local-name($node)='drug') then "drug" else
                if (local-name($node)='item') then "wrl"
                else data($node/@type),
+(: type is the display type, either row or list :)               
 $type := $options?type,
+(: e.g. 'review' when in the review dialog  :)
 $context := $options?context
 let $concept := data($node/@concept),
 $creator-id := if ($node/tls:metadata/@resp) then
