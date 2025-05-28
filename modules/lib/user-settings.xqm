@@ -108,6 +108,24 @@ $doc
 )
 };
 
+(:~ for a given context, return possible items with their default values
+:)
+declare function lus:get-possible-types($context as xs:string){
+for $i in doc($config:tls-app-interface||"/settings.xml")//tls:section[@type='display-options']/tls:item
+  let $c := $i/@contexts/string()
+  where contains($c, $context)
+   return $i/@type/string()
+};
+
+declare function lus:get-possible-types-map($context as xs:string) as map(*){
+map:merge(
+for $i in doc($config:tls-app-interface||"/settings.xml")//tls:section[@type='display-options']/tls:item
+  let $c := $i/@contexts/string()
+  where contains($c, $context)
+   return map:entry($i/@type/string(), $i/@value/string())
+  )
+};
+
 declare function lus:get-user-section($type as xs:string, $context as xs:string?){
 let $settings := lus:get-settings()
 return

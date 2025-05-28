@@ -1603,10 +1603,10 @@ function us_save_setting(section, elid, action){
            }
        }
    }
-   if (elid.indexOf('-') > -1) {
+   if (elid.indexOf('context-') > -1) {
        elid = elid.split("-")[1]
    }
-   section = 'display-options'
+//   section = 'display-options'
    $.ajax({
    type : "GET",
    dataType : "html",  

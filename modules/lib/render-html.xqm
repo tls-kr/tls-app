@@ -159,8 +159,9 @@ declare function lrh:proc-seg($node as node(), $options as map(*)){
  let $lpb := if ($options?lpb) then $options?lpb else true()
  return
  typeswitch ($node)
- case element(tei:note) return ()
-(:     <small>{$node/text()}</small>:)
+ case element(tei:note) return 
+      if (contains($node/parent::tei:seg/@xml:id, "EX1")) then
+     <small>{$node/text()}</small> else ()
   case element (tei:l) return ()
   case element (tei:c) return 
   if ($options?punc) then
@@ -660,3 +661,28 @@ return
 </ul>
 </div>
 };
+(:~ display items that are user-selectable, configured through the settings 
+the execution should also work when called through the responder
+@ ?context : the context called from, one of the items in the 'contexts' from settings.xml 
+@ ?type 
+@ ?word : is a query, if available
+:)
+declare function lrh:selective-display($map as map(*)){
+let $qc := for $c in string-to-codepoints($map?word) return codepoints-to-string($c)
+, $pi := lus:get-possible-types($map?context)
+, $ps := for $t in $pi 
+         let $v := lus:get-user-item($t)
+         where ($v = '1' or contains($v, $map?context))
+         return $t
+return
+<ul>{
+for $c in $ps
+return 
+switch($c)
+case 'resources' return lrh:maybe-show-items(map{'qc' : $qc}) 
+case 'citations' return <li>CIT</li>
+default return ()
+
+}</ul>
+};
+

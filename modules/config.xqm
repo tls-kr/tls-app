@@ -165,6 +165,10 @@ declare variable $config:lus-values := map{
 ,'context' : 'Show this in these contexts:'
 };
 
+declare variable $config:yno-values := map{
+ '0' : "Don't show this at all"
+,'1' : "Show this  wherever possible"
+};
 
 declare variable $config:lmap := map{
 "zh" : "Modern Chinese",

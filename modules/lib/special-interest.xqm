@@ -142,7 +142,7 @@ return
     'id' : $id
     , 'col' : 'col-md-8'
     , 'attributes' : map{'onchange' :"us_save_setting('"||$map?type||"', '"||$id||"')"}
-    , 'option-map' : $config:lus-values
+    , 'option-map' : $config:yno-values
     , 'selected' : $selected
     , 'label' : ( $label  , <a class="ml-2" href="{$config:help-base-url}" title="Open documentation for this item" target="docs" role="button">?</a>
       )
