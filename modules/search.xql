@@ -1171,7 +1171,7 @@ declare function src:show-text-results($map as map(*)){
       <tr>
         <td class="chn-font">{$c + $map?start -1}</td>
         <td><a href="textview.html?location={$loc}&amp;query={$map?query}">{$title, " / ", $head}</a>
-        <span class="btn badge badge-light " onclick="show_dialog('text-info', {{'textid': '{lmd:get-metadata($cseg, 'textid')}'}})" title="Information about this text">
+        <span class="btn badge badge-light " onclick="show_dialog('text-info', {{'textid': '{lmd:get-metadata($cseg, 'textid')}', 'title': '{$title}'}})" title="Information about this text">
            <img class="icon "  src="resources/icons/octicons/svg/info.svg"/></span>
         </td>
         {if ($map?search-type = $src:search-trans) then  

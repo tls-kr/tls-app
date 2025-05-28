@@ -121,11 +121,12 @@ return
      if ($preference) then $preference else $lus:default?($type)
  default return ""
 };
+
 (:~ check if a user specified a setting, otherwise use the default setting :)
 declare function lus:get-user-item($type as xs:string){
 let $settings := lus:get-settings()
-, $preference := $settings//tls:item[@type=$type]/@value
-, $default := doc($config:tls-app-interface||"/settings.xml")//tls:item[@type=$type]/@value
+, $preference := $settings//tls:item[@type=$type]/@value/string()
+, $default := doc($config:tls-app-interface||"/settings.xml")//tls:item[@type=$type]/@value/string()
 return
 if ($preference) then $preference else if ($default) then $default else '0'
 };
@@ -134,9 +135,18 @@ declare function lus:set-user-item($map as map(*)){
 let $settings := lus:get-settings()
 , $oldnode := $settings//tls:item[@type=$map?type]
 , $oldsection := $settings//tls:section[@type=$map?section]
-, $upditem := <item xmlns="http://hxwd.org/ns/1.0" created="{$oldnode/@created}" modified="{current-dateTime()}" type="{$map?type}" value="{$map?preference}"/>
-, $newitem := <item xmlns="http://hxwd.org/ns/1.0" created="{current-dateTime()}" modified="{current-dateTime()}" type="{$map?type}" value="{$map?preference}"/>
-, $newsection := <section xmlns="http://hxwd.org/ns/1.0" type="{$map?section}"><item xmlns="http://hxwd.org/ns/1.0" created="{current-dateTime()}" modified="{current-dateTime()}" type="{$map?type}" value="{$map?preference}"/></section>
+, $newvalue := if ($map?action = 'add') then 
+   string-join(for  $t in ($map?preference, tokenize($oldnode/@value, ','))
+     where not ( $t = ('0', '1') )
+     return $t, ',')
+   else if ($map?action = 'delete') then 
+   string-join(for $t in tokenize($oldnode/@value, ',') 
+     where $t ne $map?preference return $t, ',')
+   else $map?preference
+, $newvalue := if (string-length($newvalue) = 0) then '0' else $newvalue    
+, $upditem := <item xmlns="http://hxwd.org/ns/1.0" created="{$oldnode/@created}" modified="{current-dateTime()}" type="{$map?type}" value="{$newvalue}"/>
+, $newitem := <item xmlns="http://hxwd.org/ns/1.0" created="{current-dateTime()}" modified="{current-dateTime()}" type="{$map?type}" value="{$newvalue}"/>
+, $newsection := <section xmlns="http://hxwd.org/ns/1.0" type="{$map?section}"><item xmlns="http://hxwd.org/ns/1.0" created="{current-dateTime()}" modified="{current-dateTime()}" type="{$map?type}" value="{$newvalue}"/></section>
 
 return 
 (

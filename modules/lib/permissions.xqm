@@ -111,7 +111,8 @@ not(contains(sm:id()//sm:group/text(), "guest"))
 };
 
 declare function lpm:show-buddhist-tools($context){
-("chris", "CW", "cwittern") = sm:id()//sm:real/sm:username/text()
+true()
+(:("chris", "CW", "cwittern") = sm:id()//sm:real/sm:username/text():)
 };
 
 declare function lpm:show-setting-restricted($type as xs:string, $context as xs:string?){
@@ -121,7 +122,7 @@ declare function lpm:show-setting-restricted($type as xs:string, $context as xs:
 declare function lpm:show-setting($type as xs:string, $context as xs:string?){
 if ($type = 'swl-buttons') then true()
 else
- let $pref := lus:get-user-section($type, $context) 
+ let $pref := lus:get-user-item($type) 
  (: not sure if I need to propagate context :)
  return
  if ($pref = '0') then false() else

@@ -1577,21 +1577,52 @@ function update_setting(setting, val_el){
 
 // 2024-12-09 this is using the new setting interface in user-setting.xqm
 
-function us_save_setting(section, elid){
+function us_save_setting(section, elid, action){
   var value =  $('#' + elid).val();
-  $.ajax({
-  type : "GET",
-  dataType : "html",  
-  url : "api/responder.xql?func=lus:set-user-item&section="+section+"&type=" + elid + "&preference="+value, 
-  success : function(resp){
+  var el = '#'+'context-'+elid+'-group' 
+  if (value == 'context' || value =='dummy') {
+        $(el).show();    
+  } else {
+   if (section == 'display-options') {
+     $(el).hide();
+//     $('#'+'context-'+elid).hide();
+   } else  {
+       if (action == 'add') {
+           var text =  $('#' + elid +' option:selected' ).text();
+           console.log('Adding: ', text, 'to:', elid, 'value:', value)
+           $('#' + elid + '-li' ).append('<li id="'+ elid +'-'+ value + '">'+text+'<button type="button" class="btn" onclick="us_save_setting(\'' + elid.split("-")[1] + '\', \'' + value + '\', \'delete\')" title="Delete this context."><img class="icon" src="resources/icons/open-iconic-master/svg/x.svg"></button></li>')
+       } else {
+           if (action == 'delete'){
+               value = elid;
+               elid = section;
+               console.log ('Deleting: #context-'+elid+'-'+value)
+               $('#context-'+elid+'-'+value).html('')
+           } else {
+              // this is for context dropdown
+                      
+           }
+       }
+   }
+   if (elid.indexOf('-') > -1) {
+       elid = elid.split("-")[1]
+   }
+   section = 'display-options'
+   $.ajax({
+   type : "GET",
+   dataType : "html",  
+   url : "api/responder.xql?func=lus:set-user-item&section="+section+"&type=" + elid + "&preference="+value + "&action="+action, 
+   success : function(resp){
      if (resp.startsWith("OK")) {
        toastr.info("Setting has been changed.", "HXWD says:");
      } else {
       toastr.error("A problem occurred.", "HXWD says:");
      }
+   }
+   });
   }
-  });      
 };
+
+
 
 function merge_word(word, wid, count, type){
   $.ajax({
@@ -2278,7 +2309,7 @@ function add_parallel(){
   });
 };
 
-// 
+// this is cycling through the list of options for the display of swl lists in the floater
 function toggle_list_display(){
   $.ajax({
   type : "PUT",
