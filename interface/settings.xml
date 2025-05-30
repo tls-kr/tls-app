@@ -13,24 +13,32 @@
     <section type="display-options">
         <desc>Display options control the display of optional parts of the interface.  A '1' on the attribute @value will cause the item to be display in all places where it might occur, while '0' will not show it at all. Other values, which can be a comma-separated list of targets, point to either an item in 'contexts', that defines the target, or to a category in the tls-taxonomy for texts.  </desc>
       <section type="sf-display" content="by-concept"/>      
+      <!--   
       <item type="swl-buttons" value="1" contexts="swl,cit">Show review buttons etc. on Citations and Attributions</item>  
+       -->
       <item type="wd" value="1" contexts="concept,rhetdev,floater,text-info">Wikidata Search and Links</item>  
-      <item type="resources" value="1" contexts="concept,rhetdev,floater,text-info,search-top">Links to external resources</item>  
+      <item type="resources" value="1" contexts="concept,rhetdev,floater,text-info,search-top,words">Links to external resources</item>  
       <item type="citations" value="1" contexts="concept,rhetdev,floater,text-info">Citations</item>  
+      <!--  
       <item type="markup" value="0" contexts="floater">Markup buttons</item>  
       <item type="domain-selector" value="0" contexts="floater">Allow selection of other knowledge domains of concepts</item>  
       <item type="set-word-relations" value="0" contexts="floater">Buttons that allow the setting of Word Relations</item>  
-      <item type="display-word-relations" value="0" contexts="concept">Show Word Relations</item>  
-      <item type="add-bib" value="0" contexts="concept,rhetdev,text-info">Add bibliographic references</item> 
+      <item type="display-word-relations" value="0"  contexts="concept">Show Word Relations</item>
+       -->
+      <item type="add-ref" value="0" contexts="concept,rhetdev,text-info,words">Add reference</item> 
+      <item type="add-bib" value="0" contexts="concept,rhetdev,text-info,words">Add bibliographic item</item> 
     </section>
     <section type="contexts">
         <desc>In this section, we describe contexts that can be linked to from the 'display-options' section</desc>
         <item id="concept">The page displaying a Concept</item> 
         <item id="rhetdev">The page displaying a Rhetorical Device</item> 
+        <item id="words">The definition of a word</item> 
         <item id="floater">The attribution floater</item> 
         <item id="search-top">The area at the beginning of the display of search results for texts and words.</item> 
         <item id="text-info">A section in the text info display</item> 
-        <item id="swl">Attributions</item> 
+        <!--
+        <item id="swl">Attribution </item> 
         <item id="cit">Citations</item> 
-    </section>
+        -->
+</section>
 </settings>
