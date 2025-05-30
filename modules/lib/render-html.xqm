@@ -159,8 +159,9 @@ declare function lrh:proc-seg($node as node(), $options as map(*)){
  let $lpb := if ($options?lpb) then $options?lpb else true()
  return
  typeswitch ($node)
- case element(tei:note) return ()
-(:     <small>{$node/text()}</small>:)
+ case element(tei:note) return 
+      if (contains($node/parent::tei:seg/@xml:id, "EX1")) then
+     <small>{$node/text()}</small> else ()
   case element (tei:l) return ()
   case element (tei:c) return 
   if ($options?punc) then
@@ -557,7 +558,7 @@ declare function lrh:form-input-row($name, $map){
 };
 
 declare function lrh:form-control-input($map){
- <div class="{$map?col} form-group ui-widget" id="{$map?id}-group" >
+ <div class="{$map?col} form-group ui-widget" id="{$map?id}-group" style="{if (string-length($map?value) = 0) then 'display:None;' else () }">
  <b>{$map?label}</b>
  <input id="{$map?id}" class="form-control" value="{$map?value}"/>
  {$map?extra-elements}
@@ -565,7 +566,7 @@ declare function lrh:form-control-input($map){
 };
 
 declare function lrh:form-control-select($map){
- <div class="{$map?col} form-group ui-widget" id="{$map?id}-group" >
+ <div class="{$map?col} form-group ui-widget" id="{$map?id}-group" style="{$map?style}" >
  <b>{$map?label}</b>
  {element select {
  attribute class {"form-control"}
@@ -575,7 +576,8 @@ declare function lrh:form-control-select($map){
     return
     attribute {$a} {$map?attributes?($a)} else () 
 ,  for $o in map:keys($map?option-map)
-(:    order by $map?option-map?($o):)
+(:      order by $o:)
+    order by $map?option-map?($o)
     return 
     if ($o = $map?selected) then
     <option value="{$o}" selected='selected'>{$map?option-map?($o)}</option>
@@ -587,32 +589,50 @@ declare function lrh:form-control-select($map){
 
 declare function lrh:settings-display($node as node()*, $model as map(*)){
 <div>
-<p>Here are settings to the place, type and number of items to display:</p>
-<ul>
-{for $i in doc($config:tls-app-interface||"/settings.xml")//tls:section[@type='display-options']/tls:item
-  let $id := 'select-'||$i/@type
+<p>Here are settings to fine-tune the place, type and number of <b>items</b> to display in different <b>contexts:</b></p>
+<div class="col">
+{
+for $i in doc($config:tls-app-interface||"/settings.xml")//tls:section[@type='display-options']/tls:item
+  let $id := $i/@type
   , $currentvalue := lus:get-user-item($i/@type)
   , $displaycontext := if ($currentvalue = ('0', '1')) then () else $currentvalue
+  , $allowedcontexts := tokenize($i/@contexts, ',')
+  , $context-map := 
+   map:merge(for $c in doc($config:tls-app-interface||"/settings.xml")//tls:section[@type='contexts']/tls:item
+   where ($c/@id = $allowedcontexts)
+   return
+   map:entry($c/@id, $c/text())  )
   return 
-  <div class="row">{
+  (<div class="row">{
  lrh:form-control-select(map{
     'id' : $id
-    , 'col' : 'col-md-8'
+    , 'col' : 'col-md-7'
     , 'attributes' : map{'onchange' :"us_save_setting('display-options','"||$id||"')"}
     , 'option-map' : $config:lus-values
-    , 'selected' : $currentvalue
+    , 'selected' : if ($currentvalue = ('0', '1')) then $currentvalue else 'context'
     , 'label' : ( $i/text() , <a class="ml-2" href="{$config:help-base-url}" title="Open documentation for this item" target="docs" role="button">?</a>)
  })}
- {lrh:form-control-input(
+ {lrh:form-control-select(
    map{
-    'id' : 'input-'||$id
-    , 'col' : 'col-md-2'
+    'id' : 'context-'||$id
+    , 'col' : 'col-md-5'
+    , 'option-map' : map:merge((map:entry('0dummy', ' Select here from the following options:'), $context-map))
+    , 'attributes' : map{'onchange' :"us_save_setting('context','context-"||$id||"', 'add')"}
     , 'value' : $displaycontext
     , 'label' : 'Context:'
+    , 'selected' : '0dummy'
+    , 'style' : if (string-length($displaycontext) = 0) then 'display:None;' else ()
     })}
 </div>
+,<div class="row"><ul id="context-{$id}-li">{if (string-length($displaycontext) = 0) then () else
+ for $s in tokenize($displaycontext, ',')
+ return
+ <li id="context-{$id}-{$s}">{$context-map?($s)} 
+  {lrh:format-button("us_save_setting('"||$id||"', '"||$s||"', 'delete')", "Delete this context.", "open-iconic-master/svg/x.svg", "", "", "tls-user")}</li>
+}</ul>
+</div>)
 }
-</ul>
+</div>
 </div>
 };
 
@@ -641,3 +661,28 @@ return
 </ul>
 </div>
 };
+(:~ display items that are user-selectable, configured through the settings 
+the execution should also work when called through the responder
+@ ?context : the context called from, one of the items in the 'contexts' from settings.xml 
+@ ?type 
+@ ?word : is a query, if available
+:)
+declare function lrh:selective-display($map as map(*)){
+let $qc := for $c in string-to-codepoints($map?word) return codepoints-to-string($c)
+, $pi := lus:get-possible-types($map?context)
+, $ps := for $t in $pi 
+         let $v := lus:get-user-item($t)
+         where ($v = '1' or contains($v, $map?context))
+         return $t
+return
+<ul>{
+for $c in $ps
+return 
+switch($c)
+case 'resources' return lrh:maybe-show-items(map{'qc' : $qc}) 
+case 'citations' return <li>CIT</li>
+default return ()
+
+}</ul>
+};
+

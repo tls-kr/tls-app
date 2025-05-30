@@ -81,11 +81,8 @@ return
 declare function lsf:get-sw-dispatch($word, $context, $domain, $leftword){
 let $pref := lus:get-sf-display-setting()
 return 
-( if (lpm:show-buddhist-tools($context)) then 
-  let $qc := for $c in string-to-codepoints($word) return codepoints-to-string($c)
-  return
-  <ul>{lrh:maybe-show-items(map{'qc' : $qc})}</ul> else (),
-  switch($pref)
+( lrh:selective-display(map{'context' : 'floater', 'word' : $word})
+, switch($pref)
 case 'by-syn-func' return
  lsf:get-sw-by-syn-func($word, $context, $domain, $leftword)
 case 'by-frequency' return
