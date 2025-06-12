@@ -11,6 +11,7 @@ declare variable $exist:root external;
 
 declare variable $logout := request:get-parameter("logout", ());
 declare variable $allowOrigin := local:allowOriginDynamic(request:get-header("Origin"));
+declare variable $blockedUserAgent := local:isBlocked(request:get-header("User-Agent"));
 
 declare variable $local:HTTP_OK := xs:integer(200);
 declare variable $local:HTTP_CREATED := xs:integer(201);
@@ -23,6 +24,10 @@ declare variable $local:HTTP_METHOD_NOT_ALLOWED := xs:integer(405);
 declare variable $local:HTTP_INTERNAL_SERVER_ERROR := xs:integer(500);
 
 declare variable $local:isget := request:get-method() = ("GET","get");
+
+declare function local:isBlocked($ua as xs:string) {
+ matches ($ua, 'bot|Scrapy')  
+};
 
 declare function local:allowOriginDynamic($origin as xs:string?) {
     let $origin := replace($origin, "^(\w+://[^/]+).*$", "$1")
@@ -69,7 +74,12 @@ util:log("debug", map {
     "$local:isget": $local:isget
 }),
 
-if ($exist:path eq '') then
+if ($blockedUserAgent) then 
+            (response:set-status-code(401),
+            <status>User blocked</status>)
+
+
+else if ($exist:path eq '') then
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
         <redirect url="{request:get-uri()}/"/>
     </dispatch>
