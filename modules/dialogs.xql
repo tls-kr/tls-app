@@ -300,6 +300,52 @@ declare function dialogs:add-rd-dialog($options as map(*)){
  </div>
 };
 
+declare function dialogs:add-ref-dialog($options as map(*)){
+   <div id="new-concept-dialog" class="modal" tabindex="-1" role="dialog" style="display: none;">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header"><h5>Add a new resource reference <span class="font-weight-bold">{$name}</span></h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" title="Close">x</button>
+            </div>
+            <div class="modal-body">
+            <h6 class="font-weight-bold">Source references</h6>
+            <div class="form-row">
+              <div id="input-bibl-group-id" class="col-md-3">
+                    <label for="input-bibl-id" class="font-weight-bold">ID</label>
+              </div>
+              <div id="input-bibl-group-tit" class="col-md-6">
+                    <label for="input-bibl-tit" class="font-weight-bold">Title</label>
+              </div>
+              <div id="input-bibl-group-pg" class="col-md-3">
+                    <label for="input-bibl-pg" class="font-weight-bold">Page</label>
+                <span id="add-line" class="float-right badge badge-light mt-2" onclick="con_add_new_line({count($bibs) + 1}, 'bibl-group-{count($bibs)}')">Add new Ref.</span>
+            </div>
+            </div>
+            {if (not($bibs)) then <div class="form-row" id="bibl-group-0"/> else for $b at $pos in  $ex//tei:listBibl/tei:bibl 
+            return
+            (<div id="bibl-group-{$pos}"><div class="form-row"  style="border-top-style:solid;">
+              <div id="input-bibl-group-id-{$pos}" class="col-md-3" >
+                    <input id="input-bibl-id-{$pos}" data-cid="{substring($b/tei:ref/@target, 2)}" class="bibl form-control" value="{normalize-space($b/tei:ref/text())}"/>                   
+              </div>
+              <div id="input-bibl-group-tit-{$pos}" class="col-md-6">
+                    <input id="input-bibl-tit-{$pos}" class="form-control" value="{$b/tei:title/text()}"/>                   
+              </div>
+              <div id="input-bibl-group-pg-{$pos}" class="col-md-2">
+                    <input id="input-bibl-pg-{$pos}" class="form-control" value="{$b/tei:biblScope/text()}"/>                   
+              </div>       
+              <div class="col-md-1">
+                    <span id="rem-line-{$pos}" title="Remove this line" class="float-right badge badge-light mt-2" onclick="bib_remove_line('bibl-group-{$pos}')">X</span>
+              </div>
+              
+            </div>
+            
+            </div>)}
+           </div>            
+          </div>
+         </div>
+       </div>
+};
+
 (:~ Add new concept. [[TODO]]  2024-11-25:  Needs update  :)
 
 declare function dialogs:new-concept-dialog($options as map(*)){
