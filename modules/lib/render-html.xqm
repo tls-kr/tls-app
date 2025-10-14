@@ -680,7 +680,7 @@ for $c in $ps
 return 
 switch($c)
 case 'resources' return lrh:maybe-show-items(map{'qc' : $qc}) 
-case 'citations' return <li>CIT</li>
+case 'citations' return ()
 case 'add-ref' return () 
 case 'add-bib' return () 
 case 'wd' return () 

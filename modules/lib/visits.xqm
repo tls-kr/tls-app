@@ -28,7 +28,7 @@ declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare function lvs:record-visit($targetseg as node()){
 let $user := sm:id()//sm:real/sm:username/text(),
 $groups := sm:get-user-groups($user),
-$doc := if ( ("guest", "tls-test") = $groups) then () else lvs:get-visit-file(),
+$doc := if ( ("guest", "tls-test") = $groups or $user = "CHxx") then () else lvs:get-visit-file(),
 $date := current-dateTime()
 , $textid := lmd:get-metadata($targetseg, "textid")
 , $ex := $doc//tei:item[@xml:id=$textid]

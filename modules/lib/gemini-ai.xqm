@@ -30,7 +30,7 @@ declare function ai:query($map){
     , $content-type := <http:header name="Content-type" value="application/json"/>
     , $lang := if ($map?lang) then $map?lang else "English"
     , $body := '{
-    "system_instruction" : {"parts" : [ {"text" : "Translate from classical Chinese to '|| $lang || '.  The text contains page numbers like [001], these should be passed through unchanged. Names etc. should be returned using Hànyǔ Pīnyīn with tone marks. "}]},
+    "system_instruction" : {"parts" : [ {"text" : "Translate from classical Chinese to '|| $lang || '.  The text contains page numbers like [001], these should be passed through unchanged. Names etc. should be returned using Hànyǔ Pīnyīn with tone marks. \nDo *not* return the whole Chinese text as Pinyin."}]},
     "contents": [{"parts": [{ "text" : "' || $map?user-prompt || '" }]  }] }'
 return
     

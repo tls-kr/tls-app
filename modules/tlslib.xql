@@ -12,7 +12,7 @@ module namespace tlslib="http://hxwd.org/lib";
 
 import module namespace config="http://hxwd.org/config" at "config.xqm";
 
-import module namespace krx="http://hxwd.org/krx-utils" at "krx-utils.xql";
+(:import module namespace krx="http://hxwd.org/krx-utils" at "krx-utils.xql";:)
 import module namespace wd="http://hxwd.org/wikidata" at "wikidata.xql"; 
 import module namespace tu="http://hxwd.org/utils" at "tlsutils.xql";
 
@@ -60,7 +60,7 @@ translate(normalize-space($s), ' ，。、&#xA;：；', '')
 (: for adding punc :)
 
 (: get the nodes from the indexed text-node up to before the next text-node :)
-declare function tlslib:subseq($i as xs:int, $s as node()*){
+declare function tlslib:subseq($i as xs:integer, $s as node()*){
     let $ix := for $n at $pos in $s
         return
        typeswitch($n)
@@ -79,7 +79,7 @@ declare function tlslib:add-nodes($tx as xs:string, $s as node()*){
     if ($l = 'non-match') then 
         tlslib:add-c($n/text()) 
     else 
-        let $i := xs:int(replace($n, '\$', ''))
+        let $i := xs:integer(replace($n, '\$', ''))
         return $s[$i]
 };
 
@@ -111,7 +111,7 @@ declare function tlslib:add-c($s as xs:string){
 };
 
 
-declare function tlslib:num2hex($num as xs:int) as xs:string {
+declare function tlslib:num2hex($num as xs:integer) as xs:string {
 let $h := "0123456789ABCDEF"
 , $s := if ($num > 65535) then
   (tlslib:num2hex($num idiv 65536),
@@ -156,7 +156,7 @@ declare function tlslib:capitalize-first ( $arg as xs:string? )  as xs:string? {
              substring($arg,2))
  } ;
 declare function tlslib:get-juan($link as xs:string){
-xs:int((tokenize($link, "_")[3] => tokenize("-"))[1])
+xs:integer((tokenize($link, "_")[3] => tokenize("-"))[1])
 };
 
 (:~
@@ -179,7 +179,7 @@ let $file := if ($type = "sem-feat") then "semantic-features.xml" else
 (: Helper for ontology  I guess I need to return a map? :)  
 (: this covers now also the rhet-dev ontology :)
 
-declare function tlslib:ontology-up($uid as xs:string, $cnt as xs:int){
+declare function tlslib:ontology-up($uid as xs:string, $cnt as xs:integer){
   let $concept := collection($config:tls-data-root)//tei:div[@xml:id=$uid],
   $dtype := $concept/@type,
   $type := "hypernymy",
@@ -198,7 +198,7 @@ declare function tlslib:ontology-up($uid as xs:string, $cnt as xs:int){
 
 (: this covers now also the rhet-dev ontology :)
 
-declare function tlslib:ontology-links($uid as xs:string, $type as xs:string, $cnt as xs:int){
+declare function tlslib:ontology-links($uid as xs:string, $type as xs:string, $cnt as xs:integer){
   let $concept := collection($config:tls-data-root)//tei:div[@xml:id=$uid],
   $dtype := $concept/@type,
   $hyp := $concept//tei:list[@type=$type]//tei:ref
@@ -233,7 +233,7 @@ declare function tlslib:ontology-links($uid as xs:string, $type as xs:string, $c
 declare function tlslib:get-content-slots($seg as node(), $options as map(*)) {
 let $user := sm:id()//sm:real/sm:username/text()
 ,$id := $seg/@xml:id
-,$tr := for $s in collection($config:tls-translation-root, $config:tls-user-root || $user || "/translations")//tei:seg[@corresp="#"||$id]
+,$tr := for $s in collection(($config:tls-translation-root, $config:tls-user-root || $user || "/translations"))//tei:seg[@corresp="#"||$id]
         return root($s)
 ,$retmap := map:merge(
           for $t in $tr
@@ -302,7 +302,7 @@ typeswitch ($node)
       <ul class="list-unstyled collapse" id="{$id}-swl"> 
       {for $sw in $swl
       (: we dont check for attribution count, so pass -1  :)
-      return lw:display-sense($sw, xs:int($sw/@n), false())}
+      return lw:display-sense($sw, xs:integer($sw/@n), false())}
       </ul>
       </span>
   case text() return
@@ -495,7 +495,7 @@ return
     <span class="text-muted px-1">You can add bookmarks by clicking on <img class="icon"  src="resources/icons/open-iconic-master/svg/bookmark.svg"/> after selecting a character.</span>,
   if (count($ratings) > 0) then 
     for $t in $bm//text
-      let $r := xs:int($t/@rating),
+      let $r := xs:integer($t/@rating),
       $id := data($t/@id)
       order by $r descending
      return
@@ -510,7 +510,7 @@ return
    <div class="dropdown-menu" aria-labelledby="navbarDropdownStars">
    {if (count($ratings) > 0) then 
     for $t in $ratings
-      let $r := xs:int($t/@rating),
+      let $r := xs:integer($t/@rating),
       $id := data($t/@id)
       order by $r descending
      return
@@ -670,14 +670,14 @@ declare function tlslib:generate-toc-correct($node){
 : @param $foll an xs:int giving the number of tei:seg elements following the $targetsec 
 display $prec and $foll preceding and following segments of a given seg :)
 
-declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $prec as xs:int?, $foll as xs:int?){
+declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $prec as xs:integer?, $foll as xs:integer?){
       let $log := log:info($tlslib:log, "starting display-chunk for "|| $targetseg/@xml:id)
       let $fseg := if ($foll > 0) then $targetseg/following::tei:seg[fn:position() < $foll] 
         else (),
       $pseg := if ($prec > 0) then $targetseg/preceding::tei:seg[fn:position() < $prec] 
         else ()
       , $zh-width := 'col-sm-3'
-      , $colums := if (string-length($model?columns)>0) then xs:int($model?columns) else 2 
+      , $colums := if (string-length($model?columns)>0) then xs:integer($model?columns) else 2 
       let $d := $targetseg/ancestor::tei:div[1],
       $state := if ($d/ancestor::tei:TEI/@state) then $d/ancestor::tei:TEI/@state else "yellow" ,
       $pb := ($targetseg/preceding::tei:pb)[last()] ,
@@ -765,7 +765,7 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
       <div class="row">
       <div class="col-sm-2">
       {if ($dseg) then  
-       <button type="button" class="btn" onclick="page_move('{tokenize($dseg/@xml:id, "_")[1]}&amp;first=true')" title="Go to the first page"><span style="color: blue">First</span></button>
+       <button type="button" class="btn" onclick="page_move('{tokenize($dseg[1]/@xml:id, "_")[1]}&amp;first=true')" title="Go to the first page"><span style="color: blue">First</span></button>
        else ()}
        </div>
       <div class="col-sm-2">
@@ -881,7 +881,7 @@ return
          $firstseg
      else
       if (not($mode = 'visit') and collection($config:tls-manifests)//mf:manifest[@xml:id=$location]) then 
-      krx:show-manifest(collection($config:tls-manifests)//mf:manifest[@xml:id=$location]) 
+      (:  krx:show-manifest(collection($config:tls-manifests)//mf:manifest[@xml:id=$location]) :) ()
      else
       let $firstdiv := 
          if ($first = 'true') then 
@@ -1173,7 +1173,7 @@ return
 declare function tlslib:get-related($map as map(*)){
 let $line := $map?line
 ,$sid := $map?seg
-, $res := krx:collate-request($sid)
+, $res := (: krx:collate-request($sid) :) ()  
 , $edid := string-join(subsequence(tokenize($sid, "_"), 1,2), "_")
 , $mf := collection($config:tls-manifests)//mf:edition[@id=$edid]/ancestor::mf:editions
 return
@@ -1867,7 +1867,7 @@ typeswitch ($node)
  : If appending the index results in an id that is already present in the database, the level
  : parameter is also appended to the id. The level argument will be increased until a
  : id that is not present in the database is found. :)
-declare function tlslib:generate-new-line-id($base-id as xs:string, $index as xs:int, $level as xs:int) as xs:string {
+declare function tlslib:generate-new-line-id($base-id as xs:string, $index as xs:integer, $level as xs:integer) as xs:string {
     let $nid := $base-id || "." || $index || (if ($level = 0) then "" else "." || $level)
     return
         if (collection($config:tls-texts-root)//tei:seg[@xml:id=$nid]) then
@@ -1877,7 +1877,7 @@ declare function tlslib:generate-new-line-id($base-id as xs:string, $index as xs
 };
 
 (: Just like the above function, with $level set to 0 as a default. :)
-declare function tlslib:generate-new-line-id($base-id as xs:string, $index as xs:int) as xs:string {
+declare function tlslib:generate-new-line-id($base-id as xs:string, $index as xs:integer) as xs:string {
     tlslib:generate-new-line-id($base-id, $index, 0)
 };
 
@@ -1939,8 +1939,8 @@ for $r in subsequence($rels//tei:div[@type='word-rel'], $start, $cnt)
   , $lwn := ($l//tei:list/tei:item)[1]
   , $rwn := ($l//tei:list/tei:item)[2]
  , $txt := data($lwn/@txt)
- , $ll := try {<span>{substring(data($lwn/@textline), 1, xs:int($lwn/@offset) - 1)}<b>{substring(data($lwn/@textline), xs:int($lwn/@offset), xs:int($lwn/@range))}</b>{substring(data($lwn/@textline), xs:int($lwn/@offset) + xs:int($lwn/@range))}</span> } catch * {<span>{data($lwn/@textline)}</span>}
- , $rl := try {<span>{substring(data($rwn/@textline), 1, xs:int($rwn/@offset) - 1)}<b>{substring(data($rwn/@textline), xs:int($rwn/@offset), xs:int($rwn/@range))}</b>{substring(data($rwn/@textline), xs:int($rwn/@offset) + xs:int($rwn/@range))}</span> } catch * {<span>{data($rwn/@textline)}</span>}
+ , $ll := try {<span>{substring(data($lwn/@textline), 1, xs:integer($lwn/@offset) - 1)}<b>{substring(data($lwn/@textline), xs:integer($lwn/@offset), xs:integer($lwn/@range))}</b>{substring(data($lwn/@textline), xs:integer($lwn/@offset) + xs:integer($lwn/@range))}</span> } catch * {<span>{data($lwn/@textline)}</span>}
+ , $rl := try {<span>{substring(data($rwn/@textline), 1, xs:integer($rwn/@offset) - 1)}<b>{substring(data($rwn/@textline), xs:integer($rwn/@offset), xs:integer($rwn/@range))}</b>{substring(data($rwn/@textline), xs:integer($rwn/@offset) + xs:integer($rwn/@range))}</span> } catch * {<span>{data($rwn/@textline)}</span>}
  , $lnk := if (string-length($lwn/@line-id) > 0) then ($lwn/@line-id)[1] else if (string-length($rwn/@line-id) > 0) then ($rwn/@line-id)[1] else ()
  return 
   (:delete :)
@@ -1949,7 +1949,7 @@ for $r in subsequence($rels//tei:div[@type='word-rel'], $start, $cnt)
     lrh:format-button("change_word_rel('"|| $tid || "')", "Change the type of word relation for this attribution.", "open-iconic-master/svg/move.svg", "", "", "tls-editor")  
 ,if (string-length($ll) > 0) then 
   ($ll, " / ", $rl ,  "(", if (string-length($lnk) > 0) then 
-   <a href="textview.html?location={$lnk}">{$txt}{xs:int(tokenize(tokenize($lnk, "_")[3], "-")[1])}</a>
+   <a href="textview.html?location={$lnk}">{$txt}{xs:integer(tokenize(tokenize($lnk, "_")[3], "-")[1])}</a>
    else
    $txt , ")"
    , if (string-length($l/tei:p) > 0) then 

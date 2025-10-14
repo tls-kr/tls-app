@@ -3,7 +3,7 @@ xquery version "3.1";
 module namespace krx="http://hxwd.org/krx-utils"; 
 
 
-import module namespace json="http://www.json.org";
+(:import module namespace json="http://www.json.org";:)
 import module namespace http="http://expath.org/ns/http-client";
 import module namespace config="http://hxwd.org/config" at "config.xqm";
 (:

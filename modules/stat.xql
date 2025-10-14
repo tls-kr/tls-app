@@ -69,7 +69,7 @@ count($c)
 
 declare function local:overview(){
 let $c := collection($config:tls-data-root || "/concepts")//tei:div[@type='concept']
-,$words := collection($config:tls-data-root || "/concepts")//tei:entry
+,$words := collection($config:tls-data-root || "/words")//tei:entry
 ,$rd := collection($config:tls-data-root || "/core")//tei:div[@type='rhet-dev']
 ,$sem := collection($config:tls-data-root || "/core")//tei:div[@type='sem-feat']
 ,$syn := collection($config:tls-data-root || "/core")//tei:div[@type='syn-func']
