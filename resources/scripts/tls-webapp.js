@@ -467,7 +467,10 @@ function get_tr_for_page(slot, myid, ai){
     var obj = JSON.parse(resp);
     for (var prop in obj) {
      line_id = prop.split(".").join("\\.");
-     $(line_id).html(obj[prop]);
+     $(line_id).removeClass();
+     $(line_id).addClass("tr " + obj[prop][2]);
+     $(line_id).parent().attr('lang', obj[prop][1]);
+     $(line_id).html(obj[prop][0]);
     }; 
     reload_selector(slot, myid);   
    }

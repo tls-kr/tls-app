@@ -38,6 +38,24 @@ declare variable $ltr:tr-map-indices := map{
  , "doc-node" :  1
 };
 
+declare function ltr:is-ai-translation($trfile as node()){
+ let $doc := $trfile/ancestor-or-self::tei:TEI
+ return
+if ($doc//tei:editor[contains(., 'AI - ')] ) then true() else false()
+};
+
+declare function ltr:get-translation-css($trfile as node()){
+ let $ai := ltr:is-ai-translation($trfile)
+ return 
+  if ($ai) then "ai " else ""
+};
+
+declare function ltr:get-translation-lang($trfile as node()){
+ let $doc := $trfile/ancestor-or-self::tei:TEI
+ return 
+  $doc//tei:sourceDesc/tei:ab/tei:lang/@xml:lang/string()
+};
+
 declare function ltr:get-translation-file($trid as xs:string){
 let $user := sm:id()//sm:real/sm:username/text()
 let $tru := collection($config:tls-user-root|| $user || "/translations")/tei:TEI[@xml:id=$trid]
@@ -478,8 +496,10 @@ let $loc := replace($loc_in, "-swl", "")
    return
    map:merge(for $seg in $dseg 
      let $tr := $troot//tei:seg[@corresp="#"||$seg/@xml:id]/text()
+     , $lang := ltr:get-translation-lang($troot)
+     , $css := ltr:get-translation-css($troot)
       return 
-      map:entry("#"||data($seg/@xml:id)||"-"||$slot, $tr))
+      map:entry("#"||data($seg/@xml:id)||"-"||$slot, ($tr , $lang , $css)) )
  return $ret
 };
   
