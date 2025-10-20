@@ -485,7 +485,7 @@ declare function lrh:show-att-display($a as node()){
 
 let $user := sm:id()//sm:real/sm:username/text()
 let $src := data($a/tls:text/tls:srcline/@title)
-let $line := $a/tls:text/tls:srcline/text()
+let $line := string-join($a/tls:text/tls:srcline/text(), '') => normalize-space()
 (: 2024-11-05:  the type is remote for texts not annotated locally :)
 , $type := $a/ancestor::tei:TEI/@type
 , $tr := $a/tls:text/tls:line
@@ -501,7 +501,10 @@ return
 <div class="row {$bg} table-striped">
 <div class="col-sm-2"><a href="textview.html?location={$target}{if ($type='remote')then '&amp;mode=remote'else()}" class="font-weight-bold">{$src, $loc}</a></div>
 <div class="col-sm-3"><span data-target="{$target}" data-toggle="popover">{$line}</span></div>
-<div class="col-sm-7"><span>{$tr/text()}</span>
+<div class="col-sm-7"><span>
+   <button class="btn btn-xs" type="button" title="More translations" onclick="show_dialog('att-tr-dialog', {{'line': '{$line}', 'seg_id' : '{$target}'}})">
+<img class="icon"  src="resources/icons/octicons/svg/info.svg"/></button>
+{$tr/text()}</span>
 {if ((sm:has-access(document-uri(fn:root($a)), "w") and $a/@xml:id) and not(contains(sm:id()//sm:group, 'tls-test'))) then 
 (
  if ($resp[1]) then 

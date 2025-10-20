@@ -26,6 +26,7 @@ import module namespace lgrp="http://hxwd.org/lib/group-by" at "lib/group-by.xqm
 import module namespace lrh="http://hxwd.org/lib/render-html" at "lib/render-html.xqm";
 import module namespace lpm="http://hxwd.org/lib/permissions" at "lib/permissions.xqm";
 import module namespace lsf="http://hxwd.org/lib/syn-func" at "lib/syn-func.xqm";
+import module namespace ltr="http://hxwd.org/lib/translation" at "lib/translation.xqm";
 
 import module namespace roaster="http://e-editiones.org/roaster";
 
@@ -1180,7 +1181,9 @@ declare function src:show-text-results($map as map(*)){
         lrh:proc-seg($h, map{"punc" : true()}),
         for $sh in $h/following-sibling::tei:seg[position()<4] return lrh:proc-seg($sh, map{"punc" : true()})} catch * {()}}
         {(: showing multiple translations only works if the filter above is off.  Make it customizable? :)
-        if (exists($tr)) then ( for $t in $tr[position()<4] return (<br/>,"..." , string-join($t, '') , "...") ) else ()
+        if (exists($tr)) then ( for $t in $tr[position()<4] 
+          let $ai := ltr:get-translation-css($t)
+        return (<br/>,"..." , <span class="{$ai}">{string-join($t, '')}</span> , "...") ) else ()
         } </td>
         }
         </tr>

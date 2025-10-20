@@ -99,6 +99,33 @@ return
       })           
  
 };
+
+declare function local:att-tr-dialog($name, $options){
+ let $line := $options?line
+ let $body := <div>{ let $sid := $options?seg_id 
+     for $ts in ltr:all-translations-seg-by-id($sid)
+     let $resp := ltr:translation-cit-from-node($ts),
+     $ai := ltr:get-translation-css($ts)
+     return 
+     <div class="row border-bottom">
+       <div class="col-sm-3">{$resp}</div>
+       <div class="col-sm-9 {$ai}">{$ts/text()}</div>
+       <div class="none"></div>
+     </div>
+   }</div>
+ , $buttons :=()
+ , $options := ()
+ return
+      dialogs:modal-frame($name, 
+      map{
+        "dsize" : "", 
+        "body":     $body, 
+        "buttons" : $buttons, 
+        "title":  ("Existing translations of ", <b>{$line}</b>)
+      })           
+ 
+};
+
 (:~ 
 Displays the dialog with information about the translation
 :)
@@ -231,6 +258,7 @@ return
 declare function dialogs:dispatcher($para as map(*)){
 let $options := parse-json($para?options)
 return switch($para?name)
+               case "att-tr-dialog" return local:att-tr-dialog($para?name, $options)
                case "tr-info-dialog" return local:tr-info-dialog($para?name, $options)
                case "passwd-dialog" return local:passwd-dialog($para?name, $options)
                case "text-info" return local:text-info($para?name, $options)
