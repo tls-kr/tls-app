@@ -11,7 +11,7 @@ module namespace src="http://hxwd.org/search";
 
 import module namespace templates="http://exist-db.org/xquery/templates" ;
 import module namespace config="http://hxwd.org/config" at "config.xqm";
-import module namespace krx="http://hxwd.org/krx-utils" at "krx-utils.xql";
+(:import module namespace krx="http://hxwd.org/krx-utils" at "krx-utils.xql";:)
 import module namespace wd="http://hxwd.org/wikidata" at "wikidata.xql"; 
 import module namespace bib="http://hxwd.org/biblio" at "biblio.xql";
 import module namespace tlslib="http://hxwd.org/lib" at "tlslib.xql";
@@ -26,6 +26,7 @@ import module namespace lgrp="http://hxwd.org/lib/group-by" at "lib/group-by.xqm
 import module namespace lrh="http://hxwd.org/lib/render-html" at "lib/render-html.xqm";
 import module namespace lpm="http://hxwd.org/lib/permissions" at "lib/permissions.xqm";
 import module namespace lsf="http://hxwd.org/lib/syn-func" at "lib/syn-func.xqm";
+import module namespace ltr="http://hxwd.org/lib/translation" at "lib/translation.xqm";
 
 import module namespace roaster="http://e-editiones.org/roaster";
 
@@ -233,7 +234,6 @@ declare %templates:default("start", 1)
 function src:show-hits-short($node as node()*, $model as map(*),$start as xs:int)
 {   <div>
     {for $hit at $p in subsequence($model("hits"), $start, 10)
-(:    let $kwic := kwic:summarize($hit, <config width="40"/>, app:filter#2):)
     let $kwic := src:get-kwic($hit, <config width="40"/>, <a></a>)
     return
     <div class="tls-concept" xmlns="http://www.w3.org/1999/xhtml">
@@ -312,8 +312,8 @@ declare function src:tr-query($queryStr as xs:string?, $mode as xs:string?, $ste
 
 (: paragraph based query :)
 declare function src:ngram-query($queryStr as xs:string?, $mode as xs:string?, $search-type as xs:string?, $stextid as xs:string?, $cat as map(*)?)
-{
-    let $dataroot := ($config:tls-data-root, $config:tls-texts-root, $config:tls-user-root)
+{ 
+    let $dataroot := for $c in  ($config:tls-data-root, $config:tls-texts-root, $config:tls-user-root ) return collection($c) 
     , $qs := tokenize($queryStr, "[\s;]")
     , $user := sm:id()//sm:real/sm:username/text()
     , $sm := xs:int(lus:get-settings()//tls:item[@type="search-sortmax"]/@value)
@@ -329,20 +329,20 @@ declare function src:ngram-query($queryStr as xs:string?, $mode as xs:string?, $
     , $mode := if ($user = "guest") then "date" else $mode
     , $pmatches := 
       if  (count($qs) > 1) then 
-         (collection($dataroot)//tei:p[ngram:wildcard-contains(., $qs[1]) and ngram:wildcard-contains(., $qs[2])] |
-         collection($dataroot)//tei:lg[ngram:wildcard-contains(., $qs[1]) and ngram:wildcard-contains(., $qs[2])])
+         ($dataroot//tei:p[ngram:wildcard-contains(., $qs[1]) and ngram:wildcard-contains(., $qs[2])] |
+         $dataroot//tei:lg[ngram:wildcard-contains(., $qs[1]) and ngram:wildcard-contains(., $qs[2])])
       else
        (: 2022-02-24 for one char searches, go only in tls texts; this needs more discussion... :)
        if ($search-type = $src:search-one-text) then 
-        (collection($dataroot)//tei:TEI[@xml:id=$stextid]//tei:p[ngram:wildcard-contains(., $qs[1])] |
-        collection($dataroot)//tei:TEI[@xml:id=$stextid]//tei:lg[ngram:wildcard-contains(., $qs[1])])
+        ($dataroot//tei:TEI[@xml:id=$stextid]//tei:p[ngram:wildcard-contains(., $qs[1])] |
+        $dataroot//tei:TEI[@xml:id=$stextid]//tei:lg[ngram:wildcard-contains(., $qs[1])])
        else (: 2023-06-01 disabling this temporarily  :)
         if (string-length($qs[1]) < -1) then
          (collection($config:tls-texts-root || "/tls")//tei:p[ngram:wildcard-contains(., $qs[1])],
          collection($config:tls-texts-root || "/tls")//tei:lg[ngram:wildcard-contains(., $qs[1])])
         else
-         (collection($dataroot)//tei:p[ngram:wildcard-contains(., $qs[1])] | 
-         collection($dataroot)//tei:lg[ngram:wildcard-contains(., $qs[1])])
+         ( ($dataroot)//tei:p[ngram:wildcard-contains(., $qs[1])] | 
+          $dataroot//tei:lg[ngram:wildcard-contains(., $qs[1])])
     (:  , $sethits := session:set-attribute($src:SESSION || ".totalhits", count($pmatches)):)
 (:    , $matches := 
        (\: this messes up the search display, disabling for now :\)
@@ -1181,7 +1181,9 @@ declare function src:show-text-results($map as map(*)){
         lrh:proc-seg($h, map{"punc" : true()}),
         for $sh in $h/following-sibling::tei:seg[position()<4] return lrh:proc-seg($sh, map{"punc" : true()})} catch * {()}}
         {(: showing multiple translations only works if the filter above is off.  Make it customizable? :)
-        if (exists($tr)) then ( for $t in $tr[position()<4] return (<br/>,"..." , string-join($t, '') , "...") ) else ()
+        if (exists($tr)) then ( for $t in $tr[position()<4] 
+          let $ai := ltr:get-translation-css($t)
+        return (<br/>,"..." , <span class="{$ai}">{string-join($t, '')}</span> , "...") ) else ()
         } </td>
         }
         </tr>

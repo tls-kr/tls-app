@@ -48,7 +48,7 @@ return ($name, string-join(for $n in tokenize($name)
            return upper-case(substring($n, 1, 1)), ""))
 };
 
-declare function tu:format-segid($segid as xs:string){
+declare function tu:format-segid($segid ){
 let $res := analyze-string(tokenize($segid, "_")[3], "\d+")
 return
 string-join(for $r in $res//fn:*

@@ -274,6 +274,7 @@ return
 (<li><a href="char.html?char={$word}" title="Click here to go to the taxonomy for {$word}"><span id="syn-disp-zi">{$word}</span></a>&#160;Total annotations: <strong>{$sum}</strong>&#160;<span class="text-muted">(frequent use first)</span></li>,
 for $w in $list
   order by $w?12 descending  
+  where $w?12 > 0
 return
 <ul  id="{$w[1]?7}-synfunc">
 

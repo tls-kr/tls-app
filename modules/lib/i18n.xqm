@@ -31,6 +31,7 @@ return
      else
         <div>
          <h3>Welcome back!</h3>
+         <p><b>News <br/>2025-05-28</b> The database experienced a crash and has been restored from backup. Operations are back to normal for now, but any work between 1700 UTC and 2345 UTC on May 27, 2025 has been lost.  Apologies for any inconvenience.</p>
          <p>Here are some texts you recently looked at:</p>
          <ul>{for $l in $r return $l}</ul>
                 <p>

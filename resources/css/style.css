@@ -46,6 +46,10 @@ span.lb{
      background-color: rgba(222, 186, 245, 0.25);           
 }
 
+.ai {
+     background-color: rgba(222, 186, 245, 0.25);           
+}
+
 span.anchor {
     margin-top: -54px; /* height of nav, in this case 54px */
     display: block;

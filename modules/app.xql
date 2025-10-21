@@ -12,7 +12,7 @@ module namespace app="http://hxwd.org/app";
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
 declare namespace tx="http://exist-db.org/tls";
-declare namespace json = "http://www.json.org";
+(:declare namespace json = "http://www.json.org";:)
 declare namespace ucd = "http://www.unicode.org/ns/2003/ucd/1.0";
 declare namespace mf = "http://kanripo.org/ns/KRX/Manifest/1.0";
 
@@ -450,11 +450,11 @@ let $query-needing-measurement := (: insert query or function call here :)
     else
      if (string-length($location) > 0) then 
 (:     tlslib:display-chunk($dispseg, $model, $prec, $foll):)
-      try {
+(:      try {:)
       if ($dispseg) then
       tlslib:display-chunk($dispseg, $model, $prec, $foll)
       else "No text segment found: " || $location
-      } catch * {"An error occurred, can't display text. Code:" || count($dispseg) || " (dispseg)" }      
+(:      } catch * {"An error occurred, can't display text. Code:" || count($dispseg) || " (dispseg)" }      :)
     else 
     app:textlist()
     
@@ -1112,6 +1112,7 @@ function app:concept($node as node()*, $model as map(*), $concept as xs:string?,
       </h5>
       </div>
      <div id="bibl" class="collapse" data-parent="#concept-content">
+     <p>{lrh:selective-display(map{'context': 'concept', 'uuid' : $key})}</p>
      <ul>
      {for $d in $c//tei:div[@type="source-references"]//tei:bibl
      return

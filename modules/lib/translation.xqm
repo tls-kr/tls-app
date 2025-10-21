@@ -24,6 +24,7 @@ import module namespace dbu="http://exist-db.org/xquery/utility/db" at "../db-ut
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace mf="http://kanripo.org/ns/KRX/Manifest/1.0";
+declare namespace tls="http://hxwd.org/ns/1.0";
 
 declare variable $ltr:translation-type-labels := map {
  "transl" : "Translation"
@@ -36,6 +37,26 @@ declare variable $ltr:tr-map-indices := map{
  , "lang-label" : 3
  , "name-label" : 2
  , "doc-node" :  1
+};
+
+declare function ltr:is-ai-translation($trfile as node()){
+ let $doc := $trfile/ancestor-or-self::tei:TEI
+ , $ed := string-join($doc//tei:editor/text() , '')
+
+return
+if (contains($ed, 'AI - ') or contains($ed, 'Deepseek') or contains($ed, 'Gemini')) then true() else false()
+};
+
+declare function ltr:get-translation-css($trfile as node()){
+ let $ai := ltr:is-ai-translation($trfile)
+ return 
+  if ($ai) then "ai " else ""
+};
+
+declare function ltr:get-translation-lang($trfile as node()){
+ let $doc := $trfile/ancestor-or-self::tei:TEI
+ return 
+  $doc//tei:sourceDesc/tei:ab/tei:lang/@xml:lang/string()
 };
 
 declare function ltr:get-translation-file($trid as xs:string){
@@ -298,18 +319,25 @@ return
 
 declare function ltr:format-translation-label($tr as map(*), $trid as xs:string){
  let $type := $tr($trid)[$ltr:tr-map-indices?type-label]
+ let $segcount := lu:seg-count($tr($trid)[$ltr:tr-map-indices?doc-node]//tei:seg)
  let $tr-label := string-join(($type , " by " , 
                    $tr($trid)[$ltr:tr-map-indices?name-label],  " (" ,
-                   $tr($trid)[$ltr:tr-map-indices?lang-label],  ")"))
+                   $tr($trid)[$ltr:tr-map-indices?lang-label],  ") [", $segcount, ']'))
  return 
  $tr-label
 };
 
+
+
 declare function ltr:translation-cit-from-id($trid){
 let $trfile := ltr:get-translation-file($trid)
-, $title := lmd:get-metadata($trfile, 'title')
-, $resp := lmd:get-metadata($trfile, 'resp')
-, $date := lmd:get-metadata($trfile, "date")[1]
+return ltr:translation-cit-from-node($trfile)
+};
+
+declare function ltr:translation-cit-from-node($node){
+let  $title := lmd:get-metadata($node, 'title')
+, $resp := lmd:get-metadata($node, 'resp')
+, $date := lmd:get-metadata($node, "date")[1]
 return
  $resp || "(" || $date || ")" 
 };
@@ -430,13 +458,14 @@ return
 let $trid := lmd:get-metadata($ts, "textid")
 , $date := lmd:get-metadata($ts, "date")[1]
 , $type := $ts/ancestor::tei:TEI/@type/string()
+, $ai := ltr:get-translation-css($ts)
 where $type = 'transl'
 order by $date
 return
 <li><span class="text-muted">{lmd:get-metadata($ts, "title")} by {lmd:get-metadata($ts, "resp")} ({$date})</span>
 <button class="btn badge badge-secondary ml-2" type="button" title="Display this translation in slot 1" onclick="get_tr_for_page('slot1', '{$trid}')" href="#">1</button>
 <button class="btn badge badge-secondary ml-2" type="button" title="Display this translation in slot 2" onclick="get_tr_for_page('slot2', '{$trid}')" href="#">2</button>
-<p class="font-weight-bold">{$ts/text()}</p>
+<p class="{$ai} font-weight-bold">{$ts/text()}</p>
 </li>
 }
 </ul>
@@ -478,12 +507,21 @@ let $loc := replace($loc_in, "-swl", "")
    return
    map:merge(for $seg in $dseg 
      let $tr := $troot//tei:seg[@corresp="#"||$seg/@xml:id]/text()
+     , $lang := ltr:get-translation-lang($troot)
+     , $css := ltr:get-translation-css($troot)
       return 
-      map:entry("#"||data($seg/@xml:id)||"-"||$slot, $tr))
+      map:entry("#"||data($seg/@xml:id)||"-"||$slot, (if ($tr) then $tr else "" , 
+                                                      if ($lang) then $lang else "" , $css)) )
  return $ret
 };
   
-  
+declare function ltr:save-att-tr($map as map(*)){
+let $att := collection($config:tls-data-root||'/notes')//tls:ann[@xml:id=$map?att_id]
+, $tr := <line xmlns="http://hxwd.org/ns/1.0" src="{$map?trid}">{$map?tr}</line>
+return
+ update replace $att//tls:line with $tr
+};
+
 declare function ltr:get-translation-seg($transid as xs:string, $first as xs:boolean){
 let $doc := ltr:get-translation-file($transid)
 , $segs := $doc//tei:seg
@@ -503,6 +541,21 @@ declare function ltr:get-translation-seg-by-id($transid as xs:string, $seg-id as
 let $doc := ltr:get-translation-file($transid)
 , $seg := $doc//tei:seg[@corresp='#'||$seg-id]
   return $seg
+};
+
+declare function ltr:all-translations-seg-by-id($seg-id as xs:string){
+  let $user := sm:id()//sm:real/sm:username/text()
+  let $segs :=
+    for $t in ($config:tls-translation-root, $config:tls-user-root|| $user || "/translations")
+    let $seg := collection($t)//tei:seg[@corresp='#'||$seg-id]
+    return $seg
+ for $ts in $segs
+   let $trid := lmd:get-metadata($ts, "textid")
+  , $date := lmd:get-metadata($ts, "date")[1]
+  , $type := $ts/ancestor::tei:TEI/@type/string()
+ where $type = 'transl'
+ order by $date
+ return $ts
 };
 
 
