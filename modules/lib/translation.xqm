@@ -24,6 +24,7 @@ import module namespace dbu="http://exist-db.org/xquery/utility/db" at "../db-ut
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace mf="http://kanripo.org/ns/KRX/Manifest/1.0";
+declare namespace tls="http://hxwd.org/ns/1.0";
 
 declare variable $ltr:translation-type-labels := map {
  "transl" : "Translation"
@@ -318,9 +319,10 @@ return
 
 declare function ltr:format-translation-label($tr as map(*), $trid as xs:string){
  let $type := $tr($trid)[$ltr:tr-map-indices?type-label]
+ let $segcount := lu:seg-count($tr($trid)[$ltr:tr-map-indices?doc-node]//tei:seg)
  let $tr-label := string-join(($type , " by " , 
                    $tr($trid)[$ltr:tr-map-indices?name-label],  " (" ,
-                   $tr($trid)[$ltr:tr-map-indices?lang-label],  ")"))
+                   $tr($trid)[$ltr:tr-map-indices?lang-label],  ") [", $segcount, ']'))
  return 
  $tr-label
 };
@@ -508,11 +510,18 @@ let $loc := replace($loc_in, "-swl", "")
      , $lang := ltr:get-translation-lang($troot)
      , $css := ltr:get-translation-css($troot)
       return 
-      map:entry("#"||data($seg/@xml:id)||"-"||$slot, (if ($tr) then $tr else "" , $lang , $css)) )
+      map:entry("#"||data($seg/@xml:id)||"-"||$slot, (if ($tr) then $tr else "" , 
+                                                      if ($lang) then $lang else "" , $css)) )
  return $ret
 };
   
-  
+declare function ltr:save-att-tr($map as map(*)){
+let $att := collection($config:tls-data-root||'/notes')//tls:ann[@xml:id=$map?att_id]
+, $tr := <line xmlns="http://hxwd.org/ns/1.0" src="{$map?trid}">{$map?tr}</line>
+return
+ update replace $att//tls:line with $tr
+};
+
 declare function ltr:get-translation-seg($transid as xs:string, $first as xs:boolean){
 let $doc := ltr:get-translation-file($transid)
 , $segs := $doc//tei:seg

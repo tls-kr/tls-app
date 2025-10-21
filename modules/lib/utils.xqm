@@ -135,6 +135,10 @@ declare function lu:session-att($name, $default){
     (session:set-attribute($name, $default), $default)
 };
 
+(:~ number of non-empty lines in segs :)
+declare function lu:seg-count($segs){
+count($segs[string-length(.)>0])
+};
 
 (: 
 xquery version "3.1";

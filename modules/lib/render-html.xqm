@@ -501,10 +501,10 @@ return
 <div class="row {$bg} table-striped">
 <div class="col-sm-2"><a href="textview.html?location={$target}{if ($type='remote')then '&amp;mode=remote'else()}" class="font-weight-bold">{$src, $loc}</a></div>
 <div class="col-sm-3"><span data-target="{$target}" data-toggle="popover">{$line}</span></div>
-<div class="col-sm-7"><span>
-   <button class="btn btn-xs" type="button" title="More translations" onclick="show_dialog('att-tr-dialog', {{'line': '{$line}', 'seg_id' : '{$target}'}})">
+<div class="col-sm-7">
+   <button class="btn small" type="button" title="More translations" onclick="show_dialog('att-tr-dialog', {{'line': '{$line}', 'seg_id' : '{$target}', 'att_id' : '{$a/@xml:id/string()}'}})">
 <img class="icon"  src="resources/icons/octicons/svg/info.svg"/></button>
-{$tr/text()}</span>
+<span id="{$a/@xml:id/string()}-tr">{$tr/text()}</span>
 {if ((sm:has-access(document-uri(fn:root($a)), "w") and $a/@xml:id) and not(contains(sm:id()//sm:group, 'tls-test'))) then 
 (
  if ($resp[1]) then 
