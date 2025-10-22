@@ -317,8 +317,8 @@ for $i in (1 to $colums)
  , $px := typeswitch ($slot) case element(tei:TEI) return  replace(($slot//tei:seg[@corresp="#"||$segid]/@resp)[1], '#', '') default return "??"  
  , $resp := if ($px) then "Resp: "||doc($config:tls-data-root || "/vault/members.xml")//tei:person[@xml:id=$px]//tei:persName/text() else $px
   let $log := log:info($ltp:log, "entering left-panel-row for " || $seg/@xml:id)
- , $lang := if (ltr:get-translation-lang($slot)) then ltr:get-translation-lang($slot) else 'en-GB'
- , $tr-class := ltr:get-translation-css($slot)
+ , $lang := try {if (ltr:get-translation-lang($slot)) then ltr:get-translation-lang($slot) else 'en-GB' } catch * {'en-GB' }
+ , $tr-class := try {ltr:get-translation-css($slot)} catch * {''}
  return
 
 ltp:right-panel-row($slot, map{"seg" : $seg, "col-class" : $ltp:panel-matrix?($colums)[$i + 1],  "ann" : $ann, "resp": $resp, "ex": "slot"||$i, "tabindex" : $options('pos')+ (500*$i), "editable" : $editable, "user" : $user, "trans-lang" : $lang, 'tr-class' : $tr-class })
