@@ -717,7 +717,7 @@ else
 
 }: 
 <span class="swedit" id="def-{$sid}" contenteditable="{if ($edit) then 'true' else 'false'}">{ $def}</span>
- {if ($sresp) then <button class="ml-2 btn badge badge-light" title="{$sresp[1]} - {$s/ancestor::tei:entry/@tls:created}">{$resp[2]}</button> else ()}
+ {if ($sresp[1]) then <button class="ml-2 btn badge badge-light" title="{$sresp[1]} - {$s/ancestor::tei:entry/@tls:created}">{$resp[2]}</button> else ()}
 
     {if ($edit) then 
      <button class="btn badge badge-warning ml-2" type="button" onclick="save_def('def-{$sid}')">
