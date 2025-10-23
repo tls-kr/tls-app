@@ -450,7 +450,7 @@
                 {
                     "in": "query",
                     "name": "sort",
-                    "required": true,
+                    "required": false,
                     "schema": {
                      "type" : "string",
                      "enum" : ["by-freq-descending", "by-freq-ascending", "by-date-ascending", "by-date-descending"],

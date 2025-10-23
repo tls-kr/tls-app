@@ -561,7 +561,7 @@ declare function lrh:form-input-row($name, $map){
 };
 
 declare function lrh:form-control-input($map){
- <div class="{$map?col} form-group ui-widget" id="{$map?id}-group" style="{if (string-length($map?value) = 0) then 'display:None;' else () }">
+ <div class="{$map?col} form-group ui-widget" id="{$map?id}-group" style="{if (string-length($map?value) = -1) then 'display:None;' else () }">
  <b>{$map?label}</b>
  <input id="{$map?id}" class="form-control" value="{$map?value}"/>
  {$map?extra-elements}

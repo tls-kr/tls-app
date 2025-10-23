@@ -90,8 +90,11 @@ let $loc := replace($loc_in, "-swl", "")
 , $ret :=  
    map:merge(for $seg in $dseg 
      let $tr := $troot//tei:seg[@corresp="#"||$seg/@xml:id]/text()
+      , $lang := ltr:get-translation-lang($troot)
+     , $css := 'ai '     
       return 
-      map:entry("#"||data($seg/@xml:id)||"-"||$slot, $tr))
+      map:entry("#"||data($seg/@xml:id)||"-"||$slot, (if ($tr) then $tr else "" , 
+                                                      if ($lang) then $lang else "" , $css)) )
  return $ret
 };
   
