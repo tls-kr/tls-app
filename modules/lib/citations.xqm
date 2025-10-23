@@ -338,11 +338,11 @@ let $creator-id := if ($node/tls:metadata/@resp) then substring($node/tls:metada
 , $zi := string-join($node/tei:form/tei:orth/text(), "/")
 , $creation-date := format-dateTime($node/tls:metadata/@created, "[Y0001]-[M01]-[D01]/[H01]:[m01]:[s01]")
 , $src := data($node/tls:text/tls:srcline/@title)
-, $line := $node/tls:text/tls:srcline/text()
+, $line := string-join($node/tls:text/tls:srcline/text(), '') => normalize-space()
 , $type := $node/ancestor::tei:TEI/@type
 , $target := substring(data($node/tls:text/tls:srcline/@target), 2)
 , $loc := try {xs:int((tokenize($target, "_")[3] => tokenize("-"))[1])} catch * {0}
-, $tr := $node/tls:text/tls:line/text()
+, $tr := string-join($node/tls:text/tls:line/text(), '') => normalize-space()
 , $pr := string-join($node/tei:form/tei:pron, '/')
 , $sf := $node//tls:syn-func/text()
 , $sm := $node//tls:sem-feat/text()
@@ -352,7 +352,11 @@ return
 <div class="row {$bg}">
 <div class="col-sm-1" title="{$creation-date}"><span class="chn-font">{$zi}</span> ({$pr}){lct:set-value('chars', $zi)}</div>
 <div class="col-sm-1"><a href="concept.html?concept={$concept}{$node//tei:sense/@corresp}">{$concept}</a> {lct:set-value('concept', $concept)}</div>
-<div class="col-sm-4"><a href="textview.html?location={$target}{if ($type='remote')then '&amp;mode=remote'else()}" class="font-weight-bold">{$src, $loc}</a>&#160;{$line}{if ($tr) then (<br/>, $tr) else ()}</div>
+<div class="col-sm-4"><a href="textview.html?location={$target}{if ($type='remote')then '&amp;mode=remote'else()}" class="font-weight-bold">{$src, $loc}</a>&#160;{$line}{if (1) then (<br/>,
+   <button class="btn small" type="button" title="More translations" onclick="show_dialog('att-tr-dialog', {{'line': '{$line}', 'seg_id' : '{$target}', 'att_id' : '{$attid}'}})">
+<img class="icon"  src="resources/icons/octicons/svg/info.svg"/></button>,
+<span id="{$attid}-tr">{$tr}</span>
+) else ()}</div>
 <div class="col-sm-2"><span class="font-weight-bold ml-2">{$sf}</span> {if ($sm) then ("&#160;",<em>{$sm}</em>) else ()} {lct:set-value('syn-func', $sf)}</div>
 <div class="col-sm-3">{$def}
   {lrh:swl-buttons(map{'ann': 'swl', 'resp': $resp, 'user' : sm:id()//sm:real/sm:username/text(), 'creator-id': $creator-id, 'node': $node, 'zi': $zi, 'context' : 'cit', 'marktext' : $marktext})}
