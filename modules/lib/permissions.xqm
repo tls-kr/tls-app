@@ -48,9 +48,9 @@ declare function lpm:should-display-navbar-review($context as xs:string, $model 
 };
 
 declare function lpm:can-use-linked-items(){
-(: "dba" = sm:id()//sm:group:)
+ "dba" = sm:id()//sm:group
 (:false():)
-true()
+(:true():)
 };
 
 declare function lpm:can-write-debug-log(){
