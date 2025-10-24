@@ -230,7 +230,7 @@ declare function tlslib:ontology-links($uid as xs:string, $type as xs:string, $c
  : @param $options is a map with possible options
  : we return a map of labels and doc nodes that fulfil the requirements
 :)
-declare function tlslib:get-content-slots($seg as node(), $options as map(*)) {
+declare function tlslib:get-content-slots-xx($seg as node(), $options as map(*)) {
 let $user := sm:id()//sm:real/sm:username/text()
 ,$id := $seg/@xml:id
 ,$tr := for $s in collection(($config:tls-translation-root, $config:tls-user-root || $user || "/translations"))//tei:seg[@corresp="#"||$id]
