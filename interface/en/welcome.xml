@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <div xml:lang="en">
         <div xml:id="for-guests">
           <h3>Welcome to the HXWD website</h3>
@@ -12,6 +11,7 @@
                 <a href="search.html?search-type=12">list of texts</a>
             </b>
         </p>
+          <p>Read more about our use of AI translations <a href="browse.html?type=ai-rationale">here</a>.</p>
           <p>Search the database:
            <form action="search.html" class="form-inline my-2 my-lg-0" method="get">
                  <input type="hidden" name="textid" value=""/>

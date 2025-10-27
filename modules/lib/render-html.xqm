@@ -692,3 +692,21 @@ default return ()
 }</ul>
 };
 
+
+declare function lrh:ai-translations(){
+<ul>{
+for $d in collection('/db/apps/tls-data/translations')//tei:editor[contains(. , 'AI') or contains(., 'Deepseek') or contains(., 'DeepSeek') ]
+let $tei := $d/ancestor::tei:TEI
+let $textid := substring($tei//tei:sourceDesc//tei:bibl/@corresp, 2)
+, $textsegs := collection('/db/apps/tls-texts')//tei:TEI[@xml:id=$textid]//tei:seg
+, $r := base-uri($textsegs[1])
+, $tr := count($tei//tei:seg)
+, $cnt := count($textsegs)
+, $p := try {$tr div $cnt} catch * {0}
+, $title := lmd:get-metadata($textsegs[1], 'title')
+where $p > 0.6
+order by $textid
+return
+<li><a href="textview.html?location={$textid}">{$title}</a>({format-number($p * 100, '0')}%)</li>
+}</ul>
+};

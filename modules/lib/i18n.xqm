@@ -11,9 +11,8 @@ module namespace i18n="http://hxwd.org/lib/i18n";
 
 
 import module namespace config="http://hxwd.org/config" at "../config.xqm";
-
-
 import module namespace tlslib="http://hxwd.org/lib" at "../tlslib.xql";
+import module namespace lrh="http://hxwd.org/lib/render-html" at "render-html.xqm";
 
 
 (: this module will get the desired language from a global configuration or the browser session and will select  the appropriate files  :)
@@ -48,5 +47,17 @@ return
 };
 
 declare function i18n:display($map as map(*)){
+if ($map?id = 'ai-rationale') then 
+<div>
+<div class="row" xml:id="ai-rationale" lang="en">
+  <div class="col-md-2"/>
+  {collection($config:tls-app-interface)//div[@xml:id='ai-use']}
+</div>
+<div class="row" xml:id="ai-rationale" lang="en">
+  <div class="col-md-2"/>
+  {lrh:ai-translations()}
+</div>
+</div>
+else 
 collection($config:tls-app-interface)//div[@xml:id=$map?id]
 };
