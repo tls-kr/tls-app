@@ -45,6 +45,7 @@
          <h3>Welcome back!</h3>
          <p>Here are some texts you recently looked at:</p>
          <ul>{for $l in $r return $l}</ul>
+         <p>Read more about our use of AI translations <a href="browse.html?type=ai-rationale">here</a>.</p>
                 <p>
                     Please acknowledge your use of TLS in your publications.
                 </p>
