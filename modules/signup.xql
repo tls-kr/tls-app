@@ -170,6 +170,50 @@ else
   <h1>Could not Send Message :-(</h1>
 };
 
+declare function sgn:send-reminder-mail($user-id){
+let $nu-path := '/db/groups/tls-admin/new-users/'
+(:for $m in collection('/db/groups/tls-editor')//mail[contains(.,$l)]:)
+for $m in collection($nu-path)//user[@id=$user-id]
+let $u:= $m/ancestor::user
+, $s := $u//verified/@status
+, $uname := $u//name
+, $pw := $u//password
+, $fn := $u//fullName
+where $s = 'processed'
+
+let $message := 
+  <mail>
+    <from>TLS &lt;tls@hxwd.org&gt;</from>
+    <to>{$user-id}</to>
+    <bcc>cwittern@gmail.com</bcc>
+    <subject>TLS Account created</subject>
+    <message>
+      <xhtml>
+           <html>
+               <head>
+                 <title>Reminder from the TLS database</title>
+               </head>
+               <body>
+                <h2>Dear {$fn}</h2> 
+                 <p>You have requested a reminder of the details to get in the system.</p>
+                 <p>You can now log into your new account at  <a href="https://hxwd.org/">TLS database</a>, using the login name <b>{$uname}</b> and the key {$pw}.</p>
+                 <p>All the best, <br/>TLS administrator</p>
+               </body>
+           </html>
+      </xhtml>
+    </message>
+  </mail>
+return
+if ( mail:send-email($message, (), ()) ) then
+(  <h1>Sent Message OK :-)</h1>,
+  log:info($sgn:log, "Sent reminder mail, " || $user-id)
+)
+else
+  <h1>Your email has not been found in the system. </h1>
+};
+
+
+
 declare function sgn:send-verification-mail($user-id, $url-safe-token, $shared-secret, $inputname){
 let $message := 
   <mail>
