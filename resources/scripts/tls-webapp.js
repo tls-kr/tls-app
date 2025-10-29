@@ -1500,8 +1500,8 @@ function sendLoginMail(){
      $("#settingsDialog").modal('hide');
      $("#loginDialog").modal('hide');
      toastr.info("Email has been sent to " + email, "HXWD says:")
-//     window.location.reload(true)
-  }
+     },
+   error: toastr.info("Email is not registered " + email, "HXWD says:")
   });
 };
 
