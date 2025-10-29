@@ -1477,7 +1477,10 @@ function dologin(){
    function (data, textStatus){
      console.log("data ", data, "s:", textStatus)
      if (data.user == null){
-         alert("Password or user name wrong, please try again!")
+         $("#send-mail-button").show();
+         $("#email-input").show();
+         $("#message").show();
+//         alert("Password or user name wrong, please try again!")
      } else {
         $("#loginDialog").modal('hide');
         window.location.reload(true) 
@@ -1485,6 +1488,21 @@ function dologin(){
    }, 
    "json"
    );
+};
+
+function sendLoginMail(){
+   var email = $("input[name='email']").val()
+  $.ajax({
+  type : "GET",
+  dataType : "html",  
+  url: 'api/responder.xql?func=sgn:send-reminder-mail&email='+email,
+  success : function(resp){
+     $("#settingsDialog").modal('hide');
+     $("#loginDialog").modal('hide');
+     toastr.info("Email has been sent to " + email, "HXWD says:")
+//     window.location.reload(true)
+  }
+  });
 };
 
 // save changes on ratings of the texts

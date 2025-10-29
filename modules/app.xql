@@ -1581,8 +1581,18 @@ function app:dialogs($node as node()*, $model as map(*))
                                     <input type="password" name="password" class="form-control"/>
                                 </div>
                             </div>
+                            <div class="form-group" style="display: none;" id="email-input">
+                                <label class="control-label col-sm-2">Email:</label>
+                                <div class="col-sm-10">
+                                    <input type="text" name="email" class="form-control"/>
+                                </div>
+                            </div>
+                            <div id="message" style="display: none;">
+                            <p>Login failed!  <br/>Try again or request to get your login information sent to the email you provided upon registration and re-entered above. </p>
+                            </div>
                         </div>
-                        <div class="modal-footer">
+                        <div class="modal-footer" id="login-footer">
+                            <button id="send-mail-button" name="send-mail-button" style="display: none;" class="btn btn-primary" onclick="sendLoginMail()" >Send mail</button>
                             <button name="login-button" class="btn btn-primary" onclick="dologin()">Login</button>
                         </div>
                         <input type="hidden" name="duration" value="P7D"/>

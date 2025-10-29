@@ -695,13 +695,14 @@ default return ()
 
 declare function lrh:ai-translations(){
 <ul>{
-for $d in collection('/db/apps/tls-data/translations')//tei:editor[contains(. , 'AI') or contains(., 'Deepseek') or contains(., 'DeepSeek') ]
+for $d in collection($config:tls-data-root||'/translations')//tei:editor[contains(. , 'AI') or contains(., 'Deepseek') or contains(., 'DeepSeek') ]
 let $tei := $d/ancestor::tei:TEI
 let $textid := substring($tei//tei:sourceDesc//tei:bibl/@corresp, 2)
-, $textsegs := collection('/db/apps/tls-texts')//tei:TEI[@xml:id=$textid]//tei:seg
+, $textsegs := collection($config:tls-texts-root)//tei:TEI[@xml:id=$textid]//tei:seg
 , $r := base-uri($textsegs[1])
 , $tr := count($tei//tei:seg)
 , $cnt := count($textsegs)
+(: this will fail for remote texts :)
 , $p := try {$tr div $cnt} catch * {0}
 , $title := lmd:get-metadata($textsegs[1], 'title')
 where $p > 0.6

@@ -1579,7 +1579,7 @@ let   $user := sm:id()//sm:real/sm:username/text(),
       doc($config:tls-user-root || $user || "/textdates.xml")//data else 
       doc($config:tls-texts-meta  || "/textdates.xml")//data,
       $mdate := <date>{lmd:get-metadata($d, "date")}</date>,
-      $date := if ($mdate) then $mdate else $dates[@corresp="#" || $textid],
+      $date := if ($mdate='9999') then $dates[@corresp="#" || $textid] else $mdate,
       $loewe := doc($config:tls-data-root||"/bibliography/loewe-ect.xml")//tei:bibl[tei:ref[@target = "#"||$textid]]
 return
       <div class="col">

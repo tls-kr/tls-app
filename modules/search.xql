@@ -1100,11 +1100,13 @@ declare function src:search-top-menu($search-type, $query, $txtmatchcount, $titl
 declare function src:show-dic-results($map as map(*)){
     <div>
     <p>{if ($map?start = 1) then tlslib:linkheader($map?qc) else ()}</p>
+    <div  id="show_text_results">
     <ul>
     {for $h at $c in map:get($map, "hits")
     return $h
     }
     </ul>
+    </div>
     </div>    
 };
 
