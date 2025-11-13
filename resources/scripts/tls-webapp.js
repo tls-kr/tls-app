@@ -511,6 +511,7 @@ function new_translation(slot){
 // called from new tranlation dialog
 // slot is slot1 or slot2, 
 // 2023-05-27: if trid is present, we are editing metadata for an existing file
+// 2025-11-12: We also use this to store AI translations. #select-transl will be the vendor, #input-biblio is for additional prompt info
 function store_new_translation(slot, textid, trid){
   var lang = $('#select-lang').val()
   var transl = $('#select-transl').val()
@@ -528,6 +529,7 @@ function store_new_translation(slot, textid, trid){
   success : function(resp){
   // todo : reload the selector with latest information
   $('#new-translation-dialog').modal('hide');
+  $('#new-ai-trans-dialog').modal('hide');
   reload_selector(slot, trid);
   toastr.info("New work has been saved.", "HXWD says:")  
   }
@@ -1500,8 +1502,8 @@ function sendLoginMail(){
      $("#settingsDialog").modal('hide');
      $("#loginDialog").modal('hide');
      toastr.info("Email has been sent to " + email, "HXWD says:")
-//     window.location.reload(true)
-  }
+     },
+   error: toastr.info("Email is not registered " + email, "HXWD says:")
   });
 };
 

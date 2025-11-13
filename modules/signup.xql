@@ -170,15 +170,16 @@ else
   <h1>Could not Send Message :-(</h1>
 };
 
-declare function sgn:send-reminder-mail($user-id){
+declare function sgn:send-reminder-mail($map){
 let $nu-path := '/db/groups/tls-admin/new-users/'
+, $user-id := $map?email
 (:for $m in collection('/db/groups/tls-editor')//mail[contains(.,$l)]:)
 for $m in collection($nu-path)//user[@id=$user-id]
 let $u:= $m/ancestor::user
 , $s := $u//verified/@status
-, $uname := $u//name
-, $pw := $u//password
-, $fn := $u//fullName
+, $uname := $u//name/text()
+, $pw := $u//password/text()
+, $fn := $u//fullName/text()
 where $s = 'processed'
 
 let $message := 
@@ -186,17 +187,14 @@ let $message :=
     <from>TLS &lt;tls@hxwd.org&gt;</from>
     <to>{$user-id}</to>
     <bcc>cwittern@gmail.com</bcc>
-    <subject>TLS Account created</subject>
+    <subject>Reminder from the TLS database</subject>
     <message>
       <xhtml>
            <html>
-               <head>
-                 <title>Reminder from the TLS database</title>
-               </head>
                <body>
                 <h2>Dear {$fn}</h2> 
                  <p>You have requested a reminder of the details to get in the system.</p>
-                 <p>You can now log into your new account at  <a href="https://hxwd.org/">TLS database</a>, using the login name <b>{$uname}</b> and the key {$pw}.</p>
+                 <p>You can now log into your new account at  <a href="https://hxwd.org/">TLS database</a>, using the login name '{$uname}' and the key '{$pw}'.</p>
                  <p>All the best, <br/>TLS administrator</p>
                </body>
            </html>
@@ -411,7 +409,7 @@ declare function sgn:create-user($uuid as xs:string){
     let $username := $user//name/text(),
     $checkuser := if (string-length($username) != string-length(replace($username, '[^@.A-Za-z0-9]', ''))) then "Wrong" else "OK",
     $fullName := $user//fullName/text(),
-    $description := $user//description/text(),
+    $description := if ($user//description/text()) then $user//description/text() else 'TLS User',
     $password := $user//password/text(),
     $disabled := false(),
     $umask := xs:int($user//umask),
