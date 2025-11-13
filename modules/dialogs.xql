@@ -131,6 +131,65 @@ declare function local:att-tr-dialog($name, $options){
       })           
  
 };
+(: the dialog receives the slot and the textid as options :)
+declare function local:new-ai-trans-dialog($name, $options){
+let $textid := $options?textid 
+, $title := lu:get-title($textid)
+let $body := <div><p>A request issued here will be queued and processed externally.  Depending on circumstances, it might take a few days, or even weeks to be ready.</p>
+ <p>The translation will appear here, together with the other existing translations.</p>{ 
+     let $promptfile :=  collection($config:tls-app-interface)//div[@xml:id="ai-prompts"]
+     let $vendors := map:merge(for $v in $promptfile/div[@vendor]
+                             return map:entry($v/@vendor, $v/@label))
+     , $prompts := map:merge(for $v in ($promptfile/div[@vendor])[1]/div                        
+                             return map:entry($v/@purpose, $v/@label))
+     return 
+     <div class="row border-bottom">
+     {lrh:form-control-select(
+   map{
+    'id' : 'select-lang'
+    , 'col' : 'col-md-3'
+    , 'option-map' : $config:languages
+    , 'label' : 'Translation language: '
+    , 'selected' : 'en'
+    })}
+     {lrh:form-control-select(
+   map{
+    'id' : 'select-transl'
+    , 'col' : 'col-md-3'
+    , 'option-map' : $vendors
+    , 'label' : 'AI Vendor: '
+    , 'selected' : 'deepseek'
+    })}
+ 
+     {lrh:form-control-select(
+   map{
+    'id' : 'select-rel'
+    , 'col' : 'col-md-3'
+    , 'option-map' : $prompts
+    , 'label' : 'Task: '
+    , 'selected' : 'translation'
+    })}     
+      </div>
+   }
+   {lrh:form-input-row("custom", map{
+   'input-id' : 'input-biblio'
+   ,'hint' : 'If necessary, add additional instructions for the AI engine:'
+   })}
+   </div>
+
+, $title := "Request a new AI translation file for "||$title
+, $buttons := ( <button type="button" class="btn btn-primary" onclick="store_new_translation('{$options?slot}','{$textid}', 'ai')">Request</button> )
+return                 
+      dialogs:modal-frame($name, 
+      map{
+        "dsize" : "modal-lg", 
+        "body": $body, 
+        "buttons" : $buttons, 
+        "options" : $options,
+        "title": $title 
+      })           
+};
+
 
 (:~ 
 Displays the dialog with information about the translation
@@ -272,6 +331,7 @@ return switch($para?name)
                case "update-setting" return local:update-setting($para?name, $options)
                case "search-settings" return local:search-settings($para?name, $options)
                case "external-resource" return local:external-resource($para?name, $options)
+               case "new-ai-trans-dialog" return local:new-ai-trans-dialog($para?name, $options)
                default return "Dialog not registered!"
 };
 

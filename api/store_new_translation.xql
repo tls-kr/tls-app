@@ -25,6 +25,9 @@ let $bibl := request:get-parameter("bibl", "")
 
 
 return
+ if ($trid = 'ai') then
+ ltr:new-ai-translation($lang, $textid, $translator, $rel-id, $bibl)
+ else
  if (string-length($trid) > 0 and $trid != "xx") then 
  ltr:update-translation-file($lang, $textid, $translator, $trtitle, $bibl, $vis, $copy, $type, $rel-id, $trid) else
  ltr:store-new-translation($lang, $textid, $translator, $trtitle, $bibl, $vis, $copy, $type, $rel-id)

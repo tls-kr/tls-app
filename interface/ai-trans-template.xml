@@ -1,0 +1,31 @@
+<TEI xmlns="http://www.tei-c.org/ns/1.0" xmlns:ltp="http://hxwd.org/lib/template" xml:id="ltp--tr-id" type="transl">
+  <teiHeader>
+    <fileDesc>
+      <titleStmt>
+        <title>Translation of <ltp:title/> into <ltp:lang/></title>
+        <editor role="translator"><ltp:editor/></editor>
+      </titleStmt>
+      <publicationStmt>
+        <ab>published electronically as part of the TLS project at https://hxwd.org</ab>
+        <availability status="2">
+          <ab>This work has been licensed for use in the TLS</ab>
+        </availability>
+      </publicationStmt>
+      <sourceDesc>
+        <bibl>
+          <title/><ltp:year/></bibl>
+        <ab>Translation of <bibl corresp="#ltp--textid">
+            <title xml:lang="och"/>
+          </bibl> into <lang xml:lang="ltp--lang-code"><ltp:lang/></lang>.</ab>
+      </sourceDesc>
+    </fileDesc>
+    <profileDesc>
+        <ltp:creation/>
+    </profileDesc>
+  </teiHeader>
+  <text>
+    <body>
+      <div>
+        <head>Translated parts</head>
+        <p xml:id="transl-start" generatedBy="ltp--bot"/>
+      </div></body></text></TEI>

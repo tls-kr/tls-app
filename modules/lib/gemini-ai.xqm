@@ -21,7 +21,7 @@ declare namespace tei= "http://www.tei-c.org/ns/1.0";
 
 declare variable $ai:config := if(doc('../../ai-config.xml')) then doc('../../ai-config.xml') else <response status="fail"><message>Load ai-config.xml file please.</message></response>;
 
-declare variable $ai:model := "gemini-2.0-flash";
+declare variable $ai:model := "gemini-2.5-pro";
 declare variable $ai:key := $ai:config//gemini-config/api-token/text();
 declare variable $ai:temp-path := "/db/groups/tls-user/";
 
@@ -68,7 +68,7 @@ declare function ai:save-response($dseg, $res, $slot, $lang){
   , $p := format-number($pos, '[00]')
   return
   if (map:keys($res) = $p) then
-    ltr:save-tr($trid, $res?($p), $lang, $ai:model)
+    ltr:save-tr($trid, $res?($p), $lang, 'bot-' || $ai:model)
     else ()
 };
 

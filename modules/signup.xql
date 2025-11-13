@@ -409,7 +409,7 @@ declare function sgn:create-user($uuid as xs:string){
     let $username := $user//name/text(),
     $checkuser := if (string-length($username) != string-length(replace($username, '[^@.A-Za-z0-9]', ''))) then "Wrong" else "OK",
     $fullName := $user//fullName/text(),
-    $description := $user//description/text(),
+    $description := if ($user//description/text()) then $user//description/text() else 'TLS User',
     $password := $user//password/text(),
     $disabled := false(),
     $umask := xs:int($user//umask),

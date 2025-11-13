@@ -437,7 +437,7 @@ declare
     %templates:default("prec", 15)
     %templates:default("foll", 15)     
     %templates:default("first", "false")     
-function app:textview($node as node()*, $model as map(*), $location as xs:string?, $mode as xs:string?, $prec as xs:int?, $foll as xs:int?, $first as xs:string)
+function app:textview($node as node()*, $model as map(*), $location as xs:string?, $mode as xs:string?, $prec as xs:int?, $foll as xs:int?, $first as xs:string, $slot1 as xs:string?)
 {
 (:     let $message := (for $k in map:keys($model) return $k) => string-join(","):)
   let $dispseg := $model("seg")
@@ -453,7 +453,7 @@ let $query-needing-measurement := (: insert query or function call here :)
 (:     tlslib:display-chunk($dispseg, $model, $prec, $foll):)
 (:      try {:)
       if ($dispseg) then
-      tlslib:display-chunk($dispseg, $model, $prec, $foll)
+      tlslib:display-chunk($dispseg[1], $model, $prec, $foll)
       else "No text segment found: " || $location
 (:      } catch * {"An error occurred, can't display text. Code:" || count($dispseg) || " (dispseg)" }      :)
     else 

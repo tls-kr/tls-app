@@ -437,6 +437,7 @@ declare function tlslib:navbar-doc(){
                                 <a class="dropdown-item" href="documentation.html?section=team">Advisory Board</a>
                                 <div class="dropdown-divider"/>
                                 <a class="dropdown-item" target="docs" href="https://docs.hxwd.org">Documentation</a>
+                                <a class="dropdown-item" href="browse.html?type=ai-rationale">AI Translations</a>
                                 <a class="dropdown-item" href="documentation.html?section=text-crit">Critically establishing a text</a>
                                 <a class="dropdown-item" href="documentation.html?section=taxonomy">Genre categories</a>
                                 {if ("tls-user" = sm:id()//sm:group) then 
@@ -637,7 +638,7 @@ declare function tlslib:tv-header($node as node()*, $model as map(*)){
 declare function tlslib:generate-toc($node){
 subsequence (for $h in $node//tei:head
     let $locseg := $h//tei:seg/@xml:id
-    , $textid := tokenize($locseg, "_")[1]
+    , $textid := tokenize($locseg[1], "_")[1]
     where matches($textid, "^[A-Za-z]")
     return
     <a class="dropdown-item" title="{$locseg}" href="textview.html?location={$locseg}&amp;prec=0&amp;foll=30">{$h//text()}</a>
