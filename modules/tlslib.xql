@@ -696,7 +696,7 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
 (:      $model := if (string-length($model?textid) > 0) then $model else map:put($model, "textid", tokenize($targetseg, "_")[1]), :)
       $show-transl := lpm:should-show-translation(),
       $show-variants := xs:boolean(1),
-      $visit := lvs:record-visit($targetseg),
+      $visit := try{lvs:record-visit($targetseg)} catch * {()},
       $tr := if (lpm:should-show-translation()) then 
          if (string-length($facs) > 0) then map:merge((ltr:get-translations($model?textid), 
             for $edx in distinct-values(for $lpb in $targetseg/ancestor::tei:div//tei:pb where string-length($lpb/@facs) > 0 return $lpb/@ed)

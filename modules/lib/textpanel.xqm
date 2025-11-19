@@ -322,7 +322,17 @@ for $i in (1 to $colums)
  , $tr-class := try {ltr:get-translation-css($slot)} catch * {''}
  return
 
-ltp:right-panel-row($slot, map{"seg" : $seg, "col-class" : $ltp:panel-matrix?($colums)[$i + 1],  "ann" : $ann, "resp": $resp, "ex": "slot"||$i, "tabindex" : $options('pos')+ (500*$i), "editable" : $editable, "user" : $user, "trans-lang" : $lang, 'tr-class' : $tr-class })
+ltp:right-panel-row($slot, 
+       map{"seg" : $seg, 
+       "col-class" : $ltp:panel-matrix?($colums)[$i + 1],  
+       "ann" : $ann, 
+       "resp": $resp, 
+       "ex": "slot"||$i, 
+       "tabindex" : $options('pos')+ (500*$i), 
+       "editable" : if ( ltr:is-ai-translation($slot) or ltr:is-text-notes($slot) ) then 'false' else $editable, 
+       "user" : $user, 
+       "trans-lang" : $lang, 
+       'tr-class' : $tr-class })
 
 }
 </div>,
@@ -420,7 +430,7 @@ if ($map?ann = 'false') then () else
   {typeswitch ($node) 
 case element(tei:TEI) return (if ($node/@type='notes') then 
       lli:get-linked-items($map?user, $map?seg/@xml:id) else (),
-      <div class="tr {$map?tr-class}" tabindex="{$map?tabindex}" id="{$map?seg/@xml:id}-{$map?ex}" contenteditable="{$map?editable}">{$node//tei:seg[@corresp="#"||$map?seg/@xml:id]//text()}</div>  )
+      <div class="tr {$map?tr-class}" tabindex="{$map?tabindex}" id="{$map?seg/@xml:id}-{$map?ex}" contenteditable="{$map?editable}">{lrh:tr-seg($node//tei:seg[@corresp="#"||$map?seg/@xml:id], $map)}</div>  )
 default return ()
 
 (:(krx:get-varseg-ed($map?seg/@xml:id, substring-before($node, "::"))):)

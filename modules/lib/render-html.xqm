@@ -149,7 +149,21 @@ declare function lrh:get-content-id($textid as xs:string, $slot as xs:string, $t
   return if (string-length($content-id) > 0) then $content-id else "new-content"
 };
 
+(: for read-only, such as ai translations or text-notes :)
+declare function lrh:tr-seg($nodex as node()?, $options as map(*)){
+ for $node in $nodex/node() return
+ typeswitch ($node)
+  case element (tei:g) return $node/text()
+  case element (tei:hi) return 
+    if ($node/@type='title') then "《" || $node || "》" else
+    <span class="underline">{$node/text()}</span>
+  case element (tei:graphic) return 
+  <img width="20" height="20" src="$tls-texts/img/{$node/@url}"/>
+  case text() return $node
+  case attribute(*) return () 
+  default return $node//text()    
 
+};
 (:~
 : recurse through the supplied node (a tei:seg) and return only the top level text()
 : 2020-02-20: created this element because KR2m0054 has <note> elements in translation. 

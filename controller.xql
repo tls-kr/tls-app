@@ -26,7 +26,8 @@ declare variable $local:HTTP_INTERNAL_SERVER_ERROR := xs:integer(500);
 declare variable $local:isget := request:get-method() = ("GET","get");
 
 declare function local:isBlocked($ua as xs:string) {
- matches ($ua, 'bot|Scrapy')  
+ if (matches($ua, 'UptimeRobot')) then false() else
+   matches ($ua, 'bot|Scrapy')  
 };
 
 declare function local:allowOriginDynamic($origin as xs:string?) {
@@ -208,6 +209,14 @@ else if (contains($exist:path, "/$shared/")) then
             <set-header name="Cache-Control" value="max-age=3600, must-revalidate"/>
         </forward>
     </dispatch>
+
+else if (contains($exist:path, "/$tls-texts/")) then
+    <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+        <forward url="/tls-texts/{substring-after($exist:path, '/$tls-texts/')}">
+            <set-header name="Cache-Control" value="max-age=3600, must-revalidate"/>
+        </forward>
+    </dispatch>
+
 else 
     (: everything else is passed through :)
 (:    

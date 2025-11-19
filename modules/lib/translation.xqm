@@ -31,6 +31,7 @@ declare variable $ltr:translation-type-labels := map {
  "transl" : "Translation"
  , "notes" : "Research Notes"
  , "comment" : "Comments"
+ , "text-notes" : "Notes"
 };
 
 declare variable $ltr:tr-map-indices := map{
@@ -40,7 +41,11 @@ declare variable $ltr:tr-map-indices := map{
  , "doc-node" :  1
 };
 
-declare function ltr:is-ai-translation($trfile as node()){
+declare function ltr:is-text-notes($trfile as node()?){
+$trfile/ancestor-or-self::tei:TEI/@type='text-notes'
+};
+
+declare function ltr:is-ai-translation($trfile as node()?){
  let $doc := $trfile/ancestor-or-self::tei:TEI
  , $ed := string-join($doc//tei:editor/text() , '')
 
@@ -384,11 +389,14 @@ return
 declare function ltr:format-translation-label($tr as map(*), $trid as xs:string){
  let $type := $tr($trid)[$ltr:tr-map-indices?type-label]
  let $segcount := lu:seg-count($tr($trid)[$ltr:tr-map-indices?doc-node]//tei:seg)
- let $tr-label := string-join(($type , " by " , 
+ let $tr-label :=  if ($type = 'Notes') then $tr($trid)[$ltr:tr-map-indices?doc-node]//tei:editor||" [" ||$segcount || ']'
+                   else
+                   string-join(($type , " by " , 
                    $tr($trid)[$ltr:tr-map-indices?name-label],  " (" ,
                    $tr($trid)[$ltr:tr-map-indices?lang-label],  ") [", $segcount, ']'))
  return 
  $tr-label
+(:$tr($trid)[$ltr:tr-map-indices?type-label]:)
 };
 
 
@@ -572,7 +580,7 @@ let $loc := replace($loc_in, "-swl", "")
    $troot := $transl($content-id)[1] 
    return
    map:merge(for $seg in $dseg 
-     let $tr := $troot//tei:seg[@corresp="#"||$seg/@xml:id]/text()
+     let $tr := lrh:tr-seg($troot//tei:seg[@corresp="#"||$seg/@xml:id], map{}) => string-join() (: this will remove the markup :)
      , $lang := ltr:get-translation-lang($troot)
      , $css := ltr:get-translation-css($troot)
       return 
