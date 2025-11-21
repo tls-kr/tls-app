@@ -5,7 +5,7 @@ xquery version "3.1";
  :
  : @author Christian Wittern
  : @date 2023-10-23
- :)
+ ~:)
 
 module namespace ltr="http://hxwd.org/lib/translation";
 
@@ -47,10 +47,12 @@ $trfile/ancestor-or-self::tei:TEI/@type='text-notes'
 
 declare function ltr:is-ai-translation($trfile as node()?){
  let $doc := $trfile/ancestor-or-self::tei:TEI
+ , $uri := base-uri($doc)
  , $ed := string-join($doc//tei:editor/text() , '')
 
 return
-if (contains($ed, 'AI - ') or contains($ed, 'Deepseek') or contains($ed, 'Gemini')) then true() else false()
+if (contains($uri, '/translations/ai/')) then true() else
+if (contains($ed, 'AI - ') or contains($ed, 'Deepseek') or contains($ed, 'DeepSeek') or contains($ed, 'Gemini')) then true() else false()
 };
 
 declare function ltr:get-translation-css($trfile as node()){
@@ -184,12 +186,13 @@ declare function ltr:new-ai-translation(
   let $user := sm:id()//sm:real/sm:username/text()
   let $trcoll := $config:tls-translation-root || "/queue" 
   let $trcollavailable := dbu:ensure-collection($trcoll)
+  let $tr-target-available := dbu:ensure-collection($config:tls-translation-root || '/ai/' || $lang)
   let $trid := string-join(($txtid, $lang, $suid), '-')
   let $promptfile :=  collection($config:tls-app-interface)//div[@xml:id="ai-prompts"]
   let $vendor-label := $promptfile/div[@vendor=$vendor]/@label/string()
   , $prompts := ($promptfile/div[@vendor=$vendor])/div[@purpose=$task]   
-  , $sysp := $prompts/system-prompt/text()
-  , $userp := $prompts/user-prompt/text()
+  , $sysp  := replace($prompts/system-prompt/text(), '$lang', $config:languages?($lang))
+  , $userp := replace($prompts/user-prompt/text(), '$lang', $config:languages?($lang))
   let $ltp-map := map{
   'title' : lu:get-title($txtid)
   ,'editor' : $vendor-label
@@ -199,8 +202,8 @@ declare function ltr:new-ai-translation(
   ,'textid': $txtid
   ,'lang-code' : $lang
   ,'bot' : 'bot'
-  ,'creation' : <creation xmlns="http://www.tei-c.org/ns/1.0" resp="#chris">Initially created: <date>{current-dateTime()}</date> by {$user}
-            <code lang="sytem-prompt" resp="{$vendor}">{$sysp}</code>
+  ,'creation' : <creation xmlns="http://www.tei-c.org/ns/1.0" resp="#{$user}">Initially created: <date>{current-dateTime()}</date> by {$user}
+            <code lang="system-prompt" resp="{$vendor}">{$sysp}</code>
             <code lang="user-prompt" resp="{$vendor}">{$userp}</code>
             {$cp}</creation>
   }
@@ -387,7 +390,8 @@ return
 };
 
 declare function ltr:format-translation-label($tr as map(*), $trid as xs:string){
- let $type := $tr($trid)[$ltr:tr-map-indices?type-label]
+ let $ai-output := ltr:is-ai-translation($tr($trid)[$ltr:tr-map-indices?doc-node])
+ let $type := if ($ai-output) then "Output" else $tr($trid)[$ltr:tr-map-indices?type-label]
  let $segcount := lu:seg-count($tr($trid)[$ltr:tr-map-indices?doc-node]//tei:seg)
  let $tr-label :=  if ($type = 'Notes') then $tr($trid)[$ltr:tr-map-indices?doc-node]//tei:editor||" [" ||$segcount || ']'
                    else
@@ -419,11 +423,18 @@ return
   the value of map $tr is a sequence of five items : root-node of translation, label, language, license code, item type, formated for label
 :)
 declare function ltr:render-translation-submenu($textid as xs:string, $slot as xs:string, $trid as xs:string, $tr as map(*)){
- let $keys := for $k in map:keys($tr)
+let $keys := for $k in map:keys($tr)
            let $item-type := $tr($k)[$ltr:tr-map-indices?type-label]
-           , $date := lmd:get-metadata($tr($k)[$ltr:tr-map-indices?doc-node], "date")[1]
-           order by $date ascending
-           where not($k = ($trid, "content-id")) return $k
+           let $g := if (ltr:is-ai-translation($tr($k)[$ltr:tr-map-indices?doc-node])) 
+             then 1 else
+             if ($item-type = 'transl') then 0 else -1
+           group by $g  
+           return 
+            for $l in $k
+             let $date := lmd:get-metadata($tr($l)[$ltr:tr-map-indices?doc-node], "date")[1]
+             order by $date ascending
+            where not($l = ($trid, "content-id")) 
+            return $l
     ,$type := if ($trid and map:contains($tr, $trid)) then $tr($trid)[$ltr:tr-map-indices?type-label] else "Translation"       
  return
  <div id="translation-headerline-{$slot}" class="btn-group" role="group" >
