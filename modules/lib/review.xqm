@@ -148,19 +148,50 @@ declare function lrv:review-request(){
 let $user := "#" || sm:id()//sm:username
 , $text := doc($config:tls-add-titles)//work[@request]
 , $recent := doc($config:tls-add-titles)//work[@requested-by]
+, $queue := collection($config:tls-data-root||"/translations/queue")//tei:TEI
+, $in-progress := collection($config:tls-data-root||"/translations/ai")//tei:p[@xml:id='transl-start']
+, $done := collection($config:tls-data-root||"/translations/ai")//tei:TEI[.//tei:p[tei:seg]]
+
 return
 
 <div class="container">
 <div>
-<h3>Requested texts: {count($text)} items</h3>
-{lrv:review-request-rows($text)}
+<h3>Requested AI outputs: {count($queue)} item(s)</h3>
+{lrv:ai-request-rows($queue)}
 </div>
 <div>
-<h3>Recently added texts: {count($recent)} items</h3>
-{lrv:review-request-rows($recent)}
+<h3>AI outputs in progress: {count($in-progress)} items</h3>
+{lrv:ai-request-rows($in-progress)}
+</div>
+<div>
+<h3>Recently added AI outputs: {count($done)} items</h3>
+{lrv:ai-request-rows($done)}
 </div>
 
 </div>
+};
+
+declare function lrv:ai-request-rows($res as node()*){
+for $t at $pos in $res
+let $segs := $t//tei:seg
+, $user := substring($t//tei:creation/@resp, 2)
+, $vendor := ($t//tei:code)[1]/@resp/string()
+, $req-date := $t//tei:creation/tei:date/text()
+, $tr-begin := ($segs)[1]/@modified/string()
+, $tr-end := ($segs)[last()]/@modified/string()
+, $title := $t//tei:titleStmt/tei:title/text()
+, $textid := substring($t//tei:bibl/@corresp, 2)
+, $by := $t//tei:editor/text()
+, $scount := count($segs)
+return
+<li><a href="textview.html?location={$textid}">{$title}</a> by  {$by} 
+{if ($scount > 0) then " ["||$scount||"] lines," else " ["||$user||"],"} <br/> Request:{
+ format-dateTime(xs:dateTime(substring-before($req-date, '+'))- xs:dayTimeDuration("PT9H"), "[Y0001]-[M01]-[D01] at [H01]:[m01]:[s01]"  )} 
+{if ($tr-begin) then <p>Started: {
+format-dateTime($tr-begin, "[Y0001]-[M01]-[D01] at [H01]:[m01]:[s01]")}<br/>Finished: {
+format-dateTime($tr-end, "[Y0001]-[M01]-[D01] at [H01]:[m01]:[s01]")}<br/>
+Duration: {lrh:display-duration(xs:duration(xs:dateTime($tr-end) - xs:dateTime($tr-begin)))}</p> else ()}
+</li>
 };
 
 declare function lrv:review-request-rows($res as node()*){

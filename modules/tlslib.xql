@@ -553,7 +553,7 @@ return
 
 
      {if (sm:id()//sm:group = "tls-admin") then 
-     <a class="dropdown-item" href="review.html?type=request">Add requested texts</a>
+     <a class="dropdown-item" href="review.html?type=request">AI output requests</a>
      else () }
    </div>
  </li>
