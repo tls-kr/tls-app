@@ -2,9 +2,12 @@
   <teiHeader>
     <fileDesc>
       <titleStmt>
-        <title>Translation of <ltp:title/> into <ltp:lang/></title>
+        <title>AI Output of <ltp:title/> into <ltp:lang/></title>
         <editor role="translator"><ltp:editor/></editor>
       </titleStmt>
+            <extent>
+                <measure unit="seg" quantity="ltp--segs-count"/>
+            </extent>
       <publicationStmt>
         <ab>published electronically as part of the TLS project at https://hxwd.org</ab>
         <availability status="2">
@@ -14,8 +17,8 @@
       <sourceDesc>
         <bibl>
           <title/><ltp:year/></bibl>
-        <ab>Translation of <bibl corresp="#ltp--textid">
-            <title xml:lang="och"/>
+        <ab>AI Output of <bibl corresp="#ltp--textid">
+            <title xml:lang="och"><ltp:title/></title>
           </bibl> into <lang xml:lang="ltp--lang-code"><ltp:lang/></lang>.</ab>
       </sourceDesc>
     </fileDesc>

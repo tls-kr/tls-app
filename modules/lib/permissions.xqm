@@ -90,6 +90,10 @@ declare function lpm:can-delete-translations($trid){
   lpm:is-owner($trc) or lpm:tls-editor()
 };
 
+declare function lpm:tls-admin(){
+ (sm:id()//sm:group/text() = ("tls-admin"))
+};
+
 declare function lpm:tls-editor(){
  (sm:id()//sm:group/text() = ("tls-editor", "tls-admin"))
 };
