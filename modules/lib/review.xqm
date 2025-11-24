@@ -149,7 +149,7 @@ let $user := "#" || sm:id()//sm:username
 , $text := doc($config:tls-add-titles)//work[@request]
 , $recent := doc($config:tls-add-titles)//work[@requested-by]
 , $queue := collection($config:tls-data-root||"/translations/queue")//tei:TEI
-, $in-progress := collection($config:tls-data-root||"/translations/ai")//tei:p[@xml:id='transl-start']
+, $in-progress := collection($config:tls-data-root||"/translations/ai")//tei:TEI[.//tei:p[@xml:id='transl-start']]
 , $done := collection($config:tls-data-root||"/translations/ai")//tei:TEI[.//tei:p[tei:seg]]
 
 return
@@ -181,16 +181,36 @@ let $segs := $t//tei:seg
 , $tr-end := ($segs)[last()]/@modified/string()
 , $title := $t//tei:titleStmt/tei:title/text()
 , $textid := substring($t//tei:bibl/@corresp, 2)
+, $trid := $t/@xml:id/string()
 , $by := $t//tei:editor/text()
 , $scount := count($segs)
+  order by if (exists($tr-end)) then xs:dateTime($tr-end) else xs:dateTime($req-date) descending
 return
 <li><a href="textview.html?location={$textid}">{$title}</a> by  {$by} 
-{if ($scount > 0) then " ["||$scount||"] lines," else " ["||$user||"],"} <br/> Request:{
+{if ($scount > 0) then " ["||$scount||"] lines," else 
+ let $seg-count := if ($t//tei:measure[@unit='seg']) then $t//tei:measure[@unit='seg']/@quantity/string() 
+                    else count(lu:get-doc($textid)//tei:body//tei:seg)
+            return  ' [' || $seg-count || ']lines ' 
+  || " ["||$user||"],"} <br/> Request:{
  format-dateTime(xs:dateTime(substring-before($req-date, '+'))- xs:dayTimeDuration("PT9H"), "[Y0001]-[M01]-[D01] at [H01]:[m01]:[s01]"  )} 
 {if ($tr-begin) then <p>Started: {
 format-dateTime($tr-begin, "[Y0001]-[M01]-[D01] at [H01]:[m01]:[s01]")}<br/>Finished: {
 format-dateTime($tr-end, "[Y0001]-[M01]-[D01] at [H01]:[m01]:[s01]")}<br/>
-Duration: {lrh:display-duration(xs:duration(xs:dateTime($tr-end) - xs:dateTime($tr-begin)))}</p> else ()}
+Duration: {lrh:display-duration(xs:duration(xs:dateTime($tr-end) - xs:dateTime($tr-begin)))}</p> 
+else 
+if (lpm:tls-admin()) then
+ (
+ if ($t/@status = 'OK') then 
+ <span>　Request has been approved</span>
+ else 
+ <span id="approve-buttons"><span>　</span>
+ <button type="button" class="btn btn-primary md-2" onclick="ai_approve('{$trid}', 'OK')">Approve</button>
+ {if (lpm:can-delete-applications()) then (
+ <button type="button" class="btn btn-danger md-2" onclick="ai_approve('{$trid}',
+'DELETE')">Delete</button>) else ()}
+</span>)
+else ()
+}
 </li>
 };
 

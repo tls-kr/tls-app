@@ -45,13 +45,23 @@ declare function ltr:is-text-notes($trfile as node()?){
 $trfile/ancestor-or-self::tei:TEI/@type='text-notes'
 };
 
+(: approve a AI request :)
+declare function ltr:approve($map as map(*)){
+ let $trdoc := collection($config:tls-translation-root)//tei:TEI[@xml:id = $map?trid]
+ return
+ if ($map?resp = 'DELETE') then 
+   xmldb:remove($config:tls-translation-root||'/queue', $map?trid || '.xml')  
+ else
+   update insert attribute status {'OK'} into $trdoc 
+};
+
 declare function ltr:is-ai-translation($trfile as node()?){
  let $doc := $trfile/ancestor-or-self::tei:TEI
  , $uri := base-uri($doc)
  , $ed := string-join($doc//tei:editor/text() , '')
 
 return
-if (contains($uri, '/translations/ai/')) then true() else
+if (contains($uri, '/translations/ai/') or contains($uri, '/translations/queue/')) then true() else
 if (contains($ed, 'AI - ') or contains($ed, 'Deepseek') or contains($ed, 'DeepSeek') or contains($ed, 'Gemini')) then true() else false()
 };
 
@@ -199,6 +209,7 @@ declare function ltr:new-ai-translation(
   ,'year' : '2025'
   ,'lang' :  $config:languages?($lang) 
   ,'tr-id' : $trid
+  ,'segs-count' : count(lu:get-doc($txtid)//tei:body//tei:seg)
   ,'textid': $txtid
   ,'lang-code' : $lang
   ,'bot' : 'bot'
@@ -425,9 +436,9 @@ return
 declare function ltr:render-translation-submenu($textid as xs:string, $slot as xs:string, $trid as xs:string, $tr as map(*)){
 let $keys := for $k in map:keys($tr)
            let $item-type := $tr($k)[$ltr:tr-map-indices?type-label]
-           let $g := if (ltr:is-ai-translation($tr($k)[$ltr:tr-map-indices?doc-node])) 
-             then 1 else
-             if ($item-type = 'transl') then 0 else -1
+           let $g := try {if (ltr:is-ai-translation($tr($k)[$ltr:tr-map-indices?doc-node])) 
+             then 1 else 
+             if ($item-type = 'transl') then 0 else -1 } catch * {2}
            group by $g  
            return 
             for $l in $k
