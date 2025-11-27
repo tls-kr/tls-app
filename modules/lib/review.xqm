@@ -198,7 +198,8 @@ return
 <p>
 Started: {format-dateTime($tr-begin, "[Y0001]-[M01]-[D01] at [H01]:[m01]:[s01]")}<br/>
 Finished: {format-dateTime($tr-end, "[Y0001]-[M01]-[D01] at [H01]:[m01]:[s01]")}<br/>
-Duration: {lrh:display-duration(xs:duration(xs:dateTime($tr-end) - xs:dateTime($tr-begin)))}
+Duration: {lrh:display-duration(xs:duration(xs:dateTime($tr-end) - xs:dateTime($tr-begin)))}<br/>
+Translated: {$scount} lines.
 </p> 
 else 
 if (lpm:tls-admin()) then

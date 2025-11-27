@@ -1425,8 +1425,6 @@ function app:review($node as node()*, $model as map(*), $type as xs:string, $iss
 declare 
     %templates:wrap
 function app:recent($node as node()*, $model as map(*)){
-(: attributions and translations, with API calls to actual activity :)
-
 <div><h2>Recent activity as of {current-dateTime()}</h2>
 {
 let $notes := $config:tls-data-root || "/notes"
@@ -1436,62 +1434,69 @@ let $atts := for $a in collection($notes)//tls:ann/tls:metadata
  where $date > xs:dateTime("2019-08-29T19:51:15.425+09:00")
  order by $date descending
  return $a
-,$pers := for $a in distinct-values($atts/@resp)
-  return $a
   
 return  
-
 <div>
-<h3>Attributions</h3>
-<p>Total number of attributions made since Aug. 28, 2019: {count($atts)}</p>
+<div>
+ <h3>Attributions</h3>
+ <p>Total number of attributions made since Aug. 28, 2019: {count($atts)}</p>
 
-<ul>
-{for $p in $pers
-let $px := substring-after($p,"#")
+ <ul>
+{for $a in $atts
+let $px := substring-after($a/@resp,"#")
+group by $px
 let $un := doc($config:tls-data-root || "/vault/members.xml")//tei:person[@xml:id=$px]//tei:persName/text()
-(:,$un := $px
-:), $cnt := count($atts[@resp=$p])
+let $cnt := count($a)
 order by $cnt descending
 return
 <li>{if (not($un)) then $px else $un}, {$cnt}</li>
-}
-</ul>
+}</ul>
 {
-for $a in subsequence($atts, 1, 1)
-let $att := $a/ancestor::tls:ann
-return 
-<div><span>The most recent attribution was {lrh:display-duration(xs:dateTime(current-dateTime()) - xs:dateTime(data($a/@created)))} ago :</span>
+ for $a in subsequence($atts, 1, 1)
+ let $att := $a/ancestor::tls:ann
+ return 
+ <div><span>The most recent attribution was {lrh:display-duration(xs:dateTime(current-dateTime()) - xs:dateTime(data($a/@created)))} ago :</span>
 {(
 lrh:show-att-display($att),
 lrh:format-swl($att, map{"type" : "row"})
 )}
-</div>}
 </div>
-},
+} 
+</div>
+</div>
+}
 
 {
-let $trans := $config:tls-data-root || "/translations"
-let $atts := for $a in collection($trans)//tei:seg
+let $trans := 
+   for $subcoll in xmldb:get-child-collections($config:tls-translation-root) 
+   where not($subcoll = ('ai', 'queue', 'text-notes', 'by-hand'))
+   return collection($config:tls-translation-root||'/'||$subcoll)
+let $ai-trans := 
+   for $subcoll in xmldb:get-child-collections($config:tls-translation-root) 
+   where ($subcoll = ('ai', 'queue', 'text-notes', 'by-hand'))
+   return collection($config:tls-translation-root||'/'||$subcoll)
+let $ai-segs := lu:seg-count($ai-trans//tei:seg)   
+let $segs := for $a in $trans//tei:seg
  let $date := xs:dateTime($a/@modified)
  where $date > xs:dateTime("2019-08-29T19:51:15.425+09:00")
  order by $date descending
  return $a
-,$pers := distinct-values(for $a in distinct-values($atts/@resp)
-  return replace($a, '#', ''))
   
 return  
 
 <div>
 <h3>Lines of translations</h3>
-<p>Total number of lines translated since Aug. 28, 2019: {count($atts)}</p>
+<p>Total number of lines translated since Aug. 28, 2019: {lu:seg-count($segs)}<br/>
+This does not include AI generated output, which is {$ai-segs} lines, but some hand-generated AI requests using the 'AI' button.
+</p>
 <ul>
-{for $px in $pers
+{for $seg in $segs
+let $px := substring($seg/@resp, 2)
+group by $px
+let $cnt := count($seg)
 let $un := doc($config:tls-data-root || "/vault/members.xml")//tei:person[@xml:id=$px]//tei:persName/text()
-(:let $un := "xx":)
-let $cnt := count($atts[@resp=$px]) + count($atts[@resp='#'|| $px])
 order by $cnt descending
 return
-(:<li>{if (not($un)) then $px else $un}, {$cnt}</li>:)
 <li>{if (not($un)) then $px else $un}, {$cnt}</li>
 
 }
