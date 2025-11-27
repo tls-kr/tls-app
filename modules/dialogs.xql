@@ -135,14 +135,21 @@ declare function local:att-tr-dialog($name, $options){
 declare function local:new-ai-trans-dialog($name, $options){
 let $textid := $options?textid 
 , $title := lu:get-title($textid)
+, $exist-ai := ltr:get-ai-translation-vendors($textid)
 let $body := <div><p>A request issued here will be queued and processed externally.  Depending on circumstances, it might take a few days, or even weeks to be ready.</p>
  <p>The translation will appear here, together with the other existing translations.</p>{ 
      let $promptfile :=  collection($config:tls-app-interface)//div[@xml:id="ai-prompts"]
      let $vendors := map:merge(for $v in $promptfile/div[@vendor]
+                             where not($v = $exist-ai)
                              return map:entry($v/@vendor, $v/@label))
      , $prompts := map:merge(for $v in ($promptfile/div[@vendor])[1]/div                        
                              return map:entry($v/@purpose, $v/@label))
      return 
+     if (count($vendors) = 0) then
+          <div class="row border-bottom">
+          <p>Currently there are no further AI vendors available.</p>
+          </div>
+     else     
      <div class="row border-bottom">
      {lrh:form-control-select(
    map{

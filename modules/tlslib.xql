@@ -437,7 +437,7 @@ declare function tlslib:navbar-doc(){
                                 <a class="dropdown-item" href="documentation.html?section=team">Advisory Board</a>
                                 <div class="dropdown-divider"/>
                                 <a class="dropdown-item" target="docs" href="https://docs.hxwd.org">Documentation</a>
-                                <a class="dropdown-item" href="browse.html?type=ai-rationale">AI Translations</a>
+                                <a class="dropdown-item" href="browse.html?type=ai-rationale">AI Output('translations')</a>
                                 <a class="dropdown-item" href="documentation.html?section=text-crit">Critically establishing a text</a>
                                 <a class="dropdown-item" href="documentation.html?section=taxonomy">Genre categories</a>
                                 {if ("tls-user" = sm:id()//sm:group) then 

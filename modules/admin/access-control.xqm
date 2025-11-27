@@ -7,7 +7,7 @@ xquery version "3.1";
  : @see http://www.exist-db.org/exist/apps/doc/security
  :)
 
-declare namespace ace="http://hxwd.org/ace";
+module namespace ace="http://hxwd.org/ace";
 import module namespace sm="http://exist-db.org/xquery/securitymanager";
 import module namespace dbutil="http://exist-db.org/xquery/dbutil";
 
@@ -45,4 +45,11 @@ declare function ace:super-editor() as item()* {
  :)
 declare function ace:limit-editor($usr as xs:string, $col as xs:anyURI+) as item()* {
   dbutil:scan-resources($col, sm:insert-user-ace($col, 1, $usr, false(), '-w-'))
+};
+
+declare function ace:set-tls-user-permissions($res){
+(
+sm:chmod(xs:anyURI($res), "rw-rw-rw-"),
+sm:chgrp(xs:anyURI($res), "tls-user")
+)
 };

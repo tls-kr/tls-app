@@ -65,6 +65,14 @@ if (contains($uri, '/translations/ai/') or contains($uri, '/translations/queue/'
 if (contains($ed, 'AI - ') or contains($ed, 'Deepseek') or contains($ed, 'DeepSeek') or contains($ed, 'Gemini')) then true() else false()
 };
 
+declare function ltr:get-ai-translation-vendors($textid){
+for $a in (collection($config:tls-translation-root||'/ai/')//tei:bibl[@corresp="#"||$textid],
+           collection($config:tls-translation-root||'/queue/')//tei:bibl[@corresp="#"||$textid])
+let $t := $a/ancestor::tei:TEI
+let $v := $t//tei:code[@lang='user-prompt']/@resp/string()
+return $v
+};
+
 declare function ltr:get-translation-css($trfile as node()){
  let $ai := ltr:is-ai-translation($trfile)
  return 
@@ -457,7 +465,7 @@ let $keys := for $k in map:keys($tr)
             (<button class="btn btn-secondary dropdown-toggle" type="button" id="ddm-{$slot}" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
             {$label}
             </button>,
-            if (lpm:can-use-ai() and contains($label, 'Translation by AI - ')) then <button type="button" class="btn btn-primary" title="Get translation from AI" onclick="get_tr_for_page('{$slot}', '{$trid}', '{$tr($trid)[$ltr:tr-map-indices?lang-label]}')">AI</button> else ()
+            if (lpm:can-use-ai() and contains($label, 'Output by AI - Gemini')) then <button type="button" class="btn btn-primary" title="Get translation from AI" onclick="get_tr_for_page('{$slot}', '{$trid}', '{$tr($trid)[$ltr:tr-map-indices?lang-label]}')">AI</button> else ()
             )
          }   
     <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
