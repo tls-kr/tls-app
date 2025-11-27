@@ -709,23 +709,19 @@ default return ()
 
 declare function lrh:ai-translations(){
 <ul>{
-for $d in collection($config:tls-data-root||'/translations')//tei:editor[contains(. , 'AI') or contains(., 'Deepseek') or contains(., 'DeepSeek') ]
-let $tei := $d/ancestor::tei:TEI
-let $textid := substring(($tei//tei:sourceDesc//tei:bibl/@corresp)[1], 2)
-, $textsegs := (collection($config:tls-texts-root)//tei:TEI[@xml:id=$textid[1]])[1]//tei:seg
-, $cat := lmd:get-metadata($textsegs[1], "kr-categories")
-(:, $r := base-uri($textsegs[1]):)
-, $cnt := count($textsegs)
-(: this will fail for remote texts :)
-, $title := lmd:get-metadata($textsegs[1], 'title')
-group by $textid
-order by $cat[1] || $textid
-return
-for $d1 at $pos in $d 
-let  $tr := count($tei[$pos]//tei:seg)
+for $tei in collection($config:tls-data-root||'/translations/by-hand')//tei:TEI
+let $trl := $tei//tei:editor/text()
+let $bibl := $tei//tei:sourceDesc//tei:bibl
+let $textid := substring(($bibl/@corresp)[1], 2)
+let $tit := $bibl/tei:title/text()
+let $title := if ($tit) then $tit else lmd:get-metadata( lu:get-doc($textid), 'title' )
+let $segs := lu:seg-count($tei//tei:seg)
+(:let  $tr := count($tei[$pos]//tei:seg)
 , $p := try {$tr div $cnt} catch * {0}
-where $p > 0.6 or $tr > 5000
+where $p > 0.6 or $tr > 5000:)
+order by $textid
+where $segs > 2000
 return
-<li><a href="textview.html?location={$textid}&amp;slot1={$tei[$pos]/@xml:id/string()}">{$title[$pos]} -- {$d[$pos]/text()} </a>({format-number($p * 100, '0')}%)</li>
+<li><a href="textview.html?location={$textid}">{$title} -- {$trl} </a> ({$segs} lines)</li>
 }</ul>
 };

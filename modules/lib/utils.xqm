@@ -137,7 +137,7 @@ declare function lu:session-att($name, $default){
 
 (:~ number of non-empty lines in segs :)
 declare function lu:seg-count($segs){
-count($segs[string-length(.)>0])
+count( $segs[string-length(.) > 0] )
 };
 
 (: 

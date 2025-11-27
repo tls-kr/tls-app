@@ -61,8 +61,10 @@ declare function ltr:is-ai-translation($trfile as node()?){
  , $ed := string-join($doc//tei:editor/text() , '')
 
 return
-if (contains($uri, '/translations/ai/') or contains($uri, '/translations/queue/')) then true() else
-if (contains($ed, 'AI - ') or contains($ed, 'Deepseek') or contains($ed, 'DeepSeek') or contains($ed, 'Gemini')) then true() else false()
+if (contains($uri, '/translations/ai/') or 
+    contains($uri, '/translations/queue/') or 
+    contains($uri, '/translations/by-hand/')) then true() else
+false()
 };
 
 declare function ltr:get-ai-translation-vendors($textid){
@@ -266,6 +268,8 @@ declare function ltr:store-new-translation(
       $config:tls-user-root || $user || "/translations" 
     else if ($vis = "option4") then 
       $config:tls-data-root || "/notes/research" 
+    else if (contains($translator, 'AI')) then 
+      $config:tls-translation-root || "/by-hand/" || $lang
     else if ($copy = ("option3", "option4")) then 
       $config:tls-translation-root || "/non-free/" || $lang
     else     
@@ -436,7 +440,8 @@ let  $title := lmd:get-metadata($node, 'title')
 return
  $resp || "(" || $date || ")" 
 };
-
+declare function ltr:render-translation-submenu-xx($textid as xs:string, $slot as xs:string, $trid as xs:string, $tr as map(*)){
+};
 (:~
  Display a selection menu for translations and commentaries, given the current slot and type
   the value of map $tr is a sequence of five items : root-node of translation, label, language, license code, item type, formated for label
