@@ -725,3 +725,10 @@ return
 <li><a href="textview.html?location={$textid}">{$title} -- {$trl} </a> ({$segs} lines)</li>
 }</ul>
 };
+
+declare function lrh:display-style($textid){
+let $header := lu:get-doc($textid)//tei:teiHeader
+let $style := substring($header//tei:catRef[@scheme="#kr-display"]/@target, 2)
+return
+if ($style = 'by-p') then $style else 'by-seg'
+};

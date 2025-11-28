@@ -47,9 +47,9 @@ declare function ace:limit-editor($usr as xs:string, $col as xs:anyURI+) as item
   dbutil:scan-resources($col, sm:insert-user-ace($col, 1, $usr, false(), '-w-'))
 };
 
-declare function ace:set-tls-user-permissions($res){
+declare function ace:set-tls-user-permissions-col($res){
 (
-sm:chmod(xs:anyURI($res), "rw-rw-rw-"),
+sm:chmod(xs:anyURI($res), "rwxrwxrwx"),
 sm:chgrp(xs:anyURI($res), "tls-user")
 )
 };

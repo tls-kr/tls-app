@@ -184,14 +184,12 @@ let $segs := $t//tei:seg
 , $trid := $t/@xml:id/string()
 , $by := $t//tei:editor/text()
 , $scount := lu:seg-count($segs)
+ let $seg-count := if ($t//tei:measure[@unit='seg']) then xs:integer($t//tei:measure[@unit='seg']/@quantity/string() )
+                    else count(lu:get-doc($textid)//tei:body//tei:seg)
   order by if (exists($tr-end)) then xs:dateTime($tr-end) else xs:dateTime($req-date) descending
 return
-<li><a href="textview.html?location={$textid}">{$title}</a> by  {$by} 
-{if ($scount > 0) then " ["||$scount||"] lines," else 
- let $seg-count := if ($t//tei:measure[@unit='seg']) then $t//tei:measure[@unit='seg']/@quantity/string() 
-                    else count(lu:get-doc($textid)//tei:body//tei:seg)
-            return  ' [' || $seg-count || ']lines ' 
-  || " ["||$user||"],"} <br/> 
+<li><a href="textview.html?location={$textid}">{$title}</a> Vendor:  {$by} 
+  { ' [' || $seg-count || '] lines, ' || " requested by ["||$user||"],"} <br/> 
   Request:{
  format-dateTime(xs:dateTime(substring-before($req-date, '+'))- xs:dayTimeDuration("PT9H"), "[Y0001]-[M01]-[D01] at [H01]:[m01]:[s01]"  )} 
 {if ($tr-begin) then 
@@ -199,7 +197,7 @@ return
 Started: {format-dateTime($tr-begin, "[Y0001]-[M01]-[D01] at [H01]:[m01]:[s01]")}<br/>
 Finished: {format-dateTime($tr-end, "[Y0001]-[M01]-[D01] at [H01]:[m01]:[s01]")}<br/>
 Duration: {lrh:display-duration(xs:duration(xs:dateTime($tr-end) - xs:dateTime($tr-begin)))}<br/>
-Translated: {$scount} lines.
+Translated: {$scount} of {$seg-count} lines ({format-number(($scount div $seg-count) * 100, '0.00')}%).
 </p> 
 else 
 if (lpm:tls-admin()) then
