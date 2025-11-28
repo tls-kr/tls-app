@@ -38,6 +38,7 @@ declare namespace mods="http://www.loc.gov/mods/v3";
 
 declare namespace mf="http://kanripo.org/ns/KRX/Manifest/1.0";
 declare namespace tx="http://exist-db.org/tls";
+declare namespace h="http://www.w3.org/1999/xhtml";
 
 declare variable $tlslib:log := $config:tls-log-collection || "/tlslib";
 
@@ -590,19 +591,21 @@ return
 
 declare function tlslib:tv-header($node as node()*, $model as map(*)){
    session:create(),
-   let $textid := $model('textid'),
-   $tsrc := if ($textid and map:contains($config:txtsource-map, $textid)) then 
+   let $textid := $model('textid')
+   , $tocfile := collection('/db/apps/tls-texts/tls-toc')//h:div[@xml:id='toc-for-'||$textid]/h:a
+   ,$tsrc := if ($textid and map:contains($config:txtsource-map, $textid)) then 
           map:get($config:txtsource-map, $textid) 
       else 
          if (substring($model('textid'), 1, 3) = "KR6") then "CBETA" 
       else 
          if (substring($model('textid'), 1, 4) = "KR3e") then "中醫笈成" 
-      else "CHANT", 
+      else "CHANT"
 (:   $toc := ()   :)
-   $toc := if (contains(session:get-attribute-names(), $textid || "-toc")) then 
-    session:get-attribute($textid || "-toc")
-    else 
-    tlslib:generate-toc($model("seg")/ancestor::tei:body)
+   , $toc := if (contains(session:get-attribute-names(), $textid || "-toc")) then $tocfile
+(:       session:get-attribute($textid || "-toc"):)
+       else 
+       if ($tocfile) then $tocfile else ()
+(:       tlslib:generate-toc($model("seg")/ancestor::tei:body):)
    
    let $store := 
      if (not(contains(session:get-attribute-names(),$textid || "-toc"))) 
@@ -673,10 +676,17 @@ display $prec and $foll preceding and following segments of a given seg :)
 
 declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $prec as xs:integer?, $foll as xs:integer?){
       let $log := log:info($tlslib:log, "starting display-chunk for "|| $targetseg/@xml:id)
-      let $fseg := if ($foll > 0) then $targetseg/following::tei:seg[fn:position() < $foll] 
+      let $dseg := if (lrh:display-style($model?textid) = 'by-p') then
+        let $pr := $targetseg/parent::tei:*
+        , $h := if (local-name($pr) = 'p') then $pr/preceding-sibling::tei:head[1]/tei:seg else $pr/tei:seg
+        , $p := if (local-name($pr) = 'p') then $pr//tei:seg else $pr/following-sibling::tei:p[1]/tei:seg
+        return ($h, $p)
+        else
+       let $fseg := if ($foll > 0) then $targetseg/following::tei:seg[fn:position() < $foll] 
         else (),
-      $pseg := if ($prec > 0) then $targetseg/preceding::tei:seg[fn:position() < $prec] 
-        else ()
+       $pseg := if ($prec > 0) then $targetseg/preceding::tei:seg[fn:position() < $prec] 
+         else ()
+        return  ($pseg, $targetseg, $fseg)
       , $zh-width := 'col-sm-3'
       , $colums := if (string-length($model?columns)>0) then xs:integer($model?columns) else 2 
       let $d := $targetseg/ancestor::tei:div[1],
@@ -690,7 +700,7 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
 (:      $sc := count($d//tei:seg),
       $xpos := index-of($d//tei:seg/@xml:id, $targetseg/@xml:id),:)
 (:      $title := $model('title')/text(),:)
-      $dseg := ($pseg, $targetseg, $fseg),
+(:      $dseg := ($pseg, $targetseg, $fseg),:)
       $log := log:info($tlslib:log, "assembled dseg"),
 
 (:      $model := if (string-length($model?textid) > 0) then $model else map:put($model, "textid", tokenize($targetseg, "_")[1]), :)

@@ -615,7 +615,7 @@ let $loc := replace($loc_in, "-swl", "")
    $troot := $transl($content-id)[1] 
    return
    map:merge(for $seg in $dseg 
-     let $tr := lrh:tr-seg($troot//tei:seg[@corresp="#"||$seg/@xml:id], map{}) => string-join() (: this will remove the markup :)
+     let $tr := lrh:tr-seg(($troot//tei:seg[@corresp="#"||$seg/@xml:id])[1], map{}) => string-join() (: this will remove the markup :)
      , $lang := ltr:get-translation-lang($troot)
      , $css := ltr:get-translation-css($troot)
       return 

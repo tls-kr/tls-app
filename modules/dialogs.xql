@@ -137,15 +137,15 @@ let $textid := $options?textid
 , $title := lu:get-title($textid)
 , $exist-ai := ltr:get-ai-translation-vendors($textid)
 let $body := <div><p>A request issued here will be queued and processed externally.  Depending on circumstances, it might take a few days, or even weeks to be ready.</p>
- <p>The translation will appear here, together with the other existing translations.</p>{ 
+ <p>The output will appear here, together with the other existing translations.</p>{ 
      let $promptfile :=  collection($config:tls-app-interface)//div[@xml:id="ai-prompts"]
      let $vendors := map:merge(for $v in $promptfile/div[@vendor]
-                             where not($v = $exist-ai)
-                             return map:entry($v/@vendor, $v/@label))
+                             where not($v/@vendor = $exist-ai)
+                             return map:entry($v/@vendor/string(), $v/@label))
      , $prompts := map:merge(for $v in ($promptfile/div[@vendor])[1]/div                        
                              return map:entry($v/@purpose, $v/@label))
      return 
-     if (count($vendors) = 0) then
+     if (count(map:keys($vendors)) = 0) then
           <div class="row border-bottom">
           <p>Currently there are no further AI vendors available.</p>
           </div>
@@ -155,7 +155,7 @@ let $body := <div><p>A request issued here will be queued and processed external
    map{
     'id' : 'select-lang'
     , 'col' : 'col-md-3'
-    , 'option-map' : $config:languages
+    , 'option-map' : map{"en" : "English"}    (:  $config:languages :)
     , 'label' : 'Translation language: '
     , 'selected' : 'en'
     })}
@@ -172,7 +172,7 @@ let $body := <div><p>A request issued here will be queued and processed external
    map{
     'id' : 'select-rel'
     , 'col' : 'col-md-3'
-    , 'option-map' : $prompts
+    , 'option-map' : map{"translation" : "Translate"} (: $prompts :)
     , 'label' : 'Task: '
     , 'selected' : 'translation'
     })}     
@@ -184,7 +184,7 @@ let $body := <div><p>A request issued here will be queued and processed external
    })}
    </div>
 
-, $title := "Request a new AI translation file for "||$title
+, $title := "Request a new AI output file for "||$title
 , $buttons := ( <button type="button" class="btn btn-primary" onclick="store_new_translation('{$options?slot}','{$textid}', 'ai')">Request</button> )
 return                 
       dialogs:modal-frame($name, 
