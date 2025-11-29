@@ -140,7 +140,7 @@ let $body := <div><p>A request issued here will be queued and processed external
  <p>The output will appear here, together with the other existing translations.</p>{ 
      let $promptfile :=  collection($config:tls-app-interface)//div[@xml:id="ai-prompts"]
      let $vendors := map:merge(for $v in $promptfile/div[@vendor]
-                             where not($v/@vendor = $exist-ai)
+                             where not($v/@vendor/string() = $exist-ai)
                              return map:entry($v/@vendor/string(), $v/@label))
      , $prompts := map:merge(for $v in ($promptfile/div[@vendor])[1]/div                        
                              return map:entry($v/@purpose, $v/@label))

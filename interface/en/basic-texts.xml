@@ -1,0 +1,25 @@
+<div class="row" xml:lang="en" xml:id="basic-texts">
+      <div class="col-md-2"/>
+      <div class="col-md-6">
+<h3>Here are some basic texts to get you started</h3>
+<ul>
+<li><a href="textview.html?location=KR1h0004">Lunyu (Analects of Confucius)</a></li>
+<li><a href="textview.html?location=KR1h0001">Mengzi (Mencius)</a></li>
+<li><a href="textview.html?location=KR3a0002">Xunzi (Hsün-tzu)</a></li>
+<li><a href="textview.html?location=KR1d0052">Liji (Li-chi, Book of Rites)</a></li>
+<li><a href="textview.html?location=KR1f0001">Xiaojing (Hsiao-ching, Classic of Filial Piety)</a></li>
+<li><a href="textview.html?location=KR5c0126">Zhuangzi (Chuang-tzu)</a></li>
+<li><a href="textview.html?location=KR5c0057">Laozi (Lao-tzu, Daodejing, Tao-Te-ching)</a></li>
+<li><a href="textview.html?location=KR3j0010">Huainantzu (Huai-nan-tzu)</a></li>
+<li><a href="textview.html?location=KR5c0124">Liezi (Lieh-tzu)</a></li>
+<li><a href="textview.html?location=CH1a0938">Mozi (Mo-tzu)</a></li>
+<li><a href="textview.html?location=KR1c0001">Shijing (Shih-ching, Book of Odes)</a></li>
+<li><a href="textview.html?location=KR4a0001">Chuci (Songs of the South)</a></li>
+<li><a href="textview.html?location=KR3c0005">Han Feizi (Han Fei-tzu)</a></li>
+<li><a href="textview.html?location=KR3c0004">Shangjunshu (Book of Lord Shang)</a></li>
+<li><a href="textview.html?location=KR3b0003">Sunzi (Sun-tzu, Art of War)</a></li>
+<li><a href="textview.html?location=KR1b0061">Shangshu (Book of Documents)</a></li>
+<li><a href="textview.html?location=KR1e0001">Zuozhuan (Tso-chuan, Zuo Commentary)</a></li>
+</ul>
+        </div>
+</div>

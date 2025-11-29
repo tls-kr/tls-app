@@ -4,11 +4,29 @@
           <p>This is a website for people interested in reading and translating premodern Chinese texts. It requires some familiarity with Chinese to be useful. </p>
           <p>While you are welcome to <a href="browse.html?type=welcome">explore the site</a> without signing in, many of the features are only available to registered users. </p>
           <p>The <a href="https://docs.hxwd.org" target="docs">documentation</a> is still sparse, but you might still find it useful.</p>
-          <p>You can start reading the <b>
-                <a href="textview.html?location=KR1h0004">論語 Lunyu (Confucius analects)</a>
-            </b> or <br/>
+          <p>You can start reading here: 
+            <ul>
+<li><a href="textview.html?location=KR1h0004">Lunyu (Analects of Confucius)</a></li>
+<li><a href="textview.html?location=KR1h0001">Mengzi (Mencius)</a></li>
+<li><a href="textview.html?location=KR3a0002">Xunzi (Hsün-tzu)</a></li>
+<li><a href="textview.html?location=KR1d0052">Liji (Li-chi, Book of Rites)</a></li>
+<li><a href="textview.html?location=KR1f0001">Xiaojing (Hsiao-ching, Classic of Filial Piety)</a></li>
+<li><a href="textview.html?location=KR5c0126">Zhuangzi (Chuang-tzu)</a></li>
+<li><a href="textview.html?location=KR5c0057">Laozi (Lao-tzu, Daodejing, Tao-Te-ching)</a></li>
+<li><a href="textview.html?location=KR3j0010">Huainantzu (Huai-nan-tzu)</a></li>
+<li><a href="textview.html?location=KR5c0124">Liezi (Lieh-tzu)</a></li>
+<li><a href="textview.html?location=CH1a0938">Mozi (Mo-tzu)</a></li>
+<li><a href="textview.html?location=KR1c0001">Shijing (Shih-ching, Book of Odes)</a></li>
+<li><a href="textview.html?location=KR4a0001">Chuci (Songs of the South)</a></li>
+<li><a href="textview.html?location=KR3c0005">Han Feizi (Han Fei-tzu)</a></li>
+<li><a href="textview.html?location=KR3c0004">Shangjunshu (Book of Lord Shang)</a></li>
+<li><a href="textview.html?location=KR3b0003">Sunzi (Sun-tzu, Art of War)</a></li>
+<li><a href="textview.html?location=KR1b0061">Shangshu (Book of Documents)</a></li>
+<li><a href="textview.html?location=KR1e0001">Zuozhuan (Tso-chuan, Zuo Commentary)</a></li>
+</ul>
+or <br/>
            have a look at the <b>
-                <a href="search.html?search-type=12">list of texts</a>
+                <a href="search.html?search-type=12">complete list of texts</a>
             </b>
         </p>
           <p>Read more about our use of AI translations <a href="browse.html?type=ai-rationale">here</a>.</p>

@@ -203,6 +203,7 @@ function app:browse($node as node()*, $model as map(*), $type as xs:string?, $fi
     else if ($type = "tax") then app:show-taxonomy($mode)
     else if ($type = "welcome") then i18n:display(map{'id': 'browse'})
     else if ($type = "ai-rationale") then i18n:display(map{'id': 'ai-rationale'})
+    else if ($type = "basic-texts") then i18n:display(map{'id': 'basic-texts'})
     else if ($type = "taxchar") then app:browse-char($type, $filterString)
     else if ($type = "taxword") then app:browse-word($type, $filterString)
     else if ($type = "biblio") then bib:browse-biblio($type, $filterString, $mode)

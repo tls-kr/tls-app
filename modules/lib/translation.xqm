@@ -602,7 +602,7 @@ let $translators := ltr:find-translators($textid)
    , $resp := if ($ed/text()) then replace(($ed/text())[1]=>string-join(''), '\d{4}', '')=>normalize-space() else "anon"
    , $ddate := if ($date < "9999") then " ("||$date||") " else ""
    return
-   map:entry($tid, ($t, $resp|| $ddate, if ($lg) then $lg else "en", if ($lic) then xs:int($lic) else 3, $type))   )
+   map:entry($tid, ($t, $resp|| $ddate, if ($lg) then $lg else "en", if ($lic) then try{xs:int($lic)} catch * {3} else 3, $type))   )
    return $tr
 };
   
