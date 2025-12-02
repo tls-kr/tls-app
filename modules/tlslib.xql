@@ -602,11 +602,11 @@ declare function tlslib:tv-header($node as node()*, $model as map(*)){
          if (substring($model('textid'), 1, 4) = "KR3e") then "中醫笈成" 
       else "CHANT"
 (:   $toc := ()   :)
-   , $toc := if (contains(session:get-attribute-names(), $textid || "-toc")) then $tocfile
-(:       session:get-attribute($textid || "-toc"):)
+   , $toc := if (contains(session:get-attribute-names(), $textid || "-toc")) then 
+       session:get-attribute($textid || "-toc")
        else 
-       if ($tocfile) then $tocfile else ()
-(:       tlslib:generate-toc($model("seg")/ancestor::tei:body):)
+(:       if ($tocfile) then $tocfile else ():)
+       tlslib:generate-toc($model("seg")/ancestor::tei:body)
    
    let $store := 
      if (not(contains(session:get-attribute-names(),$textid || "-toc"))) 

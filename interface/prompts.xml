@@ -1,5 +1,5 @@
 <div xml:id="ai-prompts">
-    <div vendor="openai" label="Open AI">
+    <div vendor="openai" label="Open AI" short="oa">
         <div purpose="translation" label="Translate">
         <system-prompt>You are a precise translator from Classical Chinese to $lang. Your task is to produce faithful, fluent $lang translations while preserving all formatting constraints exactly.</system-prompt>
         <user-prompt>Translate the following text from Classical Chinese into $lang.
@@ -29,7 +29,7 @@ Input text:</user-prompt>
         <user-prompt/>
         </div>    
     </div>
-    <div vendor="gemini" label="Google Gemini">
+    <div vendor="gemini" label="Google Gemini" short="ge">
         <div purpose="translation" label="Translate">
         <user-prompt>Translate the following text from Classical Chinese into $lang.
 
@@ -58,7 +58,7 @@ Input text:</user-prompt>
         <user-prompt/>
         </div>    
     </div>
-    <div vendor="deepseek" label="DeepSeek">
+    <div vendor="deepseek" label="DeepSeek" short="ds">
         <div purpose="translation" label="Translate">
         <user-prompt>Translate the following text from Classical Chinese into $lang.
 
