@@ -176,6 +176,7 @@ for $t at $pos in $res
 let $segs := $t//tei:seg
 , $user := substring($t//tei:creation/@resp, 2)
 , $vendor := ($t//tei:code)[1]/@resp/string()
+, $cst := ($t//tei:code[@lang="custom-prompt"])/text()
 , $req-date := $t//tei:creation/tei:date/text()
 , $tr-begin := ($segs)[1]/@modified/string()
 , $tr-end := ($segs)[last()]/@modified/string()
@@ -192,6 +193,12 @@ return
   { ' [' || $seg-count || '] lines, ' || " requested by ["||$user||"],"} <br/> 
   Request:{
  format-dateTime(xs:dateTime(substring-before($req-date, '+'))- xs:dayTimeDuration("PT9H"), "[Y0001]-[M01]-[D01] at [H01]:[m01]:[s01]"  )} 
+ {if (lpm:tls-admin()) then
+ (<span class="text-muted">ID: {$trid}</span>,<br/>,
+  <span>{if ($cst) then '+: ' || $cst else ()}</span>
+ )
+ else ()
+}
 {if ($tr-begin) then 
 <p>
 Started: {format-dateTime($tr-begin, "[Y0001]-[M01]-[D01] at [H01]:[m01]:[s01]")}<br/>
@@ -201,20 +208,25 @@ Translated: {$scount} of {$seg-count} lines ({format-number(($scount div $seg-co
 </p> 
 else 
 if (lpm:tls-admin()) then
- (
+ ( 
  if ($t/@status = 'OK') then 
   let $uri := base-uri($t)
   return
+  
   if (contains($uri, '/translations/ai/') and $t[.//tei:p[@xml:id='transl-start']]) then () else
   <span>　Request has been approved</span>
  else 
- <span id="approve-buttons"><span>　</span>
+ <span id="approve-{$trid}"><span>　</span>
  <button type="button" class="btn btn-primary md-2" onclick="ai_approve('{$trid}', 'OK')">Approve</button>
  {if (lpm:can-delete-applications()) then (
  <button type="button" class="btn btn-danger md-2" onclick="ai_approve('{$trid}',
 'DELETE')">Delete</button>) else ()}
-</span>)
+</span>
+
+)
+
 else ()
+
 }
 </li>
 };

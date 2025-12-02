@@ -201,18 +201,19 @@ declare function ltr:new-ai-translation(
   $custom-prompt as xs:string
   )  {
   let $cp := if (string-length($custom-prompt) > 0) then 
-     <code lang="custom-prompt" resp="{$vendor}"></code> else ()
+     <code xmlns="http://www.tei-c.org/ns/1.0" lang="custom-prompt" resp="{$vendor}">{$custom-prompt}</code> else ()
   let $suid := substring(util:uuid(), 1, 8)
   let $user := sm:id()//sm:real/sm:username/text()
   let $trcoll := $config:tls-translation-root || "/queue" 
   let $trcollavailable := dbu:ensure-collection($trcoll)
   let $tr-target-available := dbu:ensure-collection($config:tls-translation-root || '/ai/' || $lang)
-  let $trid := string-join(($txtid, $lang, $suid), '-')
   let $promptfile :=  collection($config:tls-app-interface)//div[@xml:id="ai-prompts"]
   let $vendor-label := $promptfile/div[@vendor=$vendor]/@label/string()
+  , $vendor-code := $promptfile/div[@vendor=$vendor]/@short/string()
   , $prompts := ($promptfile/div[@vendor=$vendor])/div[@purpose=$task]   
-  , $sysp  := replace($prompts/system-prompt/text(), '$lang', $config:languages?($lang))
-  , $userp := replace($prompts/user-prompt/text(), '$lang', $config:languages?($lang))
+  , $sysp  := replace($prompts/system-prompt/text(), '\$lang', $config:languages?($lang))
+  , $userp := replace($prompts/user-prompt/text(), '\$lang', $config:languages?($lang))
+  let $trid := string-join(($txtid, $lang, $vendor-code, $suid), '-')
   let $ltp-map := map{
   'title' : lu:get-title($txtid)
   ,'editor' : $vendor-label

@@ -3088,10 +3088,10 @@ function ai_approve(trid, req){
   url : "api/responder.xql?func=ltr:approve&trid=" + trid + "&resp=" + req , 
   success : function(resp){
      if (req === 'DELETE') {
-       $("#approve-buttons").html("<span>　The request has been deleted.</span>");
+       $("#approve-"+trid).html("<span>　The request has been deleted.</span>");
        toastr.info("The request has been deleted.", "HXWD says:");
      } else {
-       $("#approve-buttons").html("<span>　The request has been approved</span>");
+       $("#approve-"+trid).html("<span>　The request has been approved</span>");
        toastr.info("The request has been approved. Thank you", "HXWD says:");
      }
   }
