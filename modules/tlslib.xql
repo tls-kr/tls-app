@@ -640,8 +640,8 @@ declare function tlslib:tv-header($node as node()*, $model as map(*)){
 
 (: 2023-06-09 working around a bug in some texts... temporarily .. :)
 declare function tlslib:generate-toc($node){
-subsequence (for $h in $node//tei:head
-    let $locseg := $h//tei:seg/@xml:id
+subsequence (for $h in ($node/tei:div/tei:head|$node/tei:div/tei:div/tei:head) 
+    let $locseg := ($h//tei:seg/@xml:id)[1]
     , $textid := tokenize($locseg[1], "_")[1]
     where matches($textid, "^[A-Za-z]")
     return

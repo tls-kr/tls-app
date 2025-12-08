@@ -329,7 +329,7 @@ ltp:right-panel-row($slot,
        "resp": $resp, 
        "ex": "slot"||$i, 
        "tabindex" : $options('pos')+ (500*$i), 
-       "editable" : if ( ltr:is-ai-translation($slot) or ltr:is-text-notes($slot) ) then 'false' else $editable, 
+       "editable" : (: if ( ltr:is-ai-translation($slot) or ltr:is-text-notes($slot) ) then 'false' else :) $editable, 
        "user" : $user, 
        "trans-lang" : $lang, 
        'tr-class' : $tr-class })
