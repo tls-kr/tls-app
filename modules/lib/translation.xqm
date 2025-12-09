@@ -705,6 +705,7 @@ let $id := substring-before($trid, '-slot')
 ,$slot := 'slot' || substring-after($trid, 'slot')
 ,$content-id := lrh:get-content-id($txtid, $slot, $tr)
 ,$transl := $tr($content-id)[1]
+,$isai := ltr:is-ai-translation($transl)
 , $bot := if (starts-with($user, 'bot-')) then $user else 'human'
 ,$seg := <seg xmlns="http://www.tei-c.org/ns/1.0" corresp="#{$id}" generatedBy="{$bot}" xml:lang="{$lang}" resp="#{$current-user}" modified="{current-dateTime()}">{normalize-space($tr-to-save)}</seg>
 ,$node := $transl//tei:seg[@corresp="#" || $id]
@@ -712,6 +713,7 @@ let $id := substring-before($trid, '-slot')
 ,$targetseg := lu:get-seg($id)
 (:,$visit := if ($targetseg) then lvs:record-visit($targetseg) else lvs:record-visit-remote($id, ''):)
 return
+if ($isai) then "Could not save: AI Output can not be updated." else
 if ($node) then 
   (: if we get a new translation from AI, we want to *replace* only if the previous user is also AI  :)
   if ($user = $prev-user or $current-user = $user ) then 
