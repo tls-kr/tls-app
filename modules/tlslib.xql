@@ -278,10 +278,10 @@ typeswitch ($node)
      $char := tokenize(string-join($node/ancestor::tei:div[1]/tei:head/text()), "\s")[1],
      $swl := collection($config:tls-data-word-root)//tei:entry[@tls:concept-id=$id and tei:form/tei:orth[. = $char]]//tei:sense
       (: this is the concept originally defined in the taxononomy file! :)
-     , $entry-id := $swl/ancestor::tei:entry/@xml:id
+     , $entry-id := ($swl/ancestor::tei:entry/@xml:id)[1]
      , $swl-count := count($swl)
      (: do not take the concept name from the taxonomy, it might have been changed! :)
-     , $concept := (if ($swl-count = 0) then $node/text() else $swl/ancestor::tei:entry/@tls:concept ) => string-join() => normalize-space() 
+     , $concept := (if ($swl-count = 0) then $node/text() else ($swl/ancestor::tei:entry/@tls:concept)[1] ) => string-join() => normalize-space() 
      , $cdef := ltx:get-catdesc($id, 'tls-concepts-top', 'def')
      , $e := string-length($edit) > 0
      return
@@ -302,6 +302,8 @@ typeswitch ($node)
       data-toggle="collapse" data-target="#{$id}-swl">{$swl-count}</button>)}
       <ul class="list-unstyled collapse" id="{$id}-swl"> 
       {for $sw in $swl
+      let $sf := ($sw//tls:syn-func/text())[1]
+      order by $sf
       (: we dont check for attribution count, so pass -1  :)
       return lw:display-sense($sw, xs:integer($sw/@n), false())}
       </ul>

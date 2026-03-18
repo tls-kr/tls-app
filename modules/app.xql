@@ -652,7 +652,8 @@ function app:char-info($node as node()*, $model as map(*), $char as xs:string?, 
     , $h := string-join(distinct-values($n/tei:head/text()), ' / ')
     , $char-id := tokenize($n/@xml:id)[1]  
     , $sw := doc($config:tls-texts-root || "/KR/KR1/KR1j/KR1j0018.xml")//tei:p[ngram:wildcard-contains(., "【" || $char || ".?】")][1]
-    , $crit := for $p in collection($config:tls-data-root||"/concepts")//tei:div[@type="old-chinese-criteria" and contains(., ""|| $char)] return $p
+    , $crit := for $p in collection($config:tls-data-root||"/concepts")//tei:div[@type="old-chinese-criteria" and contains(., " "|| $char || " ")] 
+      return $p
     , $word-rel := doc($config:tls-data-root || "/core/word-relations.xml")//tei:div[@type='word-rel' and .//tei:item[contains(., $char)]]
     return
     <div class="card">
