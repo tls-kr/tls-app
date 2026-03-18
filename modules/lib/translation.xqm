@@ -713,7 +713,7 @@ let $id := substring-before($trid, '-slot')
 ,$targetseg := lu:get-seg($id)
 (:,$visit := if ($targetseg) then lvs:record-visit($targetseg) else lvs:record-visit-remote($id, ''):)
 return
-if ($isai) then "Could not save: AI Output can not be updated." else
+(:if ($isai) then "Could not save: AI Output can not be updated." else:)
 if ($node) then 
   (: if we get a new translation from AI, we want to *replace* only if the previous user is also AI  :)
   if ($user = $prev-user or $current-user = $user ) then 

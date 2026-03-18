@@ -21,7 +21,7 @@ declare namespace tei= "http://www.tei-c.org/ns/1.0";
 
 declare variable $ai:config := if(doc('../../ai-config.xml')) then doc('../../ai-config.xml') else <response status="fail"><message>Load ai-config.xml file please.</message></response>;
 
-declare variable $ai:model := "gemini-2.5-pro";
+declare variable $ai:model := "gemini-2.5-flash";
 declare variable $ai:key := $ai:config//gemini-config/api-token/text();
 declare variable $ai:temp-path := "/db/groups/tls-user/";
 

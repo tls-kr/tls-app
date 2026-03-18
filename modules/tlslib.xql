@@ -275,7 +275,7 @@ typeswitch ($node)
   
   case element(tei:ref) return
      let $id := substring($node/@target, 2),
-     $char := tokenize($node/ancestor::tei:div[1]/tei:head/text(), "\s")[1],
+     $char := tokenize(string-join($node/ancestor::tei:div[1]/tei:head/text()), "\s")[1],
      $swl := collection($config:tls-data-word-root)//tei:entry[@tls:concept-id=$id and tei:form/tei:orth[. = $char]]//tei:sense
       (: this is the concept originally defined in the taxononomy file! :)
      , $entry-id := $swl/ancestor::tei:entry/@xml:id
