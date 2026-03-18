@@ -4,7 +4,7 @@ xquery version "3.1";
  : Library module for functionality of special interest to some users.
  :
  : @author Christian Wittern
- : @date 2024-11-05
+ : @date 2024-11-05 
  :)
 
 module namespace lsi="http://hxwd.org/special-interest";

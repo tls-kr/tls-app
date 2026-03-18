@@ -1,0 +1,155 @@
+/* ================================
+   Ruby reset (critical)
+   ================================ */
+
+ruby {
+  position: relative;
+  display: inline-block;
+  ruby-position: unset;
+}
+
+rb {
+  display: inline-block;
+}
+
+rt {
+  position: absolute;
+  font-size: 0.45em;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* ================================
+   Reading glosses
+   ================================ */
+
+/* ================================
+   Reading glosses (re-centered)
+   ================================ */
+
+.rt-bottom-right {
+  right: -0.7em;
+  top: 30%;
+  transform: translateY(-1.1em);
+}
+
+/* ================================
+   Bottom-left markers (㆒㆓ etc.)
+   ================================ */
+
+.rt-bottom-left {
+  right: -0.7em;        /* follow the character */
+  bottom: -0.1em;     /* below the line */
+  font-size: 0.45em;
+}
+
+.rt-right {
+  right: -0.9em;
+  top: 50%;
+  transform: translateY(-0.5em);
+}
+
+/* ================================
+   Inter-character / kaeriten
+   ================================ */
+
+.rt-left-middle {
+  left: 2.0em;
+  top: 70%;
+/*  transform: translateY(-0.4em);*/
+}
+
+
+/* ================================
+   Compound spacing
+   ================================ */
+
+/*
+  When a ruby contains another ruby in its rb,
+  it is effectively a compound and needs room
+  for rt-left-middle.
+*/
+
+ruby > rb > ruby {
+  margin-right: 0.4em;
+}
+
+/* ================================
+   Reserve space for long rt text
+   ================================ */
+
+/* ruby must establish a layout context */
+ruby {
+  position: relative;
+  display: inline-block;
+}
+
+/* only bottom-right readings reserve space */
+ruby:has(> rt.rt-bottom-right)::after {
+  content: "";
+  display: inline-block;
+}
+
+/* 1 kana: almost no extra space */
+ruby[data-rt-len="1"]::after {
+  width: 0.1em;
+}
+
+/* single-kana gloss: pull it left slightly */
+ruby[data-rt-len="1"] > rt.rt-bottom-right {
+  transform: translate(-0.3em, -1.1em);
+}
+
+/* 2 kana */
+ruby[data-rt-len="2"]::after {
+  width: 0.45em;
+}
+
+/* 3 kana */
+ruby[data-rt-len="3"]::after {
+  width: 0.7em;
+}
+
+/* 4+ kana */
+ruby[data-rt-len]:not([data-rt-len="1"]):not([data-rt-len="2"]):not([data-rt-len="3"])::after {
+  width: 0.9em;
+}
+
+
+/*ruby:has(> rt.rt-bottom-right)::after {
+  content: attr(data-rt);
+  visibility: hidden;
+  white-space: nowrap;
+  font-size: 0.45em;
+  display: inline-block;
+  max-width: 1.2em;
+}
+*/
+
+/*ruby:has(> rt.rt-bottom-right)::after {
+  content: attr(data-rt);
+  visibility: hidden;
+  white-space: nowrap;
+  font-size: 0.45em;
+  display: inline-block;
+
+  /\* calibrated overhang *\/
+  width: 0.9em;
+}
+*/
+
+ruby:not(:has(> rt.rt-bottom-right))::after {
+  content: none;
+}
+
+
+/* additional spacing when a compound has a kaeriten */
+ruby:has(> rt.rt-left-middle) {
+  margin-right: 0.6em;
+}
+
+rt.rt-bottom-left {
+  white-space: nowrap;
+}
+
+/* ===============================*

@@ -135,7 +135,7 @@ declare function local:att-tr-dialog($name, $options){
 declare function local:new-ai-trans-dialog($name, $options){
 let $textid := $options?textid 
 , $title := lu:get-title($textid)
-, $exist-ai := ltr:get-ai-translation-vendors($textid)
+, $exist-ai := ('openai', ltr:get-ai-translation-vendors($textid))
 let $body := <div><p>A request issued here will be queued and processed externally.  Depending on circumstances, it might take a few days, or even weeks to be ready.</p>
  <p>The output will appear here, together with the other existing translations.</p>{ 
      let $promptfile :=  collection($config:tls-app-interface)//div[@xml:id="ai-prompts"]

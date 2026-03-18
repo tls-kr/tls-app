@@ -150,9 +150,28 @@ declare function lrh:get-content-id($textid as xs:string, $slot as xs:string, $t
 };
 
 (: for read-only, such as ai translations or text-notes :)
+(: 2026-01-09:  added for ruby processing ruby, rb, rt :)
 declare function lrh:tr-seg($nodex as node()?, $options as map(*)){
  for $node in $nodex/node() return
  typeswitch ($node)
+  case element (tei:ruby) return  
+   element {QName("http://www.w3.org/1999/xhtml", local-name($node))}{
+   $node/@*
+   , attribute {"data-rt-len"} {max(for $t in $node/tei:rt/text() return string-length($t)) }
+   , for $n in $node return lrh:tr-seg($n, $options)
+   }
+  case element (tei:rt) return 
+    let $class := 'rt-' || tokenize($node/@place) => sort() => string-join('-')
+    return
+    element {QName("http://www.w3.org/1999/xhtml", local-name($node))}{
+     attribute {'class'} {$class},
+    for $n in $node return lrh:tr-seg($n, $options)
+    }
+  case element (tei:rb) return 
+    element {QName("http://www.w3.org/1999/xhtml", local-name($node))}{
+     $node/@*,
+    for $n in $node return lrh:tr-seg($n, $options)
+    }  
   case element (tei:g) return $node/text()
   case element (tei:hi) return 
     if ($node/@type='title') then "《" || $node || "》" else
@@ -708,8 +727,13 @@ default return ()
 
 
 declare function lrh:ai-translations(){
+let $teis := collection($config:tls-data-root||'/translations/by-hand')//tei:TEI 
+(:let $total := sum(for $tei in $teis return lu:seg-count($tei//tei:seg)):)
+(: <p>There is a total of {$total} lines of AI output.</p>, :)
+return
+(
 <ul>{
-for $tei in collection($config:tls-data-root||'/translations/by-hand')//tei:TEI
+for $tei in $teis
 let $trl := $tei//tei:editor/text()
 let $bibl := $tei//tei:sourceDesc//tei:bibl
 let $textid := substring(($bibl/@corresp)[1], 2)
@@ -723,7 +747,7 @@ order by $textid
 where $segs > 2000
 return
 <li><a href="textview.html?location={$textid}">{$title} -- {$trl} </a> ({$segs} lines)</li>
-}</ul>
+}</ul>)
 };
 
 declare function lrh:display-style($textid){
@@ -732,3 +756,7 @@ let $style := substring($header//tei:catRef[@scheme="#kr-display"]/@target, 2)
 return
 if ($style = 'by-p') then $style else 'by-seg'
 };
+
+(: ruby rendering :)
+
+
