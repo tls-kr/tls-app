@@ -76,7 +76,10 @@ describe('xqSuite unit testing', function() {
   // User-Agent header because controller.xql's local:isBlocked() declares
   // $ua as exactly-one xs:string and raises XPTY0004 if the header is missing.
   describe('migrated OpenAPI endpoints', function() {
-    this.timeout(10000)
+    // Cold-cache get_toc scans the whole text collection and routinely
+    // takes 15-25s after an eXist restart. 30s accommodates that; warm
+    // cache brings it back under 10s.
+    this.timeout(30000)
     const base = 'http://localhost:8088/exist/apps/tls-app'
     const seg = 'CH1a0907_CHANT_016-35a.4'
     const textid = 'CH1a0907'
@@ -123,6 +126,32 @@ describe('xqSuite unit testing', function() {
 
     it('old .xql stub URL is gone (404)', function(done) {
       get('/api/autocomplete.xql?type=concept&term=ren')
+        .expect(404).end(done)
+    })
+  })
+
+  // Wave C: responder.xql retired in favour of flat per-function routes
+  // (see info/log.md 2026-04-20 "API migration: Wave C complete").
+  describe('Wave C — former responder.xql targets', function() {
+    this.timeout(10000)
+    const base = 'http://localhost:8088/exist/apps/tls-app'
+    const get = (path) =>
+      supertest(base).get(path).set('User-Agent', 'mocha-test')
+
+    it('GET api/bib_new_entry_dialog returns 200', function(done) {
+      get('/api/bib_new_entry_dialog').expect(200).end(done)
+    })
+
+    it('GET api/dialogs_new_concept_dialog returns 200', function(done) {
+      get('/api/dialogs_new_concept_dialog').expect(200).end(done)
+    })
+
+    it('GET api/bib_quick_search returns 200', function(done) {
+      get('/api/bib_quick_search?q=test').expect(200).end(done)
+    })
+
+    it('old responder.xql dispatcher is gone (404)', function(done) {
+      get('/api/responder.xql?func=autocomplete&type=concept&term=ren')
         .expect(404).end(done)
     })
   })

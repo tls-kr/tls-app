@@ -8,17 +8,27 @@ xquery version "3.1";
  :)
 module namespace ah="http://hxwd.org/api-handlers";
 
-import module namespace config="http://hxwd.org/config"   at "config.xqm";
-import module namespace tlsapi="http://hxwd.org/tlsapi"   at "../api/tlsapi.xql";
-import module namespace ltr   ="http://hxwd.org/lib/translation" at "lib/translation.xqm";
-import module namespace ai    ="http://hxwd.org/lib/gemini-ai"   at "lib/gemini-ai.xqm";
-import module namespace lsf   ="http://hxwd.org/lib/syn-func"    at "lib/syn-func.xqm";
-import module namespace ltp   ="http://hxwd.org/lib/textpanel"   at "lib/textpanel.xqm";
-import module namespace lrh   ="http://hxwd.org/lib/render-html" at "lib/render-html.xqm";
-import module namespace lu    ="http://hxwd.org/lib/utils"       at "lib/utils.xqm";
-import module namespace lvs   ="http://hxwd.org/lib/visits"      at "lib/visits.xqm";
-import module namespace tlslib="http://hxwd.org/lib"     at "tlslib.xql";
-import module namespace tu    ="http://hxwd.org/utils"   at "tlsutils.xql";
+import module namespace config ="http://hxwd.org/config"   at "config.xqm";
+import module namespace tlsapi ="http://hxwd.org/tlsapi"   at "../api/tlsapi.xql";
+import module namespace ltr    ="http://hxwd.org/lib/translation" at "lib/translation.xqm";
+import module namespace ai     ="http://hxwd.org/lib/gemini-ai"   at "lib/gemini-ai.xqm";
+import module namespace lsf    ="http://hxwd.org/lib/syn-func"    at "lib/syn-func.xqm";
+import module namespace ltp    ="http://hxwd.org/lib/textpanel"   at "lib/textpanel.xqm";
+import module namespace lrh    ="http://hxwd.org/lib/render-html" at "lib/render-html.xqm";
+import module namespace lu     ="http://hxwd.org/lib/utils"       at "lib/utils.xqm";
+import module namespace lvs    ="http://hxwd.org/lib/visits"      at "lib/visits.xqm";
+import module namespace tlslib ="http://hxwd.org/lib"     at "tlslib.xql";
+import module namespace tu     ="http://hxwd.org/utils"   at "tlsutils.xql";
+import module namespace dialogs="http://hxwd.org/dialogs" at "dialogs.xql";
+import module namespace wd     ="http://hxwd.org/wikidata"        at "wikidata.xql";
+import module namespace bib    ="http://hxwd.org/biblio"          at "biblio.xql";
+import module namespace sgn    ="http://hxwd.org/signup"          at "signup.xql";
+import module namespace txc    ="http://hxwd.org/text-crit"       at "text-crit.xql";
+import module namespace lli    ="http://hxwd.org/lib/link-items"  at "lib/link-items.xqm";
+import module namespace lsi    ="http://hxwd.org/special-interest" at "lib/special-interest.xqm";
+import module namespace ltg    ="http://hxwd.org/tags"            at "lib/tags.xqm";
+import module namespace ltx    ="http://hxwd.org/taxonomy"        at "lib/taxonomy.xqm";
+import module namespace lus    ="http://hxwd.org/lib/user-settings" at "lib/user-settings.xqm";
 
 declare namespace tei="http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
@@ -464,3 +474,130 @@ declare function ah:search-att($request as map(*)) {
     else
         <p class="font-weight-bold">No matches found.</p>
 };
+
+(: ===================================================================
+ : Wave C — functions previously dispatched via api/responder.xql
+ :
+ : Every target takes a single map(*). We build that map from the live
+ : HTTP request (preserving the responder.xql semantics where ALL query
+ : parameters are available to the target) rather than declaring each
+ : parameter in api.json.
+ : =================================================================== :)
+
+declare function ah:request-params() as map(*) {
+    map:merge(
+        for $p in request:get-parameter-names()
+        return map:entry($p, request:get-parameter($p, ""))
+    )
+};
+
+(: dialogs: * :)
+declare function ah:dialogs-pastebox($r as map(*))                   { dialogs:pastebox(ah:request-params()) };
+declare function ah:dialogs-word-rel-dialog($r as map(*))            { dialogs:word-rel-dialog(ah:request-params()) };
+declare function ah:dialogs-merge-word($r as map(*))                 { dialogs:merge-word(ah:request-params()) };
+declare function ah:dialogs-move-word($r as map(*))                  { dialogs:move-word(ah:request-params()) };
+declare function ah:dialogs-new-concept-dialog($r as map(*))         { dialogs:new-concept-dialog(ah:request-params()) };
+declare function ah:dialogs-new-syn-dialog($r as map(*))             { dialogs:new-syn-dialog(ah:request-params()) };
+declare function ah:dialogs-add-parallel($r as map(*))               { dialogs:add-parallel(ah:request-params()) };
+declare function ah:dialogs-add-rd-dialog($r as map(*))              { dialogs:add-rd-dialog(ah:request-params()) };
+declare function ah:dialogs-assign-guangyun($r as map(*))            { dialogs:assign-guangyun(ah:request-params()) };
+declare function ah:dialogs-update-gloss($r as map(*))               { dialogs:update-gloss(ah:request-params()) };
+declare function ah:dialogs-edit-textcat($r as map(*))               { dialogs:edit-textcat(ah:request-params()) };
+declare function ah:dialogs-edit-textdate($r as map(*))              { dialogs:edit-textdate(ah:request-params()) };
+declare function ah:dialogs-punc-dialog($r as map(*))                { dialogs:punc-dialog(ah:request-params()) };
+declare function ah:dialogs-dispatcher($r as map(*))                 { dialogs:dispatcher(ah:request-params()) };
+declare function ah:dialogs-edit-text-permissions-dialog($r as map(*)) { dialogs:edit-text-permissions-dialog(ah:request-params()) };
+declare function ah:dialogs-add-bibref-dialog($r as map(*))          { dialogs:add-bibref-dialog(ah:request-params()) };
+declare function ah:dialogs-add-url-dialog($r as map(*))             { dialogs:add-url-dialog(ah:request-params()) };
+declare function ah:dialogs-pb-dialog($r as map(*))                  { dialogs:pb-dialog(ah:request-params()) };
+declare function ah:dialogs-edit-app-dialog($r as map(*))            { dialogs:edit-app-dialog(ah:request-params()) };
+
+(: tlslib: * :)
+declare function ah:tlslib-merge-sw-word($r as map(*))               { tlslib:merge-sw-word(ah:request-params()) };
+declare function ah:tlslib-move-done($r as map(*))                   { tlslib:move-done(ah:request-params()) };
+declare function ah:tlslib-move-word-to-concept($r as map(*))        { tlslib:move-word-to-concept(ah:request-params()) };
+declare function ah:tlslib-save-setting($r as map(*))                { tlslib:save-setting(ah:request-params()) };
+declare function ah:tlslib-word-rel-table($r as map(*))              { tlslib:word-rel-table(ah:request-params()) };
+
+(: bib: * :)
+(: GET and POST bookmarklets both target bib:add-zotero-entry — two wrappers for unique operationIds. :)
+declare function ah:bib-add-zotero-entry-get($r as map(*))           { bib:add-zotero-entry(ah:request-params()) };
+declare function ah:bib-add-zotero-entry-post($r as map(*))          { bib:add-zotero-entry(ah:request-params()) };
+declare function ah:bib-new-entry-dialog($r as map(*))               { bib:new-entry-dialog(ah:request-params()) };
+declare function ah:bib-quick-search($r as map(*))                   { bib:quick-search(ah:request-params()) };
+declare function ah:bib-save-entry($r as map(*))                     { bib:save-entry(ah:request-params()) };
+declare function ah:bib-url-save($r as map(*))                       { bib:url-save(ah:request-params()) };
+
+(: wd: * :)
+declare function ah:wd-save-qitem($r as map(*))                      { wd:save-qitem(ah:request-params()) };
+declare function ah:wd-search($r as map(*))                          { wd:search(ah:request-params()) };
+
+(: sgn: * :)
+declare function ah:sgn-approve($r as map(*))                        { sgn:approve(ah:request-params()) };
+declare function ah:sgn-send-reminder-mail($r as map(*))             { sgn:send-reminder-mail(ah:request-params()) };
+
+(: ltr: * :)
+declare function ah:ltr-approve($r as map(*))                        { ltr:approve(ah:request-params()) };
+declare function ah:ltr-delete-translation($r as map(*))             { ltr:delete-translation(ah:request-params()) };
+declare function ah:ltr-get-other-translations($r as map(*))         { ltr:get-other-translations(ah:request-params()) };
+declare function ah:ltr-reload-selector($r as map(*))                { ltr:reload-selector(ah:request-params()) };
+declare function ah:ltr-save-att-tr($r as map(*))                    { ltr:save-att-tr(ah:request-params()) };
+
+(: lli: * :)
+declare function ah:lli-new-link-dialog($r as map(*))                { lli:new-link-dialog(ah:request-params()) };
+declare function ah:lli-save-link-items($r as map(*))                { lli:save-link-items(ah:request-params()) };
+
+(: lus: * :)
+declare function ah:lus-set-user-item($r as map(*))                  { lus:set-user-item(ah:request-params()) };
+declare function ah:lus-toggle-list-display($r as map(*))            { lus:toggle-list-display(ah:request-params()) };
+
+(: ltx: * :)
+declare function ah:ltx-modify-category($r as map(*))                { ltx:modify-category(ah:request-params()) };
+
+(: ltg: * :)
+declare function ah:ltg-save-tags($r as map(*)) {
+    let $p := ah:request-params()
+    return ltg:save-tags(($p?tag_id, $p?uid, "")[1], $p)
+};
+
+(: lsi: * :)
+declare function ah:lsi-save-resource($r as map(*))                  { lsi:save-resource(ah:request-params()) };
+
+(: txc: * :)
+declare function ah:txc-save-txc($r as map(*))                       { txc:save-txc(ah:request-params()) };
+
+(: tlsapi:* (unprefixed in responder.xql) :)
+declare function ah:add-text($r as map(*))                           { tlsapi:add-text(ah:request-params()) };
+declare function ah:change-word-relation($r as map(*))               { tlsapi:change-word-relation(ah:request-params()) };
+declare function ah:delete-bm($r as map(*))                          { tlsapi:delete-bm(ah:request-params()) };
+declare function ah:delete-pron($r as map(*))                        { tlsapi:delete-pron(ah:request-params()) };
+declare function ah:delete-word-relation($r as map(*))               { tlsapi:delete-word-relation(ah:request-params()) };
+declare function ah:delete-zi-from-word($r as map(*))                { tlsapi:delete-zi-from-word(ah:request-params()) };
+declare function ah:do-delete-sf($r as map(*))                       { tlsapi:do-delete-sf(ah:request-params()) };
+declare function ah:get-facs-for-page($r as map(*))                  { tlsapi:get-facs-for-page(ah:request-params()) };
+declare function ah:get-more-lines($r as map(*))                     { tlsapi:get-more-lines(ah:request-params()) };
+declare function ah:goto-translation-seg($r as map(*))               { tlsapi:goto-translation-seg(ah:request-params()) };
+declare function ah:incr-rating($r as map(*))                        { tlsapi:incr-rating(ah:request-params()) };
+declare function ah:merge-following-seg($r as map(*))                { tlsapi:merge-following-seg(ah:request-params()) };
+declare function ah:morelines($r as map(*))                          { tlsapi:morelines(ah:request-params()) };
+declare function ah:move-to-page($r as map(*))                       { tlsapi:move-to-page(ah:request-params()) };
+declare function ah:quick-search($r as map(*))                       { tlsapi:quick-search(ah:request-params()) };
+declare function ah:save-new-concept($r as map(*))                   { tlsapi:save-new-concept(ah:request-params()) };
+declare function ah:save-new-rhet-dev($r as map(*))                  { tlsapi:save-new-rhet-dev(ah:request-params()) };
+declare function ah:save-pb($r as map(*))                            { tlsapi:save-pb(ah:request-params()) };
+declare function ah:save-punc($r as map(*))                          { tlsapi:save-punc(ah:request-params()) };
+declare function ah:save-rdl($r as map(*))                           { tlsapi:save-rdl(ah:request-params()) };
+declare function ah:save-sf-def($r as map(*))                        { tlsapi:save-sf-def(ah:request-params()) };
+declare function ah:save-syn($r as map(*))                           { tlsapi:save-syn(ah:request-params()) };
+declare function ah:save-taxchar($r as map(*))                       { tlsapi:save-taxchar(ah:request-params()) };
+declare function ah:save-textcat($r as map(*))                       { tlsapi:save-textcat(ah:request-params()) };
+declare function ah:save-textdate($r as map(*))                      { tlsapi:save-textdate(ah:request-params()) };
+declare function ah:save-wr($r as map(*))                            { tlsapi:save-wr(ah:request-params()) };
+declare function ah:save-zh($r as map(*))                            { tlsapi:save-zh(ah:request-params()) };
+declare function ah:show-obs($r as map(*))                           { tlsapi:show-obs(ah:request-params()) };
+declare function ah:show-wr($r as map(*))                            { tlsapi:show-wr(ah:request-params()) };
+declare function ah:showtab($r as map(*))                            { tlsapi:showtab(ah:request-params()) };
+declare function ah:text-request($r as map(*))                       { tlsapi:text-request(ah:request-params()) };
+declare function ah:update-gloss($r as map(*))                       { tlsapi:update-gloss(ah:request-params()) };
+declare function ah:update-pinyin($r as map(*))                      { tlsapi:update-pinyin(ah:request-params()) };
+declare function ah:zh-delete-line($r as map(*))                     { tlsapi:zh-delete-line(ah:request-params()) };

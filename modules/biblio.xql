@@ -96,12 +96,12 @@ $res[2]
 };
 (:                                 <http:header name="Authentication" value="Bearer {$zot-user-key}"/> :)
 
-(: this is the bookmarklet
+(: this is the bookmarklet (post-Wave-C flat OpenAPI route)
 
-javascript: (function() {var url = window.location.search;var uri = "https://hwxd.org/api/responder.xql?func=bib:add-zotero-entry&path="+path;xhr = new XMLHttpRequest();xhr.open("POST", encodeURI(uri));xhr.send();}());
+javascript: (function() {var url = window.location.search;var uri = "https://hwxd.org/api/bib_add_zotero_entry?path="+path;xhr = new XMLHttpRequest();xhr.open("POST", encodeURI(uri));xhr.send();}());
 
-javascript: (function() {var path = window.location.pathname;var uri = "https://hxwd.org/api/responder.xql?func=bib:add-zotero-entry&path="+path;xhr = new XMLHttpRequest();xhr.open("GET", encodeURI(uri));xhr.send();}());
-javascript:location.href = 'https://krx.hwxd.org:8443/api/responder.xql?func=bib:add-zotero-entry&path='+ encodeURIComponent(location.pathname)
+javascript: (function() {var path = window.location.pathname;var uri = "https://hxwd.org/api/bib_add_zotero_entry?path="+path;xhr = new XMLHttpRequest();xhr.open("GET", encodeURI(uri));xhr.send();}());
+javascript:location.href = 'https://krx.hwxd.org:8443/api/bib_add_zotero_entry?path='+ encodeURIComponent(location.pathname)
 :)
 
 (:add the item requested through the bookmarklet to the bibliography :)
