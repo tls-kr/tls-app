@@ -4,8 +4,8 @@ const chai = require('chai')
 const supertest = require('supertest')
 const expect = require('chai').expect
 
-// The client listening to the mock rest server
-var client = supertest.agent('http://localhost:8080')
+// The client listening to the eXist REST API
+var client = supertest.agent('http://localhost:8088')
 
 describe('xqSuite unit testing', function() {
 
@@ -47,21 +47,21 @@ describe('xqSuite unit testing', function() {
 
   // TODO: add authentication
   describe('running tests', function() {
-    this.timeout(1500)
-    this.slow(500)
+    this.timeout(10000)
+    this.slow(3000)
     let runner = '/exist/rest/db/apps/tls-app/modules/test-runner.xq'
 
     it('returns 0 errors or failures', function(done) {
       client
         .get(runner)
+        .auth('admin', 'eX1st')
         .set('Accept', 'application/json')
         .expect('content-type', 'application/json;charset=utf-8')
         .end(function(err, res) {
           if (err) return done(err)
           expect(res.body.testsuite.failures).to.equal('0')
-          // errors appeare in eXist >= 4.3.0
           if (typeof res.body.testsuite.errors !== 'undefined') {
-              expect(res.body.testsuite.errors).to.equal('0')
+            expect(res.body.testsuite.errors).to.equal('0')
           }
           done()
         })
