@@ -701,7 +701,6 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
       $is-testuser := ("tls-test" = $sid-groups or "guest" = $sid-groups),
       $usergroups := sm:get-user-groups($user),
       $show-variants := xs:boolean(1),
-      $visit := try{lvs:record-visit($targetseg)} catch * {()},
       $tr := ltr:get-translations($model?textid),
       $slot1-id := lrh:get-content-id($model?textid, 'slot1', $tr),
       $slot2-id := lrh:get-content-id($model?textid, 'slot2', $tr),

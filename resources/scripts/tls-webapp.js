@@ -40,6 +40,9 @@ $(function() {
   }
   catch (err) {}
   get_swls();
+  // Record visit asynchronously so the DB write doesn't block the initial render
+  var _vsid = new URLSearchParams(window.location.search).get('location');
+  if (_vsid) { $.get('api/record_visit.xql?location=' + encodeURIComponent(_vsid)); }
   // Lazy-load table of contents
   var $toc = $('#toc-dropdown[data-textid]');
   if ($toc.length) {
