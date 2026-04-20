@@ -42,12 +42,12 @@ $(function() {
   get_swls();
   // Record visit asynchronously so the DB write doesn't block the initial render
   var _vsid = new URLSearchParams(window.location.search).get('location');
-  if (_vsid) { $.get('api/record_visit.xql?location=' + encodeURIComponent(_vsid)); }
+  if (_vsid) { $.get('api/record_visit?location=' + encodeURIComponent(_vsid)); }
   // Lazy-load table of contents
   var $toc = $('#toc-dropdown[data-textid]');
   if ($toc.length) {
     $.ajax({
-      url: 'api/get_toc.xql?textid=' + encodeURIComponent($toc.data('textid')),
+      url: 'api/get_toc?textid=' + encodeURIComponent($toc.data('textid')),
       dataType: 'html',
       success: function(html) { $toc.html(html); }
     });
@@ -260,7 +260,7 @@ function get_swls(){
     $.ajax({
         type: "GET",
         dataType: "json",
-        url: "api/show_swl_for_lines.xql?lines=" + line_ids.join(","),
+        url: "api/show_swl_for_lines?lines=" + line_ids.join(","),
         success: function(resp){
             $.each(resp, function(i, item){
                 var lid = item.id.split(".").join("\\.");
@@ -276,7 +276,7 @@ function test_segs1(){
   $.ajax({
   type : "GET",
   dataType : "json",
-  url : "api/get_swl_for_page.xql"+location, 
+  url : "api/get_swl_for_page"+location, 
   success : function(resp){
   for (index = 0; index < resp.length; ++index) {
     console.log(resp[index]['id']);
@@ -296,7 +296,7 @@ function get_swl_for_page(){
   $.ajax({
   type : "GET",
   dataType : "json",
-  url : "api/get_swl_for_page.xql"+location, 
+  url : "api/get_swl_for_page"+location, 
   success : function(resp){
   for (index = 0; index < resp.length; ++index) {
     console.log(resp[index]['id']);
@@ -486,7 +486,7 @@ function get_tr_for_page(slot, myid, ai){
    $.ajax({
    type : "GET",
    dataType : "html",
-   url : "api/get_tr_for_page.xql?location="+location+"&prec=0&foll="+foll+"&slot="+slot+"&content-id="+myid+"&ai="+ai, 
+   url : "api/get_tr_for_page?location="+location+"&prec=0&foll="+foll+"&slot="+slot+"&content-id="+myid+"&ai="+ai, 
    success : function(resp){
     var obj = JSON.parse(resp);
     for (var prop in obj) {
@@ -521,7 +521,7 @@ function new_translation(slot){
   $.ajax({
   type : "GET",
   dataType : "html",
-  url : "api/new_translation.xql"+location+"&slot="+slot, 
+  url : "api/new_translation"+location+"&slot="+slot, 
   success : function(resp){
     $('#remoteDialog').html(resp);
     $('#new-translation-dialog').modal('show');
@@ -549,7 +549,7 @@ function store_new_translation(slot, textid, trid){
   $.ajax({
   type : "GET",
   dataType : "html",
-  url : "api/store_new_translation.xql?lang="+lang+"&textid="+textid+"&transl="+transl+"&trtitle="+trtitle+"&bibl="+bibl+"&vis="+vis+"&copy="+copy+"&type="+type+"&rel="+rel+"&trid="+ trid, 
+  url : "api/store_new_translation?lang="+lang+"&textid="+textid+"&transl="+transl+"&trtitle="+trtitle+"&bibl="+bibl+"&vis="+vis+"&copy="+copy+"&type="+type+"&rel="+rel+"&trid="+ trid, 
   success : function(resp){
   // todo : reload the selector with latest information
   $('#new-translation-dialog').modal('hide');
@@ -618,7 +618,7 @@ function get_sf(senseid, type){
   $.ajax({
   type : "GET",
   dataType : "html",
-  url : "api/get_sf.xql?senseid=" + senseid + "&type=" + type, 
+  url : "api/get_sf?senseid=" + senseid + "&type=" + type, 
   success : function(resp){
     $('#remoteDialog').html(resp);
     initialize_sf_autocomplete(type);  
@@ -676,7 +676,7 @@ var word = $("#swl-query-span").text();
   $.ajax({
   type : "GET",
   dataType : "html",
-  url : "api/get_guangyun.xql?char=" + w+"&gyonly="+gyonly, 
+  url : "api/get_guangyun?char=" + w+"&gyonly="+gyonly, 
   success : function(resp){
   console.log(resp)
   $('#guangyun-group').append(resp)
@@ -715,7 +715,7 @@ function show_att(uid){
   $.ajax({
   type : "GET",
   dataType : "html",  
-  url : "api/show_att.xql?uid=" + uid, 
+  url : "api/show_att?uid=" + uid, 
   success : function(resp){
   $('#'+uid+'-resp').html(resp)
   }
@@ -741,7 +741,7 @@ function show_use_of(type, uid){
   $.ajax({
   type : "GET",
   dataType : "html",  
-  url : "api/show_use_of.xql?uid=" + uid + "&type=" + type, 
+  url : "api/show_use_of?uid=" + uid + "&type=" + type, 
   success : function(resp){
   $('#'+uid+'-resp').html(resp)
   }
@@ -754,7 +754,7 @@ function show_swls_for_line(line_id){
   $.ajax({
   type : "GET",
   dataType : "html",
-  url : "api/show_swl_for_line.xql?line=" + line_id, 
+  url : "api/show_swl_for_line?line=" + line_id, 
   success : function(resp){
   line_id = line_id.split(".").join("\\.")
 //  console.log("Displaying response at: " + '#'+line_id+'-swl');
@@ -777,9 +777,9 @@ do_save_swl_line(sense_id, line_id, pos, line, tit);
 function do_save_swl_line(sense_id, line_id, pos, line, tit){
 toastr.info("Saving the attribution...", "HXWD says:")
 $.ajax({
-  type : "PUT",
+  type : "POST",
   dataType : "html",
-  url : "api/save_swl.xql?line-id="+line_id+"&line="+line+"&sense="+sense_id+"&pos="+pos+"&tit="+tit,
+  url : "api/save_swl?line-id="+line_id+"&line="+line+"&sense="+sense_id+"&pos="+pos+"&tit="+tit,
   success : function(resp){
   hide_swl_form("#editSWLDialog");
   console.log("Hiding form");
@@ -816,16 +816,16 @@ function show_new_concept(mode, py){
   var line_id= $( "#swl-line-id-span" ).text();  
   var line = $( "#swl-line-text-span" ).text();
   if (mode == "rhet-dev"){
-       var uri = "api/get_swl.xql?type=rhet-dev&word="+word+"&concept="+py+"&line-id="+line_id+"&line="+line;       
+       var uri = "api/get_swl?type=rhet-dev&word="+word+"&concept="+py+"&line-id="+line_id+"&line="+line;       
   } else if (mode == "new"){
       cname = prompt("Please enter the name of the new concept:", "");
       if (cname){
-       var uri = "api/get_swl.xql?type=concept&word="+word+"&concept="+cname+"&line-id="+line_id+"&line="+line;      
+       var uri = "api/get_swl?type=concept&word="+word+"&concept="+cname+"&line-id="+line_id+"&line="+line;      
        } else {var uri = null}
   } else if (mode == "existing") {
-      var uri = "api/get_swl.xql?type=concept&word="+word+"&mode="+mode+"&line-id="+line_id+"&line="+line;
+      var uri = "api/get_swl?type=concept&word="+word+"&mode="+mode+"&line-id="+line_id+"&line="+line;
   } else {
-      var uri = "api/get_swl.xql?type=concept&word="+word+"&concept="+mode+"&line-id="+line_id+"&line="+line+"&py="+py;      
+      var uri = "api/get_swl?type=concept&word="+word+"&concept="+mode+"&line-id="+line_id+"&line="+line+"&py="+py;      
   }   
   if (uri){
   $.ajax({
@@ -867,7 +867,7 @@ function show_newsw(para){
   $.ajax({
   type : "GET",
   dataType : "html",  
-  url : "api/get_swl.xql?type=word&concept="+para.concept+"&word="+word+"&wid="+para.wid+"&py="+para.py+"&concept-id="+para.concept_id+"&line-id="+line_id+"&line="+line, 
+  url : "api/get_swl?type=word&concept="+para.concept+"&word="+word+"&wid="+para.wid+"&py="+para.py+"&concept-id="+para.concept_id+"&line-id="+line_id+"&line="+line, 
   success : function(resp){
   $('#remoteDialog').html(resp);
   console.log("Initializing autocomplete functions");
@@ -898,9 +898,9 @@ function save_newsw(){
           var ndef = prompt("No syntactic function '" + synfunc_val + "' defined.  If you want to define a new one, please enter the definition here:") 
           if (ndef) {
             $.ajax({
-              type: "PUT",
+              type: "POST",
               datatype : "json",
-              url : "api/save_sf.xql?sf_val="+synfunc_val+"&sf_id=xxx&def="+ndef+"&type=syn-func",
+              url : "api/save_sf?sf_val="+synfunc_val+"&sf_id=xxx&def="+ndef+"&type=syn-func",
               success : function(resp){
                 toastr.info("New syntactic function has been saved.", "HXWD says:");
                 $("#synfunc-id-span" ).text(resp);
@@ -919,10 +919,10 @@ function save_newsw(){
   } else {
 
   $.ajax({
-  type : "PUT",
+  type : "POST",
   dataType : "json",
   async : false,
-  url : "api/save_newsw.xql?concept="+concept_id+"&wid="+word_id+"&word="+word+"&py="+py+"&concept-val="+concept_val+"&synfunc="+synfunc_id+"&synfunc-val="+synfunc_val+"&semfeat="+semfeat_id+"&semfeat-val="+semfeat_val+"&def="+def_val,
+  url : "api/save_newsw?concept="+concept_id+"&wid="+word_id+"&word="+word+"&py="+py+"&concept-val="+concept_val+"&synfunc="+synfunc_id+"&synfunc-val="+synfunc_val+"&semfeat="+semfeat_id+"&semfeat-val="+semfeat_val+"&def="+def_val,
   success : function(resp){
     if (resp.sense_id == "not_saved"){
     toastr.error("Could not save: " + resp.result, "HXWD says:")        
@@ -983,9 +983,9 @@ function save_to_concept(){
   } else {
   // need to show the selected stuff again to the user to confirm
   $.ajax({
-  type : "PUT",
+  type : "POST",
   dataType : "json",
-  url : "api/save_to_concept.xql?line="+line_id+"&word="+word+"&concept="+concept_id+"&concept-val="+concept_val+"&synfunc="+synfunc_id+"&synfunc-val="+synfunc_val+"&semfeat="+semfeat_id+"&semfeat-val="+semfeat_val+"&def="+def_val+"&guangyun-id="+guangyun_id,
+  url : "api/save_to_concept?line="+line_id+"&word="+word+"&concept="+concept_id+"&concept-val="+concept_val+"&synfunc="+synfunc_id+"&synfunc-val="+synfunc_val+"&semfeat="+semfeat_id+"&semfeat-val="+semfeat_val+"&def="+def_val+"&guangyun-id="+guangyun_id,
   success : function(resp){
   //  var strconfirm = confirm("Saved concept. Do you want to save attribution now?");
   //  if (strconfirm == true) {
@@ -1089,7 +1089,7 @@ function get_sw(sel, xid, line){
   $.ajax({
   type : "GET",
   dataType : "html",
-  url : "api/get_sw.xql?word=" + sel+"&context="+context+"&domain="+domain+"&leftword="+leftword, 
+  url : "api/get_sw?word=" + sel+"&context="+context+"&domain="+domain+"&leftword="+leftword, 
   success : function(resp){
   $('#swl-select').html(resp)
   }
@@ -1242,7 +1242,7 @@ function initialize_sf_autocomplete(type){
       },
       source: function( request, response ) {
         $.ajax( {
-          url: "api/autocomplete.xql",
+          url: "api/autocomplete",
           dataType: "jsonp",
           data: {
             term: request.term,
@@ -1267,7 +1267,7 @@ function initialize_autocomplete_nc(tp){
       appendTo: "#select-concept-group-nc",
       source: function( request, response ) {
         $.ajax( {
-          url: "api/autocomplete.xql",
+          url: "api/autocomplete",
           dataType: "jsonp",
           data: {
             term: request.term.toUpperCase(),
@@ -1291,7 +1291,7 @@ function initialize_autocomplete_type(tp){
       appendTo: "#select-concept-group",
       source: function( request, response ) {
         $.ajax( {
-          url: "api/autocomplete.xql",
+          url: "api/autocomplete",
           dataType: "jsonp",
           data: {
             term: request.term,
@@ -1316,7 +1316,7 @@ function initialize_autocomplete(){
       appendTo: "#select-concept-group",
       source: function( request, response ) {
         $.ajax( {
-          url: "api/autocomplete.xql",
+          url: "api/autocomplete",
           dataType: "jsonp",
           data: {
             term: request.term.toUpperCase(),
@@ -1338,7 +1338,7 @@ function initialize_autocomplete(){
       appendTo: "#select-synfunc-group",
       source: function( request, response ) {
         $.ajax( {
-          url: "api/autocomplete.xql",
+          url: "api/autocomplete",
           dataType: "jsonp",
           data: {
             term: request.term,
@@ -1360,7 +1360,7 @@ function initialize_autocomplete(){
       appendTo: "#select-semfeat-group",
       source: function( request, response ) {
         $.ajax( {
-          url: "api/autocomplete.xql",
+          url: "api/autocomplete",
           dataType: "jsonp",
           data: {
             term: request.term,
@@ -1384,7 +1384,7 @@ function initialize_autocomplete_rd(){
       appendTo: "#rhetdev",
       source: function( request, response ) {
         $.ajax( {
-          url: "api/autocomplete.xql",
+          url: "api/autocomplete",
           dataType: "jsonp",
           data: {
             term: request.term.toUpperCase(),
@@ -1408,7 +1408,7 @@ function initialize_autocomplete_bib(n){
       appendTo: "#input-bibl-group-id-"+n,
       source: function( request, response ) {
         $.ajax( {
-          url: "api/autocomplete.xql",
+          url: "api/autocomplete",
           dataType: "jsonp",
           data: {
             term: request.term.toUpperCase(),
@@ -1470,7 +1470,7 @@ $(document).ajaxComplete(function() {
 function get_atts(target, div_id){
    console.log(target)
    $.ajax( {
-    url: "api/get_text_preview.xql?loc="+target,
+    url: "api/get_text_preview?loc="+target,
     dataType: "html",
     success: function( data ) {
     $('#'+div_id).css("width", "400px");
@@ -1536,8 +1536,8 @@ $('.rating').on('rating:change', function(event, value, caption) {
         console.log(value);
         console.log(this.id);
   $.ajax({
-  type : "PUT",
-  url : "api/save_ratings.xql?textid="+this.id+"&rating="+value,
+  type : "POST",
+  url : "api/save_ratings?textid="+this.id+"&rating="+value,
   success : function(resp){
     toastr.info("Your rating has been saved.", "HXWD says:")
   },
@@ -1552,8 +1552,8 @@ $('.rating').on('rating:clear', function(event, value, caption) {
         console.log(value);
         console.log(this.id);
   $.ajax({
-  type : "PUT",
-  url : "api/save_ratings.xql?textid="+this.id+"&delete=y",
+  type : "POST",
+  url : "api/save_ratings?textid="+this.id+"&delete=y",
   success : function(resp){
     toastr.info("Your rating has been cleared.", "HXWD says:")
   },
@@ -1568,8 +1568,8 @@ $('.starRating').on('click', function(event, value, caption) {
         console.log(value);
         console.log(this.id);
   $.ajax({
-  type : "PUT",
-  url : "api/save_ratings.xql?textid="+this.id+"&rating="+value,
+  type : "POST",
+  url : "api/save_ratings?textid="+this.id+"&rating="+value,
   success : function(resp){
     toastr.info("Your rating has been saved.", "HXWD says:")
   },
@@ -1588,7 +1588,7 @@ function search_and_att(sense_id){
   $.ajax({
   type : "GET",
   dataType : "html",  
-  url : "api/search_att.xql?sense-id=" + sense_id, 
+  url : "api/search_att?sense-id=" + sense_id, 
   success : function(resp){
   $('#'+sense_id+'-resp1').html(resp)
   }
@@ -1606,7 +1606,7 @@ function edit_swl(uid){
   $.ajax({
   type : "GET",
   dataType : "html",  
-  url : "api/get_swl.xql?type=swl&uid=" + uid, 
+  url : "api/get_swl?type=swl&uid=" + uid, 
   success : function(resp){
   $('#remoteDialog').html(resp);
   console.log("Initializing autocomplete functions");
@@ -1791,7 +1791,7 @@ function delete_word_from_concept(wid, type, ref){
     $.ajax({
      type : "GET",
      dataType : "html",  
-     url : "api/delete_word_from_concept.xql?wid=" + wid+"&type="+type+"&ref="+ref, 
+     url : "api/delete_word_from_concept?wid=" + wid+"&type="+type+"&ref="+ref, 
      success : function(resp){
      if (resp.length > 2){
          toastr.info(resp, "HXWD says:");     
@@ -1849,7 +1849,7 @@ function delete_swl(type, uid){
      $.ajax({
      type : "GET",
      dataType : "html",  
-     url : "api/delete_swl.xql?type="+type+"&uid=" + uid, 
+     url : "api/delete_swl?type="+type+"&uid=" + uid, 
      success : function(resp){
    //  save_this_swl(resp.sense_id)
       var line_id = resp.replace(/"/g, '')
@@ -1867,7 +1867,7 @@ function review_swl_dialog(uid){
      $.ajax({
      type : "GET",
      dataType : "html",  
-     url : "api/review_swl_dialog.xql?type=swl&uid=" + uid, 
+     url : "api/review_swl_dialog?type=swl&uid=" + uid, 
      success : function(resp){
      $('#remoteDialog').html(resp);
      initialize_autocomplete();
@@ -1884,7 +1884,7 @@ function save_swl_review(uid){
      $.ajax({
      type : "GET",
      dataType : "html",  
-     url : "api/save_swl_review.xql?com="+com_val+"&uid=" + uid + "&action="+action_val, 
+     url : "api/save_swl_review?com="+com_val+"&uid=" + uid + "&action="+action_val, 
      success : function(resp){
      console.log("RESP" + resp, resp.startsWith('"Error'))
      if (resp.startsWith('"Error')) {
@@ -1976,8 +1976,7 @@ function save_note (trid, tr){
   $.ajax({
   type : "POST",
   dataType : "html",
-  url : "api/save_note.xql",
-  data: {"trid" : trid.slice(0, -3), "tr" : tr},
+  url : "api/save_note?trid="+encodeURIComponent(trid.slice(0, -3))+"&tr="+encodeURIComponent(tr),
   success : function(resp){
     if (resp.startsWith("Could not")) {
     toastr.error(resp, "漢學文典 says:");
@@ -2191,9 +2190,9 @@ function ctl_p(line, lineid, trid){
 function save_tr (trid_in, tr, line){
   var trid = trid_in.replaceAll("\\", "")
   $.ajax({
-  type : "PUT",
+  type : "POST",
   dataType : "html",
-  url : "api/save_tr.xql?trid="+trid+"&tr="+tr,
+  url : "api/save_tr?trid="+trid+"&tr="+tr,
   success : function(resp){
     if (resp.startsWith("Could not")) {
     toastr.error(resp, "漢學文典 says:");
@@ -2302,9 +2301,9 @@ function save_def (defid){
   console.log(defid)
   var def = document.getElementById( defid ).innerText;
   $.ajax({
-  type : "PUT",
+  type : "POST",
   dataType : "html",
-  url : "api/save_def.xql?defid="+defid+"&def="+def,
+  url : "api/save_def?defid="+defid+"&def="+def,
   success : function(resp){
     toastr.info("Modification for definition saved.", "HXWD says:");
   },
@@ -2325,9 +2324,9 @@ function save_sf (type){
 
   console.log(sense_id)
   $.ajax({
-  type : "PUT",
+  type : "POST",
   dataType : "html",
-  url : "api/save_sf.xql?sense-id="+sense_id+"&sf_id="+synfunc_id+"&sf_val="+synfunc_val+"&def="+def_val+"&type="+type,
+  url : "api/save_sf?sense-id="+sense_id+"&sf_id="+synfunc_id+"&sf_val="+synfunc_val+"&def="+def_val+"&type="+type,
   success : function(resp){
     hide_swl_form( "#edit-sf-dialog" );      
     if (type == "syn-func") {
@@ -2352,7 +2351,7 @@ function bookmark_this_line(){
   $.ajax({
   type : "GET",
   dataType : "html",  
-  url : "api/save_bookmark.xql?word="+word+"&line-id="+line_id+"&line="+line, 
+  url : "api/save_bookmark?word="+word+"&line-id="+line_id+"&line="+line, 
   success : function(resp){
   toastr.info("Bookmark has been saved.", "HXWD says:")
   }
@@ -2593,7 +2592,7 @@ function save_new_concept (uuid, concept, type){
 // delete syntactic function or semantic feature (called from browse page)
 function delete_sf(uid, type){
     var abbr = $("#"+uid+'-abbr').text()
-    $.get("api/show_use_of.xql?uid=" + uid + "&type=" + type, "html", 
+    $.get("api/show_use_of?uid=" + uid + "&type=" + type, "html", 
     function(resp){
         if (resp.startsWith("No usage")){
         console.log(uid, resp)
@@ -3420,7 +3419,7 @@ function display_tr_file_dialog(dialog_name, slot, trid){
   $.ajax({
   type : "GET",
   dataType : "html",
-  url : "api/new_translation.xql"+location+"&slot="+slot+"&trid="+trid, 
+  url : "api/new_translation"+location+"&slot="+slot+"&trid="+trid, 
   success : function(resp){
     $('#remoteDialog').html(resp);
     $('#new-translation-dialog').modal('show');  

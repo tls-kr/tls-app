@@ -1033,6 +1033,459 @@
                     }
                 }
             }
+        },
+        "/api/record_visit": {
+            "get": {
+                "summary": "Record a page visit (fire-and-forget)",
+                "operationId": "ah:record-visit",
+                "tags": ["api"],
+                "security": [],
+                "parameters": [
+                    { "name": "location", "in": "query", "schema": { "type": "string" } }
+                ],
+                "responses": { "200": { "description": "OK", "content": { "text/plain": { "schema": { "type": "string" } } } } }
+            }
+        },
+        "/api/get_toc": {
+            "get": {
+                "summary": "Table of contents for a text",
+                "operationId": "ah:get-toc",
+                "tags": ["api"],
+                "security": [],
+                "parameters": [
+                    { "name": "textid", "in": "query", "required": true, "schema": { "type": "string" } }
+                ],
+                "responses": { "200": { "description": "OK", "content": { "text/html": { "schema": { "type": "string" } } } } }
+            }
+        },
+        "/api/show_swl_for_lines": {
+            "get": {
+                "summary": "Batched annotations for a set of segment ids",
+                "operationId": "ah:show-swl-for-lines",
+                "tags": ["api"],
+                "security": [],
+                "parameters": [
+                    { "name": "lines", "in": "query", "required": true, "description": "Comma-separated segment ids", "schema": { "type": "string" } }
+                ],
+                "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "array" } } } } }
+            }
+        },
+        "/api/autocomplete": {
+            "get": {
+                "summary": "Autocomplete suggestions",
+                "operationId": "ah:autocomplete",
+                "tags": ["api"],
+                "security": [],
+                "parameters": [
+                    { "name": "type", "in": "query", "schema": { "type": "string" } },
+                    { "name": "term", "in": "query", "schema": { "type": "string" } },
+                    { "name": "callback", "in": "query", "schema": { "type": "string" } }
+                ],
+                "responses": { "200": { "description": "OK", "content": { "text/javascript": { "schema": { "type": "string" } } } } }
+            }
+        },
+        "/api/save_bookmark": {
+            "get": {
+                "summary": "Save a bookmark for the current user",
+                "operationId": "ah:save-bookmark",
+                "tags": ["api"],
+                "security": [],
+                "parameters": [
+                    { "name": "word", "in": "query", "schema": { "type": "string" } },
+                    { "name": "line-id", "in": "query", "schema": { "type": "string" } },
+                    { "name": "line", "in": "query", "schema": { "type": "string" } }
+                ],
+                "responses": { "200": { "description": "OK", "content": { "text/html": { "schema": { "type": "string" } } } } }
+            }
+        },
+        "/api/save_swl": {
+            "post": {
+                "summary": "Save an attribution (swl)",
+                "operationId": "ah:save-swl",
+                "tags": ["api"],
+                "security": [],
+                "parameters": [
+                    { "name": "line-id", "in": "query", "schema": { "type": "string" } },
+                    { "name": "line", "in": "query", "schema": { "type": "string" } },
+                    { "name": "sense", "in": "query", "schema": { "type": "string" } },
+                    { "name": "pos", "in": "query", "schema": { "type": "string", "default": "0" } },
+                    { "name": "tit", "in": "query", "schema": { "type": "string" } }
+                ],
+                "responses": { "200": { "description": "OK", "content": { "text/html": { "schema": { "type": "string" } } } } }
+            }
+        },
+        "/api/save_note": {
+            "post": {
+                "summary": "Save a translator's note",
+                "operationId": "ah:save-note",
+                "tags": ["api"],
+                "security": [],
+                "parameters": [
+                    { "name": "trid", "in": "query", "schema": { "type": "string" } },
+                    { "name": "tr", "in": "query", "schema": { "type": "string" } }
+                ],
+                "responses": { "200": { "description": "OK", "content": { "text/html": { "schema": { "type": "string" } } } } }
+            }
+        },
+        "/api/save_def": {
+            "post": {
+                "summary": "Save a sense definition",
+                "operationId": "ah:save-def",
+                "tags": ["api"],
+                "security": [],
+                "parameters": [
+                    { "name": "defid", "in": "query", "schema": { "type": "string" } },
+                    { "name": "def", "in": "query", "schema": { "type": "string" } }
+                ],
+                "responses": { "200": { "description": "OK", "content": { "text/html": { "schema": { "type": "string" } } } } }
+            }
+        },
+        "/api/save_sf": {
+            "post": {
+                "summary": "Save a syntactic function entry",
+                "operationId": "ah:save-sf",
+                "tags": ["api"],
+                "security": [],
+                "parameters": [
+                    { "name": "sense-id", "in": "query", "schema": { "type": "string" } },
+                    { "name": "sf_id", "in": "query", "schema": { "type": "string" } },
+                    { "name": "sf_val", "in": "query", "schema": { "type": "string" } },
+                    { "name": "def", "in": "query", "schema": { "type": "string" } },
+                    { "name": "type", "in": "query", "schema": { "type": "string" } }
+                ],
+                "responses": { "200": { "description": "OK", "content": { "text/html": { "schema": { "type": "string" } } } } }
+            }
+        },
+        "/api/save_tr": {
+            "post": {
+                "summary": "Save a translation line",
+                "operationId": "ah:save-tr",
+                "tags": ["api"],
+                "security": [],
+                "parameters": [
+                    { "name": "trid", "in": "query", "schema": { "type": "string" } },
+                    { "name": "tr", "in": "query", "schema": { "type": "string" } },
+                    { "name": "lang", "in": "query", "schema": { "type": "string", "default": "en" } }
+                ],
+                "responses": { "200": { "description": "OK", "content": { "text/html": { "schema": { "type": "string" } } } } }
+            }
+        },
+        "/api/delete_swl": {
+            "get": {
+                "summary": "Delete an attribution",
+                "operationId": "ah:delete-swl",
+                "tags": ["api"],
+                "security": [],
+                "parameters": [
+                    { "name": "type", "in": "query", "schema": { "type": "string" } },
+                    { "name": "uid", "in": "query", "schema": { "type": "string" } }
+                ],
+                "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "object" } } } } }
+            }
+        },
+        "/api/delete_word_from_concept": {
+            "get": {
+                "summary": "Delete a word from a concept",
+                "operationId": "ah:delete-word-from-concept",
+                "tags": ["api"],
+                "security": [],
+                "parameters": [
+                    { "name": "wid", "in": "query", "schema": { "type": "string" } },
+                    { "name": "type", "in": "query", "schema": { "type": "string" } },
+                    { "name": "ref", "in": "query", "schema": { "type": "string" } }
+                ],
+                "responses": { "200": { "description": "OK", "content": { "text/html": { "schema": { "type": "string" } } } } }
+            }
+        },
+        "/api/save_newsw": {
+            "post": {
+                "summary": "Save a new sense/word (newsw)",
+                "operationId": "ah:save-newsw",
+                "tags": ["api"],
+                "security": [],
+                "parameters": [
+                    { "name": "concept", "in": "query", "schema": { "type": "string" } },
+                    { "name": "line", "in": "query", "schema": { "type": "string" } },
+                    { "name": "word", "in": "query", "schema": { "type": "string" } },
+                    { "name": "wid", "in": "query", "schema": { "type": "string" } },
+                    { "name": "py", "in": "query", "schema": { "type": "string" } },
+                    { "name": "guangyun", "in": "query", "schema": { "type": "string" } },
+                    { "name": "concept-val", "in": "query", "schema": { "type": "string" } },
+                    { "name": "synfunc", "in": "query", "schema": { "type": "string" } },
+                    { "name": "synfunc-val", "in": "query", "schema": { "type": "string" } },
+                    { "name": "semfeat", "in": "query", "schema": { "type": "string" } },
+                    { "name": "semfeat-val", "in": "query", "schema": { "type": "string" } },
+                    { "name": "def", "in": "query", "schema": { "type": "string" } }
+                ],
+                "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "object" } } } } }
+            }
+        },
+        "/api/save_swl_review": {
+            "get": {
+                "summary": "Record the outcome of an attribution review",
+                "operationId": "ah:save-swl-review",
+                "tags": ["api"],
+                "security": [],
+                "parameters": [
+                    { "name": "uid", "in": "query", "schema": { "type": "string" } },
+                    { "name": "com", "in": "query", "schema": { "type": "string" } },
+                    { "name": "action", "in": "query", "schema": { "type": "string", "default": "approve" } }
+                ],
+                "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "object" } } } } }
+            }
+        },
+        "/api/save_to_concept": {
+            "post": {
+                "summary": "Save an attribution to a concept",
+                "operationId": "ah:save-to-concept",
+                "tags": ["api"],
+                "security": [],
+                "parameters": [
+                    { "name": "concept", "in": "query", "schema": { "type": "string" } },
+                    { "name": "line", "in": "query", "schema": { "type": "string" } },
+                    { "name": "word", "in": "query", "schema": { "type": "string" } },
+                    { "name": "wid", "in": "query", "schema": { "type": "string" } },
+                    { "name": "guangyun-id", "in": "query", "schema": { "type": "string" } },
+                    { "name": "concept-val", "in": "query", "schema": { "type": "string" } },
+                    { "name": "synfunc", "in": "query", "schema": { "type": "string" } },
+                    { "name": "synfunc-val", "in": "query", "schema": { "type": "string" } },
+                    { "name": "semfeat", "in": "query", "schema": { "type": "string" } },
+                    { "name": "semfeat-val", "in": "query", "schema": { "type": "string" } },
+                    { "name": "def", "in": "query", "schema": { "type": "string" } }
+                ],
+                "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "object" } } } } }
+            }
+        },
+        "/api/save_ratings": {
+            "post": {
+                "summary": "Save or delete a per-user text rating",
+                "operationId": "ah:save-ratings",
+                "tags": ["api"],
+                "security": [],
+                "parameters": [
+                    { "name": "textid", "in": "query", "schema": { "type": "string" } },
+                    { "name": "rating", "in": "query", "schema": { "type": "string" } },
+                    { "name": "delete", "in": "query", "schema": { "type": "string", "enum": ["y", "n"], "default": "n" } }
+                ],
+                "responses": { "200": { "description": "OK", "content": { "text/html": { "schema": { "type": "string" } } } } }
+            }
+        },
+        "/api/get_sw": {
+            "get": {
+                "summary": "Resolve a word (dispatch to syn-func lookups)",
+                "operationId": "ah:get-sw",
+                "tags": ["api"],
+                "security": [],
+                "parameters": [
+                    { "name": "word", "in": "query", "schema": { "type": "string" } },
+                    { "name": "context", "in": "query", "schema": { "type": "string" } },
+                    { "name": "domain", "in": "query", "schema": { "type": "string", "default": "core" } },
+                    { "name": "leftword", "in": "query", "schema": { "type": "string", "default": "" } }
+                ],
+                "responses": { "200": { "description": "OK", "content": { "text/html": { "schema": { "type": "string" } } } } }
+            }
+        },
+        "/api/get_sf": {
+            "get": {
+                "summary": "Get sense-function dialog fragment",
+                "operationId": "ah:get-sf",
+                "tags": ["api"],
+                "security": [],
+                "parameters": [
+                    { "name": "senseid", "in": "query", "schema": { "type": "string" } },
+                    { "name": "type", "in": "query", "schema": { "type": "string" } }
+                ],
+                "responses": { "200": { "description": "OK", "content": { "text/html": { "schema": { "type": "string" } } } } }
+            }
+        },
+        "/api/get_swl": {
+            "get": {
+                "summary": "Attribution dialog (new or revise)",
+                "operationId": "ah:get-swl",
+                "tags": ["api"],
+                "security": [],
+                "parameters": [
+                    { "name": "uid", "in": "query", "schema": { "type": "string" } },
+                    { "name": "type", "in": "query", "schema": { "type": "string", "default": "swl" } },
+                    { "name": "word", "in": "query", "schema": { "type": "string" } },
+                    { "name": "mode", "in": "query", "schema": { "type": "string", "default": "new" } },
+                    { "name": "wid", "in": "query", "schema": { "type": "string" } },
+                    { "name": "py", "in": "query", "schema": { "type": "string" } },
+                    { "name": "line-id", "in": "query", "schema": { "type": "string" } },
+                    { "name": "line", "in": "query", "schema": { "type": "string" } },
+                    { "name": "concept", "in": "query", "schema": { "type": "string" } },
+                    { "name": "concept-id", "in": "query", "schema": { "type": "string" } }
+                ],
+                "responses": { "200": { "description": "OK", "content": { "text/html": { "schema": { "type": "string" } } } } }
+            }
+        },
+        "/api/get_swl_for_page": {
+            "get": {
+                "summary": "Attributions for a page",
+                "operationId": "ah:get-swl-for-page",
+                "tags": ["api"],
+                "security": [],
+                "parameters": [
+                    { "name": "location", "in": "query", "schema": { "type": "string" } },
+                    { "name": "prec", "in": "query", "schema": { "type": "string", "default": "2" } },
+                    { "name": "foll", "in": "query", "schema": { "type": "string", "default": "28" } }
+                ],
+                "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "object" } } } } }
+            }
+        },
+        "/api/get_tr_for_page": {
+            "get": {
+                "summary": "Translation lines for a page (optionally via AI)",
+                "operationId": "ah:get-tr-for-page",
+                "tags": ["api"],
+                "security": [],
+                "parameters": [
+                    { "name": "location", "in": "query", "schema": { "type": "string" } },
+                    { "name": "prec", "in": "query", "schema": { "type": "string", "default": "15" } },
+                    { "name": "foll", "in": "query", "schema": { "type": "string", "default": "15" } },
+                    { "name": "slot", "in": "query", "schema": { "type": "string", "default": "slot1" } },
+                    { "name": "content-id", "in": "query", "schema": { "type": "string", "default": "" } },
+                    { "name": "ai", "in": "query", "schema": { "type": "string", "default": "undefined" } }
+                ],
+                "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "object" } } } } }
+            }
+        },
+        "/api/get_tr_submenu": {
+            "get": {
+                "summary": "Translation submenu HTML",
+                "operationId": "ah:get-tr-submenu",
+                "tags": ["api"],
+                "security": [],
+                "parameters": [
+                    { "name": "textid", "in": "query", "schema": { "type": "string" } },
+                    { "name": "slot", "in": "query", "schema": { "type": "string", "default": "slot1" } }
+                ],
+                "responses": { "200": { "description": "OK", "content": { "text/html": { "schema": { "type": "string" } } } } }
+            }
+        },
+        "/api/get_guangyun": {
+            "get": {
+                "summary": "Guangyun data for a character",
+                "operationId": "ah:get-guangyun",
+                "tags": ["api"],
+                "security": [],
+                "parameters": [
+                    { "name": "char", "in": "query", "schema": { "type": "string" } },
+                    { "name": "gyonly", "in": "query", "schema": { "type": "boolean", "default": true } }
+                ],
+                "responses": { "200": { "description": "OK", "content": { "text/html": { "schema": { "type": "string" } } } } }
+            }
+        },
+        "/api/get_text_preview": {
+            "get": {
+                "summary": "Preview HTML for a text location",
+                "operationId": "ah:get-text-preview",
+                "tags": ["api"],
+                "security": [],
+                "parameters": [
+                    { "name": "loc", "in": "query", "schema": { "type": "string" } }
+                ],
+                "responses": { "200": { "description": "OK", "content": { "text/html": { "schema": { "type": "string" } } } } }
+            }
+        },
+        "/api/new_translation": {
+            "get": {
+                "summary": "Dialog for creating/choosing a translation",
+                "operationId": "ah:new-translation",
+                "tags": ["api"],
+                "security": [],
+                "parameters": [
+                    { "name": "slot", "in": "query", "schema": { "type": "string", "default": "slot1" } },
+                    { "name": "location", "in": "query", "schema": { "type": "string" } },
+                    { "name": "trid", "in": "query", "schema": { "type": "string" } }
+                ],
+                "responses": { "200": { "description": "OK", "content": { "text/html": { "schema": { "type": "string" } } } } }
+            }
+        },
+        "/api/store_new_translation": {
+            "get": {
+                "summary": "Create, update or AI-generate a translation file",
+                "operationId": "ah:store-new-translation",
+                "tags": ["api"],
+                "security": [],
+                "parameters": [
+                    { "name": "bibl", "in": "query", "schema": { "type": "string" } },
+                    { "name": "trtitle", "in": "query", "schema": { "type": "string" } },
+                    { "name": "lang", "in": "query", "schema": { "type": "string", "default": "en" } },
+                    { "name": "transl", "in": "query", "schema": { "type": "string" } },
+                    { "name": "textid", "in": "query", "schema": { "type": "string" } },
+                    { "name": "vis", "in": "query", "schema": { "type": "string" } },
+                    { "name": "copy", "in": "query", "schema": { "type": "string" } },
+                    { "name": "type", "in": "query", "schema": { "type": "string" } },
+                    { "name": "rel", "in": "query", "schema": { "type": "string" } },
+                    { "name": "trid", "in": "query", "schema": { "type": "string" } }
+                ],
+                "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "object" } } } } }
+            }
+        },
+        "/api/review_swl_dialog": {
+            "get": {
+                "summary": "Attribution review dialog",
+                "operationId": "ah:review-swl-dialog",
+                "tags": ["api"],
+                "security": [],
+                "parameters": [
+                    { "name": "uid", "in": "query", "schema": { "type": "string" } }
+                ],
+                "responses": { "200": { "description": "OK", "content": { "text/html": { "schema": { "type": "string" } } } } }
+            }
+        },
+        "/api/show_att": {
+            "get": {
+                "summary": "Show attribution details",
+                "operationId": "ah:show-att",
+                "tags": ["api"],
+                "security": [],
+                "parameters": [
+                    { "name": "uid", "in": "query", "schema": { "type": "string" } }
+                ],
+                "responses": { "200": { "description": "OK", "content": { "text/html": { "schema": { "type": "string" } } } } }
+            }
+        },
+        "/api/show_swl_for_line": {
+            "get": {
+                "summary": "Attributions for a single segment (legacy, prefer /show_swl_for_lines)",
+                "operationId": "ah:show-swl-for-line",
+                "tags": ["api"],
+                "security": [],
+                "parameters": [
+                    { "name": "line", "in": "query", "schema": { "type": "string" } }
+                ],
+                "responses": { "200": { "description": "OK", "content": { "text/html": { "schema": { "type": "string" } } } } }
+            }
+        },
+        "/api/show_use_of": {
+            "get": {
+                "summary": "Show usages of a given id (swl, sense, etc.)",
+                "operationId": "ah:show-use-of",
+                "tags": ["api"],
+                "security": [],
+                "parameters": [
+                    { "name": "uid", "in": "query", "schema": { "type": "string" } },
+                    { "name": "type", "in": "query", "schema": { "type": "string" } }
+                ],
+                "responses": { "200": { "description": "OK", "content": { "text/html": { "schema": { "type": "string" } } } } }
+            }
+        },
+        "/api/search_att": {
+            "get": {
+                "summary": "Attribution search across the corpus",
+                "operationId": "ah:search-att",
+                "tags": ["api"],
+                "security": [],
+                "parameters": [
+                    { "name": "sense-id", "in": "query", "schema": { "type": "string" } },
+                    { "name": "start", "in": "query", "schema": { "type": "string", "default": "1" } },
+                    { "name": "count", "in": "query", "schema": { "type": "string", "default": "100" } },
+                    { "name": "mode", "in": "query", "schema": { "type": "string", "default": "date" } }
+                ],
+                "responses": { "200": { "description": "OK", "content": { "text/html": { "schema": { "type": "string" } } } } }
+            }
         }
     }
 }

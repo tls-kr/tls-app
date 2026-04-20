@@ -67,4 +67,63 @@ describe('xqSuite unit testing', function() {
         })
     })
   })
+
+  // Covers the flat-URL OpenAPI routes introduced in Waves A + B
+  // (see info/log.md 2026-04-20 "API migration: Waves 1, A, B complete").
+  //
+  // Uses a fresh, non-agent client so it doesn't inherit the admin session
+  // cookie from the XQSuite runner test above. Every request sets a
+  // User-Agent header because controller.xql's local:isBlocked() declares
+  // $ua as exactly-one xs:string and raises XPTY0004 if the header is missing.
+  describe('migrated OpenAPI endpoints', function() {
+    this.timeout(10000)
+    const base = 'http://localhost:8088/exist/apps/tls-app'
+    const seg = 'CH1a0907_CHANT_016-35a.4'
+    const textid = 'CH1a0907'
+    const get = (path) =>
+      supertest(base).get(path).set('User-Agent', 'mocha-test')
+
+    it('GET api/get_toc returns 200', function(done) {
+      get('/api/get_toc?textid=' + textid).expect(200).end(done)
+    })
+
+    it('GET api/autocomplete returns JSONP payload', function(done) {
+      get('/api/autocomplete?type=concept&term=ren')
+        .expect(200)
+        .expect('content-type', /javascript/)
+        .end(function(err, res) {
+          if (err) return done(err)
+          expect(res.text).to.match(/\w+\(\[.*\]\)/)
+          done()
+        })
+    })
+
+    it('GET api/get_guangyun returns 200', function(done) {
+      get('/api/get_guangyun?char=' + encodeURIComponent('仁'))
+        .expect(200).end(done)
+    })
+
+    it('GET api/show_swl_for_lines returns JSON array', function(done) {
+      get('/api/show_swl_for_lines?lines=' + seg)
+        .expect(200)
+        .end(function(err, res) {
+          if (err) return done(err)
+          expect(res.body).to.be.an('array')
+          done()
+        })
+    })
+
+    it('GET api/record_visit returns 200', function(done) {
+      get('/api/record_visit?location=' + seg).expect(200).end(done)
+    })
+
+    it('GET api/get_text_preview returns 200', function(done) {
+      get('/api/get_text_preview?loc=' + seg).expect(200).end(done)
+    })
+
+    it('old .xql stub URL is gone (404)', function(done) {
+      get('/api/autocomplete.xql?type=concept&term=ren')
+        .expect(404).end(done)
+    })
+  })
 })
