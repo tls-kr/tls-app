@@ -228,10 +228,10 @@ declare function lrh:proc-seg($node as node(), $options as map(*)){
   case element (tei:space)  return "　"
   case element (exist:match) return <mark>{$node/text()}</mark>
   case element (tei:hi) return <span class="{if ($node/@rend = 'red') then 'bcj' else ()}" style="color:{$node/@rend}">{$node/text()}</span>
-  case element (tei:anchor) return 
-    (: since I need it later, I will get it here, even if it might not get a result :)
-    let $app := $node/ancestor::tei:TEI//tei:app[@from="#"||$node/@xml:id]
-    let $t := if (starts-with($node/@xml:id, "xxnkr_note_mod")) then lrh:format-note($node/ancestor::tei:TEI//tei:note[@target = "#"|| $node/@xml:id]) else
+  case element (tei:anchor) return
+    let $tei := $node/ancestor::tei:TEI
+    let $app := $tei//tei:app[@from="#"||$node/@xml:id]
+    let $t := if (starts-with($node/@xml:id, "xxnkr_note_mod")) then lrh:format-note($tei//tei:note[@target = "#"|| $node/@xml:id]) else
     if (starts-with($node/@xml:id, 'beg')) then 
      if ($app) then
        lrh:format-app($app) else ()
@@ -257,10 +257,11 @@ for $node in $note/node()
 
 (: format the app for display in the segment :)
 declare function lrh:format-app($app as node()){
- let $lwit := $app/ancestor::tei:TEI//tei:witness[@xml:id=substring($app/tei:lem/@wit, 2)]/text()
- let $lem :=   string-join($app/tei:lem//text(), ' ') || $lwit ||"；" 
+ let $witnesses := $app/ancestor::tei:TEI//tei:witness
+ let $lwit := $witnesses[@xml:id=substring($app/tei:lem/@wit, 2)]/text()
+ let $lem :=   string-join($app/tei:lem//text(), ' ') || $lwit ||"；"
  , $t := try{ string-join(for $r in $app/tei:rdg
-        let $wit := "【" || string-join(for $w in tokenize($r/@wit) return $app/ancestor::tei:TEI//tei:witness[@xml:id=substring($w, 2)]/text() , "，") ||  "】"
+        let $wit := "【" || string-join(for $w in tokenize($r/@wit) return $witnesses[@xml:id=substring($w, 2)]/text() , "，") ||  "】"
         return $r/text() || $wit, "；")  } catch * {"XX"}
  , $note := if ($app/tei:note) then "&#xA;(Note: " || $app/tei:note/text() || ")&#xA;" || $app/tei:note/tei:bibl else ()
   return $lem || $t || $note

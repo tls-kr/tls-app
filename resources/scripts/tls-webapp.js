@@ -40,10 +40,19 @@ $(function() {
   }
   catch (err) {}
   get_swls();
+  // Lazy-load table of contents
+  var $toc = $('#toc-dropdown[data-textid]');
+  if ($toc.length) {
+    $.ajax({
+      url: 'api/get_toc.xql?textid=' + encodeURIComponent($toc.data('textid')),
+      dataType: 'html',
+      success: function(html) { $toc.html(html); }
+    });
+  }
   try {
     // initialize_cit_autocomplete();
-  } catch (err) {}  
-});            
+  } catch (err) {}
+});
 
 
 
@@ -239,10 +248,22 @@ function page_move(target){
 
 
 function get_swls(){
+    var line_ids = [];
     $(".swlid").each(function () {
-    var swid = $(this).attr('id');
-    var line_id = swid.substr(0, swid.length - 4)
-    show_swls_for_line(line_id);
+        var swid = $(this).attr('id');
+        line_ids.push(swid.substr(0, swid.length - 4));
+    });
+    if (line_ids.length === 0) { return; }
+    $.ajax({
+        type: "GET",
+        dataType: "json",
+        url: "api/show_swl_for_lines.xql?lines=" + line_ids.join(","),
+        success: function(resp){
+            $.each(resp, function(i, item){
+                var lid = item.id.split(".").join("\\.");
+                $('#' + lid + '-swl').html(item.html).show();
+            });
+        }
     });
 }
 

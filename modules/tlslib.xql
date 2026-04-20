@@ -595,32 +595,20 @@ return
 declare function tlslib:tv-header($node as node()*, $model as map(*)){
    session:create(),
    let $textid := $model('textid')
-   , $tocfile := collection('/db/apps/tls-texts/tls-toc')//h:div[@xml:id='toc-for-'||$textid]/h:a
-   ,$tsrc := if ($textid and map:contains($config:txtsource-map, $textid)) then 
-          map:get($config:txtsource-map, $textid) 
-      else 
-         if (substring($model('textid'), 1, 3) = "KR6") then "CBETA" 
-      else 
-         if (substring($model('textid'), 1, 4) = "KR3e") then "中醫笈成" 
+   ,$tsrc := if ($textid and map:contains($config:txtsource-map, $textid)) then
+          map:get($config:txtsource-map, $textid)
+      else
+         if (substring($model('textid'), 1, 3) = "KR6") then "CBETA"
+      else
+         if (substring($model('textid'), 1, 4) = "KR3e") then "中醫笈成"
       else "CHANT"
-(:   $toc := ()   :)
-   , $toc := if (contains(session:get-attribute-names(), $textid || "-toc")) then 
-       session:get-attribute($textid || "-toc")
-       else 
-(:       if ($tocfile) then $tocfile else ():)
-       tlslib:generate-toc($model("seg")/ancestor::tei:body)
-   
-   let $store := 
-     if (not(contains(session:get-attribute-names(),$textid || "-toc"))) 
-     then session:set-attribute($textid || "-toc", $toc) else ()
-
    return
       (
-      <span class="navbar-text ml-2 font-weight-bold" id="nb-text-title">{$model('title')} <small class="ml-2">{$model('seg')/ancestor::tei:div[1]/tei:head[1]/text()}</small></span> 
+      <span class="navbar-text ml-2 font-weight-bold" id="nb-text-title">{$model('title')} <small class="ml-2">{$model('seg')/ancestor::tei:div[1]/tei:head[1]/text()}</small></span>
       ,<li class="nav-item dropdown">
-       <a id="navbar-mulu" role="button" data-toggle="dropdown" href="#" class="nav-link dropdown-toggle">目錄</a> 
-       <div class="dropdown-menu">
-       {$toc}
+       <a id="navbar-mulu" role="button" data-toggle="dropdown" href="#" class="nav-link dropdown-toggle">目錄</a>
+       <div class="dropdown-menu" id="toc-dropdown" data-textid="{$textid}">
+       <span class="dropdown-item text-muted">Loading&#x2026;</span>
        </div>
       </li>,
      <li class="nav-item">
@@ -694,7 +682,7 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
       , $colums := if (string-length($model?columns)>0) then xs:integer($model?columns) else 2 
       let $d := $targetseg/ancestor::tei:div[1],
       $state := if ($d/ancestor::tei:TEI/@state) then $d/ancestor::tei:TEI/@state else "yellow" ,
-      $pb := ($targetseg/preceding::tei:pb)[last()] ,
+      $pb := $targetseg/preceding::tei:pb[1] ,
       $facs := $pb/@facs,
       $fpref :=  $config:ed-img-map?($pb/@ed),
       $head := if ($d/tei:head[1]/tei:seg) then ( $d/tei:head[1]/tei:seg)/text() 
@@ -707,25 +695,24 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
       $log := log:info($tlslib:log, "assembled dseg"),
 
 (:      $model := if (string-length($model?textid) > 0) then $model else map:put($model, "textid", tokenize($targetseg, "_")[1]), :)
-      $show-transl := lpm:should-show-translation(),
+      $user := sm:id()//sm:real/sm:username/text(),
+      $sid-groups := sm:id()//sm:group/text(),
+      $show-transl := not("guest" = $sid-groups),
+      $is-testuser := ("tls-test" = $sid-groups or "guest" = $sid-groups),
+      $usergroups := sm:get-user-groups($user),
       $show-variants := xs:boolean(1),
       $visit := try{lvs:record-visit($targetseg)} catch * {()},
-      $tr := if (lpm:should-show-translation()) then 
-         if (string-length($facs) > 0) then map:merge((ltr:get-translations($model?textid), 
-            for $edx in distinct-values(for $lpb in $targetseg/ancestor::tei:div//tei:pb where string-length($lpb/@facs) > 0 return $lpb/@ed)
-            return
-            map:entry("facs_"||$edx, ("dummy", $edx, data($targetseg/@xml:id)) ))) 
-
-         else ltr:get-translations($model?textid)
-         else map{},
+      $tr := ltr:get-translations($model?textid),
       $slot1-id := lrh:get-content-id($model?textid, 'slot1', $tr),
       $slot2-id := lrh:get-content-id($model?textid, 'slot2', $tr),
-      $atypes := distinct-values(for $s in $dseg/@xml:id
-        let $link := "#" || $s
+      $atypes :=
+        let $links := for $s in $dseg/@xml:id return "#" || $s
         return
-        for $node in (collection($config:tls-data-root|| "/notes")//tls:ann[.//tls:srcline[@target=$link]] | collection($config:tls-data-root|| "/notes")//tls:span[.//tls:srcline[@target=$link]] ) return 
-        (: need to special case the legacy type ann=swl :)
-        if (local-name($node)='ann') then "nswl" else data($node/@type))
+        distinct-values(
+          for $node in (collection($config:tls-data-root|| "/notes")//tls:ann[.//tls:srcline[@target = $links]] | collection($config:tls-data-root|| "/notes")//tls:span[.//tls:srcline[@target = $links]])
+          (: need to special case the legacy type ann=swl :)
+          return if (local-name($node)='ann') then "nswl" else data($node/@type)
+        )
       ,$log := log:info($tlslib:log, "ready to go")
     return
       (
@@ -760,16 +747,18 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
         <!-- zh --></div>
         <!-- 2024-09-06 this is rubbish, this needs also to be moved to textpanel and not hardcode the width -->
         {for $i in (1 to $colums)
-        return 
+        return
         <div class="col-sm-4" id="top-slot{$i}"><!-- tr -->
-        {if ($show-transl) then ltr:render-translation-submenu($model?textid, "slot"||$i, lrh:get-content-id($model?textid, 'slot'||$i, $tr) , $tr) else ()}
+        {if ($show-transl) then
+          ltr:render-translation-submenu($model?textid, 'slot'||$i, if ($i = 1) then $slot1-id else $slot2-id, $tr)
+        else ()}
         </div>
         }
         </div>
       </div>
       <div id="chunkcol-left" class="col-sm-12">
       {log:info($tlslib:log, "starting chunkcol-left")}
-      {ltp:chunkcol-left($dseg, map:put($model, "zh-width", $zh-width), $tr, $slot1-id, $slot2-id, data($targetseg/@xml:id), 0)}
+      {ltp:chunkcol-left($dseg, map:merge((map:put($model, "zh-width", $zh-width), map{'user': $user, 'usergroups': $usergroups, 'show-transl': $show-transl, 'is-testuser': $is-testuser})), $tr, $slot1-id, $slot2-id, data($targetseg/@xml:id), 0)}
       {log:info($tlslib:log, "done chunkcol-left")}
       </div>
       <div id="chunkcol-right" class="col-sm-0">
@@ -795,8 +784,10 @@ declare function tlslib:display-chunk($targetseg as node(), $model as map(*), $p
        </div> 
        <div class="col-sm-2">
        {
-       if ($dseg/following::tei:seg[last()]/@xml:id) then
-       <button type="button" class="btn" onclick="page_move('{$dseg/following::tei:seg[last()]/@xml:id}&amp;prec={$foll+$prec -2}&amp;foll=0')" title="Go to the last page"><span style="color: blue">Last</span></button>
+       if ($dseg[last()]/following::tei:seg[1]/@xml:id) then
+       let $last-seg := ($targetseg/ancestor::tei:body//tei:seg)[last()]
+       return
+       <button type="button" class="btn" onclick="page_move('{$last-seg/@xml:id}&amp;prec={$foll+$prec -2}&amp;foll=0')" title="Go to the last page"><span style="color: blue">Last</span></button>
        else ()}
        </div> 
         {wd:quick-search-form('title')}
