@@ -4,7 +4,7 @@ xquery version "3.1";
  : Pre-computed table-of-contents per text.
  :
  : Each TEI document in `tls-texts/data` gets a corresponding
- : `tls-texts/toc/<textid>-toc.xml` file holding its div/head
+ : `tls-data/toc/<textid>-toc.xml` file holding its div/head
  : hierarchy. This avoids the expensive live walk in the old
  : `ah:get-toc` (seconds per text on cold cache).
  :
@@ -28,7 +28,7 @@ declare namespace tei="http://www.tei-c.org/ns/1.0";
 declare namespace t="http://hxwd.org/ns/toc/1.0";
 
 declare variable $toc:ns := "http://hxwd.org/ns/toc/1.0";
-declare variable $toc:collection := $config:tls-texts || "/toc";
+declare variable $toc:collection := $config:tls-data-root || "/toc";
 
 declare function toc:file-path($textid as xs:string) as xs:string {
     $toc:collection || "/" || $textid || "-toc.xml"
@@ -127,12 +127,37 @@ declare function toc:build-from-tei($tei as element(tei:TEI), $force as xs:boole
         if (not($force) and $stored-hash = $current-hash and $current-hash != "") then
             "skipped"
         else
-            let $ensure := if (xmldb:collection-available($toc:collection))
-                           then ()
-                           else xmldb:create-collection($config:tls-texts, "toc")
             let $doc := toc:render($tei)
-            let $store := xmldb:store($toc:collection, $textid || "-toc.xml", $doc)
-            return "written"
+            return try {
+                let $ensure := if (xmldb:collection-available($toc:collection))
+                               then ()
+                               else xmldb:create-collection($config:tls-data-root, "toc")
+                let $store := xmldb:store($toc:collection, $textid || "-toc.xml", $doc)
+                return "written"
+            } catch * {
+                "not-stored"
+            }
+};
+
+(:~
+ : Return a toc document for `$textid`, building in-memory if no
+ : persisted copy exists. Writes back to the collection on a best-
+ : effort basis — callers that run as a user without write permission
+ : (e.g. guest/anon over HTTP) still get a usable toc.
+ :)
+declare function toc:get($textid as xs:string) as document-node()? {
+    let $cached := toc:doc($textid)
+    return
+    if (exists($cached)) then $cached
+    else
+        let $tei := (collection($config:tls-texts-root)//tei:TEI[@xml:id=$textid])[1]
+        return
+        if (empty($tei)) then ()
+        else
+            let $status := toc:build-from-tei($tei, false())
+            return
+            if ($status = "not-stored") then document { toc:render($tei) }
+            else toc:doc($textid)
 };
 
 declare function toc:build($textid as xs:string, $force as xs:boolean) as xs:string {

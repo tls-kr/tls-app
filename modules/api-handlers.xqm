@@ -61,12 +61,7 @@ declare function ah:get-toc($request as map(*)) {
     if (session:exists() and contains(session:get-attribute-names(), $textid || "-toc")) then
         session:get-attribute($textid || "-toc")
     else
-        let $toc-doc :=
-            if (exists(toc:doc($textid))) then toc:doc($textid)
-            else (
-                toc:build($textid),
-                toc:doc($textid)
-            )
+        let $toc-doc := toc:get($textid)
         let $html := subsequence(
             for $e in $toc-doc/*:toc/*:entry
             let $seg := string($e/@first-seg)
