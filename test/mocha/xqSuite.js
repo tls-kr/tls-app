@@ -5,7 +5,7 @@ const supertest = require('supertest')
 const expect = require('chai').expect
 
 // The client listening to the eXist REST API
-var client = supertest.agent('http://localhost:8088')
+var client = supertest.agent(process.env.TEST_HOST || 'http://localhost:8088')
 
 describe('xqSuite unit testing', function() {
 
