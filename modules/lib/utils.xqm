@@ -60,7 +60,7 @@ declare function lu:capitalize-first ( $arg as xs:string? )  as xs:string? {
 
 
 declare function lu:get-sense-def($uuid as xs:string){
-let $cnode := collection($config:tls-data-root)//tei:sense[@xml:id=$uuid]
+let $cnode := collection($config:tls-data-root || "/words")//tei:sense[@xml:id=$uuid]
 ,$def := $cnode/tei:def[1]/text()
 return $def
 };
