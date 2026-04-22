@@ -124,6 +124,30 @@ describe('xqSuite unit testing', function() {
         })
     })
 
+    // Regression test for the /db/apps/tls-data root-read permission
+    // issue (see info/log.md 2026-04-22 "Anonymous users see empty SWL
+    // fields"). Uses a seg known to carry real annotations so
+    // lrh:format-swl runs its concept/sense lookup. Asserts the
+    // rendered html contains CJK characters — if the root collection
+    // is not world-readable, the sense lookup returns 0 hits and the
+    // zi/pinyin columns render as empty strings.
+    it('GET api/show_swl_for_lines exposes full SWL content to anonymous users', function(done) {
+      const annotatedSeg = 'KR1e0001_tls_009-572a.13'
+      get('/api/show_swl_for_lines?lines=' + annotatedSeg)
+        .expect(200)
+        .end(function(err, res) {
+          if (err) return done(err)
+          expect(res.body).to.be.an('array').with.length.greaterThan(0)
+          const html = res.body[0].html
+          expect(html, 'row html').to.be.a('string').and.not.empty
+          // Any CJK Unified Ideograph proves the sense lookup returned
+          // at least one entry — i.e. collection(tls-data)//tei:sense[...]
+          // was enumerable from the anonymous session.
+          expect(html, 'zi column populated').to.match(/[\u4e00-\u9fff]/)
+          done()
+        })
+    })
+
     it('GET api/record_visit returns 200', function(done) {
       get('/api/record_visit?location=' + seg).expect(200).end(done)
     })
