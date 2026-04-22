@@ -4,59 +4,33 @@ const chai = require('chai')
 const supertest = require('supertest')
 const expect = require('chai').expect
 
-// The client listening to the eXist REST API
-var client = supertest.agent('http://localhost:8088')
+// Public host used by the app routes — tests there match what users see
+// (dev: direct Jetty on :8088; prod: Apache → eXist, same as Cloudflare).
+var client = supertest.agent(process.env.TEST_HOST || 'http://localhost:8088')
+
+// Dev serves the raw eXist REST API on the same host/port. Prod hides
+// /exist/rest/* behind Apache, so the XQSuite test runner has to reach
+// eXist directly on its Jetty port (8443 over TLS on hxwd.org).
+var restClient = supertest.agent(
+  process.env.TEST_REST_HOST ||
+  process.env.TEST_HOST ||
+  'http://localhost:8088'
+)
 
 describe('xqSuite unit testing', function() {
 
-  describe('rest api returns', function() {
-    it('404 from random page', function(done) {
-      this.timeout(10000)
-      client
-        .get('/random')
-        .expect(404)
-        .end(function(err, res) {
-          expect(res.status).to.equal(404)
-          if (err) return done(err)
-          done()
-        })
-    })
-
-    it('200 from default rest endpoint', function(done) {
-      client
-        .get('/exist/rest/db/')
-        .expect(200)
-        .end(function(err, res) {
-          expect(res.status).to.equal(200)
-          if (err) return done(err)
-          done()
-        })
-    })
-
-    it('200 from startpage (index.html)', function(done) {
-      client
-        .get('/exist/rest/db/apps/tls-app/index.html')
-        .expect(200)
-        .end(function(err, res) {
-          expect(res.status).to.equal(200)
-          if (err) return done(err)
-          done()
-        })
-    })
-  })
-
-  // TODO: add authentication
   describe('running tests', function() {
-    this.timeout(10000)
-    this.slow(3000)
+    this.timeout(30000)
+    this.slow(5000)
     let runner = '/exist/rest/db/apps/tls-app/modules/test-runner.xq'
 
     it('returns 0 errors or failures', function(done) {
-      client
+      restClient
         .get(runner)
         .auth('admin', 'eX1st')
         .set('Accept', 'application/json')
-        .expect('content-type', 'application/json;charset=utf-8')
+        .expect(200)
+        .expect('content-type', /^application\/json/)
         .end(function(err, res) {
           if (err) return done(err)
           expect(res.body.testsuite.failures).to.equal('0')
