@@ -411,7 +411,7 @@ $zi := string-join($node/tei:form/tei:orth/text(), "/")
 (:$py := $node/tei:form[1]/tei:pron[starts-with(@xml:lang, 'zh-Latn')][1]/text(),:)
 ,$link := substring(tokenize($node/tei:link/@target)[2], 2)
 (: 2021-03-17 below we get the data from the CONCEPT entry, rather than the SWL, all we need in the SWL now is the link :)
-, $s := collection($config:tls-data-root)//tei:sense[@xml:id=$link]
+, $s := collection($config:tls-data-root || "/words")//tei:sense[@xml:id=$link]
 , $w := $s/ancestor::tei:entry
 , $czi := string-join($w/tei:form/tei:orth/text(), " / ")
 , $cpy := string-join($w/tei:form/tei:pron[@xml:lang='zh-Latn-x-pinyin']/text(), " / ")
