@@ -86,8 +86,16 @@ describe('xqSuite unit testing', function() {
     const get = (path) =>
       supertest(base).get(path).set('User-Agent', 'mocha-test')
 
-    it('GET api/get_toc returns 200', function(done) {
-      get('/api/get_toc?textid=' + textid).expect(200).end(done)
+    it('GET api/get_toc returns 200 with dropdown entries', function(done) {
+      get('/api/get_toc?textid=' + textid)
+        .expect(200)
+        .end(function(err, res) {
+          if (err) return done(err)
+          // Response is HTML fragment of <a class="dropdown-item"> links.
+          // CH1a0907 has a multi-div body so at least one entry must render.
+          expect(res.text).to.match(/class="dropdown-item"/)
+          done()
+        })
     })
 
     it('GET api/autocomplete returns JSONP payload', function(done) {

@@ -1,25 +1,26 @@
-// ***********************************************
-// This example commands.js shows you how to
-// create various custom commands and overwrite
-// existing commands.
+// Custom Cypress commands for the TLS app.
+
+// Log in as the given user. Defaults pull from cypress.env.json
+// (TEST_USER / TEST_PASSWORD) via cy.env(), which keeps credentials
+// on the test side — unlike Cypress.env() they are never exposed to
+// the application window.
 //
-// For more comprehensive examples of custom
-// commands please read more here:
-// https://on.cypress.io/custom-commands
-// ***********************************************
+// Uses cy.session() so the login POST runs once per session key and
+// the cookie is reused across tests.
 //
-//
-// -- This is a parent command --
-// Cypress.Commands.add("login", (email, password) => { ... })
-//
-//
-// -- This is a child command --
-// Cypress.Commands.add("drag", { prevSubject: 'element'}, (subject, options) => { ... })
-//
-//
-// -- This is a dual command --
-// Cypress.Commands.add("dismiss", { prevSubject: 'optional'}, (subject, options) => { ... })
-//
-//
-// -- This is will overwrite an existing command --
-// Cypress.Commands.overwrite("visit", (originalFn, url, options) => { ... })
+// The login endpoint only accepts application/x-www-form-urlencoded,
+// not multipart/form-data, so cy.request uses `form: true`.
+Cypress.Commands.add('login', (user, password) => {
+  cy.env(['TEST_USER', 'TEST_PASSWORD']).then(({ TEST_USER, TEST_PASSWORD }) => {
+    const u = user || TEST_USER
+    const p = password || TEST_PASSWORD
+    cy.session([u, p], () => {
+      cy.request({
+        method: 'POST',
+        url: '/exist/apps/tls-app/login',
+        form: true,
+        body: { user: u, password: p }
+      }).its('body.user').should('eq', u)
+    })
+  })
+})

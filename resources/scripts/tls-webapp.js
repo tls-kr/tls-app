@@ -43,15 +43,19 @@ $(function() {
   // Record visit asynchronously so the DB write doesn't block the initial render
   var _vsid = new URLSearchParams(window.location.search).get('location');
   if (_vsid) { $.get('api/record_visit?location=' + encodeURIComponent(_vsid)); }
-  // Lazy-load table of contents
-  var $toc = $('#toc-dropdown[data-textid]');
-  if ($toc.length) {
+  // Lazy-load the TOC on first dropdown open. get_toc is a heavyweight
+  // query (cold cache is seconds; prod has hit Cloudflare's 100s limit)
+  // and most readers never open the menu. Fetch on demand: user clicks
+  // 目錄, sees "Loading…", waits while we populate it once.
+  $('#navbar-mulu').one('click', function(){
+    var $toc = $('#toc-dropdown[data-textid]');
+    if (!$toc.length) return;
     $.ajax({
       url: 'api/get_toc?textid=' + encodeURIComponent($toc.data('textid')),
       dataType: 'html',
       success: function(html) { $toc.html(html); }
     });
-  }
+  });
   try {
     // initialize_cit_autocomplete();
   } catch (err) {}

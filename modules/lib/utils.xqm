@@ -11,6 +11,7 @@ xquery version "3.1";
 module namespace lu="http://hxwd.org/lib/utils";
 
 import module namespace config="http://hxwd.org/config" at "../config.xqm";
+import module namespace toc="http://hxwd.org/lib/toc" at "toc.xqm";
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 
@@ -84,7 +85,12 @@ collection($config:tls-texts-root)//tei:TEI[@xml:id=$txtid]
 };
 
 declare function lu:get-seg($sid as xs:string){
-collection($config:tls-texts-root)//tei:seg[@xml:id=$sid]
+    let $textid := toc:textid-for-seg($sid)
+    return
+    if ($textid != "") then
+        (collection($config:tls-texts-root)/tei:TEI[@xml:id=$textid]//tei:seg[@xml:id=$sid])[1]
+    else
+        collection($config:tls-texts-root)//tei:seg[@xml:id=$sid]
 };
 
 declare function lu:next-n-segs($startseg as xs:string, $n as xs:int?){
@@ -108,10 +114,10 @@ declare function lu:can-create-translation-file(){
 
 declare function lu:get-targetsegs($loc as xs:string, $prec as xs:int, $foll as xs:int){
     let $targetseg := if (contains($loc, '_')) then
-       collection($config:tls-texts-root)//tei:seg[@xml:id=$loc]
+       lu:get-seg($loc)
      else
       let $firstdiv := (collection($config:tls-texts-root)//tei:TEI[@xml:id=$loc]//tei:body/tei:div)[1]
-      return if ($firstdiv//tei:seg) then ($firstdiv//tei:seg)[1] else  ($firstdiv/following::tei:seg)[1] 
+      return if ($firstdiv//tei:seg) then ($firstdiv//tei:seg)[1] else  ($firstdiv/following::tei:seg)[1]
 
     let $fseg := if ($foll > 0) then $targetseg/following::tei:seg[fn:position() < $foll] 
         else (),

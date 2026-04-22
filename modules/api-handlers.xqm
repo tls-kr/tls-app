@@ -29,6 +29,7 @@ import module namespace lsi    ="http://hxwd.org/special-interest" at "lib/speci
 import module namespace ltg    ="http://hxwd.org/tags"            at "lib/tags.xqm";
 import module namespace ltx    ="http://hxwd.org/taxonomy"        at "lib/taxonomy.xqm";
 import module namespace lus    ="http://hxwd.org/lib/user-settings" at "lib/user-settings.xqm";
+import module namespace toc    ="http://hxwd.org/lib/toc"         at "lib/toc.xqm";
 
 declare namespace tei="http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
@@ -51,6 +52,8 @@ declare function ah:record-visit($request as map(*)) {
 (:~
  : GET /api/get_toc?textid=<id>
  : Returns the table-of-contents HTML for a text, session-cached per textid.
+ : Reads from the pre-computed toc file; falls back to on-the-fly build
+ : if a toc doesn't yet exist (first load after a new text is added).
  :)
 declare function ah:get-toc($request as map(*)) {
     let $textid := ($request?parameters?textid, "")[1]
@@ -58,19 +61,22 @@ declare function ah:get-toc($request as map(*)) {
     if (session:exists() and contains(session:get-attribute-names(), $textid || "-toc")) then
         session:get-attribute($textid || "-toc")
     else
-        let $body := (collection($config:tls-texts-root)//tei:TEI[@xml:id=$textid]//tei:body)[1]
-        let $toc := subsequence(
-            for $h in ($body/tei:div/tei:head | $body/tei:div/tei:div/tei:head)
-            let $locseg := ($h//tei:seg/@xml:id)[1]
-            let $tid := tokenize($locseg[1], "_")[1]
-            where matches($tid, "^[A-Za-z]")
+        let $toc-doc :=
+            if (exists(toc:doc($textid))) then toc:doc($textid)
+            else (
+                toc:build($textid),
+                toc:doc($textid)
+            )
+        let $html := subsequence(
+            for $e in $toc-doc/*:toc/*:entry
+            let $seg := string($e/@first-seg)
             return
-            <a class="dropdown-item" title="{$locseg}"
-               href="textview.html?location={$locseg}&amp;prec=0&amp;foll=30">{$h//text()}</a>
+            <a class="dropdown-item" title="{$seg}"
+               href="textview.html?location={$seg}&amp;prec=0&amp;foll=30">{string($e/@title)}</a>
             , 1, 100)
         return (
-            if (session:exists()) then session:set-attribute($textid || "-toc", $toc) else (),
-            $toc
+            if (session:exists()) then session:set-attribute($textid || "-toc", $html) else (),
+            $html
         )
 };
 
