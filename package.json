@@ -4,7 +4,8 @@
   "description": "TLS - 漢學文典",
   "scripts": {
     "test": "mocha test/mocha/ --recursive --exit",
-    "cypress": "cypress open",
+    "cypress": "env -u ELECTRON_RUN_AS_NODE cypress open",
+    "cypress:run": "env -u ELECTRON_RUN_AS_NODE cypress run --e2e",
     "build": "gulp && ant"
   },
   "repository": {
@@ -28,7 +29,7 @@
     "browser-sync": "^2.29.3",
     "chai": "^4.3.10",
     "chai-xml": "^0.4.1",
-    "cypress": "^13.3.2",
+    "cypress": "^15.14.1",
     "del": "^7.1.0",
     "fs-extra": "^11.1.1",
     "gulp": "^4.0.2",
