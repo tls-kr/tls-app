@@ -16,13 +16,17 @@ describe('textview.html', function () {
     cy.get(`#${CSS.escape(SEG)}`).should('exist')
   })
 
-  it('populates the TOC dropdown from api/get_toc', function () {
-    // Initially the template renders a "Loading…" placeholder.
-    // tls-webapp.js fires api/get_toc on ready; the handler replaces
-    // the inner HTML with <a class="dropdown-item"> entries.
+  it('lazy-loads the TOC dropdown on first click', function () {
+    // TOC is now fetched on demand — tls-webapp.js binds a one-shot
+    // click handler on #navbar-mulu that fires api/get_toc and swaps
+    // the "Loading…" placeholder for <a class="dropdown-item"> entries.
+    // Before the click, no dropdown items should have been loaded.
     cy.get('#toc-dropdown')
       .should('have.attr', 'data-textid', TEXTID)
-      .find('a.dropdown-item', { timeout: 15000 })
+      .find('a.dropdown-item')
+      .should('not.exist')
+    cy.get('#navbar-mulu').click()
+    cy.get('#toc-dropdown a.dropdown-item', { timeout: 30000 })
       .should('have.length.greaterThan', 0)
   })
 
