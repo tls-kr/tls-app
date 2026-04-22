@@ -83,29 +83,44 @@ declare function lus:settings-external($node as node()*, $model as map(*)){
 };
 
 (:~
- : this creates a new empty stub for various user settings (if necessary) and returns the doc
+ : this creates a new empty stub for various user settings (if necessary) and returns the doc.
+ : The result is cached in the HTTP session so repeated calls within the same request (or across
+ : requests in the same session) avoid re-reading from the database.
+ : eXist stores node references in sessions, so in-place XQuery Update calls on the returned
+ : document are automatically reflected in the cached reference without any explicit invalidation.
 :)
-declare function lus:get-settings() {
+declare function lus:get-settings() as document-node()? {
 let $user := sm:id()//sm:real/sm:username/text()
-, $filename := "settings.xml"
-,$docpath := $config:tls-user-root || $user || "/" || $filename
-let $doc := try{
-  if (not (doc-available($docpath))) then
-   doc(xmldb:store($config:tls-user-root || $user, $filename, 
-<settings xmlns="http://hxwd.org/ns/1.0" xml:id="{$user}-settings">
-<section type="bookmarks"></section>
-<section type="slot-config"></section>
-<section type="search"></section>
-</settings>)) 
- else doc($docpath) } catch * {()}
-return 
-if ($doc//tls:section[@type="search"]) then $doc
-else (
-try {
-update insert <section xmlns="http://hxwd.org/ns/1.0" type="search"></section> into $doc/tls:settings
-} catch * {()}, 
-$doc
-)
+let $cache-key := "user-settings-" || $user
+let $cached := try {
+  if (session:exists() and contains(session:get-attribute-names(), $cache-key))
+  then session:get-attribute($cache-key)
+  else ()
+} catch * { () }
+return
+if (exists($cached)) then $cached
+else
+  let $filename := "settings.xml"
+  , $docpath := $config:tls-user-root || $user || "/" || $filename
+  let $raw := try{
+    if (not (doc-available($docpath))) then
+     doc(xmldb:store($config:tls-user-root || $user, $filename,
+  <settings xmlns="http://hxwd.org/ns/1.0" xml:id="{$user}-settings">
+  <section type="bookmarks"></section>
+  <section type="slot-config"></section>
+  <section type="search"></section>
+  </settings>))
+   else doc($docpath) } catch * {()}
+  let $doc :=
+    if ($raw//tls:section[@type="search"]) then $raw
+    else (
+      try { update insert <section xmlns="http://hxwd.org/ns/1.0" type="search"></section> into $raw/tls:settings } catch * {()},
+      $raw
+    )
+  return (
+    try { if (session:exists()) then session:set-attribute($cache-key, $doc) else () } catch * { () },
+    $doc
+  )
 };
 
 (:~ for a given context, return possible items with their default values

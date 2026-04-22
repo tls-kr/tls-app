@@ -40,10 +40,22 @@ $(function() {
   }
   catch (err) {}
   get_swls();
+  // Record visit asynchronously so the DB write doesn't block the initial render
+  var _vsid = new URLSearchParams(window.location.search).get('location');
+  if (_vsid) { $.get('api/record_visit?location=' + encodeURIComponent(_vsid)); }
+  // Lazy-load table of contents
+  var $toc = $('#toc-dropdown[data-textid]');
+  if ($toc.length) {
+    $.ajax({
+      url: 'api/get_toc?textid=' + encodeURIComponent($toc.data('textid')),
+      dataType: 'html',
+      success: function(html) { $toc.html(html); }
+    });
+  }
   try {
     // initialize_cit_autocomplete();
-  } catch (err) {}  
-});            
+  } catch (err) {}
+});
 
 
 
@@ -146,7 +158,7 @@ function set_rightword(obj){
   $.ajax({
   type : "GET",
   dataType : "html",
-  url : "api/responder.xql?func=dialogs:word-rel-dialog&lw="+leftword+"&lwlineid="+lw_id+"&lwconcept="+lwobj.concept+"&lwconceptid="+lwobj.concept_id+"&lwwid="+lwobj.wid+"&rw="+rightword+"&rwlineid="+rw_id+"&rwconcept="+obj.concept+"&rwconceptid="+obj.concept_id+"&rwwid="+obj.wid+"&rwoffset="+pos+"&lwoffset="+lwpos, 
+  url : "api/dialogs_word_rel_dialog?lw="+leftword+"&lwlineid="+lw_id+"&lwconcept="+lwobj.concept+"&lwconceptid="+lwobj.concept_id+"&lwwid="+lwobj.wid+"&rw="+rightword+"&rwlineid="+rw_id+"&rwconcept="+obj.concept+"&rwconceptid="+obj.concept_id+"&rwwid="+obj.wid+"&rwoffset="+pos+"&lwoffset="+lwpos,
   success : function(resp){
 
     $('#remoteDialog').html(resp);
@@ -158,9 +170,9 @@ function set_rightword(obj){
 
 function change_word_rel(wrid){
     $.ajax({
-     type : "GET",
-     dataType : "html",  
-     url : "api/responder.xql?func=change-word-relation&wrid="+ wrid, 
+     type : "POST",
+     dataType : "html",
+     url : "api/change_word_relation?wrid="+ wrid,
      success : function(resp){
      if (resp.length > 2){
          toastr.info(resp, "HXWD says:");     
@@ -176,8 +188,8 @@ function save_wr(obj){
   obj.relid = $("#rel-type").val()
   obj.note_inst = $("#note-inst").val()
   obj.note = $("#input-note").val()
-  $.get(
-   "api/responder.xql?func=save-wr", obj,
+  $.post(
+   "api/save_wr", obj,
     function(resp){
     $('#word-rel-dialog').hide();
     toastr.info("Relation type has been saved.", "漢學文典 says:");
@@ -187,9 +199,9 @@ function save_wr(obj){
 
 function delete_word_relation(wrid){
     $.ajax({
-     type : "GET",
-     dataType : "json",  
-     url : "api/responder.xql?func=delete-word-relation&wrid="+ wrid, 
+     type : "POST",
+     dataType : "json",
+     url : "api/delete_word_relation?wrid="+ wrid,
      success : function(resp){
      if (resp[0].startsWith("Error")){
          toastr.error(resp, "HXWD says:");     
@@ -239,10 +251,22 @@ function page_move(target){
 
 
 function get_swls(){
+    var line_ids = [];
     $(".swlid").each(function () {
-    var swid = $(this).attr('id');
-    var line_id = swid.substr(0, swid.length - 4)
-    show_swls_for_line(line_id);
+        var swid = $(this).attr('id');
+        line_ids.push(swid.substr(0, swid.length - 4));
+    });
+    if (line_ids.length === 0) { return; }
+    $.ajax({
+        type: "GET",
+        dataType: "json",
+        url: "api/show_swl_for_lines?lines=" + line_ids.join(","),
+        success: function(resp){
+            $.each(resp, function(i, item){
+                var lid = item.id.split(".").join("\\.");
+                $('#' + lid + '-swl').html(item.html).show();
+            });
+        }
     });
 }
 
@@ -252,7 +276,7 @@ function test_segs1(){
   $.ajax({
   type : "GET",
   dataType : "json",
-  url : "api/get_swl_for_page.xql"+location, 
+  url : "api/get_swl_for_page"+location, 
   success : function(resp){
   for (index = 0; index < resp.length; ++index) {
     console.log(resp[index]['id']);
@@ -272,7 +296,7 @@ function get_swl_for_page(){
   $.ajax({
   type : "GET",
   dataType : "json",
-  url : "api/get_swl_for_page.xql"+location, 
+  url : "api/get_swl_for_page"+location, 
   success : function(resp){
   for (index = 0; index < resp.length; ++index) {
     console.log(resp[index]['id']);
@@ -329,7 +353,7 @@ function display_pastebox(slot){
   $.ajax({
   type : "GET",
   dataType : "html",
-  url : "api/responder.xql?func=dialogs:pastebox", 
+  url : "api/dialogs_pastebox",
   success : function(resp){
     var new_height = $("#"+slot).outerHeight();
     var new_width = $("#"+slot).outerWidth();
@@ -371,7 +395,7 @@ function more_display_lines(lineid, tab){
   $.ajax({
   type : "GET",
   dataType : "html",
-  url : "api/responder.xql?lineid="+thisid+"&cnt="+cnt+"&func=morelines", 
+  url : "api/morelines?lineid="+thisid+"&cnt="+cnt,
   success : function(resp){
       $("#"+lineid+"-swl").parent().after(resp);
       console.log("LID", lineid, plineid);
@@ -415,7 +439,7 @@ function get_facs_for_page(slot, pbfacs, pbed, segid){
    $.ajax({
    type : "GET",
    dataType : "html",
-   url : "api/responder.xql?func=get-facs-for-page&pb="+pbfacs+"&segid="+location+"&pbed="+pbed+"&slot="+slot+"&left="+new_left+"&width="+new_width+"&height="+new_height, 
+   url : "api/get_facs_for_page?pb="+pbfacs+"&segid="+location+"&pbed="+pbed+"&slot="+slot+"&left="+new_left+"&width="+new_width+"&height="+new_height,
    success : function(resp){
    // xxx###
    $('#fac'+slot).html(resp);
@@ -433,7 +457,7 @@ function get_facs_for_page(slot, pbfacs, pbed, segid){
 function move_to_page(slot){
     page = $('#current-page-'+slot).html()
     var location = $('.zh')[0].attributes['id'].nodeValue;
-    $.get("api/responder.xql?func=move-to-page&page="+page+"&location="+location,
+    $.get("api/move_to_page?page="+page+"&location="+location,
     function(resp){
 //      console.log(resp)
       page_move(resp)    
@@ -462,7 +486,7 @@ function get_tr_for_page(slot, myid, ai){
    $.ajax({
    type : "GET",
    dataType : "html",
-   url : "api/get_tr_for_page.xql?location="+location+"&prec=0&foll="+foll+"&slot="+slot+"&content-id="+myid+"&ai="+ai, 
+   url : "api/get_tr_for_page?location="+location+"&prec=0&foll="+foll+"&slot="+slot+"&content-id="+myid+"&ai="+ai, 
    success : function(resp){
     var obj = JSON.parse(resp);
     for (var prop in obj) {
@@ -497,7 +521,7 @@ function new_translation(slot){
   $.ajax({
   type : "GET",
   dataType : "html",
-  url : "api/new_translation.xql"+location+"&slot="+slot, 
+  url : "api/new_translation"+location+"&slot="+slot, 
   success : function(resp){
     $('#remoteDialog').html(resp);
     $('#new-translation-dialog').modal('show');
@@ -525,7 +549,7 @@ function store_new_translation(slot, textid, trid){
   $.ajax({
   type : "GET",
   dataType : "html",
-  url : "api/store_new_translation.xql?lang="+lang+"&textid="+textid+"&transl="+transl+"&trtitle="+trtitle+"&bibl="+bibl+"&vis="+vis+"&copy="+copy+"&type="+type+"&rel="+rel+"&trid="+ trid, 
+  url : "api/store_new_translation?lang="+lang+"&textid="+textid+"&transl="+transl+"&trtitle="+trtitle+"&bibl="+bibl+"&vis="+vis+"&copy="+copy+"&type="+type+"&rel="+rel+"&trid="+ trid, 
   success : function(resp){
   // todo : reload the selector with latest information
   $('#new-translation-dialog').modal('hide');
@@ -542,7 +566,7 @@ function reload_selector(slot, newid){
   $.ajax({
   type : "GET",
   dataType : "html",
-  url : "api/responder.xql"+location+"&slot="+slot+"&content-id="+newid+"&func=ltr:reload-selector", 
+  url : "api/ltr_reload_selector"+location+"&slot="+slot+"&content-id="+newid,
   success : function(resp){
   $("#top-"+slot).html(resp)
   }
@@ -551,9 +575,9 @@ function reload_selector(slot, newid){
 
 function save_att_tr(obj){
   $.ajax({
-  type : "PUT",
+  type : "POST",
   data : obj,
-  url : "api/responder.xql?func=ltr:save-att-tr", 
+  url : "api/ltr_save_att_tr",
   success : function(resp){
   $('#'+obj.att_id+'-tr').html(obj.tr);
   toastr.info("The translation has been saved.", "HXWD says:")  
@@ -581,7 +605,7 @@ function goto_translation_seg(trid, dir){
   $.ajax({
   type : "GET",
   dataType : "html",
-  url : "api/responder.xql?func=goto-translation-seg&trid="+trid+"&dir="+dir, 
+  url : "api/goto_translation_seg?trid="+trid+"&dir="+dir,
   success : function(resp){
     if (resp.length > 0) {
      window.location = resp;
@@ -594,7 +618,7 @@ function get_sf(senseid, type){
   $.ajax({
   type : "GET",
   dataType : "html",
-  url : "api/get_sf.xql?senseid=" + senseid + "&type=" + type, 
+  url : "api/get_sf?senseid=" + senseid + "&type=" + type, 
   success : function(resp){
     $('#remoteDialog').html(resp);
     initialize_sf_autocomplete(type);  
@@ -623,7 +647,7 @@ function get_more_lines(el, count){
   $.ajax({
   type : "GET",
   dataType : "html",
-  url : "api/responder.xql?func=get-more-lines&cnt="+count+"&len="+len+"&line="+csel,
+  url : "api/get_more_lines?cnt="+count+"&len="+len+"&line="+csel,
   success : function(resp){
   console.log(resp)
   if (cnt <0) {
@@ -652,7 +676,7 @@ var word = $("#swl-query-span").text();
   $.ajax({
   type : "GET",
   dataType : "html",
-  url : "api/get_guangyun.xql?char=" + w+"&gyonly="+gyonly, 
+  url : "api/get_guangyun?char=" + w+"&gyonly="+gyonly, 
   success : function(resp){
   console.log(resp)
   $('#guangyun-group').append(resp)
@@ -691,7 +715,7 @@ function show_att(uid){
   $.ajax({
   type : "GET",
   dataType : "html",  
-  url : "api/show_att.xql?uid=" + uid, 
+  url : "api/show_att?uid=" + uid, 
   success : function(resp){
   $('#'+uid+'-resp').html(resp)
   }
@@ -703,7 +727,7 @@ function show_wr(uid, extra){
   $.ajax({
   type : "GET",
   dataType : "html",  
-  url : "api/responder.xql?func=show-wr&uid=" + uid, 
+  url : "api/show_wr?uid=" + uid,
   success : function(resp){
   $('#'+uid+'-'+extra+'-resp').html(resp)
   }
@@ -717,7 +741,7 @@ function show_use_of(type, uid){
   $.ajax({
   type : "GET",
   dataType : "html",  
-  url : "api/show_use_of.xql?uid=" + uid + "&type=" + type, 
+  url : "api/show_use_of?uid=" + uid + "&type=" + type, 
   success : function(resp){
   $('#'+uid+'-resp').html(resp)
   }
@@ -730,7 +754,7 @@ function show_swls_for_line(line_id){
   $.ajax({
   type : "GET",
   dataType : "html",
-  url : "api/show_swl_for_line.xql?line=" + line_id, 
+  url : "api/show_swl_for_line?line=" + line_id, 
   success : function(resp){
   line_id = line_id.split(".").join("\\.")
 //  console.log("Displaying response at: " + '#'+line_id+'-swl');
@@ -753,9 +777,9 @@ do_save_swl_line(sense_id, line_id, pos, line, tit);
 function do_save_swl_line(sense_id, line_id, pos, line, tit){
 toastr.info("Saving the attribution...", "HXWD says:")
 $.ajax({
-  type : "PUT",
+  type : "POST",
   dataType : "html",
-  url : "api/save_swl.xql?line-id="+line_id+"&line="+line+"&sense="+sense_id+"&pos="+pos+"&tit="+tit,
+  url : "api/save_swl?line-id="+line_id+"&line="+line+"&sense="+sense_id+"&pos="+pos+"&tit="+tit,
   success : function(resp){
   hide_swl_form("#editSWLDialog");
   console.log("Hiding form");
@@ -792,16 +816,16 @@ function show_new_concept(mode, py){
   var line_id= $( "#swl-line-id-span" ).text();  
   var line = $( "#swl-line-text-span" ).text();
   if (mode == "rhet-dev"){
-       var uri = "api/get_swl.xql?type=rhet-dev&word="+word+"&concept="+py+"&line-id="+line_id+"&line="+line;       
+       var uri = "api/get_swl?type=rhet-dev&word="+word+"&concept="+py+"&line-id="+line_id+"&line="+line;       
   } else if (mode == "new"){
       cname = prompt("Please enter the name of the new concept:", "");
       if (cname){
-       var uri = "api/get_swl.xql?type=concept&word="+word+"&concept="+cname+"&line-id="+line_id+"&line="+line;      
+       var uri = "api/get_swl?type=concept&word="+word+"&concept="+cname+"&line-id="+line_id+"&line="+line;      
        } else {var uri = null}
   } else if (mode == "existing") {
-      var uri = "api/get_swl.xql?type=concept&word="+word+"&mode="+mode+"&line-id="+line_id+"&line="+line;
+      var uri = "api/get_swl?type=concept&word="+word+"&mode="+mode+"&line-id="+line_id+"&line="+line;
   } else {
-      var uri = "api/get_swl.xql?type=concept&word="+word+"&concept="+mode+"&line-id="+line_id+"&line="+line+"&py="+py;      
+      var uri = "api/get_swl?type=concept&word="+word+"&concept="+mode+"&line-id="+line_id+"&line="+line+"&py="+py;      
   }   
   if (uri){
   $.ajax({
@@ -843,7 +867,7 @@ function show_newsw(para){
   $.ajax({
   type : "GET",
   dataType : "html",  
-  url : "api/get_swl.xql?type=word&concept="+para.concept+"&word="+word+"&wid="+para.wid+"&py="+para.py+"&concept-id="+para.concept_id+"&line-id="+line_id+"&line="+line, 
+  url : "api/get_swl?type=word&concept="+para.concept+"&word="+word+"&wid="+para.wid+"&py="+para.py+"&concept-id="+para.concept_id+"&line-id="+line_id+"&line="+line, 
   success : function(resp){
   $('#remoteDialog').html(resp);
   console.log("Initializing autocomplete functions");
@@ -874,9 +898,9 @@ function save_newsw(){
           var ndef = prompt("No syntactic function '" + synfunc_val + "' defined.  If you want to define a new one, please enter the definition here:") 
           if (ndef) {
             $.ajax({
-              type: "PUT",
+              type: "POST",
               datatype : "json",
-              url : "api/save_sf.xql?sf_val="+synfunc_val+"&sf_id=xxx&def="+ndef+"&type=syn-func",
+              url : "api/save_sf?sf_val="+synfunc_val+"&sf_id=xxx&def="+ndef+"&type=syn-func",
               success : function(resp){
                 toastr.info("New syntactic function has been saved.", "HXWD says:");
                 $("#synfunc-id-span" ).text(resp);
@@ -895,10 +919,10 @@ function save_newsw(){
   } else {
 
   $.ajax({
-  type : "PUT",
+  type : "POST",
   dataType : "json",
   async : false,
-  url : "api/save_newsw.xql?concept="+concept_id+"&wid="+word_id+"&word="+word+"&py="+py+"&concept-val="+concept_val+"&synfunc="+synfunc_id+"&synfunc-val="+synfunc_val+"&semfeat="+semfeat_id+"&semfeat-val="+semfeat_val+"&def="+def_val,
+  url : "api/save_newsw?concept="+concept_id+"&wid="+word_id+"&word="+word+"&py="+py+"&concept-val="+concept_val+"&synfunc="+synfunc_id+"&synfunc-val="+synfunc_val+"&semfeat="+semfeat_id+"&semfeat-val="+semfeat_val+"&def="+def_val,
   success : function(resp){
     if (resp.sense_id == "not_saved"){
     toastr.error("Could not save: " + resp.result, "HXWD says:")        
@@ -959,9 +983,9 @@ function save_to_concept(){
   } else {
   // need to show the selected stuff again to the user to confirm
   $.ajax({
-  type : "PUT",
+  type : "POST",
   dataType : "json",
-  url : "api/save_to_concept.xql?line="+line_id+"&word="+word+"&concept="+concept_id+"&concept-val="+concept_val+"&synfunc="+synfunc_id+"&synfunc-val="+synfunc_val+"&semfeat="+semfeat_id+"&semfeat-val="+semfeat_val+"&def="+def_val+"&guangyun-id="+guangyun_id,
+  url : "api/save_to_concept?line="+line_id+"&word="+word+"&concept="+concept_id+"&concept-val="+concept_val+"&synfunc="+synfunc_id+"&synfunc-val="+synfunc_val+"&semfeat="+semfeat_id+"&semfeat-val="+semfeat_val+"&def="+def_val+"&guangyun-id="+guangyun_id,
   success : function(resp){
   //  var strconfirm = confirm("Saved concept. Do you want to save attribution now?");
   //  if (strconfirm == true) {
@@ -1065,7 +1089,7 @@ function get_sw(sel, xid, line){
   $.ajax({
   type : "GET",
   dataType : "html",
-  url : "api/get_sw.xql?word=" + sel+"&context="+context+"&domain="+domain+"&leftword="+leftword, 
+  url : "api/get_sw?word=" + sel+"&context="+context+"&domain="+domain+"&leftword="+leftword, 
   success : function(resp){
   $('#swl-select').html(resp)
   }
@@ -1076,7 +1100,7 @@ function get_sw(sel, xid, line){
       $.ajax({
       type : "GET",
       dataType : "html",
-      url : "api/responder.xql?func=ltr:get-other-translations&line="+line+"&seg="+xid+"&slot1="+slot1, 
+      url : "api/ltr_get_other_translations?line="+line+"&seg="+xid+"&slot1="+slot1,
       success : function(resp){
       $('#swl-select').html(resp)
       $('#new-att-detail').html("");
@@ -1121,7 +1145,7 @@ function modify_rel_display(){
       $.ajax({
       type : "GET",
       dataType : "html",
-      url : "api/responder.xql?func=tlslib:word-rel-table&reltype="+reltype+"&mode="+mode, 
+      url : "api/tlslib_word_rel_table?reltype="+reltype+"&mode="+mode,
       success : function(resp){
       $('#rel-table').html(resp);
       }
@@ -1218,7 +1242,7 @@ function initialize_sf_autocomplete(type){
       },
       source: function( request, response ) {
         $.ajax( {
-          url: "api/autocomplete.xql",
+          url: "api/autocomplete",
           dataType: "jsonp",
           data: {
             term: request.term,
@@ -1243,7 +1267,7 @@ function initialize_autocomplete_nc(tp){
       appendTo: "#select-concept-group-nc",
       source: function( request, response ) {
         $.ajax( {
-          url: "api/autocomplete.xql",
+          url: "api/autocomplete",
           dataType: "jsonp",
           data: {
             term: request.term.toUpperCase(),
@@ -1267,7 +1291,7 @@ function initialize_autocomplete_type(tp){
       appendTo: "#select-concept-group",
       source: function( request, response ) {
         $.ajax( {
-          url: "api/autocomplete.xql",
+          url: "api/autocomplete",
           dataType: "jsonp",
           data: {
             term: request.term,
@@ -1292,7 +1316,7 @@ function initialize_autocomplete(){
       appendTo: "#select-concept-group",
       source: function( request, response ) {
         $.ajax( {
-          url: "api/autocomplete.xql",
+          url: "api/autocomplete",
           dataType: "jsonp",
           data: {
             term: request.term.toUpperCase(),
@@ -1314,7 +1338,7 @@ function initialize_autocomplete(){
       appendTo: "#select-synfunc-group",
       source: function( request, response ) {
         $.ajax( {
-          url: "api/autocomplete.xql",
+          url: "api/autocomplete",
           dataType: "jsonp",
           data: {
             term: request.term,
@@ -1336,7 +1360,7 @@ function initialize_autocomplete(){
       appendTo: "#select-semfeat-group",
       source: function( request, response ) {
         $.ajax( {
-          url: "api/autocomplete.xql",
+          url: "api/autocomplete",
           dataType: "jsonp",
           data: {
             term: request.term,
@@ -1360,7 +1384,7 @@ function initialize_autocomplete_rd(){
       appendTo: "#rhetdev",
       source: function( request, response ) {
         $.ajax( {
-          url: "api/autocomplete.xql",
+          url: "api/autocomplete",
           dataType: "jsonp",
           data: {
             term: request.term.toUpperCase(),
@@ -1384,7 +1408,7 @@ function initialize_autocomplete_bib(n){
       appendTo: "#input-bibl-group-id-"+n,
       source: function( request, response ) {
         $.ajax( {
-          url: "api/autocomplete.xql",
+          url: "api/autocomplete",
           dataType: "jsonp",
           data: {
             term: request.term.toUpperCase(),
@@ -1446,7 +1470,7 @@ $(document).ajaxComplete(function() {
 function get_atts(target, div_id){
    console.log(target)
    $.ajax( {
-    url: "api/get_text_preview.xql?loc="+target,
+    url: "api/get_text_preview?loc="+target,
     dataType: "html",
     success: function( data ) {
     $('#'+div_id).css("width", "400px");
@@ -1497,7 +1521,7 @@ function sendLoginMail(){
   $.ajax({
   type : "GET",
   dataType : "html",  
-  url: 'api/responder.xql?func=sgn:send-reminder-mail&email='+email,
+  url: 'api/sgn_send_reminder_mail?email='+email,
   success : function(resp){
      $("#settingsDialog").modal('hide');
      $("#loginDialog").modal('hide');
@@ -1512,8 +1536,8 @@ $('.rating').on('rating:change', function(event, value, caption) {
         console.log(value);
         console.log(this.id);
   $.ajax({
-  type : "PUT",
-  url : "api/save_ratings.xql?textid="+this.id+"&rating="+value,
+  type : "POST",
+  url : "api/save_ratings?textid="+this.id+"&rating="+value,
   success : function(resp){
     toastr.info("Your rating has been saved.", "HXWD says:")
   },
@@ -1528,8 +1552,8 @@ $('.rating').on('rating:clear', function(event, value, caption) {
         console.log(value);
         console.log(this.id);
   $.ajax({
-  type : "PUT",
-  url : "api/save_ratings.xql?textid="+this.id+"&delete=y",
+  type : "POST",
+  url : "api/save_ratings?textid="+this.id+"&delete=y",
   success : function(resp){
     toastr.info("Your rating has been cleared.", "HXWD says:")
   },
@@ -1544,8 +1568,8 @@ $('.starRating').on('click', function(event, value, caption) {
         console.log(value);
         console.log(this.id);
   $.ajax({
-  type : "PUT",
-  url : "api/save_ratings.xql?textid="+this.id+"&rating="+value,
+  type : "POST",
+  url : "api/save_ratings?textid="+this.id+"&rating="+value,
   success : function(resp){
     toastr.info("Your rating has been saved.", "HXWD says:")
   },
@@ -1564,7 +1588,7 @@ function search_and_att(sense_id){
   $.ajax({
   type : "GET",
   dataType : "html",  
-  url : "api/search_att.xql?sense-id=" + sense_id, 
+  url : "api/search_att?sense-id=" + sense_id, 
   success : function(resp){
   $('#'+sense_id+'-resp1').html(resp)
   }
@@ -1582,7 +1606,7 @@ function edit_swl(uid){
   $.ajax({
   type : "GET",
   dataType : "html",  
-  url : "api/get_swl.xql?type=swl&uid=" + uid, 
+  url : "api/get_swl?type=swl&uid=" + uid, 
   success : function(resp){
   $('#remoteDialog').html(resp);
   console.log("Initializing autocomplete functions");
@@ -1604,9 +1628,9 @@ function save_sset(sets){
 function update_setting(setting, val_el){
   var value =  $('#' + val_el).val();
   $.ajax({
-  type : "GET",
-  dataType : "html",  
-  url : "api/responder.xql?func=tlslib:save-setting&setting=" + setting + "&value="+value, 
+  type : "POST",
+  dataType : "html",
+  url : "api/tlslib_save_setting?setting=" + setting + "&value="+value,
   success : function(resp){
      if (resp.startsWith("OK")) {
        toastr.info("Setting has been changed.", "HXWD says:");
@@ -1651,9 +1675,9 @@ function us_save_setting(section, elid, action){
    }
 //   section = 'display-options'
    $.ajax({
-   type : "GET",
-   dataType : "html",  
-   url : "api/responder.xql?func=lus:set-user-item&section="+section+"&type=" + elid + "&preference="+value + "&action="+action, 
+   type : "POST",
+   dataType : "html",
+   url : "api/lus_set_user_item?section="+section+"&type=" + elid + "&preference="+value + "&action="+action,
    success : function(resp){
      if (resp.startsWith("OK")) {
        toastr.info("Setting has been changed.", "HXWD says:");
@@ -1671,7 +1695,7 @@ function merge_word(word, wid, count, type){
   $.ajax({
   type : "GET",
   dataType : "html",  
-  url : "api/responder.xql?func=dialogs:merge-word&word=" + word+"&wid="+wid+"&count="+count+"&type="+type, 
+  url : "api/dialogs_merge_word?word=" + word+"&wid="+wid+"&count="+count+"&type="+type,
   success : function(resp){
   $('#remoteDialog').html(resp);
   $('#merge-word-dialog').modal('show');
@@ -1683,9 +1707,9 @@ function do_merge_word(wid){
  // $("#select-target option:selected" ).text();
   var target =  $('#select-target').val();
   $.ajax({
-  type : "GET",
-  dataType : "html",  
-  url : "api/responder.xql?func=tlslib:merge-sw-word&wid=" + wid + "&target="+target, 
+  type : "POST",
+  dataType : "html",
+  url : "api/tlslib_merge_sw_word?wid=" + wid + "&target="+target,
   success : function(resp){
      console.log(resp)
      if (resp.startsWith("OK")) {
@@ -1710,7 +1734,7 @@ function move_word(word, wid, count, type){
   $.ajax({
   type : "GET",
   dataType : "html",  
-  url : "api/responder.xql?func=dialogs:move-word&word=" + word+"&wid="+wid+"&count="+count+"&type="+type, 
+  url : "api/dialogs_move_word?word=" + word+"&wid="+wid+"&count="+count+"&type="+type,
   success : function(resp){
   $('#remoteDialog').html(resp);
   console.log("Initializing autocomplete functions");
@@ -1730,9 +1754,9 @@ function do_move_word(word, wid, type){
       $("#select-concept").val("")
   } else {
   $.ajax({
-  type : "GET",
-  dataType : "json",  
-  url : "api/responder.xql?func=tlslib:move-word-to-concept&word=" + word + "&src-concept="+sc+"&trg-concept="+tc+"&type="+type+"&wid="+wid, 
+  type : "POST",
+  dataType : "json",
+  url : "api/tlslib_move_word_to_concept?word=" + word + "&src-concept="+sc+"&trg-concept="+tc+"&type="+type+"&wid="+wid,
   success : function(resp){
      console.log(resp.uuid, resp.mes)
      if (resp.uuid) {
@@ -1751,9 +1775,9 @@ function do_move_word(word, wid, type){
 
 function move_word_done(uuid, word){
   $.ajax({
-  type : "GET",
-  dataType : "html",  
-  url : "api/responder.xql?func=tlslib:move-done&uuid=" + uuid, 
+  type : "POST",
+  dataType : "html",
+  url : "api/tlslib_move_done?uuid=" + uuid,
   success : function(resp){
 //     console.log(resp.uuid)
      toastr.info("Move of "+ word +" has been completed.", "HXWD says:");
@@ -1767,7 +1791,7 @@ function delete_word_from_concept(wid, type, ref){
     $.ajax({
      type : "GET",
      dataType : "html",  
-     url : "api/delete_word_from_concept.xql?wid=" + wid+"&type="+type+"&ref="+ref, 
+     url : "api/delete_word_from_concept?wid=" + wid+"&type="+type+"&ref="+ref, 
      success : function(resp){
      if (resp.length > 2){
          toastr.info(resp, "HXWD says:");     
@@ -1781,9 +1805,9 @@ function delete_word_from_concept(wid, type, ref){
 
 function modify_category(cid, action){
     $.ajax({
-     type : "PUT",
-     dataType : "html",  
-     url : "api/responder.xql?func=ltx:modify-category&cid="+cid+"&action="+action, 
+     type : "POST",
+     dataType : "html",
+     url : "api/ltx_modify_category?cid="+cid+"&action="+action,
      success : function(resp){
      if (resp.length > 2){
          toastr.info(resp, "HXWD says:");     
@@ -1801,9 +1825,9 @@ function incr_rating(type, uid){
     var strconfirm = true 
     if (strconfirm == true) {
      $.ajax({
-     type : "GET",
-     dataType : "html",  
-     url : "api/responder.xql?func=incr-rating&uid="+uid+"&type="+type,
+     type : "POST",
+     dataType : "html",
+     url : "api/incr_rating?uid="+uid+"&type="+type,
      success : function(resp){
    //  save_this_swl(resp.sense_id)
       var line_id = resp.replace(/"/g, '')
@@ -1825,7 +1849,7 @@ function delete_swl(type, uid){
      $.ajax({
      type : "GET",
      dataType : "html",  
-     url : "api/delete_swl.xql?type="+type+"&uid=" + uid, 
+     url : "api/delete_swl?type="+type+"&uid=" + uid, 
      success : function(resp){
    //  save_this_swl(resp.sense_id)
       var line_id = resp.replace(/"/g, '')
@@ -1843,7 +1867,7 @@ function review_swl_dialog(uid){
      $.ajax({
      type : "GET",
      dataType : "html",  
-     url : "api/review_swl_dialog.xql?type=swl&uid=" + uid, 
+     url : "api/review_swl_dialog?type=swl&uid=" + uid, 
      success : function(resp){
      $('#remoteDialog').html(resp);
      initialize_autocomplete();
@@ -1860,7 +1884,7 @@ function save_swl_review(uid){
      $.ajax({
      type : "GET",
      dataType : "html",  
-     url : "api/save_swl_review.xql?com="+com_val+"&uid=" + uid + "&action="+action_val, 
+     url : "api/save_swl_review?com="+com_val+"&uid=" + uid + "&action="+action_val, 
      success : function(resp){
      console.log("RESP" + resp, resp.startsWith('"Error'))
      if (resp.startsWith('"Error')) {
@@ -1890,9 +1914,9 @@ $( ".sf").keyup(function ( event ) {
 function save_sf_def (sfid, def, tp){
   console.log(sfid)
   $.ajax({
-  type : "PUT",
+  type : "POST",
   dataType : "html",
-  url : "api/responder.xql?func=save-sf-def&id="+sfid+"&def="+def+"&type="+tp,
+  url : "api/save_sf_def?id="+sfid+"&def="+def+"&type="+tp,
   success : function(resp){
     toastr.info("Modification for definition saved.", "HXWD says:");
   },
@@ -1952,8 +1976,7 @@ function save_note (trid, tr){
   $.ajax({
   type : "POST",
   dataType : "html",
-  url : "api/save_note.xql",
-  data: {"trid" : trid.slice(0, -3), "tr" : tr},
+  url : "api/save_note?trid="+encodeURIComponent(trid.slice(0, -3))+"&tr="+encodeURIComponent(tr),
   success : function(resp){
     if (resp.startsWith("Could not")) {
     toastr.error(resp, "漢學文典 says:");
@@ -2167,9 +2190,9 @@ function ctl_p(line, lineid, trid){
 function save_tr (trid_in, tr, line){
   var trid = trid_in.replaceAll("\\", "")
   $.ajax({
-  type : "PUT",
+  type : "POST",
   dataType : "html",
-  url : "api/save_tr.xql?trid="+trid+"&tr="+tr,
+  url : "api/save_tr?trid="+trid+"&tr="+tr,
   success : function(resp){
     if (resp.startsWith("Could not")) {
     toastr.error(resp, "漢學文典 says:");
@@ -2215,9 +2238,9 @@ function zh_start_edit(){
 // this does the actual save
 function save_zh (id, line){
   $.ajax({
-  type : "PUT",
+  type : "POST",
   dataType : "html",
-  url : "api/responder.xql?func=save-zh&id="+id+"&line="+line,
+  url : "api/save_zh?id="+id+"&line="+line,
   success : function(resp){
     if (resp.startsWith("Could not")) {
     toastr.error(resp, "漢學文典 says:");
@@ -2240,9 +2263,9 @@ function zh_delete_line (id){
   var ok=confirm("'"+ line +"' ("+ id +") will be deleted and removed, do you want to proceed?.")
   if (ok){
   $.ajax({
-  type : "GET",
+  type : "POST",
   dataType : "html",
-  url : "api/responder.xql?func=zh-delete-line&id="+id,
+  url : "api/zh_delete_line?id="+id,
   success : function(resp){
     if (resp.startsWith("Could not delete")) {
     toastr.error(resp, "漢學文典 says:");
@@ -2278,9 +2301,9 @@ function save_def (defid){
   console.log(defid)
   var def = document.getElementById( defid ).innerText;
   $.ajax({
-  type : "PUT",
+  type : "POST",
   dataType : "html",
-  url : "api/save_def.xql?defid="+defid+"&def="+def,
+  url : "api/save_def?defid="+defid+"&def="+def,
   success : function(resp){
     toastr.info("Modification for definition saved.", "HXWD says:");
   },
@@ -2301,9 +2324,9 @@ function save_sf (type){
 
   console.log(sense_id)
   $.ajax({
-  type : "PUT",
+  type : "POST",
   dataType : "html",
-  url : "api/save_sf.xql?sense-id="+sense_id+"&sf_id="+synfunc_id+"&sf_val="+synfunc_val+"&def="+def_val+"&type="+type,
+  url : "api/save_sf?sense-id="+sense_id+"&sf_id="+synfunc_id+"&sf_val="+synfunc_val+"&def="+def_val+"&type="+type,
   success : function(resp){
     hide_swl_form( "#edit-sf-dialog" );      
     if (type == "syn-func") {
@@ -2328,7 +2351,7 @@ function bookmark_this_line(){
   $.ajax({
   type : "GET",
   dataType : "html",  
-  url : "api/save_bookmark.xql?word="+word+"&line-id="+line_id+"&line="+line, 
+  url : "api/save_bookmark?word="+word+"&line-id="+line_id+"&line="+line, 
   success : function(resp){
   toastr.info("Bookmark has been saved.", "HXWD says:")
   }
@@ -2343,7 +2366,7 @@ function add_parallel(){
      $.ajax({
      type : "GET",
      dataType : "html",  
-     url : "api/responder.xql?func=dialogs:add-parallel&word="+word+"&line-id="+line_id+"&line="+line, 
+     url : "api/dialogs_add_parallel?word="+word+"&line-id="+line_id+"&line="+line,
      success : function(resp){
      $('#remoteDialog').html(resp);
      //initialize_autocomplete_rd();
@@ -2355,8 +2378,8 @@ function add_parallel(){
 // this is cycling through the list of options for the display of swl lists in the floater
 function toggle_list_display(){
   $.ajax({
-  type : "PUT",
-  url : "api/responder.xql?func=lus:toggle-list-display",
+  type : "POST",
+  url : "api/lus_toggle_list_display",
   success : function(resp){
     toastr.info("List display option changed.", "HXWD says:");
     update_swlist()
@@ -2375,7 +2398,7 @@ function add_rd_here(){
      $.ajax({
      type : "GET",
      dataType : "html",  
-     url : "api/responder.xql?func=dialogs:add-rd-dialog&word="+word+"&line-id="+line_id+"&line="+line, 
+     url : "api/dialogs_add_rd_dialog?word="+word+"&line-id="+line_id+"&line="+line,
      success : function(resp){
      $('#remoteDialog').html(resp);
      initialize_autocomplete_rd();
@@ -2396,9 +2419,9 @@ function save_rdl(word, lineid, line){
     show_new_concept("rhet-dev", make_new)
   } else {  
   $.ajax({
-  type : "PUT",
+  type : "POST",
   dataType : "html",
-  url : "api/responder.xql?func=save-rdl&line_id="+lineid+"&line="+line+"&end="+end+"&end_val="+end_val+"&rhet_dev="+rd+"&rhet_dev_id="+rdid+"&word="+word+"&note="+note+"&type="+type,
+  url : "api/save_rdl?line_id="+lineid+"&line="+line+"&end="+end+"&end_val="+end_val+"&rhet_dev="+rd+"&rhet_dev_id="+rdid+"&word="+word+"&note="+note+"&type="+type,
   success : function(resp){
     $( "#add-rd-dialog" ).modal('hide');      
     hide_swl_form("#editSWLDialog");
@@ -2421,7 +2444,7 @@ function new_concept_dialog(type, head){
      $.ajax({
      type : "GET",
      dataType : "html",  
-     url : "api/responder.xql?func=dialogs:new-concept-dialog&type="+type+"&concept="+head, 
+     url : "api/dialogs_new_concept_dialog?type="+type+"&concept="+head,
      success : function(resp){
      $('#remoteDialog').html(resp);
      initialize_autocomplete_nc(type);
@@ -2435,7 +2458,7 @@ function new_syn_dialog(para){
      $.ajax({
      type : "GET",
      dataType : "html",  
-     url : "api/responder.xql?func=dialogs:new-syn-dialog&concept-id="+para.concept_id+"&concept="+para.concept+"&char="+para.char, 
+     url : "api/dialogs_new_syn_dialog?concept-id="+para.concept_id+"&concept="+para.concept+"&char="+para.char,
      success : function(resp){
      $('#remoteDialog').html(resp);
      $('#new-syn-dialog').modal('show');
@@ -2446,9 +2469,9 @@ function new_syn_dialog(para){
 function save_syn (para){
   var crit_val = $("#input-crit" ).val();
   $.ajax({
-  type : "PUT",
+  type : "POST",
   dataType : "html",
-  url : "api/responder.xql?func=save-syn&concept-id="+para.concept_id+"&crit="+crit_val,
+  url : "api/save_syn?concept-id="+para.concept_id+"&crit="+crit_val,
   success : function(resp){
     $( "#new-syn-dialog" ).modal('hide');      
     toastr.info("New synonyms for " + para.concept + " saved.", "HXWD says:");
@@ -2548,9 +2571,9 @@ function save_new_concept (uuid, concept, type){
     } else {return "yyy"} }).get( ).join("xxx");
   console.log('bibl', bibl);
   $.ajax({
-  type : "PUT",
+  type : "POST",
   dataType : "html",
-  url : "api/responder.xql?func=save-new-"+type+"&concept_id="+uuid+"&concept="+concept+"&crit="+crit_val+"&def="+def_val+"&notes="+notes_val+"&ont_ant="+ont_ant+"&ont_hyp="+ont_hyp+"&ont_see="+ont_see+"&ont_tax="+ont_tax+"&labels="+labels+"&och="+och_val+"&zh="+zh_val+"&bibl="+bibl,
+  url : "api/save_new_"+type.replace(/-/g, "_")+"?concept_id="+uuid+"&concept="+concept+"&crit="+crit_val+"&def="+def_val+"&notes="+notes_val+"&ont_ant="+ont_ant+"&ont_hyp="+ont_hyp+"&ont_see="+ont_see+"&ont_tax="+ont_tax+"&labels="+labels+"&och="+och_val+"&zh="+zh_val+"&bibl="+bibl,
   success : function(resp){
     $( "#new-concept-dialog" ).modal('hide');      
     toastr.info("New item " + concept + " saved.", "HXWD says:");
@@ -2569,7 +2592,7 @@ function save_new_concept (uuid, concept, type){
 // delete syntactic function or semantic feature (called from browse page)
 function delete_sf(uid, type){
     var abbr = $("#"+uid+'-abbr').text()
-    $.get("api/show_use_of.xql?uid=" + uid + "&type=" + type, "html", 
+    $.get("api/show_use_of?uid=" + uid + "&type=" + type, "html", 
     function(resp){
         if (resp.startsWith("No usage")){
         console.log(uid, resp)
@@ -2589,10 +2612,10 @@ function delete_sf(uid, type){
 }
 
 function do_delete_sf(uid, type, ed){
-    $.get("api/responder.xql?func=do-delete-sf&uid=" + uid+"&ok="+ed+"&type="+type, "html", function(resp){
+    $.post("api/do_delete_sf?uid=" + uid+"&ok="+ed+"&type="+type, function(resp){
          toastr.info("Syntactic function entry had been deleted.", "HXWD says:");
          $('#'+uid).html("")
-    })
+    }, "html")
 }
 
 // not working properly.
@@ -2628,7 +2651,7 @@ function do_wikidata_search(query,context,id,qitem){
     $("#wd-search").val(query)
     $("#wd-qitem").text(qitem)
     $("#wd-form" ).show(); 
-    $.get("api/responder.xql?func=wd:search&query="+query+"&context="+context+"&id="+id+"&qitem="+qitem, 
+    $.get("api/wd_search?query="+query+"&context="+context+"&id="+id+"&qitem="+qitem,
     function(resp){
          $('#wd-search-results').html(resp);
          $('#wd-detail').html("");
@@ -2645,7 +2668,7 @@ function wikidata_search_again(){
     $("#wd-recent").html('')
     var type = $("#wd-stype option:selected").val();
     var id = $("#wd-textid").text()
-    $.get("api/responder.xql?func=wd:search&query="+query+"&context="+context+"&id="+id+"&type="+type+"&qitem=None",  
+    $.get("api/wd_search?query="+query+"&context="+context+"&id="+id+"&type="+type+"&qitem=None",
     function(resp){
          $('#wd-search-results').html(resp);
          $('#wd-detail').html("");
@@ -2670,7 +2693,7 @@ function save_qitem(qitem,context,id,label){
     var title = $("#wd-query-span").text();
     var oldqitem = $("#wd-qitem").text()
     
-    $.get("api/responder.xql?func=wd:save-qitem&qitem="+qitem+"&context="+context+"&id="+id+"&title="+title+"&label="+label+"&locallabel="+title+"&oldqitem="+oldqitem, 
+    $.post("api/wd_save_qitem?qitem="+qitem+"&context="+context+"&id="+id+"&title="+title+"&label="+label+"&locallabel="+title+"&oldqitem="+oldqitem,
     function(resp){
          toastr.info(qitem+" has been saved.", "漢學文典 says:");
          $('#wd-search-results').html(resp);
@@ -2698,8 +2721,8 @@ function do_quick_search(start, count, stype, mode, target){
     var uuid = $("input[name=qs-uuid]").val();
     var textid = $("#swl-line-id-span" ).text().split("_")[0]
     var lineid = $("#swl-line-id-span" ).text()
-    $.get("api/responder.xql?func=quick-search&query="+word+"&uuid="+uuid+"&start="+start+"&count="+count+"&mode="+mode+"&search-type="+stype+"&textid="+textid+"&target="+target+"&line="+lineid, 
-      "html", 
+    $.get("api/quick_search?query="+word+"&uuid="+uuid+"&start="+start+"&count="+count+"&mode="+mode+"&search-type="+stype+"&textid="+textid+"&target="+target+"&line="+lineid,
+      "html",
     function(resp){
          $('#swl-select').html(resp);
          // we might introduce buttons for the other search functions here at some point
@@ -2714,8 +2737,8 @@ function do_quick_search(start, count, stype, mode, target){
 function do_tr_search(input, trid, start, count){
     var word = $("input[name="+input+"]").val();       
     var target = 'trans';
-$.get("api/responder.xql?func=quick-search&query="+word+"&trid="+trid+"&start="+start+"&count="+count+"&search-type=3&target="+target, 
-      "html", 
+$.get("api/quick_search?query="+word+"&trid="+trid+"&start="+start+"&count="+count+"&search-type=3&target="+target,
+      "html",
     function(resp){
          $('#tr-search-results').html(resp);
         }
@@ -2726,12 +2749,12 @@ $.get("api/responder.xql?func=quick-search&query="+word+"&trid="+trid+"&start="+
 
 // delete_zi_from_word('uuid-f1f8819f-cfae-4128-a9ed-8e9586c9e146','1','咳欬')
 function delete_zi_from_word(wid, pos, ch){
-$.get("api/responder.xql?func=delete-zi-from-word&wid="+wid+"&pos="+pos+"&char="+ch, "html", 
+$.post("api/delete_zi_from_word?wid="+wid+"&pos="+pos+"&char="+ch,
     function(resp){
        toastr.info(ch+" has been deleted.", "HXWD says:");
        //$('#' + wid + '-' + pos).html()
        document.getElementById(wid + '-' + pos).style.display = "none";
-       }
+       }, "html"
     )
     
 };
@@ -2748,8 +2771,8 @@ function save_updated_pinyin(concept_id, wid, ch, pos){
   if (typeof guangyun_id !== 'undefined' && guangyun_id.length > 0){
   console.log(guangyun_id);
   $.ajax({
-  type : "PUT",
-  url : "api/responder.xql?func=update-pinyin&wid="+wid+"&concept="+concept_id+"&sources="+sources+"&gloss="+gloss+"&guangyun-id="+guangyun_id+"&zi="+zi+"&char="+ch,
+  type : "POST",
+  url : "api/update_pinyin?wid="+wid+"&concept="+concept_id+"&sources="+sources+"&gloss="+gloss+"&guangyun-id="+guangyun_id+"&zi="+zi+"&char="+ch,
   success : function(resp){
     if(resp.startsWith("OK")){
       var zih = '#'+wid+'-'+pos+'-zi';
@@ -2781,7 +2804,7 @@ function assign_guangyun_dialog(para){
      $.ajax({
      type : "GET",
      dataType : "html",  
-     url : "api/responder.xql?func=dialogs:assign-guangyun&char="+para.zi+"&concept_id=" + para.concept_id + "&pinyin="+para.py+"&concept="+para.concept+"&wid="+para.wid+"&pos="+para.pos, 
+     url : "api/dialogs_assign_guangyun?char="+para.zi+"&concept_id=" + para.concept_id + "&pinyin="+para.py+"&concept="+para.concept+"&wid="+para.wid+"&pos="+para.pos,
      success : function(resp){
      $('#remoteDialog').html(resp);
      // initialize_autocomplete();
@@ -2792,14 +2815,14 @@ function assign_guangyun_dialog(para){
 
 // udpate gloss 2021-06-24
 function delete_pron(uuid){
-    $.get("api/responder.xql?func=delete-pron&uuid=" + uuid, "html", function(resp){
+    $.post("api/delete_pron?uuid=" + uuid, function(resp){
      if (resp=="OK") {
          toastr.info("Pronounciation has been deleted.", "HXWD says:");
          $('#'+uuid).html("")
          } else {
-         toastr.error("Pronounciation is in use, can not be deleted.", "HXWD says:");             
+         toastr.error("Pronounciation is in use, can not be deleted.", "HXWD says:");
          }
-    })
+    }, "html")
 }
 
 // {'zi':'{$g}', 'py': '{$py}', 'uuid': '{$r/@xml:id}',  'pos' : '{$pos}'}
@@ -2807,7 +2830,7 @@ function update_gloss_dialog(para){
      $.ajax({
      type : "GET",
      dataType : "html",  
-     url : "api/responder.xql?func=dialogs:update-gloss&char="+para.zi+"&uuid=" + para.uuid + "&pinyin="+para.py+"&pos="+para.pos, 
+     url : "api/dialogs_update_gloss?char="+para.zi+"&uuid=" + para.uuid + "&pinyin="+para.py+"&pos="+para.pos,
      success : function(resp){
      $('#remoteDialog').html(resp);
      // initialize_autocomplete();
@@ -2821,8 +2844,8 @@ function save_updated_gloss(uuid, ch, pos){
   var gloss = $("#input-gloss").val();
   var gid = '#gloss-'+pos;  
   $.ajax({
-  type : "PUT",
-  url : "api/responder.xql?func=update-gloss&uuid="+uuid+"&gloss="+gloss,
+  type : "POST",
+  url : "api/update_gloss?uuid="+uuid+"&gloss="+gloss,
   success : function(resp){
    if(resp.startsWith("OK")){
       $('#update-gloss').modal('hide');
@@ -2850,7 +2873,7 @@ function edit_textcat(textid){
   $.ajax({
   type : "GET",
   dataType : "html",  
-  url : "api/responder.xql?func=dialogs:edit-textcat&textid="+textid+"&textcat="+textcat, 
+  url : "api/dialogs_edit_textcat?textid="+textid+"&textcat="+textcat,
   success : function(resp){
   $('#remoteDialog').html(resp);
   $('#edit-textcat-dialog').modal('show');
@@ -2865,9 +2888,9 @@ function save_textcat(textid){
   var src = $('#input-src').val();
   var textcat = $("#select-text-cat").val();
   $.ajax({
-  type : "GET",
-  dataType : "html",  
-  url : "api/responder.xql?func=save-textcat&textid="+textid+"&textcat="+textcat, 
+  type : "POST",
+  dataType : "html",
+  url : "api/save_textcat?textid="+textid+"&textcat="+textcat,
   success : function(resp){
       $('#edit-textcat-dialog').modal('hide');
       toastr.info("Text category has been saved.", "HXWD says:");  
@@ -2894,7 +2917,7 @@ function edit_textdate(textid){
   $.ajax({
   type : "GET",
   dataType : "html",  
-  url : "api/responder.xql?func=dialogs:edit-textdate&textid=" + textid+"&datecat="+datecat+"&nb="+nb+"&na="+na+"&prose="+prose+"&src="+src, 
+  url : "api/dialogs_edit_textdate?textid=" + textid+"&datecat="+datecat+"&nb="+nb+"&na="+na+"&prose="+prose+"&src="+src,
   success : function(resp){
   $('#remoteDialog').html(resp);
   $('#edit-textdate-dialog').modal('show');
@@ -2910,9 +2933,9 @@ function save_textdate(textid){
   var src = $('#input-src').val();
   var datecat = $("#select-date-cat").val();
   $.ajax({
-  type : "GET",
-  dataType : "html",  
-  url : "api/responder.xql?func=save-textdate&textid="+textid+"&datecat="+datecat+"&nb="+nb+"&na="+na+"&prose="+prose+"&src="+src, 
+  type : "POST",
+  dataType : "html",
+  url : "api/save_textdate?textid="+textid+"&datecat="+datecat+"&nb="+nb+"&na="+na+"&prose="+prose+"&src="+src,
   success : function(resp){
       $('#edit-textdate-dialog').modal('hide');
       toastr.info("Textdate has been saved.", "HXWD says:");  
@@ -2931,7 +2954,7 @@ function edit_bib(uid, textid){
   $.ajax({
   type : "GET",
   dataType : "html",  
-  url : "api/responder.xql?func=bib:new-entry-dialog&uuid="+uid+"&textid="+textid, 
+  url : "api/bib_new_entry_dialog?uuid="+uid+"&textid="+textid,
   success : function(resp){
       $('#remoteDialog').html(resp);
       $('#new-entry-dialog').modal('show');
@@ -2991,7 +3014,7 @@ function save_entry(uuid){
   formData = $("#new-entry-form").serialize()
   $.ajax({
   type : "POST",
-  url : "api/responder.xql?func=bib:save-entry&uuid="+uuid,
+  url : "api/bib_save_entry?uuid="+uuid,
   data: formData,
   success : function(resp){
     if (resp.startsWith("Could not")) {
@@ -3019,7 +3042,7 @@ function add_ref(textid){
   $.ajax({
   type : "GET",
   dataType : "html",  
-  url : "api/responder.xql?func=bib:new-entry-dialog&textid="+textid, 
+  url : "api/bib_new_entry_dialog?textid="+textid,
   success : function(resp){
       $('#remoteDialog').html(resp);
       $('#new-entry-dialog').modal('show');
@@ -3042,7 +3065,7 @@ function show_obs(templ_id){
   $.ajax({
   type : "GET",
   dataType : "html",
-  url : "api/responder.xql?func=show-obs&templ-id="+templ_id,
+  url : "api/show_obs?templ-id="+templ_id,
   success : function(resp){
 //  console.log("Displaying response at: " + '#'+line_id+'-swl');
 //  $('#swl-select').html(resp)
@@ -3055,9 +3078,9 @@ function show_obs(templ_id){
 //delete bookmark
 function delete_bm(uuid){
   $.ajax({
-  type : "GET",
-  dataType : "html",  
-  url : "api/responder.xql?func=delete-bm&uuid=" + uuid, 
+  type : "POST",
+  dataType : "html",
+  url : "api/delete_bm?uuid=" + uuid,
   success : function(resp){
 //     console.log(resp.uuid)
      $("#"+uuid).html("");
@@ -3070,9 +3093,9 @@ function delete_bm(uuid){
 // signup 
 function sgn_approve(uuid, resp){
   $.ajax({
-  type : "GET",
-  dataType : "html",  
-  url : "api/responder.xql?func=sgn:approve&uuid=" + uuid + "&resp=" + resp , 
+  type : "POST",
+  dataType : "html",
+  url : "api/sgn_approve?uuid=" + uuid + "&resp=" + resp ,
   success : function(resp){
 //     $("#"+uuid).html("");
      toastr.info("Your vote has been registered. Thank you", "HXWD says:");
@@ -3083,9 +3106,9 @@ function sgn_approve(uuid, resp){
 
 function ai_approve(trid, req){
   $.ajax({
-  type : "GET",
-  dataType : "html",  
-  url : "api/responder.xql?func=ltr:approve&trid=" + trid + "&resp=" + req , 
+  type : "POST",
+  dataType : "html",
+  url : "api/ltr_approve?trid=" + trid + "&resp=" + req ,
   success : function(resp){
      if (req === 'DELETE') {
        $("#approve-"+trid).html("<span>　The request has been deleted.</span>");
@@ -3123,7 +3146,7 @@ function save_taxchar(type){
   type : "POST",
   dataType : "html",
   contentType: 'application/xml',
-  url : "api/responder.xql?func=save-taxchar&type="+type,
+  url : "api/save_taxchar?type="+type,
   data: data,
   success : function(resp){
     if (resp.startsWith("Could not")) {
@@ -3144,12 +3167,12 @@ function save_taxchar(type){
 // display dialog for pb
 // fname is the name of the function in dialogs, has to be the same as the ID of the remote dialog returned by that function
 function add_bibref_dialog(bibcnt){
-     var apdname = "edit-app-dialog";     
+     var apdname = "edit-app-dialog";
      var fname = "add-bibref-dialog";
      $.ajax({
      type : "GET",
-     dataType : "html",  
-     url : "api/responder.xql?func=dialogs:"+fname+"&bibcnt=" + bibcnt,
+     dataType : "html",
+     url : "api/dialogs_add_bibref_dialog?bibcnt=" + bibcnt,
      success : function(resp){
      $('#remBibRef').html(resp);
      $('#'+apdname).modal('hide');
@@ -3164,7 +3187,7 @@ function bibref_search(){
      $.ajax({
      type : "GET",
      dataType : "html",  
-     url : "api/responder.xql?func=bib:quick-search&query=" + query,
+     url : "api/bib_quick_search?query=" + query,
      success : function(resp){
      $('#bib-results').html(resp);
    }
@@ -3198,9 +3221,9 @@ function tag_selected_items(uid){
   var tag_ns = $("#tag-name-space-"+uid+" option:selected").val()
   if (arr.length > 0) { 
   $.ajax({
-  type : "GET",
-  dataType : "html",  
-  url : "api/responder.xql?func=ltg:save-tags&tag="+tag.replace("#", "$")+"&tag_id="+tag_id+"&tag_ns="+tag_ns+"&items="+arr.join(","), 
+  type : "POST",
+  dataType : "html",
+  url : "api/ltg_save_tags?tag="+tag.replace("#", "$")+"&tag_id="+tag_id+"&tag_ns="+tag_ns+"&items="+arr.join(","),
   success : function(resp){
     toastr.info("Tag "+tag+" for "+ arr.length +" item(s) saved.", "漢學文典 says:");
   },
@@ -3227,7 +3250,7 @@ function show_new_link_dialog(){
   $.ajax({
   type : "GET",
   dataType : "html",  
-  url : "api/responder.xql?func=lli:new-link-dialog&line="+line_id+"&word="+word+"&items="+arr.join(","), 
+  url : "api/lli_new_link_dialog?line="+line_id+"&word="+word+"&items="+arr.join(","),
   success : function(resp){
       $('#remoteDialog').html(resp);
       $('#new-link-dialog').modal('show');
@@ -3265,7 +3288,7 @@ function save_link_items(){
   var vis = $('input[name=visradio]:checked').val();
   $.ajax({
   type : "POST",
-  url : "api/responder.xql?func=lli:save-link-items&uuid="+uuid+"&vis="+vis,
+  url : "api/lli_save_link_items?uuid="+uuid+"&vis="+vis,
   data: formData,
   success : function(resp){
     if (resp.startsWith("Could not")) {
@@ -3295,8 +3318,8 @@ function add_url(modsid){
      var fname = "add-url-dialog"
      $.ajax({
      type : "GET",
-     dataType : "html",  
-     url : "api/responder.xql?func=dialogs:"+fname+"&modsid=" + modsid,
+     dataType : "html",
+     url : "api/dialogs_add_url_dialog?modsid=" + modsid,
      success : function(resp){
      $('#remoteDialog').html(resp);
      $('#'+fname).modal('show');
@@ -3314,7 +3337,7 @@ function biburl_save(modsid){
      type : "POST",
 //     dataType : "html",  
      data: formData,
-     url : "api/responder.xql?func=bib:url-save&modsid=" + modsid,
+     url : "api/bib_url_save?modsid=" + modsid,
       success : function(resp){
       toastr.info("New URL saved.", "漢學文典 says:");
       }
@@ -3330,7 +3353,7 @@ function show_dialog(dialog_name, options){
      $.ajax({
      type : "GET",
      dataType : "html",  
-     url : "api/responder.xql?func=dialogs:dispatcher&name="+dialog_name+"&options="+opt,
+     url : "api/dialogs_dispatcher?name="+dialog_name+"&options="+opt,
      success : function(resp){
      $('#remoteDialog').html(resp);
      $('#'+dialog_name).modal('show');
@@ -3343,7 +3366,7 @@ function save_external(uuid, val_el){
   console.log(formData);
   $.ajax({
   type : "POST",
-  url : "api/responder.xql?func=lsi:save-resource&id="+uuid,
+  url : "api/lsi_save_resource?id="+uuid,
   data: formData,
   success : function(resp){
     if (resp.startsWith("Could not")) {
@@ -3382,7 +3405,7 @@ function showtab(uuid){
   $.ajax({
   type : "GET",
   dataType : "html",
-  url : "api/responder.xql?func=showtab&uuid="+uuid, 
+  url : "api/showtab?uuid="+uuid,
   success : function(resp){
     $('#show-text-results').html(resp);
   }
@@ -3396,7 +3419,7 @@ function display_tr_file_dialog(dialog_name, slot, trid){
   $.ajax({
   type : "GET",
   dataType : "html",
-  url : "api/new_translation.xql"+location+"&slot="+slot+"&trid="+trid, 
+  url : "api/new_translation"+location+"&slot="+slot+"&trid="+trid, 
   success : function(resp){
     $('#remoteDialog').html(resp);
     $('#new-translation-dialog').modal('show');  
@@ -3411,9 +3434,9 @@ function delete_tr_file(dialog_name, slot, trid){
   if (strconfirm == true){
   $('#'+dialog_name).modal('hide');
   $.ajax({
-  type : "GET",
-  dataType : "html",  
-  url : "api/responder.xql?func=ltr:delete-translation&trid=" + trid, 
+  type : "POST",
+  dataType : "html",
+  url : "api/ltr_delete_translation?trid=" + trid,
   success : function(resp){
      if (resp.startsWith("Translation")) {
       toast.error(resp, "HXWD says:")
@@ -3443,7 +3466,7 @@ function display_named_dialog(uid, fname){
      $.ajax({
      type : "GET",
      dataType : "html",  
-     url : "api/responder.xql?func=dialogs:"+fname+"&uid=" + uid + "&pos=" + pos + "&sel=" + sel + "&line="+line,
+     url : "api/dialogs_"+fname.replace(/-/g, "_")+"?uid=" + uid + "&pos=" + pos + "&sel=" + sel + "&line="+line,
      success : function(resp){
      $('#remoteDialog').html(resp);
      $('#'+fname).modal('show');
@@ -3462,9 +3485,9 @@ function save_pb(){
      wit = $("#witness option:selected").val();
      console.log("pos:", pb, wit)
      $.ajax({
-     type : "GET",
-     dataType : "html",  
-     url : "api/responder.xql?func=save-pb&uid=" + uid + "&pos=" + pos + "&sel=" + sel + "&line="+line+"&pb="+pb+"&wit="+wit,
+     type : "POST",
+     dataType : "html",
+     url : "api/save_pb?uid=" + uid + "&pos=" + pos + "&sel=" + sel + "&line="+line+"&pb="+pb+"&wit="+wit,
      success : function(resp){
      toastr.info("Pagebreak saved.", "漢學文典 says:");
      $('#pb-dialog').modal('hide');
@@ -3484,7 +3507,7 @@ function save_txc(){
   bibpage = $('#selected-bibref').attr('data-page');
   $.ajax({
   type : "POST",
-  url : "api/responder.xql?func=txc:save-txc&uid="+uid + "&pos=" + pos + "&sel=" + sel + "&line="+line+ "&bibref=" + bibref + "&bibpage=" + bibpage,
+  url : "api/txc_save_txc?uid="+uid + "&pos=" + pos + "&sel=" + sel + "&line="+line+ "&bibref=" + bibref + "&bibpage=" + bibpage,
   data: formData,
   success : function(resp){
    if (resp.startsWith('Error')) {
@@ -3503,8 +3526,8 @@ function edit_app(textid,appid){
      var fname = "edit-app-dialog"
      $.ajax({
      type : "GET",
-     dataType : "html",  
-     url : "api/responder.xql?func=dialogs:"+fname+"&appid=" + appid+"&textid="+textid,
+     dataType : "html",
+     url : "api/dialogs_edit_app_dialog?appid=" + appid+"&textid="+textid,
      success : function(resp){
      $('#remoteDialog').html(resp);
      $('#'+fname).modal('show');
@@ -3524,7 +3547,7 @@ function display_punc_dialog(uid){
      $.ajax({
      type : "GET",
      dataType : "html",  
-     url : "api/responder.xql?func=dialogs:punc-dialog&uid=" + uid,
+     url : "api/dialogs_punc_dialog?uid=" + uid,
      success : function(resp){
      $('#remoteDialog').html(resp);
      $('#punc-dialog').modal('show');
@@ -3536,16 +3559,16 @@ function save_punc(line_id, next){
   var seg = $('#current-seg').text();
   var type = $("#type" ).val();
   if (next == 'merge') {
-    var url = "api/responder.xql?func=merge-following-seg&line_id="+line_id+"&type="+type;
+    var url = "api/merge_following_seg?line_id="+line_id+"&type="+type;
     next = line_id;
   } else if (next == 'no_split') {
-    var url = "api/responder.xql?func=save-punc&line_id="+line_id+"&type="+type+"&action="+next;
+    var url = "api/save_punc?line_id="+line_id+"&type="+type+"&action="+next;
     next = "";
   } else {
-    var url = "api/responder.xql?func=save-punc&line_id="+line_id+"&type="+type;
+    var url = "api/save_punc?line_id="+line_id+"&type="+type;
   }
   $.ajax({
-  type : "PUT",
+  type : "POST",
   contentType: "text/plain;charset=UTF-8",
   processData: false,
   data: seg,
@@ -3575,7 +3598,7 @@ function text_request(kid){
   type : "GET",
   contentType: "text/plain;charset=UTF-8",
   dataType : "html",
-  url : "api/responder.xql?func=text-request&kid="+kid,
+  url : "api/text_request?kid="+kid,
   success : function(resp){
      if (resp.startsWith('Error')) {
      toastr.error(resp, "HXWD says:");
@@ -3592,10 +3615,10 @@ function text_request(kid){
 
 function add_text(kid, cbid){
   $.ajax({
-  type : "GET",
+  type : "POST",
   contentType: "text/plain;charset=UTF-8",
   dataType : "html",
-  url : "api/responder.xql?func=add-text&kid="+kid+"&cbid="+cbid,
+  url : "api/add_text?kid="+kid+"&cbid="+cbid,
   success : function(resp){
      if (resp.startsWith('Error')) {
      toastr.error(resp, "HXWD says:");
@@ -3616,7 +3639,7 @@ function display_edit_text_permissions_dialog(){
   $.ajax({
     type : "GET",
     dataType : "html",  
-    url : "api/responder.xql" + queryString + "&func=dialogs:edit-text-permissions-dialog",
+    url : "api/dialogs_edit_text_permissions_dialog" + queryString,
     success : function(resp){
       $('#remoteDialog').html(resp);
       $('#edit-text-permissions-dialog').modal('show');
