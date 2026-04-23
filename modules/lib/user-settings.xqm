@@ -83,19 +83,16 @@ declare function lus:settings-external($node as node()*, $model as map(*)){
 };
 
 (:~
- : this creates a new empty stub for various user settings (if necessary) and returns the doc.
- : The result is cached in the HTTP session so repeated calls within the same request (or across
- : requests in the same session) avoid re-reading from the database.
- : eXist stores node references in sessions, so in-place XQuery Update calls on the returned
- : document are automatically reflected in the cached reference without any explicit invalidation.
+ : Creates a new empty stub for various user settings (if necessary) and returns the doc.
+ : The result is cached per-request (not per-session) so repeated calls from different
+ : template fragments on one page share the read, while writes made by a different
+ : request (e.g. a translation-slot change via AJAX) are picked up on the next page load.
 :)
 declare function lus:get-settings() as document-node()? {
 let $user := sm:id()//sm:real/sm:username/text()
 let $cache-key := "user-settings-" || $user
 let $cached := try {
-  if (session:exists() and contains(session:get-attribute-names(), $cache-key))
-  then session:get-attribute($cache-key)
-  else ()
+  request:get-attribute($cache-key)
 } catch * { () }
 return
 if (exists($cached)) then $cached
@@ -104,7 +101,11 @@ else
   , $docpath := $config:tls-user-root || $user || "/" || $filename
   let $raw := try{
     if (not (doc-available($docpath))) then
-     doc(xmldb:store($config:tls-user-root || $user, $filename,
+     let $user-col := $config:tls-user-root || $user
+     let $ensure-col := if (xmldb:collection-available($user-col)) then ()
+                       else xmldb:create-collection($config:tls-user-root, $user)
+     return
+     doc(xmldb:store($user-col, $filename,
   <settings xmlns="http://hxwd.org/ns/1.0" xml:id="{$user}-settings">
   <section type="bookmarks"></section>
   <section type="slot-config"></section>
@@ -118,7 +119,7 @@ else
       $raw
     )
   return (
-    try { if (session:exists()) then session:set-attribute($cache-key, $doc) else () } catch * { () },
+    try { request:set-attribute($cache-key, $doc) } catch * { () },
     $doc
   )
 };
@@ -243,6 +244,16 @@ update insert $node
 declare function lus:get-slot1-id($textid as xs:string){
 let $settings := lus:get-settings()
 return data($settings//tls:item[@textid=$textid and @slot='slot1']/@content)
+};
+
+(:~
+ : Return the persisted slot-config content-id for ($slot, $textid),
+ : or the empty sequence if none is set.
+:)
+declare function lus:get-slot-id($slot as xs:string, $textid as xs:string) as xs:string? {
+let $settings := lus:get-settings()
+let $c := $settings//tls:section[@type='slot-config']/tls:item[@textid=$textid and @slot=$slot]/@content
+return if ($c) then data($c) else ()
 };
 
 (:~

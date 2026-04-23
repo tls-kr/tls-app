@@ -552,6 +552,49 @@ declare function ah:lli-save-link-items($r as map(*))                { lli:save-
 declare function ah:lus-set-user-item($r as map(*))                  { lus:set-user-item(ah:request-params()) };
 declare function ah:lus-toggle-list-display($r as map(*))            { lus:toggle-list-display(ah:request-params()) };
 
+(:~
+ : GET /api/get_slot_config?textid=<id>&slot=<slot1|slot2>
+ : Returns the currently persisted content-id for ($textid, $slot) as JSON.
+ : Exists primarily so tests can assert slot stickiness across requests
+ : without scraping rendered textview HTML.
+ :)
+declare function ah:lus-get-slot-config($request as map(*)) {
+    let $textid := ($request?parameters?textid, "")[1]
+    let $slot   := ($request?parameters?slot, "slot1")[1]
+    let $cid    := lus:get-slot-id($slot, $textid)
+    return map {
+        "textid":     $textid,
+        "slot":       $slot,
+        "content-id": if (exists($cid)) then $cid else ()
+    }
+};
+
+(:~
+ : Fast save-only path for the translation-slot choice. ltr:reload-selector
+ : also saves, but it runs ltr:get-translations (30-50s, 3 full-collection
+ : scans) in the same XQuery transaction. When the user navigates away
+ : before that query completes, the HTTP request is aborted and the
+ : XQuery Update transaction rolls back, so the save is lost. This
+ : endpoint performs only the persist step so the save commits in <100ms.
+ : Callers should still fire ltr_reload_selector afterwards for the
+ : dropdown-HTML refresh — that's slow but non-critical.
+:)
+declare function ah:lus-save-slot-config($request as map(*)) {
+    let $textid     := ($request?parameters?textid, "")[1]
+    let $slot       := ($request?parameters?slot, "slot1")[1]
+    let $content-id := ($request?parameters?("content-id"), "")[1]
+    let $group      := sm:id()//sm:group
+    let $saved      :=
+        if ("tls-test" = $group)
+        then session:set-attribute($textid || "-" || $slot, $content-id)
+        else lus:settings-save-slot($slot, $textid, $content-id)
+    return map {
+        "textid":     $textid,
+        "slot":       $slot,
+        "content-id": $content-id
+    }
+};
+
 (: ltx: * :)
 declare function ah:ltx-modify-category($r as map(*))                { ltx:modify-category(ah:request-params()) };
 
