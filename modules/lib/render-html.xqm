@@ -418,7 +418,8 @@ $zi := string-join($node/tei:form/tei:orth/text(), "/")
 ,$cdef := $w/ancestor::tei:div/tei:div[@type="definition"]/tei:p/text()
 ,$sf := $s//tls:syn-func
 ,$sm := $s//tls:sem-feat
-,$def := lu:get-sense-def($link)
+(: was lu:get-sense-def($link) — duplicate of the $s lookup above :)
+,$def := $s/tei:def[1]/text()
 ,$rid := $options?line-id || "-" || $node/@xml:id 
 , $exemplum := if ($node/tls:metadata/@rating) then xs:int($node/tls:metadata/@rating) else 0
 , $bg := if ($exemplum > 0) then "protypical-"||$exemplum else "bg-light"
