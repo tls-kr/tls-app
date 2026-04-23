@@ -3,6 +3,23 @@
 const chai = require('chai')
 const supertest = require('supertest')
 const expect = require('chai').expect
+const fs = require('fs')
+const path = require('path')
+
+// Optional test-account file (gitignored). Tests that need a real,
+// session-issuing login skip themselves if this file is missing or
+// has no usable user entry — CI without secrets still runs green.
+function loadTestAccount(noteMatch) {
+  try {
+    const p = path.join(__dirname, '.test-accounts.local.json')
+    const raw = JSON.parse(fs.readFileSync(p, 'utf8'))
+    const u = (raw.users || []).find(
+      (u) => u.name && u.password &&
+             (noteMatch ? (u.note || '').includes(noteMatch) : true)
+    )
+    return u || null
+  } catch (e) { return null }
+}
 
 // Public host used by the app routes — tests there match what users see
 // (dev: direct Jetty on :8088; prod: Apache → eXist, same as Cloudflare).
@@ -133,6 +150,83 @@ describe('xqSuite unit testing', function() {
     it('old .xql stub URL is gone (404)', function(done) {
       get('/api/autocomplete.xql?type=concept&term=ren')
         .expect(404).end(done)
+    })
+  })
+
+  // Regression guard for the translation-slot stickiness bug fixed
+  // on 2026-04-23 (see info/log.md). Commit 9bad418 had introduced
+  // session-scoped caching of lus:get-settings() which made slot
+  // changes invisible on the next page load within the same session.
+  // The fix moved the cache to request scope. This test exercises the
+  // actual cross-request flow: save via /api/ltr_reload_selector, then
+  // read via /api/get_slot_config from a second request using the
+  // same authenticated session.
+  describe('translation slot stickiness', function() {
+    this.timeout(45000)
+    const base = process.env.TEST_HOST || 'http://localhost:8088'
+    // The regression reproduces only for a regular tls-user (not dba,
+    // not tls-test — those take different code paths in ltr:reload-
+    // selector). We load credentials from a gitignored local file; if
+    // absent, skip so CI without secrets still passes.
+    const account = loadTestAccount('tls-user')
+    const user = account ? account.name : null
+    const pass = account ? account.password : null
+    // Sentinel textid that no real text uses — writes here are inert.
+    const textid = 'MOCHA-STICKY-TEST'
+    const slot = 'slot1'
+
+    before(function() {
+      if (!account) this.skip()
+    })
+
+    // supertest.agent preserves JSESSIONID across requests. Basic auth
+    // alone would not — only /login (persistent-login) issues the cookie
+    // that activates eXist's session scope. Without a real session, the
+    // buggy session-scoped cache never engaged and the test passed even
+    // against the broken code.
+    const agent = () => supertest.agent(base + '/exist/apps/tls-app')
+
+    const login = (a) =>
+      a.get(`/login?user=${user}&password=${pass}`)
+        .set('User-Agent', 'mocha-test')
+
+    const readSlot = (a) =>
+      a.get(`/api/get_slot_config?textid=${textid}&slot=${slot}`)
+        .set('User-Agent', 'mocha-test')
+
+    const writeSlot = (a, contentId) =>
+      a.get(`/api/save_slot_config?textid=${textid}&slot=${slot}&content-id=${contentId}`)
+        .set('User-Agent', 'mocha-test')
+
+    it('picks up slot changes on a subsequent request in the same session', function(done) {
+      const a = agent()
+      const v1 = 'sentinel-A-' + Date.now()
+      const v2 = 'sentinel-B-' + Date.now()
+      login(a).expect(200).end(function(err, res) {
+        if (err) return done(err)
+        // Guard: if login didn't establish a session we wouldn't exercise
+        // the session-cache code path and the test would silently pass.
+        expect(res.headers['set-cookie'], 'login must issue JSESSIONID')
+          .to.exist
+        writeSlot(a, v1).expect(200).end(function(err) {
+          if (err) return done(err)
+          // First read populates any per-session cache with v1.
+          readSlot(a).expect(200).end(function(err, res) {
+            if (err) return done(err)
+            expect(res.body['content-id'], 'initial read').to.equal(v1)
+            // Second write in a fresh request — under the old session
+            // cache this write would not be visible to the next read.
+            writeSlot(a, v2).expect(200).end(function(err) {
+              if (err) return done(err)
+              readSlot(a).expect(200).end(function(err, res) {
+                if (err) return done(err)
+                expect(res.body['content-id'], 'slot change sticky across requests').to.equal(v2)
+                done()
+              })
+            })
+          })
+        })
+      })
     })
   })
 

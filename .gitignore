@@ -5,3 +5,4 @@ node_modules/
 *.code-workspace
 .xst.*
 cypress.env.json
+test/mocha/.test-accounts.local.json
