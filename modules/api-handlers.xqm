@@ -80,16 +80,26 @@ declare function ah:get-toc($request as map(*)) {
  : Batched annotations for a set of segment ids.
  :)
 declare function ah:show-swl-for-lines($request as map(*)) {
-    let $line-ids := tokenize(($request?parameters?lines, "")[1], ",")
+    let $line-ids := tokenize(($request?parameters?lines, "")[1], ",")[normalize-space(.) != ""]
+    let $links    := for $id in $line-ids return "#" || $id
+    let $notes    := $config:tls-data-root || "/notes"
+    (: Four batched range-index hits for the whole window, then in-memory
+       filter per line. ~35x faster than the per-line N×4 scan it replaces
+       (see tools/time-swl.xq, phases 1 vs 2). :)
+    let $anns  := collection($notes)//tls:ann[.//tls:srcline/@target = $links]
+    let $spans := collection($notes)//tls:span[.//tls:srcline/@target = $links]
+    let $drugs := collection($notes)//tls:drug[@target = $links]
+    let $items := doc($config:tls-data-root || "/core/word-relations.xml")//tei:item[@line-id = $line-ids]
     return
     array {
-      for $line-id in $line-ids[normalize-space(.) != ""]
+      for $line-id in $line-ids
       let $link := "#" || $line-id
-      let $annotations :=
-        collection($config:tls-data-root || "/notes")//tls:ann[.//tls:srcline[@target=$link]] |
-        collection($config:tls-data-root || "/notes")//tls:span[.//tls:srcline[@target=$link]] |
-        collection($config:tls-data-root || "/notes")//tls:drug[@target=$link] |
-        doc($config:tls-data-root || "/core/word-relations.xml")//tei:item[@line-id=$line-id]
+      let $annotations := (
+        $anns[.//tls:srcline/@target = $link],
+        $spans[.//tls:srcline/@target = $link],
+        $drugs[@target = $link],
+        $items[@line-id = $line-id]
+      )
       where exists($annotations)
       return map {
         "id": $line-id,
