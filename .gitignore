@@ -4,7 +4,6 @@ node_modules/
 .existdb.json
 *.code-workspace
 .xst.*
-cypress.env.json
 test/mocha/.test-accounts.local.json
 reports/playwright/
 test-results/
