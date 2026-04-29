@@ -5,8 +5,9 @@
   "scripts": {
     "test": "mocha test/mocha/ --recursive --exit",
     "test:prod": "TEST_HOST=https://hxwd.org TEST_REST_HOST=https://hxwd.org:8443 mocha test/mocha/ --recursive --exit",
-    "cypress": "env -u ELECTRON_RUN_AS_NODE cypress open",
-    "cypress:run": "env -u ELECTRON_RUN_AS_NODE cypress run --e2e",
+    "test:e2e": "playwright test --config=test/playwright/playwright.config.ts",
+    "test:e2e:headed": "playwright test --config=test/playwright/playwright.config.ts --headed",
+    "test:e2e:prod": "PLAYWRIGHT_BASE_URL=https://hxwd.org playwright test --config=test/playwright/playwright.config.ts",
     "build": "gulp && ant"
   },
   "repository": {
@@ -30,7 +31,8 @@
     "browser-sync": "^2.29.3",
     "chai": "^4.3.10",
     "chai-xml": "^0.4.1",
-    "cypress": "^15.14.1",
+    "@playwright/test": "^1.48.0",
+    "@types/node": "^20.11.0",
     "del": "^7.1.0",
     "fs-extra": "^11.1.1",
     "gulp": "^4.0.2",

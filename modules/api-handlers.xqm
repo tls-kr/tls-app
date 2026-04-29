@@ -13,6 +13,7 @@ import module namespace tlsapi ="http://hxwd.org/tlsapi"   at "../api/tlsapi.xql
 import module namespace ltr    ="http://hxwd.org/lib/translation" at "lib/translation.xqm";
 import module namespace ai     ="http://hxwd.org/lib/gemini-ai"   at "lib/gemini-ai.xqm";
 import module namespace lsf    ="http://hxwd.org/lib/syn-func"    at "lib/syn-func.xqm";
+import module namespace lpm    ="http://hxwd.org/lib/permissions" at "lib/permissions.xqm";
 import module namespace ltp    ="http://hxwd.org/lib/textpanel"   at "lib/textpanel.xqm";
 import module namespace lrh    ="http://hxwd.org/lib/render-html" at "lib/render-html.xqm";
 import module namespace lu     ="http://hxwd.org/lib/utils"       at "lib/utils.xqm";
@@ -655,3 +656,7 @@ declare function ah:text-request($r as map(*))                       { tlsapi:te
 declare function ah:update-gloss($r as map(*))                       { tlsapi:update-gloss(ah:request-params()) };
 declare function ah:update-pinyin($r as map(*))                      { tlsapi:update-pinyin(ah:request-params()) };
 declare function ah:zh-delete-line($r as map(*))                     { tlsapi:zh-delete-line(ah:request-params()) };
+declare function ah:rebuild-syn-func-counts($r as map(*))            {
+  if (lpm:tls-admin()) then lsf:rebuild-counts()
+  else (response:set-status-code(403), <error>admin only</error>)
+};
