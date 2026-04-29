@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<div xmlns="http://www.w3.org/1999/xhtml"
+     data-template="templates:surround"
+     data-template-with="templates/page.html"
+     data-template-at="content">
+  <h2>Syntactic Functions — usage</h2>
+  <p class="text-muted">
+    Categories sorted by total annotation count (self + descendants).
+    Click to expand.
+  </p>
+  <div id="syn-func-tree" data-template="lsf:syn-func-tree"/>
+  <style><![CDATA[
+    .sf-tree details > summary { cursor: pointer; padding: 2px 0; }
+    .sf-tree details > summary:hover { background: #f5f5f5; }
+    .sf-tree .sf-leaf { padding: 2px 0; }
+    .sf-tree .sf-label { font-weight: 500; }
+  ]]></style>
+</div>

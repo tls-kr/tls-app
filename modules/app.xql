@@ -216,7 +216,9 @@ function app:browse($node as node()*, $model as map(*), $type as xs:string?, $fi
     <div class="card-header" id="{$type}-card">
       <div class="row mb-0">
       <span class="col-3"><h4><strong>{map:get($config:lmap, $type)}</strong>  {
-      if ($type = ('concept', 'syn-func')) then (" / ", <a class="ml-2" href="browse.html?type=tax&amp;mode={$type}">Show tree</a>) else ()
+      if ($type = 'syn-func') then (" / ", <a class="ml-2" href="syn-func-tree.html">Show tree</a>)
+      else if ($type = 'concept') then (" / ", <a class="ml-2" href="browse.html?type=tax&amp;mode={$type}">Show tree</a>)
+      else ()
       }</h4></span>&#160;
       <span class="col-3">
       <input class="form-control" id="myInput" type="text" placeholder="Type to filter..."/>
