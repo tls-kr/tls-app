@@ -35,6 +35,7 @@ let $sf := doc($config:tls-data-root||"/core/syntactic-functions.xml")//tei:div[
 , $rel := doc($config:tls-data-root||"/core/syntactic-functions.xml")//tei:ref[@target= "#" || $uuid]
 , $lexent := collection($config:tls-data-word-root)//tls:syn-func[@corresp="#" || $uuid]
 , $atts := collection($config:tls-data-root||"/notes")//tls:syn-func[@corresp="#" || $uuid]
+, $counts-doc := doc($lsf:counts-doc-path)
 return
 <div class="row">
 <div class="col-md-3"></div>
@@ -57,17 +58,20 @@ return
   <ul>
   {for $r in $rel
    let $p := $r/ancestor::tei:div[@type='syn-func']
+   let $pid := $p/@xml:id/string()
+   let $tot := ($counts-doc//tls:node[@uuid=$pid]/@total/string(), "0")[1]
   return
-  <li><a href="syn-func.html?uuid={$p/@xml:id}" title="{$p/tei:p[1]}">{$p/tei:head/text()}</a></li>}
+  <li><a href="syn-func.html?uuid={$pid}" title="{$p/tei:p[1]}">{$p/tei:head/text()}</a> <span class="text-muted ml-2">({$tot})</span></li>}
   </ul>
   ) else ()}
   {if ($sf/tei:div[@type='pointers']) then 
   (<h5>Hyponym</h5>,
   <ul>
   {for $i in $sf//tei:list[@type="taxonymy"]/tei:item
-  
-  return 
-  <li><a href="syn-func.html?uuid={substring($i/tei:ref/@target,2)}">{$i}</a></li>
+   let $cid := substring($i/tei:ref/@target,2)
+   let $tot := ($counts-doc//tls:node[@uuid=$cid]/@total/string(), "0")[1]
+  return
+  <li><a href="syn-func.html?uuid={$cid}">{$i}</a> <span class="text-muted ml-2">({$tot})</span></li>
   }
    </ul>) else ()
    }
