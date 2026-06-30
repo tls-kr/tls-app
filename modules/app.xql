@@ -273,12 +273,13 @@ function app:browse($node as node()*, $model as map(*), $type as xs:string?, $fi
         case  "concept" return <a href="concept.html?uuid={$id}">{$n}</a>
         case  "syllables" return <a href="syllables.html?uuid={$id}">{$n}</a>
         case  "rhet-dev" return <a href="rhet-dev.html?uuid={$id}">{$n}</a>
-        case  "syn-func" return <a href="syn-func.html?uuid={$id}">{$n}</a>
+        case  "syn-func" return (lrh:format-button("delete_sf('"||$id||"', '"||$type||"')", "Delete this " || lower-case($config:lmap($type||"1")) || ".", "open-iconic-master/svg/x.svg", "", "", "tls-editor"),
+                           <a href="syn-func.html?uuid={$id}">{$n}</a>)
         default return (lrh:format-button("delete_sf('"||$id||"', '"||$type||"')", "Delete this " || lower-case($config:lmap($type||"1")) || ".", "open-iconic-master/svg/x.svg", "", "", "tls-editor"),
         <a id="{$id}-abbr" onclick="show_use_of('{$type}', '{$id}')">{$n}</a>)
     }</td>
     <td><p id="{$id}-{if ($type = 'sem-feat') then 'sm' else if ($type = 'syn-func') then 'sf' else 'rd'}" class="sf" contenteditable="{$edit}">
-    {$def}&#160;</p>{$br}</td>
+    {string-join($def/text(), '&#13;&#13;')}&#160;</p>{$br}</td>
     <td><ul id="{$id}-resp"/><p class="altlabels" style="display:block">{string-join($al, ', ')}</p></td>
     </tr>)
     }</tbody></table></div>

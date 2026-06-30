@@ -1145,6 +1145,18 @@ if (update replace $sense/tei:def with $defel) then "Success" else "Problem"
 :)
 };
 
+declare function tlsapi:save-sf-label($defid as xs:string, $def as xs:string){
+let $user := sm:id()//sm:real/sm:username/text()
+let $uuid := substring-after($defid, 'sf-')
+ , $sf := doc($config:tls-data-root||"/core/syntactic-functions.xml")//tei:div[@xml:id = $uuid]
+,$defel := <head xmlns="http://www.tei-c.org/ns/1.0" resp="#{$user}" updated="{current-dateTime()}">{$def}</head>
+,$upd := update replace $sf/tei:head with $defel
+return 
+$defel
+};
+
+
+
 (:~ 
  : 2021-03-23
  : Save the notes in concepts
@@ -1574,7 +1586,8 @@ else
 return 
   (
  (: das sieht ziemlich fatal aus, was soll das? 
- if ($firstp) then update delete $firstp else (), :) 
+ antwort 2026-06-30: Wir müssen die alten p erst entfernen :)
+ if ($firstp) then update delete $firstp else (), 
  if (empty($sfnode)) then
  if ($type = '-la') then 
    (
@@ -1600,7 +1613,8 @@ return
   update replace $sfnode with $def
  ) 
  else
- update insert $def following $head
+ (: 2026-06-30 request by CH, we replace the def :)
+ update insert $def following $head 
  )
 };
 

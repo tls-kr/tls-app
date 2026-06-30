@@ -45,9 +45,10 @@ declare namespace tls="http://hxwd.org/ns/1.0";
  :)
 declare function ah:record-visit($request as map(*)) {
     let $sid := ($request?parameters?location, "")[1]
+    let $user := sm:id()//sm:real/sm:username/text()
     let $seg := if ($sid) then lu:get-seg($sid) else ()
     return
-        if (exists($seg)) then (lvs:record-visit($seg), "ok") else "skip"
+        if (exists($seg) and not ($user = 'guest')) then (lvs:record-visit($seg), "ok") else "skip"
 };
 
 (:~
@@ -150,10 +151,19 @@ declare function ah:save-note($request as map(*)) {
 };
 
 declare function ah:save-def($request as map(*)) {
+    let $id := ($request?parameters?defid, "xxxx")[1]
+    return
+    if (starts-with($id, 'def')) then
     tlsapi:save-def(
-        ($request?parameters?defid, "xxxx")[1],
+        $id,
         ($request?parameters?def, "xx")[1]
     )
+    else
+    tlsapi:save-sf-label(
+        $id,
+        ($request?parameters?def, "xx")[1]
+    )
+    
 };
 
 declare function ah:save-sf($request as map(*)) {
