@@ -59,6 +59,9 @@ declare variable $src:cutoff := (0.2, 0.3, 0.5);
 declare variable $src:rtype := map{"None" : "None", "chars" : "Matches / Total Characters (MF/ICF)", "segs" : "Matches / Segments (MF/ISF)" };
 
 declare function src:itemcount($request as map(*)){
+};
+(: 2026-06-30: removed onclick="krx_items('1')", replaced with href :)
+declare function src:itemcount-disabled($request as map(*)){
     try {
         let $s-time := util:system-dateTime()
         let $query as xs:string := $request?parameters?query
@@ -70,7 +73,7 @@ declare function src:itemcount($request as map(*)){
         , $hits := src:ngram-query($query, $mode, $search-type, $textid, $cat)
         return
         <span>{" 漢リポ: ",
-     <a class="btn badge badge-light chn-font" target="kanripo" title="Search {$query} in Kanseki Repository" style="background-color:paleturquoise" onclick="krx_items('1')">{$query}:<span id="krxitemcount">{count($hits?all-hits)}</span></a>
+     <a class="btn badge badge-light chn-font" target="kanripo" title="Search {$query} in Kanseki Repository" style="background-color:paleturquoise" href="https://www.kanripo.org/search?query={$query}" target='kanripo'>{$query}:<span id="krxitemcount">{count($hits?all-hits)}</span></a>
      }</span>
     }
     catch * {

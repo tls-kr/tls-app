@@ -95,6 +95,7 @@ let $cached := try {
   request:get-attribute($cache-key)
 } catch * { () }
 return
+if ($user eq 'guest') then () else
 if (exists($cached)) then $cached
 else
   let $filename := "settings.xml"

@@ -35,7 +35,7 @@ $(function() {
         display_pastebox(pbx);
     }
     // only relevant for search pages
-    krx_itemcount();
+    // 2026-06-30:  disabled krx_itemcount();
     // only relevant for textview pages
   }
   catch (err) {}
