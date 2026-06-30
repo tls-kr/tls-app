@@ -9,9 +9,6 @@ xquery version "3.1";
 
 module namespace ltp="http://hxwd.org/lib/textpanel";
 
-import module namespace tu="http://hxwd.org/utils" at "../tlsutils.xql";
-
-
 import module namespace config="http://hxwd.org/config" at "../config.xqm";
 
 (:import module namespace krx="http://hxwd.org/krx-utils" at "../krx-utils.xql";:)
@@ -128,26 +125,25 @@ declare function ltp:prepare-chunk($chunk as node()*, $map as map(*)){
       , $head := $chunk/div/head
       , $dseg := $chunk/div/segments/div
       , $tseg := $dseg[@data-mark]
-      , $show-transl := lpm:should-show-translation()
+      , $user := sm:id()//sm:real/sm:username/text()
+      , $sid-groups := sm:id()//sm:group/text()
+      , $show-transl := not("guest" = $sid-groups)
+      , $is-testuser := ("tls-test" = $sid-groups or "guest" = $sid-groups)
+      , $usergroups := sm:get-user-groups($user)
       , $show-variants := xs:boolean(1)
       , $textid := data($chunk/div/info/@textid)
       , $visit := lvs:record-visit-remote(data($tseg/@xml:id), string-join($tseg/text(), ''))
-      , $tr := if (lpm:should-show-translation()) then 
-         if (string-length($facs) > 0) then map:merge((ltr:get-translations($textid), 
-            for $edx in tokenize($chunk/div/pb/@eds)
-            return
-            map:entry("facs_"||$edx, ("dummy", $edx, data($tseg/@xml:id)) ))) 
-
-         else ltr:get-translations($textid)
-         else map{},
-      $slot1-id := lrh:get-content-id($textid, 'slot1', $tr),
-      $slot2-id := lrh:get-content-id($textid, 'slot2', $tr),
-      $atypes := distinct-values(for $s in $dseg/@xml:id
-        let $link := "#" || $s
+      , $tr := ltr:get-translations($textid)
+      , $slot1-id := lrh:get-content-id($textid, 'slot1', $tr)
+      , $slot2-id := lrh:get-content-id($textid, 'slot2', $tr)
+      , $atypes :=
+        let $links := for $s in $dseg/@xml:id return "#" || $s
         return
-        for $node in (collection($config:tls-data-root|| "/notes")//tls:ann[.//tls:srcline[@target=$link]] | collection($config:tls-data-root|| "/notes")//tls:span[.//tls:srcline[@target=$link]] ) return 
-        (: need to special case the legacy type ann=swl :)
-        if (local-name($node)='ann') then "nswl" else data($node/@type))
+        distinct-values(
+          for $node in (collection($config:tls-data-root|| "/notes")//tls:ann[.//tls:srcline[@target = $links]] | collection($config:tls-data-root|| "/notes")//tls:span[.//tls:srcline[@target = $links]])
+          (: need to special case the legacy type ann=swl :)
+          return if (local-name($node)='ann') then "nswl" else data($node/@type)
+        )
     return
       (
       <div id="chunkrow" class="row">
@@ -180,15 +176,17 @@ declare function ltp:prepare-chunk($chunk as node()*, $map as map(*)){
         <!-- zh --></div>
         <!-- 2024-09-06 this is rubbish, this needs also to be moved to textpanel and not hardcode the width -->
         {for $i in (1 to $colums)
-        return 
+        return
         <div class="col-sm-4" id="top-slot{$i}"><!-- tr -->
-        {if ($show-transl) then ltr:render-translation-submenu($textid, "slot"||$i, lrh:get-content-id($textid, 'slot'||$i, $tr) , $tr) else ()}
+        {if ($show-transl) then
+          ltr:render-translation-submenu($textid, 'slot'||$i, if ($i = 1) then $slot1-id else $slot2-id, $tr)
+        else ()}
         </div>
         }
         </div>
       </div>
       <div id="chunkcol-left" class="col-sm-12">
-      {ltp:chunkcol-left($dseg, map:put($map, "zh-width", $zh-width), $tr, $slot1-id, $slot2-id, data($tseg/@xml:id), 0)}
+      {ltp:chunkcol-left($dseg, map:merge((map:put($map, "zh-width", $zh-width), map{'user': $user, 'usergroups': $usergroups, 'show-transl': $show-transl, 'is-testuser': $is-testuser})), $tr, $slot1-id, $slot2-id, data($tseg/@xml:id), 0)}
       </div>
       <div id="chunkcol-right" class="col-sm-0">
       {lsd:swl-form-dialog('textview', $map)}
@@ -256,12 +254,12 @@ declare function ltp:prepare-chunk($chunk as node()*, $map as map(*)){
 
 declare function ltp:display-seg($seg as node()*, $options as map(*) ) {
  let $log := log:info($ltp:log, "entering display-seg for " || $seg/@xml:id)
- let $user := sm:id()//sm:real/sm:username/text()
- ,$usergroups := sm:get-user-groups($user)
- ,$colums := if (string-length($options?columns)>0) then xs:int($options?columns) else 2 
+ let $user := if (map:contains($options, 'user')) then $options?user else sm:id()//sm:real/sm:username/text()
+ ,$usergroups := if (map:contains($options, 'usergroups')) then $options?usergroups else sm:get-user-groups($user)
+ ,$colums := if (string-length($options?columns)>0) then xs:int($options?columns) else 2
  ,$segid := data($seg/@xml:id)
- ,$show-transl := not(contains(sm:id()//sm:group/text(), "guest"))
- ,$testuser := lpm:is-testuser() 
+ ,$show-transl := if (map:contains($options, 'show-transl')) then $options?('show-transl') else not(contains(sm:id()//sm:group/text(), "guest"))
+ ,$testuser := if (map:contains($options, 'is-testuser')) then $options?('is-testuser') else lpm:is-testuser()
  ,$link := concat('#', $segid)
   (: we are displaying in a reduced context, only 2 rows  :)
  ,$ann := lower-case(map:get($options, "ann"))
@@ -272,16 +270,8 @@ declare function ltp:display-seg($seg as node()*, $options as map(*) ) {
  ,$lang := 'zho'
  ,$alpheios-class := if ($user = 'test2') then 'alpheios-enabled' else ''
  ,$markup-class := "tei-" || local-name($seg/parent::*)
- ,$slot1 := if (lpm:should-show-translation()) then 
-     if (map:contains($options, "transl")) then $options?transl
-     else map:get($options, $options?slot1)[1] else ()
-  ,$slot2 := if ($show-transl and not($ann = 'false')) then map:get($options, $options?slot2)[1] else ()
   (: check if transl + comment are related, if yes than do not manipulate tab-index :)
   (: if tei:TEI, then we have a translation, otherwise a variant :)
-  ,$px1 := typeswitch ($slot1) case element(tei:TEI) return  replace(($slot1//tei:seg[@corresp="#"||$segid]/@resp)[1], '#', '') default return () 
-  ,$resp1 := if ($px1) then " Resp: "||tu:get-member-name($px1) else ()
-  ,$px2 :=  typeswitch ($slot2) case element(tei:TEI) return replace(($slot2//tei:seg[@corresp="#"||$segid]/@resp)[1], '#', '') default return () 
-  ,$resp2 :=  if ($px2) then "Resp: "||doc($config:tls-data-root || "/vault/members.xml")//tei:person[@xml:id=$px2]//tei:persName/text() else () 
   ,$editable := if (not($testuser) and not($locked) ) then 'true' else 'false'
   ,$zhclass := 
                 $ltp:panel-matrix?($colums)[1] || " zh chn-font " || $alpheios-class || " " || $markup-class     
@@ -311,35 +301,44 @@ try {lrh:proc-seg($seg, map{"punc" : true(), "textid" : $textid}) } catch * {$se
 }
 {
 for $i in (1 to $colums)
- let $slot := if (lpm:should-show-translation()) then 
+ let $slot-key := 'slot'||$i
+ , $slot := if ($show-transl) then
      if (map:contains($options, "transl")) then $options?transl
-     else map:get($options, map:get($options, 'slot'||$i))[1] else ()
- , $px := typeswitch ($slot) case element(tei:TEI) return  replace(($slot//tei:seg[@corresp="#"||$segid]/@resp)[1], '#', '') default return "??"  
- , $resp_in := doc($config:tls-data-root || "/vault/members.xml")//tei:person[@xml:id=$px]//tei:persName/text()
+     else if (map:contains($options, $slot-key||'-tei')) then map:get($options, $slot-key||'-tei')
+     else map:get($options, map:get($options, $slot-key))[1] else ()
+ , $tr-seg := if ($slot instance of element(tei:TEI)) then
+     if (map:contains($options, $slot-key||'-idx')) then map:get($options, $slot-key||'-idx')($segid)
+     else ($slot//tei:seg[@corresp="#"||$segid])[1]
+   else ()
+ , $px := if ($tr-seg/@resp) then replace(string($tr-seg/@resp), '#', '')
+   else if ($slot instance of element(tei:TEI)) then "" else "??"
+ , $resp_in := if ($px) then doc($config:tls-data-root || "/vault/members.xml")//tei:person[@xml:id=$px]//tei:persName/text() else ()
  , $resp := if ($resp_in) then "Resp: "|| $resp_in else "Resp: "|| $px
-  let $log := log:info($ltp:log, "entering left-panel-row for " || $seg/@xml:id)
- , $lang := try {if (ltr:get-translation-lang($slot)) then ltr:get-translation-lang($slot) else 'en-GB' } catch * {'en-GB' }
- , $tr-class := try {ltr:get-translation-css($slot)} catch * {''}
+ , $lang := if (map:contains($options, $slot-key||'-lang')) then $options($slot-key||'-lang')
+   else try {if (ltr:get-translation-lang($slot)) then ltr:get-translation-lang($slot) else 'en-GB' } catch * {'en-GB' }
+ , $tr-class := if (map:contains($options, $slot-key||'-css')) then $options($slot-key||'-css')
+   else try {ltr:get-translation-css($slot)} catch * {''}
  return
 
-ltp:right-panel-row($slot, 
-       map{"seg" : $seg, 
-       "col-class" : $ltp:panel-matrix?($colums)[$i + 1],  
-       "ann" : $ann, 
-       "resp": $resp, 
-       "ex": "slot"||$i, 
-       "tabindex" : $options('pos')+ (500*$i), 
-       "editable" : (: if ( ltr:is-ai-translation($slot) or ltr:is-text-notes($slot) ) then 'false' else :) $editable, 
-       "user" : $user, 
-       "trans-lang" : $lang, 
-       'tr-class' : $tr-class })
+ltp:right-panel-row($slot,
+       map{"seg" : $seg,
+       "col-class" : $ltp:panel-matrix?($colums)[$i + 1],
+       "ann" : $ann,
+       "resp": $resp,
+       "ex": "slot"||$i,
+       "tabindex" : $options('pos')+ (500*$i),
+       "editable" : $editable,
+       "user" : $user,
+       "trans-lang" : $lang,
+       'tr-class' : $tr-class,
+       'tr-seg' : $tr-seg })
 
 }
 </div>,
 ltp:swl-rows($seg)
 ,
-if (local-name(($seg/following::tei:*)[1]) = 'figure') then
- let $img := ($seg/following::tei:*)[1]
+if (local-name(($seg/following-sibling::tei:*)[1]) = 'figure') then
+ let $img := ($seg/following-sibling::tei:*)[1]
  let $fig:= "../tls-texts/img/" || $img/tei:graphic/@facs
  , $tit := $img/tei:graphic/@n
  return
@@ -424,14 +423,17 @@ else "　"
 declare function ltp:right-panel-row($node, $map){
 (:let $tit := if ($map?tr-class = 'ai ') then 'Translation generated by AI' else $map?resp:)
 let $tit := $map?resp
+let $tr-node := if (map:contains($map, "tr-seg")) then $map?tr-seg
+                else ($node//tei:seg[@corresp="#"||$map?seg/@xml:id])[1]
 return
-if ($map?ann = 'false') then () else 
+if ($map?ann = 'false') then () else
 <div class="{$map?col-class}" title="{$tit}" lang="{$map?trans-lang}" >
-  {typeswitch ($node) 
-case element(tei:TEI) return (if ($node/@type='notes') then 
+  {typeswitch ($node)
+case element(tei:TEI) return (if ($node/@type='notes') then
       lli:get-linked-items($map?user, $map?seg/@xml:id) else (),
-      <div class="tr {$map?tr-class}" tabindex="{$map?tabindex}" id="{$map?seg/@xml:id}-{$map?ex}" contenteditable="{$map?editable}">{lrh:tr-seg(($node//tei:seg[@corresp="#"||$map?seg/@xml:id])[1], $map)}</div>  )
-default return ()
+      <div class="tr {$map?tr-class}" tabindex="{$map?tabindex}" id="{$map?seg/@xml:id}-{$map?ex}" contenteditable="{$map?editable}">{lrh:tr-seg($tr-node, $map)}</div>  )
+default return
+    <div class="tr" id="{$map?seg/@xml:id}-{$map?ex}"></div>
 
 (:(krx:get-varseg-ed($map?seg/@xml:id, substring-before($node, "::"))):)
 
@@ -441,12 +443,52 @@ default return ()
 
 
 declare function ltp:chunkcol-left($dseg, $model, $tr, $slot1-id, $slot2-id, $loc, $cnt){
-      for $d at $pos in $dseg 
-(:      let $log := log:info($ltp:log, "chunkcol-left, $d " || $pos):)
-      return ltp:display-seg($d, map:merge(($model, $tr, 
-      map{'slot1': $slot1-id, 'slot2': $slot2-id, 
-          'loc' : $loc, 
-          'zh-width' : 'col-sm-3', 
+      (: Precompute per-slot translation doc, segid->seg index, lang and css ONCE
+         per page load to avoid N*M descendant scans of the same translation doc
+         (was: ~4 scans per seg * N segs). :)
+      let $slot1-tei := if (string-length($slot1-id) > 0) then ($tr($slot1-id))[1] else ()
+      let $slot2-tei := if (string-length($slot2-id) > 0) then ($tr($slot2-id))[1] else ()
+      let $slot1-idx := if ($slot1-tei instance of element(tei:TEI)) then
+                          map:merge(
+                            for $s in $slot1-tei//tei:seg[@corresp]
+                            return map:entry(substring-after(string($s/@corresp), '#'), $s),
+                            map{"duplicates":"use-first"}
+                          )
+                        else ()
+      let $slot2-idx := if ($slot2-tei instance of element(tei:TEI)) then
+                          map:merge(
+                            for $s in $slot2-tei//tei:seg[@corresp]
+                            return map:entry(substring-after(string($s/@corresp), '#'), $s),
+                            map{"duplicates":"use-first"}
+                          )
+                        else ()
+      let $slot1-lang := if ($slot1-tei instance of element(tei:TEI)) then
+                           (try {ltr:get-translation-lang($slot1-tei)} catch * {'en-GB'}, 'en-GB')[string-length(.) > 0][1]
+                         else 'en-GB'
+      let $slot2-lang := if ($slot2-tei instance of element(tei:TEI)) then
+                           (try {ltr:get-translation-lang($slot2-tei)} catch * {'en-GB'}, 'en-GB')[string-length(.) > 0][1]
+                         else 'en-GB'
+      let $slot1-css := if ($slot1-tei instance of element(tei:TEI)) then
+                          try {ltr:get-translation-css($slot1-tei)} catch * {''}
+                        else ''
+      let $slot2-css := if ($slot2-tei instance of element(tei:TEI)) then
+                          try {ltr:get-translation-css($slot2-tei)} catch * {''}
+                        else ''
+      let $precomp := map:merge((
+                        if (exists($slot1-tei)) then map:entry('slot1-tei', $slot1-tei) else (),
+                        if (exists($slot2-tei)) then map:entry('slot2-tei', $slot2-tei) else (),
+                        if (exists($slot1-idx)) then map:entry('slot1-idx', $slot1-idx) else (),
+                        if (exists($slot2-idx)) then map:entry('slot2-idx', $slot2-idx) else (),
+                        map:entry('slot1-lang', $slot1-lang),
+                        map:entry('slot2-lang', $slot2-lang),
+                        map:entry('slot1-css', $slot1-css),
+                        map:entry('slot2-css', $slot2-css)
+                      ))
+      for $d at $pos in $dseg
+      return ltp:display-seg($d, map:merge(($model, $tr, $precomp,
+      map{'slot1': $slot1-id, 'slot2': $slot2-id,
+          'loc' : $loc,
+          'zh-width' : 'col-sm-3',
           'pos' : $pos + $cnt, "ann" : "xfalse.x"})))
 };
 

@@ -216,7 +216,9 @@ function app:browse($node as node()*, $model as map(*), $type as xs:string?, $fi
     <div class="card-header" id="{$type}-card">
       <div class="row mb-0">
       <span class="col-3"><h4><strong>{map:get($config:lmap, $type)}</strong>  {
-      if ($type = ('concept', 'syn-func')) then (" / ", <a class="ml-2" href="browse.html?type=tax&amp;mode={$type}">Show tree</a>) else ()
+      if ($type = 'syn-func') then (" / ", <a class="ml-2" href="syn-func-tree.html">Show tree</a>)
+      else if ($type = 'concept') then (" / ", <a class="ml-2" href="browse.html?type=tax&amp;mode={$type}">Show tree</a>)
+      else ()
       }</h4></span>&#160;
       <span class="col-3">
       <input class="form-control" id="myInput" type="text" placeholder="Type to filter..."/>
@@ -271,7 +273,8 @@ function app:browse($node as node()*, $model as map(*), $type as xs:string?, $fi
         case  "concept" return <a href="concept.html?uuid={$id}">{$n}</a>
         case  "syllables" return <a href="syllables.html?uuid={$id}">{$n}</a>
         case  "rhet-dev" return <a href="rhet-dev.html?uuid={$id}">{$n}</a>
-        case  "syn-func" return <a href="syn-func.html?uuid={$id}">{$n}</a>
+        case  "syn-func" return (lrh:format-button("delete_sf('"||$id||"', '"||$type||"')", "Delete this " || lower-case($config:lmap($type||"1")) || ".", "open-iconic-master/svg/x.svg", "", "", "tls-editor"),
+                           <a href="syn-func.html?uuid={$id}">{$n}</a>)
         default return (lrh:format-button("delete_sf('"||$id||"', '"||$type||"')", "Delete this " || lower-case($config:lmap($type||"1")) || ".", "open-iconic-master/svg/x.svg", "", "", "tls-editor"),
         <a id="{$id}-abbr" onclick="show_use_of('{$type}', '{$id}')">{$n}</a>)
     }</td>

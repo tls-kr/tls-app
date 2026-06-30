@@ -1,10 +1,13 @@
 {
   "name": "tls-app",
-  "version": "0.6.0",
+  "version": "0.7.4",
   "description": "TLS - 漢學文典",
   "scripts": {
     "test": "mocha test/mocha/ --recursive --exit",
-    "cypress": "cypress open",
+    "test:prod": "TEST_HOST=https://hxwd.org TEST_REST_HOST=https://hxwd.org:8443 mocha test/mocha/ --recursive --exit",
+    "test:e2e": "playwright test --config=test/playwright/playwright.config.ts",
+    "test:e2e:headed": "playwright test --config=test/playwright/playwright.config.ts --headed",
+    "test:e2e:prod": "PLAYWRIGHT_BASE_URL=https://hxwd.org playwright test --config=test/playwright/playwright.config.ts",
     "build": "gulp && ant"
   },
   "repository": {
@@ -28,7 +31,8 @@
     "browser-sync": "^2.29.3",
     "chai": "^4.3.10",
     "chai-xml": "^0.4.1",
-    "cypress": "^13.3.2",
+    "@playwright/test": "^1.48.0",
+    "@types/node": "^20.11.0",
     "del": "^7.1.0",
     "fs-extra": "^11.1.1",
     "gulp": "^4.0.2",

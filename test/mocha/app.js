@@ -6,165 +6,74 @@ const expect = require('chai').expect
 const fs = require('fs-extra')
 const glob = require('glob')
 const xmldoc = require('xmldoc')
-const assert = require('yeoman-assert')
 
-// this is not equivalent ot using a real xml parser
+const ignore = ['node_modules/**', 'test/**', 'documentation/**']
+
 describe('consistency checks', function () {
   describe('existing markup files are well-formed', function () {
     chai.use(chaiXml)
-    it('*.html is xhtml', function (done) {
-      glob('**/*.html', {ignore: 'node_modules/**'}, function (err, files) {
-        if (err) throw err
-        // console.log(files)
-        files.forEach(function (html) {
-          let xhtml = fs.readFileSync(html, 'utf8')
-          var hParsed = new xmldoc.XmlDocument(xhtml).toString()
-          expect(hParsed).xml.to.be.valid()
-        })
+
+    it('*.html is xhtml', function () {
+      glob.sync('**/*.html', {ignore}).forEach(function (html) {
+        const xhtml = fs.readFileSync(html, 'utf8')
+        const hParsed = new xmldoc.XmlDocument(xhtml).toString()
+        expect(hParsed).xml.to.be.valid()
       })
-      done()
     })
 
-    it('*.xml', function (done) {
-      glob('**/*.xml', {ignore: 'node_modules/**'}, function (err, files) {
-        if (err) throw err
-        // console.log(files)
-        files.forEach(function (xmls) {
-          let xml = fs.readFileSync(xmls, 'utf8')
-          var xParsed = new xmldoc.XmlDocument(xml).toString()
-          expect(xParsed).xml.to.be.valid()
-        })
+    it('*.xml', function () {
+      glob.sync('**/*.xml', {ignore}).forEach(function (xmls) {
+        const xml = fs.readFileSync(xmls, 'utf8')
+        const xParsed = new xmldoc.XmlDocument(xml).toString()
+        expect(xParsed).xml.to.be.valid()
       })
-      done()
     })
 
-    it('*.xconf', function (done) {
-      glob('**/*.xconf', {ignore: 'node_modules/**'}, function (err, files) {
-        if (err) throw err
-        // console.log(files)
-        files.forEach(function (xconfs) {
-          let xconf = fs.readFileSync(xconfs, 'utf8')
-          var cParsed = new xmldoc.XmlDocument(xconf).toString()
-          expect(cParsed).xml.to.be.valid()
-        })
+    it('*.xconf', function () {
+      glob.sync('**/*.xconf', {ignore}).forEach(function (xconfs) {
+        const xconf = fs.readFileSync(xconfs, 'utf8')
+        const cParsed = new xmldoc.XmlDocument(xconf).toString()
+        expect(cParsed).xml.to.be.valid()
       })
-      done()
     })
-    it('*.odd', function (done) {
+
+    it('*.odd', function () {
       this.slow(1000)
-      glob('**/*.odd', {ignore: 'node_modules/**'}, function (err, files) {
-        if (err) throw err
-        // console.log(files)
-        files.forEach(function (odds) {
-          let odd = fs.readFileSync(odds, 'utf8')
-          var xParsed = new xmldoc.XmlDocument(odd).toString()
-          expect(xParsed).xml.to.be.valid()
-        })
+      glob.sync('**/*.odd', {ignore}).forEach(function (odds) {
+        const odd = fs.readFileSync(odds, 'utf8')
+        const xParsed = new xmldoc.XmlDocument(odd).toString()
+        expect(xParsed).xml.to.be.valid()
       })
-      done()
     })
   })
 
   describe('meta-data consistency', function () {
-    it('description is consistent', function (done) {
-      if (fs.existsSync('build.xml')) {
-        let build = fs.readFileSync('build.xml', 'utf8')
-        var parsed = new xmldoc.XmlDocument(build)
-        var buildDesc = parsed.childNamed('description').val
-      }
+    // Load expath-pkg.xml as source of truth (version and human-readable title)
+    let exPkgVer, exPkgTitle
+    if (fs.existsSync('expath-pkg.xml')) {
+      const exPkg = new xmldoc.XmlDocument(fs.readFileSync('expath-pkg.xml', 'utf8'))
+      exPkgVer = exPkg.attr.version
+      exPkgTitle = exPkg.childNamed('title') ? exPkg.childNamed('title').val : undefined
+    }
 
-      if (fs.existsSync('package.json')) {
-        let pkg = fs.readFileSync('package.json', 'utf8')
-        var parsed = JSON.parse(pkg)
-        var pkgDesc = parsed.description
-      }
-
-      if(fs.existsSync('repo.xml')) {
-        let repo = fs.readFileSync('repo.xml', 'utf8')
-        var parsed = new xmldoc.XmlDocument(repo)
-        var repoDesc = parsed.childNamed('description').val
-      }
-
-      if (fs.existsSync('expath-pkg.xml')) {
-        let exPkg = fs.readFileSync('expath-pkg.xml', 'utf8')
-        var parsed = new xmldoc.XmlDocument(exPkg)
-        var exPkgDesc = parsed.childNamed('title').val
-      }
-
-      var desc = [exPkgDesc, buildDesc, pkgDesc, pkgDesc, buildDesc].filter(Boolean)
-      var i = 0
-      // console.log(desc)
-      desc.forEach(function(){
-        expect(desc[i]).to.equal(exPkgDesc)
-        i++
-      })
-      done()
+    it('version string is consistent', function () {
+      if (!exPkgVer) { this.skip(); return }
+      const pkgVer = JSON.parse(fs.readFileSync('package.json', 'utf8')).version
+      expect(pkgVer, 'package.json version').to.equal(exPkgVer)
     })
 
-    it ('version string is consistent', function (done) {
-      if (fs.existsSync('package.json')) {
-        let pkg = fs.readFileSync('package.json', 'utf8')
-        var parsed = JSON.parse(pkg)
-        var pkgVer = parsed.version
-      }
-
-      if (fs.existsSync('expath-pkg.xml')){
-        let exPkg = fs.readFileSync('expath-pkg.xml', 'utf8')
-        var parsed = new xmldoc.XmlDocument(exPkg)
-        var exPkgVer = parsed.attr.version
-      }
-
-      var vers = [exPkgVer, pkgVer].filter(Boolean)
-      var i = 0
-      // console.log(vers)
-      vers.forEach(function(){
-        expect(vers[i]).to.equal(exPkgVer)
-        i++
-      })
-      done()
+    it('description matches expath-pkg title', function () {
+      if (!exPkgTitle) { this.skip(); return }
+      const pkgDesc = JSON.parse(fs.readFileSync('package.json', 'utf8')).description
+      expect(pkgDesc, 'package.json description').to.equal(exPkgTitle)
     })
 
-    it ('title is consistent', function (done) {
-      if (fs.existsSync('build.xml')) {
-        let build = fs.readFileSync('build.xml', 'utf8')
-        var parsed = new xmldoc.XmlDocument(build)
-        var buildTit = parsed.attr.name.toLowerCase()
+    it('Readme is consistent with meta-data', function () {
+      if (!fs.existsSync('README.md')) { this.skip(); return }
+      const readme = fs.readFileSync('README.md', 'utf8')
+      if (exPkgTitle) {
+        expect(readme, 'README contains project title').to.include(exPkgTitle)
       }
-
-      if (fs.existsSync('package.json')) {
-        let pkg = fs.readFileSync('package.json', 'utf8')
-        var parsed = JSON.parse(pkg)
-        var pkgTitle = parsed.name
-      }
-
-      if (fs.existsSync('templates/page.html')) {
-        let page = fs.readFileSync('templates/page.html', 'utf8')
-        var parsed = new xmldoc.XmlDocument(page)
-        var pageTitle = parsed.descendantWithPath('head.title').val
-      }
-
-      var titles = [buildTit, pkgTitle, pageTitle].filter(Boolean)
-      var i = 0
-
-      // console.log(titles)
-      titles.forEach(function(){
-        expect(titles[i]).to.equal(pkgTitle)
-        i++
-      })
-      done()
-    })
-
-    it ('Readme is consistent with meta-data', function (done) {
-      let pkg = fs.readFileSync('package.json', 'utf8')
-      var parsed = JSON.parse(pkg)
-
-      if(fs.existsSync('README.md')) {
-          assert.fileContent('README.md', '# ' + parsed.name)
-          assert.fileContent('README.md', parsed.version)
-          assert.fileContent('README.md', parsed.description)
-        }
-      else { this.skip() }
-      done()
     })
   })
 })

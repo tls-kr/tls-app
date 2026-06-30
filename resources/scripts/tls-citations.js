@@ -55,7 +55,7 @@ function initialize_cit_autocomplete(){
       },
       source: function( request, response ) {
         $.ajax( {
-          url: "api/autocomplete.xql",
+          url: "api/autocomplete",
           dataType: "jsonp",
           data: {
             term: request.term,

@@ -35,6 +35,7 @@ let $sf := doc($config:tls-data-root||"/core/syntactic-functions.xml")//tei:div[
 , $rel := doc($config:tls-data-root||"/core/syntactic-functions.xml")//tei:ref[@target= "#" || $uuid]
 , $lexent := collection($config:tls-data-word-root)//tls:syn-func[@corresp="#" || $uuid]
 , $atts := collection($config:tls-data-root||"/notes")//tls:syn-func[@corresp="#" || $uuid]
+, $counts-doc := doc($lsf:counts-doc-path)
 return
 <div class="row">
 <div class="col-md-3"></div>
@@ -57,17 +58,20 @@ return
   <ul>
   {for $r in $rel
    let $p := $r/ancestor::tei:div[@type='syn-func']
+   let $pid := $p/@xml:id/string()
+   let $tot := ($counts-doc//tls:node[@uuid=$pid]/@total/string(), "0")[1]
   return
-  <li><a href="syn-func.html?uuid={$p/@xml:id}" title="{$p/tei:p[1]}">{$p/tei:head/text()}</a></li>}
+  <li><a href="syn-func.html?uuid={$pid}" title="{$p/tei:p[1]}">{$p/tei:head/text()}</a> <span class="text-muted ml-2">({$tot})</span></li>}
   </ul>
   ) else ()}
   {if ($sf/tei:div[@type='pointers']) then 
   (<h5>Hyponym</h5>,
   <ul>
   {for $i in $sf//tei:list[@type="taxonymy"]/tei:item
-  
-  return 
-  <li><a href="syn-func.html?uuid={substring($i/tei:ref/@target,2)}">{$i}</a></li>
+   let $cid := substring($i/tei:ref/@target,2)
+   let $tot := ($counts-doc//tls:node[@uuid=$cid]/@total/string(), "0")[1]
+  return
+  <li><a href="syn-func.html?uuid={$cid}">{$i}</a> <span class="text-muted ml-2">({$tot})</span></li>
   }
    </ul>) else ()
    }
@@ -754,6 +758,109 @@ let $sfdef := if ($type= 'syn-func') then
   else 
   doc($config:tls-data-root || "/core/semantic-features.xml")//tei:div[@xml:id=$sfid]/tei:p/text()
 return $sfdef
+};
+
+(:~ Aggregate syn-func usage counts and roll them up the taxonomy hierarchy.
+  : Result is cached at $config:tls-data-root||"/core/syn-func-counts.xml" as
+  : a tree mirroring the taxonomy, with @self (direct count) and @total (self
+  : + all descendants) on each <node>. Read by the syn-func explorer UI. :)
+declare function lsf:counts-tally() as map(*) {
+  fold-left(
+    collection($config:tls-data-root || "/notes")/*, map{},
+    function($acc as map(*), $root as element()) as map(*) {
+      fold-left($root//tls:syn-func[@corresp], $acc,
+        function($a as map(*), $sf as element()) as map(*) {
+          let $u := substring-after($sf/@corresp, "#")
+          return
+            if ($u = "") then $a
+            else map:put($a, $u, (map:get($a, $u), 0)[1] + 1)
+        })
+    }
+  )
+};
+
+declare function lsf:counts-walk($cat as element(tei:category),
+                                 $counts as map(*)) as element() {
+  let $uuid  := $cat/@xml:id/string()
+  let $label := normalize-space($cat/tei:catDesc)
+  let $self  := (map:get($counts, $uuid), 0)[1]
+  let $kids  := for $c in $cat/tei:category return lsf:counts-walk($c, $counts)
+  let $total := $self + sum($kids/@total ! xs:integer(.))
+  return
+    <node xmlns="http://hxwd.org/ns/1.0"
+          uuid="{$uuid}" label="{$label}"
+          self="{$self}" total="{$total}">{$kids}</node>
+};
+
+declare variable $lsf:counts-doc-path :=
+  $config:tls-data-root || "/core/syn-func-counts.xml";
+
+(:~ Recursively render one <node> as a Bootstrap-styled <details> block,
+  : children sorted by @total descending. :)
+declare function lsf:render-counts-node($n as element()) as element() {
+  let $kids :=
+    for $c in $n/*
+    order by xs:integer($c/@total) descending
+    return $c
+  let $label-html :=
+    <span xmlns="http://www.w3.org/1999/xhtml">
+      <a class="sf-label" href="syn-func.html?uuid={$n/@uuid/string()}"
+         title="Open definition / show annotations">{$n/@label/string()}</a>
+      <span class="text-muted ml-2">total: {$n/@total/string()}</span>
+      {if (xs:integer($n/@self) gt 0)
+       then <span class="text-muted ml-2">self: {$n/@self/string()}</span>
+       else ()}
+    </span>
+  return
+    if (empty($kids)) then
+      <div xmlns="http://www.w3.org/1999/xhtml" class="sf-leaf pl-3">
+        {$label-html}
+      </div>
+    else
+      <details xmlns="http://www.w3.org/1999/xhtml" class="sf-node">
+        <summary>{$label-html}</summary>
+        <div class="pl-3">{
+          for $k in $kids return lsf:render-counts-node($k)
+        }</div>
+      </details>
+};
+
+declare
+%templates:wrap
+function lsf:syn-func-tree($node as node()*, $model as map(*)) {
+  let $doc := doc($lsf:counts-doc-path)
+  return
+    if (empty($doc)) then
+      <p xmlns="http://www.w3.org/1999/xhtml" class="text-warning">
+        Counts have not been built yet. Admin: POST /api/rebuild_syn_func_counts.
+      </p>
+    else
+      <div xmlns="http://www.w3.org/1999/xhtml" class="sf-tree">
+        <p class="text-muted small">
+          Generated: {$doc/tls:syn-func-counts/@generated/string()} ·
+          Total annotations: {$doc/tls:syn-func-counts/@total/string()}
+        </p>
+        {
+          for $top in $doc/tls:syn-func-counts/tls:node/tls:node
+          order by xs:integer($top/@total) descending
+          return lsf:render-counts-node($top)
+        }
+      </div>
+};
+
+declare function lsf:rebuild-counts() as element() {
+  let $counts := lsf:counts-tally()
+  let $tax    := doc($config:tls-data-root || "/core/syntactic-functions-taxonomy.xml")
+  let $root   := $tax//tei:category[@rend='top']
+  let $doc    :=
+    <syn-func-counts xmlns="http://hxwd.org/ns/1.0"
+                     generated="{current-dateTime()}"
+                     total="{sum(map:keys($counts) ! map:get($counts, .))}">{
+      lsf:counts-walk($root, $counts)
+    }</syn-func-counts>
+  let $_ := xmldb:store($config:tls-data-root || "/core",
+                        "syn-func-counts.xml", $doc)
+  return $doc
 };
 
 

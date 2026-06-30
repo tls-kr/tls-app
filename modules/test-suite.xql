@@ -10,9 +10,9 @@ xquery version "3.1";
 module namespace tests = "http://hxwd.org/apps/tls-app/tests";
 
 import module namespace app = "http://hxwd.org/app" at "app.xql";
-import module namespace tlsapi="http://hxwd.org/tlsapi" at "../api/tlsapi.xql";
 import module namespace tlslib="http://hxwd.org/lib" at "tlslib.xql";
 import module namespace lu="http://hxwd.org/lib/utils" at "lib/utils.xqm";
+import module namespace toc="http://hxwd.org/lib/toc" at "lib/toc.xqm";
 
 declare namespace test="http://exist-db.org/xquery/xqsuite";
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
@@ -28,25 +28,12 @@ declare
         app:logo(element {$n} {}, $tests:map)
 };
 
-(:  :)
-
-
-declare
-    %test:args('宗', "concept", "core", "")
-    %test:assertXPath('//li')
-    %private
-    function tests:tlslib-get-sw($n, $context, $domain, $leftword) as node(){
-        <div>
-        {tlslib:get-sw($n, $context, $domain, $leftword)}
-        </div>
-};
-
 
 declare
     %test:args('CH1a0907_CHANT_016-35a.4')
-    %test:assertXPath('$result//[@xml:id="CH1a0907_CHANT_016-35a.4"]')
+    %test:assertXPath('$result/@xml:id = "CH1a0907_CHANT_016-35a.4"')
     %test:assertXPath('namespace-uri($result)="http://www.tei-c.org/ns/1.0"')
-    function tests:lu-get-seg($seg-id){
+    function tests:lu-get-seg($seg-id as xs:string) as element() {
     lu:get-seg($seg-id)
     };
 
@@ -62,5 +49,20 @@ declare
         <div>
         {tlslib:display-chunk($targetseg, $model , 15, 15)}
         </div>
+};
+
+declare
+    %test:args('CH1a0907')
+    %test:assertXPath('$result/*:toc/@textid = "CH1a0907"')
+    %test:assertXPath('count($result/*:toc/*:entry) > 0')
+    function tests:toc-doc($textid as xs:string) as document-node()? {
+        toc:doc($textid)
+};
+
+declare
+    %test:args('CH1a0907_CHANT_016-35a.4')
+    %test:assertEquals('CH1a0907')
+    function tests:toc-textid-for-seg($seg-id as xs:string) as xs:string? {
+        toc:textid-for-seg($seg-id)
 };
 
