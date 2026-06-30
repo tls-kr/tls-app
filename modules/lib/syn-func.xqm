@@ -36,13 +36,21 @@ let $sf := doc($config:tls-data-root||"/core/syntactic-functions.xml")//tei:div[
 , $lexent := collection($config:tls-data-word-root)//tls:syn-func[@corresp="#" || $uuid]
 , $atts := collection($config:tls-data-root||"/notes")//tls:syn-func[@corresp="#" || $uuid]
 , $counts-doc := doc($lsf:counts-doc-path)
+, $edit := sm:id()//sm:groups/sm:group[. = "tls-x-editor"]
+, $label:= if ($edit) then <a href='#' class="font-weight-bold" id="{$uuid}">{$sf/tei:head/text()}</a> else 
+   <span class="font-weight-bold" id="{$uuid}">{$sf/tei:head/text()}</span>
 return
 <div class="row">
 <div class="col-md-3"></div>
 
 <div class="card col-md-6" style="max-width: 1000px;">
  <div class="card-header">
-  <h4 class="card-title">Syntactic function <span id="{$uuid}" class="font-weight-bold" >{$sf/tei:head/text()}</span></h4>
+  <h4 class="card-title">Syntactic function&#160;
+  <span class="font-weight-bold" id="sf-{$uuid}" contenteditable="{if ($edit) then 'true' else 'false'}">{$sf/tei:head/text()}</span>
+  {if ($edit) then 
+     <button class="btn badge badge-warning ml-2" type="button" onclick="save_def('sf-{$uuid}')">Save</button>
+    else ()}
+  </h4>
   <div class="card-body">
   {for $p in $sf/tei:p return <p>{$p/text()}</p>}
   {if ($sf/tei:note) then 

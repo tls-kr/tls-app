@@ -151,10 +151,19 @@ declare function ah:save-note($request as map(*)) {
 };
 
 declare function ah:save-def($request as map(*)) {
+    let $id := ($request?parameters?defid, "xxxx")[1]
+    return
+    if (starts-with($id, 'def')) then
     tlsapi:save-def(
-        ($request?parameters?defid, "xxxx")[1],
+        $id,
         ($request?parameters?def, "xx")[1]
     )
+    else
+    tlsapi:save-sf-label(
+        $id,
+        ($request?parameters?def, "xx")[1]
+    )
+    
 };
 
 declare function ah:save-sf($request as map(*)) {

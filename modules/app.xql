@@ -279,7 +279,7 @@ function app:browse($node as node()*, $model as map(*), $type as xs:string?, $fi
         <a id="{$id}-abbr" onclick="show_use_of('{$type}', '{$id}')">{$n}</a>)
     }</td>
     <td><p id="{$id}-{if ($type = 'sem-feat') then 'sm' else if ($type = 'syn-func') then 'sf' else 'rd'}" class="sf" contenteditable="{$edit}">
-    {$def}&#160;</p>{$br}</td>
+    {string-join($def/text(), '&#13;&#13;')}&#160;</p>{$br}</td>
     <td><ul id="{$id}-resp"/><p class="altlabels" style="display:block">{string-join($al, ', ')}</p></td>
     </tr>)
     }</tbody></table></div>

@@ -1236,15 +1236,15 @@ $( ".zh" )
   });
 
 //this is for the filter in browse pages
-  $("#myInput")
-  .keyup(function() {
-    var value = $(this).val().toLowerCase();
-//    console.log(value);
-   $(".abbr").filter(function() {
-      $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1);
-    });
-  });
+$("#myInput").keyup(function() {
+    var value = $(this).val().trim();
 
+    $(".abbr").each(function() {
+        $(this).toggle(
+            $(this).text().trim().indexOf(value) === 0
+        );
+    });
+});
 
 function countrows(){
       var rowCount = $('#filtertable tr:visible').length - 1;
@@ -2326,7 +2326,7 @@ function save_def (defid){
   dataType : "html",
   url : "api/save_def?defid="+defid+"&def="+def,
   success : function(resp){
-    toastr.info("Modification for definition saved.", "HXWD says:");
+    toastr.info("Modification saved.", "HXWD says:");
   },
   error : function(resp){
   console.log(resp);
