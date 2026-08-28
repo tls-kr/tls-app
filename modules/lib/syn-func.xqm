@@ -359,7 +359,7 @@ let $map := map{'word' : $word, 'domain' : $domain, 'context' : $context}
 , $w-context := ($context = "dic") or contains($context, "concept")
 , $doann := contains($context, 'textview')  (: the page we were called from can annotate :)
 , $user := sm:id()//sm:real/sm:username/text()
-, $edit := sm:id()//sm:groups/sm:group[. = "tls-editor"] and $doann
+, $edit := sm:id()//sm:groups/sm:group  = ("tls-editor") and $doann
 , $sum := sum(for $a in $list return $a?12 )
 return
 (<li>Total annotations: <strong>{$sum}</strong></li>,
@@ -403,7 +403,7 @@ else ""}
 <strong><a href="concept.html?uuid={$id}#{$wid}" title="{$cdef}">{$concept}</a></strong> 
  {if ($resp[1]) then <button class="ml-2 btn badge badge-light" title="{$resp[1]} - {$wid/ancestor::tei:entry/@tls:created}">{$resp[2]}</button> else ()}
 
-{if ($doann and sm:is-authenticated() and not(contains(sm:id()//sm:group, 'tls-test'))) then 
+{if ($doann and sm:is-authenticated() and not ($user = 'guest') and not(contains(sm:id()//sm:group, 'tls-test'))) then 
  if ($wid) then     
       if (string-length($leftword) = 0) then
      (<button class="btn badge badge-secondary ml-2" type="button" 
@@ -480,7 +480,7 @@ else
     else ()}
      { if (sm:is-authenticated()) then 
      (
-     if ($user != 'test' and $doann) then
+     if ($user != ('test', 'guest') and $doann) then
      <button class="btn badge badge-primary ml-2" type="button" onclick="save_this_swl('{$s/@xml:id}')">
            Use
       </button> else ()) else ()}
@@ -598,7 +598,7 @@ let $words-tmp := if ($w-context) then
    return $w
 let $user := sm:id()//sm:real/sm:username/text()
 , $doann := contains($context, 'textview')  (: the page we were called from can annotate :)
-, $edit := sm:id()//sm:groups/sm:group[. = "tls-editor"] and $doann
+, $edit := sm:id()//sm:groups/sm:group = ("tls-editor") and $doann
 , $taxdoc := doc($config:tls-data-root ||"/core/taxchar.xml")
 (: creating a map as a combination of the concepts in taxchar and the existing concepts :)
 , $wm := map:merge((
@@ -660,7 +660,7 @@ else ""}
 <strong><a href="concept.html?uuid={$id}#{$wid}" title="{$cdef}" class="{if ($scnt[$pw] = 0) then 'text-muted' else ()}">{$concept[1]}</a></strong> 
  {if ($resp[1]) then <button class="ml-2 btn badge badge-light" title="{$resp[1]} - {$wx/ancestor::tei:entry/@tls:created}">{$resp[2]}</button> else ()}
 
-{if ($doann and sm:is-authenticated() and not(contains(sm:id()//sm:group, 'tls-test'))) then 
+{if ($doann and sm:is-authenticated() and not(lpm:is-testuser())) then 
  if ($wid) then     
       if (string-length($leftword) = 0) then
      (<button class="btn badge badge-secondary ml-2" type="button" 

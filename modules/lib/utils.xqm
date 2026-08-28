@@ -85,12 +85,12 @@ collection($config:tls-texts-root)//tei:TEI[@xml:id=$txtid]
 };
 
 declare function lu:get-seg($sid as xs:string){
-    let $textid := toc:textid-for-seg($sid)
+    let $textid :=  toc:textid-for-seg($sid)
     return
     if ($textid != "") then
         (collection($config:tls-texts-root)/tei:TEI[@xml:id=$textid]//tei:seg[@xml:id=$sid])[1]
     else
-        collection($config:tls-texts-root)//tei:seg[@xml:id=$sid]
+       (collection($config:tls-texts-root)//tei:seg[@xml:id=$sid])[1]        
 };
 
 declare function lu:next-n-segs($startseg as xs:string, $n as xs:int?){
