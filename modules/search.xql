@@ -297,7 +297,16 @@ else
 (: query in dictionary :)
 declare function src:dic-query($queryStr as xs:string?, $mode as xs:string?)
 {
-lsf:get-sw-by-concept($queryStr, "dic", "core", "")
+if (matches($queryStr, '^[A-Za-z]+')) then 
+     <ul>{
+     for $hit in collection($config:tls-data-root)//tei:div[@type='syn-func']
+     let $head := data($hit/tei:head)
+     where starts-with($head, $queryStr)
+     order by $head
+     return <li><a href="syn-func.html?uuid={$hit/@xml:id/string()}">{$hit/tei:head}</a></li>
+     }</ul>
+ else
+  lsf:get-sw-by-concept($queryStr, "dic", "core", "")
 };
 
 (: query in translation :)
@@ -421,7 +430,7 @@ declare function src:create-query($queryStr as xs:string?, $mode as xs:string?)
 declare
 %templates:default("type", "")  (: type is only relevant for advanced search starting from the search landing page for non-Kanji generell search :)
 function src:show-hits-h1($node as node()*, $map as map(*),  $type as xs:string){
-let $st :=  if (string-length($type) > 0) then map:get($config:search-map, $map?search-type) || "/" || map:get($config:lmap, $type) else map:get($config:search-map, $map?search-type)
+let $st :=  try {if (string-length($type) > 0) then map:get($config:search-map, $map?search-type) || "/" || map:get($config:lmap, $type) else map:get($config:search-map, $map?search-type)} catch * {'texts'}
 return
 (if ($map?search-type = $src:search-bib ) then () else
  if ($map?search-type = $src:ngtype) then (
@@ -826,7 +835,7 @@ declare function src:facets($node as node()*, $model as map(*), $query as xs:str
  , $user := sm:id()//sm:real/sm:username/text()
  , $tabexists := try {collection($config:tls-data-root || "/notes/search/")//tei:div[@q=$query] } catch * {()}
  , $uuid := if ($tabexists) then ($tabexists/@xml:id)[1] else "uuid-" || util:uuid()
- , $coll := if ($tabexists) then () else try {dbu:ensure-collection($config:tls-data-root || "/notes/search/" || substring($uuid, 6, 1))} catch * {()}
+ , $coll := if ($tabexists or $user = 'guest') then () else try {dbu:ensure-collection($config:tls-data-root || "/notes/search/" || substring($uuid, 6, 1))} catch * {()}
  , $sset := lus:get-settings()//tls:section[@type="search"]
  , $rtype := if ($sset/tls:item[@type='search-ratio']) then $sset/tls:item[@type='search-ratio']/@value else "None"
 
