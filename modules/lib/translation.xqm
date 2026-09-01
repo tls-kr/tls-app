@@ -205,7 +205,10 @@ declare function ltr:new-ai-translation(
   let $suid := substring(util:uuid(), 1, 8)
   let $user := sm:id()//sm:real/sm:username/text()
   let $trcoll := $config:tls-translation-root || "/queue" 
-  let $trcollavailable := dbu:ensure-collection($trcoll)
+  let $trcollavailable := ltr:ensure-writable-translation-collection(
+      $trcoll,
+      ltr:translation-collection-permissions("option2", $user)
+  )
   let $tr-target-available := dbu:ensure-collection($config:tls-translation-root || '/ai/' || $lang)
   let $promptfile :=  collection($config:tls-app-interface)//div[@xml:id="ai-prompts"]
   let $vendor-label := $promptfile/div[@vendor=$vendor]/@label/string()
@@ -231,7 +234,7 @@ declare function ltr:new-ai-translation(
   }
   let $node := collection($config:tls-app-interface)//tei:TEI[@xml:id='ltp--tr-id']
   let $req  := ltp:process-ltp($node, $ltp-map)
-  let $doc := doc(xmldb:store($trcoll, $trid || ".xml", $req))  
+  let $doc := doc(xmldb:store($trcollavailable, $trid || ".xml", $req))  
   let $uri := document-uri($doc)
    return
  (
@@ -240,6 +243,46 @@ declare function ltr:new-ai-translation(
     , $req
  )
 
+};
+
+declare function ltr:translation-collection-permissions($vis as xs:string, $user as xs:string) as map(*) {
+  if ($vis = "option3") then
+    map{"owner": $user, "group": "tls-user", "mode": "rwx--x--x"}
+  else
+    map{"owner": "tls", "group": "tls-user", "mode": "rwxrwxr-x"}
+};
+
+declare function ltr:translation-permission-error($collection as xs:string) {
+  let $user := sm:id()//sm:real/sm:username/text()
+  let $groups := string-join(sm:id()//sm:group/text(), ", ")
+  let $perm := try { sm:get-permissions(xs:anyURI($collection))/sm:permission } catch * { () }
+  let $details :=
+    if ($perm) then
+      " owner=" || $perm/@owner || " group=" || $perm/@group || " mode=" || $perm/@mode
+    else
+      ""
+  return
+    error(
+      xs:QName("ltr:permission-denied"),
+      "Write permission is not granted on translation collection " || $collection ||
+      " for user " || $user || " (groups: " || $groups || ")." || $details
+    )
+};
+
+declare function ltr:ensure-writable-translation-collection(
+  $collection as xs:string,
+  $permissions as map(*)) as xs:string {
+  let $available := dbu:ensure-collection($collection, $permissions)
+  return
+    if (sm:has-access(xs:anyURI($available), "w")) then
+      $available
+    else
+      let $repair := try { dbu:set-permissions($available, $permissions) } catch * { () }
+      return
+        if (sm:has-access(xs:anyURI($available), "w")) then
+          $available
+        else
+          ltr:translation-permission-error($available)
 };
 
 (: 2022-02-21 - moved this from tlsapi to allow non-api use :)
@@ -275,19 +318,13 @@ declare function ltr:store-new-translation(
       $config:tls-translation-root || "/non-free/" || $lang
     else     
       $config:tls-translation-root || "/" || $lang
-  ,$trcollavailable := dbu:ensure-collection($trcoll) or 
-   (if ($vis="option3") then
-    dbu:ensure-collection($config:tls-user-root || $user || "/translations")
-   else
-   (dbu:ensure-collection($config:tls-translation-root || "/" || $lang),
-    sm:chmod(xs:anyURI($trcoll), "rwxrwxr--"),
-(:    sm:chown(xs:anyURI($trcoll), "tls"),:)
-    sm:chgrp(xs:anyURI($trcoll), "tls-user")
+  ,$trcollavailable := ltr:ensure-writable-translation-collection(
+   $trcoll,
+    ltr:translation-collection-permissions($vis,    $user)
     )
-  )
-  , $trx := if (not($translator = "yy")) then $translator else if ($vis = "option3") then          $fullname else "TLS Project"
+    , $trx := if (not($translator = "yy")) then $translator else if ($vis = "option3") then          $fullname else "TLS Project"
   , $doc := 
-    doc(xmldb:store($trcoll, $newid || ".xml", 
+    doc(xmldb:store($trcollavailable, $newid || ".xml", 
    <TEI xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$newid}" type="{$type}">
   <teiHeader>
       <fileDesc>
@@ -356,15 +393,15 @@ declare function ltr:store-new-translation(
   </text>
 </TEI>))
 return
-if (not($vis="option3")) then 
  let $uri := document-uri($doc)
  return
- (
+  if (not($vis="option3")) then 
+  (
     sm:chmod(xs:anyURI($uri), "rwxrwxr--"),
 (:    sm:chown(xs:anyURI($uri), "tls"),:)
     sm:chgrp(xs:anyURI($uri), "tls-user")
  )
- else ()
+ else (    sm:chmod(xs:anyURI($uri), "rwx------") )
 };
 
 declare function ltr:transinfo($trid){
