@@ -960,11 +960,18 @@ function app:rhetdev($node as node()*, $model as map(*), $uuid as xs:string?, $o
       </div>
     <div><h5>Rhetorical device locations: {$rdlcnt}</h5>
     <ul>
-    {for $rdl in collection($config:tls-data-root || "/notes/rdl")//tls:span[@rhet-dev-id=$key]
-    let $tl := substring(($rdl//tls:srcline[1]/@target)[1], 2)
-    , $ti := data(($rdl//tls:srcline[1]/@title)[1])
+    {for $rdls in collection($config:tls-data-root || "/notes/rdl")//tls:span[@rhet-dev-id=$key]
+    let $ti := data(($rdls//tls:srcline[1]/@title)[1])
+    group by $ti 
+    let $c := count($rdls)
+    order by $c descending
     return
-    <li><a href="textview.html?location={$tl}">{$ti}</a><span>{($rdl//tls:srcline[1])[1]}</span>
+    <li>{$ti[1]} <span>{$c}</span>
+    <ul>
+    {for $rdl in $rdls
+    let $tl := substring(($rdl//tls:srcline[1]/@target)[1], 2)
+    return
+    <li><a href="textview.html?location={$tl}">{$ti[1]}</a><span>{($rdl//tls:srcline[1])[1]}</span>
     {if (count($rdl//tls:srcline) gt 1) then
     let $last := substring(($rdl//tls:srcline)[2]/@target, 2)
     , $targetseg := collection($config:tls-texts-root)//tei:seg[@xml:id=$tl]
@@ -975,6 +982,9 @@ function app:rhetdev($node as node()*, $model as map(*), $uuid as xs:string?, $o
     <span>{$s}</span>
     else ()}
     {if ($rdl/tls:note) then <p>{$rdl/tls:note}</p> else ()}
+    </li>
+    }
+    </ul>
     </li>
     }
     </ul>

@@ -1211,7 +1211,12 @@ declare function tlsapi:save-zh($map as map(*)){
 let $user := sm:id()//sm:real/sm:username/text()
 ,$id := $map?id
 ,$txtid := tokenize($id, "_")[1]
-,$zh-to-save := $map?line
+,$zh-to-save := for $a1 in analyze-string($map?line => normalize-space()=>replace(' ', ''), $config:c-tokens)//fn:*
+     return
+     if (local-name($a1) = 'match') then 
+       element {QName("http://www.tei-c.org/ns/1.0", "c")} {attribute {"n"} {$a1/text()}} 
+     else 
+       $a1/text()                
 ,$node := collection($config:tls-texts-root)//tei:seg[@xml:id=$id]
 ,$seg := <seg xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$id}" resp="#{$user}" modified="{current-dateTime()}">{$zh-to-save}</seg>
 return
