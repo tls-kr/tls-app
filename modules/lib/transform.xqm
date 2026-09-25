@@ -1,7 +1,6 @@
 xquery version "3.1";
 
 module namespace tr="http://hxwd.org/lib/transform";
-
 declare function tr:transform($nodes, $map){
  for $node in $nodes
  return

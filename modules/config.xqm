@@ -89,6 +89,7 @@ declare variable $config:navmap := map{
 };
 
 declare variable $config:seg-split-tokens := '[，。：．；？﹖！，』」/、]';
+declare variable $config:c-tokens := "[．，、。「」…『』！？﹖：；◎@•□○【】]"; 
 
 declare variable $config:kanji-numberlike-tokens := '[〇一二三四五六七八九十百千萬億兆上中下]';
 
