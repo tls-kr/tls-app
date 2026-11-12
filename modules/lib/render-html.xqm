@@ -25,7 +25,8 @@ declare namespace tls="http://hxwd.org/ns/1.0";
 declare namespace os="http://a9.com/-/spec/opensearch/1.1/";
 
 
-(:~  checks which available items should be displayed
+(:~  
+: checks which available items should be displayed
 :)
 declare function lrh:maybe-show-items($map as map(*)){
 let $sections := ('external-resources', 'internal-resources')
@@ -332,12 +333,12 @@ declare function lrh:format-button-common($onclick as xs:string, $title as xs:st
 };
 
 (:~ 
-  We determine here, which buttons should be actually shown for a SWL/WRL, depending on the 
-  $map?ann nwsl or wrl
-  $map?user 
-  $map?creator-id
-  $map?context
-  emitting a sequence of button names 
+:  We determine here, which buttons should be actually shown for a SWL/WRL, depending on the 
+:  $map?ann nwsl or wrl
+:  $map?user 
+:  $map?creator-id
+:  $map?context
+:  emitting a sequence of button names 
 :)
 declare function lrh:make-swl-button-list($map as map(*)){
  let $right := lpm:show-setting-restricted('swl-buttons', $map?context)
@@ -674,7 +675,8 @@ for $i in doc($config:tls-app-interface||"/settings.xml")//tls:section[@type='di
 </div>
 };
 
-(:~ render a help link for the context given as key
+(:~ 
+: render a help link for the context given as key
 :)
 declare function lrh:help-link($key as xs:string){
    let $link := $config:help-map?($key)
@@ -699,11 +701,12 @@ return
 </ul>
 </div>
 };
-(:~ display items that are user-selectable, configured through the settings 
-the execution should also work when called through the responder
-@ ?context : the context called from, one of the items in the 'contexts' from settings.xml 
-@ ?type 
-@ ?word : is a query, if available
+(:~ 
+: display items that are user-selectable, configured through the settings 
+: the execution should also work when called through the responder
+: @ ?context : the context called from, one of the items in the 'contexts' from settings.xml 
+: @ ?type 
+: @ ?word : is a query, if available
 :)
 declare function lrh:selective-display($map as map(*)){
 let $qc := for $c in string-to-codepoints($map?word) return codepoints-to-string($c)

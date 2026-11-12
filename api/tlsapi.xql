@@ -44,9 +44,9 @@ declare namespace mods="http://www.loc.gov/mods/v3";
 declare namespace fn="http://www.w3.org/2005/xpath-functions";
 
 (:~
-Data for the callback function used for autocompletion
- @param $type is the type, which directly translates to the division type of the data
- @param $term is the term for which we look for autocomplete possibilities 
+ : Data for the callback function used for autocompletion
+ : @param $type is the type, which directly translates to the division type of the data
+ : @param $term is the term for which we look for autocomplete possibilities 
 :)
 declare function tlsapi:autocomplete($type as xs:string, $term as xs:string){
 let $callback := request:get-parameter("callback", "xx")
@@ -69,8 +69,8 @@ concat($callback, "([", string-join($payload, ","), "]);")
 };
 
 (:~
- assemble a new attribution out of the information given.
- called from the save-swl-* functions.
+ : assemble a new attribution out of the information given.
+ : called from the save-swl-* functions.
 :)
 
 declare function tlsapi:make-attribution($line-id as xs:string, $line as xs:string, $sense-id as xs:string, 
@@ -647,10 +647,10 @@ else
 };
 
 (:~
- Increase rating of a syntactic word location.  We return the line-id, so that we can display the updated attributions.
- params: type = type of thing to rate (eg swl), uid = uid of thing
- @score is the community approval of the correctness of this attribution
- @rating is the importance as a paradigmatic example
+: Increase rating of a syntactic word location.  We return the line-id, so that we can display the updated attributions.
+: params: type = type of thing to rate (eg swl), uid = uid of thing
+: @score is the community approval of the correctness of this attribution
+: @rating is the importance as a paradigmatic example
 :)
 declare function tlsapi:incr-rating($map as map(*)) {
 let  $user := sm:id()//sm:real/sm:username/text()
@@ -677,7 +677,7 @@ if ($map?type eq 'swl') then
 };
 
 (:~
- Delete a syntactic word location.  We return the line-id, so that we can display the updated attributions.
+: Delete a syntactic word location.  We return the line-id, so that we can display the updated attributions.
 :)
 declare function tlsapi:delete-swl($type as xs:string, $uid as xs:string) {
 if ($type eq 'swl') then 
