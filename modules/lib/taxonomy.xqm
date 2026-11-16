@@ -22,10 +22,10 @@ declare namespace tls= "http://hxwd.org/ns/1.0";
 
 
 (:~
-get the clear text name description or definition of the category
-@catid is the xml:id of the category to be retrieved
-@taxid is the xml:id of the top-level category of the tree to be searched
-@type : desc or def
+: get the clear text name description or definition of the category
+: @catid is the xml:id of the category to be retrieved
+: @taxid is the xml:id of the top-level category of the tree to be searched
+: @type : desc or def
 :)
 declare function ltx:get-catdesc($catid, $taxid, $type){
 let $tax := collection($config:tls-data-root||"/core")//tei:category[@xml:id=$taxid]
@@ -37,7 +37,7 @@ else
  string-join($cat/tei:def/text())
 };
 (:~ 
-get the subtree for a given category 
+: get the subtree for a given category 
 :)
 declare function ltx:get-subtree($catid as xs:string, $taxid as xs:string, $count as xs:int){
 let $tax := collection($config:tls-data-root||"/core")//tei:category[@xml:id=$taxid]
@@ -48,9 +48,9 @@ return $r
 };
 
 (:~ 
-get the subtrees that reference this category outside of the main hierarchy
-for concepts, taxid is 'tls-concepts-top'; 
-$count is the depth requested
+: get the subtrees that reference this category outside of the main hierarchy
+: for concepts, taxid is 'tls-concepts-top'; 
+: $count is the depth requested
 :)
 declare function ltx:get-other-subtrees($catid as xs:string, $taxid as xs:string, $count as xs:int){
 let $tax := collection($config:tls-data-root||"/core")//tei:category[@xml:id=$taxid]
@@ -62,7 +62,9 @@ return $r
 return $s
 };
 
-(:~ for pseudo categories, get the real category :)
+(:~ 
+: for pseudo categories, get the real category 
+:)
 declare function ltx:get-true-cat($catid as xs:string, $taxid as xs:string){
 let $tax := collection($config:tls-data-root||"/core")//tei:category[@xml:id=$taxid]
 , $cat := $tax//tei:category[@xml:id=$catid]
@@ -73,7 +75,7 @@ if ($realcat) then $realcat else "not-defined"
 
 
 (:~
-get the children that do not have real concept-id s -- candidates for deletion?
+: get the children that do not have real concept-id s -- candidates for deletion?
 :)
 declare function ltx:get-new-children-as-node($catid as xs:string, $taxid as xs:string){
 let $tax := collection($config:tls-data-root||"/core")//tei:category[@xml:id=$taxid]
@@ -102,7 +104,9 @@ for $id in $cat/tei:category/@xml:id return $id/string()
 };
 
 (: this will simply call the display as  :)
-(:~ display taxonomy as a tree, for inspection and editing :)
+(:~ 
+: display taxonomy as a tree, for inspection and editing 
+:)
 declare function ltx:proc-taxonomy($node as node(), $type){
 typeswitch($node)
 case element(tei:category) return
@@ -149,8 +153,8 @@ default return $node
 };
 
 (:~ 
-$map?trg-concept : uuid of the concept we attach to
-$map?wid : uuid of the concept being moved. 
+: $map?trg-concept : uuid of the concept we attach to
+: $map?wid : uuid of the concept being moved. 
 :)
 declare function ltx:move-category($map as map(*)){
 let $src :=  (collection($config:tls-data-root||"/core")//tei:category[@xml:id=$map?wid])[1]
@@ -205,15 +209,18 @@ case text() return normalize-space(string-join($node))
 default return $node  
 };
 
-(:~ from any category element, we look for the top of the tree :)
+(:~ 
+: from any category element, we look for the top of the tree 
+:)
 declare function ltx:get-taxonomy($id as xs:string){
     let $cat := collection($config:tls-data-root||"/core")//tei:category[@xml:id=$id]
     return $cat/ancestor::tei:category[@rend='top']
 };
 
 
-(:~ turns a flat list to a map 
-the callback function needs to be able to extract the grouping key from the provided node  
+(:~ 
+: turns a flat list to a map 
+: the callback function needs to be able to extract the grouping key from the provided node  
 :) 
 
 declare function ltx:hits-to-map($hits as item()*, $genre as xs:string, $get-grouping-key as function(*)){
@@ -321,7 +328,7 @@ declare function ltx:tax-prune($n){
 };
 
 (:~ 
-Save an update to the tei:def element.   This is called from save_sf_def on leaving the contenteditable element, and routed here from tlsapi:save-sf-def when $map?type is '-tx'
+: Save an update to the tei:def element.   This is called from save_sf_def on leaving the contenteditable element, and routed here from tlsapi:save-sf-def when $map?type is '-tx'
 
 :)
 declare function ltx:save-def($map){
@@ -337,7 +344,7 @@ else ()
 };
 
 (:~ 
-Special page for listing and correcting issues with taxonomies, especially concepts
+: Special page for listing and correcting issues with taxonomies, especially concepts
 :)
 declare function ltx:taxonomy-issues(){
 for $c in collection($config:tls-data-root||"/core")//tei:category/@corresp
