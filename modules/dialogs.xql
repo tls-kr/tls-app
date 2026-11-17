@@ -20,12 +20,14 @@ import module namespace ltp="http://hxwd.org/lib/textpanel" at "lib/textpanel.xq
 import module namespace lrh="http://hxwd.org/lib/render-html" at "lib/render-html.xqm";
 import module namespace lpm="http://hxwd.org/lib/permissions" at "lib/permissions.xqm";
 import module namespace lsi="http://hxwd.org/special-interest" at "lib/special-interest.xqm";
+import module namespace ltc="http://hxwd.org/lib/toc" at "lib/toc.xqm";
 
 import module namespace remote="http://hxwd.org/remote" at "lib/remote.xqm";
 
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
-declare namespace tls="http://hxwd.org/ns/1.0";
+declare namespace tls= "http://hxwd.org/ns/1.0";
 declare namespace tx = "http://exist-db.org/tls";
+declare namespace toc= "http://hxwd.org/ns/toc/1.0";
 
 declare variable $dialogs:lmap := map{
 "concept" : "Concepts",
@@ -197,6 +199,73 @@ return
       })           
 };
 
+(:~ 
+
+the dialog receives the slot and the textid as options :)
+declare function local:export-trans-dialog($name, $options){
+let $textid := $options?textid 
+, $title := lu:get-title($textid)
+, $toc := ltc:get($textid)//toc:entry
+let $body := <div><p>You can request an export of this translation, optionally with the source text. Please select the scope </p>
+ <p></p>{ 
+     let $divs := map:merge( (map:entry('all', 'The whole text'), 
+                             map:entry('page', 'This page only'),
+                             for $v in $toc
+                             return map:entry($v/@first-seg, $v/@title/string()) )
+                             )
+     , $prompts := ()
+     return 
+     if (count(map:keys($divs)) = 0) then
+          <div class="row border-bottom">
+          <p>Currently there are no further AI vendors available.</p>
+          </div>
+     else     
+     <div class="row border-bottom">
+     {lrh:form-control-select(
+   map{
+    'id' : 'select-scope'
+    , 'col' : 'col-md-3'
+    , 'option-map' : $divs
+    , 'label' : 'Section'
+    , 'selected' : 'all'
+    })}
+    {lrh:form-control-checkbox(
+    map{
+    'id' : 'include-source'
+    , 'col' : 'col-md-4'
+    , 'label' : 'Include Chinese text'
+    , 'value' : 'source'
+    }
+    )}
+    {lrh:form-control-checkbox(
+    map{
+    'id' : 'include-segid'
+    , 'col' : 'col-md-4'
+    , 'label' : 'Include Segment identifiers'
+    , 'value' : 'segid'
+    }
+    )}
+       </div>
+   }
+   </div>
+
+, $title := "Request a translation of "||$title
+, $notyet := ( <button type="button" class="btn btn-primary" onclick="alert('Not yet ready')">Request</button> )
+, $buttons := ( <button type="button" class="btn btn-primary" onclick="export_new_translation('{$options?slot}','{$textid}', 'ai')">Request</button> )
+return                 
+      dialogs:modal-frame($name, 
+      map{
+        "dsize" : "modal-lg", 
+        "body": $body, 
+        "buttons" : $notyet, 
+        "options" : $options,
+        "title": $title 
+      })           
+};
+
+
+
+
 
 (:~ 
 Displays the dialog with information about the translation
@@ -339,6 +408,7 @@ return switch($para?name)
                case "search-settings" return local:search-settings($para?name, $options)
                case "external-resource" return local:external-resource($para?name, $options)
                case "new-ai-trans-dialog" return local:new-ai-trans-dialog($para?name, $options)
+               case "export-trans-dialog" return local:export-trans-dialog($para?name, $options)
                default return "Dialog not registered!"
 };
 

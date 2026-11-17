@@ -582,6 +582,35 @@ function store_new_translation(slot, textid, trid){
     
 };
 
+// called from export tranlation dialog
+// slot is slot1 or slot2, 
+function export_new_translation(slot, textid, trid){
+  var lang = $('#select-lang').val()
+  var transl = $('#select-transl').val()
+  var bibl = $('#input-biblio').val()
+  var trtitle = $('#select-trtitle').val()
+  var rel = $('#select-rel').val()
+  var vis = $('input[name=visradio]:checked').val()
+  var copy = $('input[name=copradio]:checked').val()
+  var type = $('input[name=typradio]:checked').val()
+  
+  $.ajax({
+  type : "GET",
+  dataType : "html",
+  url : "api/export_new_translation?lang="+lang+"&textid="+textid+"&transl="+transl+"&trtitle="+trtitle+"&bibl="+bibl+"&vis="+vis+"&copy="+copy+"&type="+type+"&rel="+rel+"&trid="+ trid, 
+  success : function(resp){
+  // todo : reload the selector with latest information
+  $('#new-translation-dialog').modal('hide');
+  $('#new-ai-trans-dialog').modal('hide');
+  reload_selector(slot, trid);
+  toastr.info("New work has been saved.", "HXWD says:")  
+  }
+  });
+    
+};
+
+
+
 function reload_selector(slot, newid){
   var location = window.location.search;
   $.ajax({
