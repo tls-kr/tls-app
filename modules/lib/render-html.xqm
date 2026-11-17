@@ -604,6 +604,14 @@ declare function lrh:form-control-input($map){
  </div>
 };
 
+declare function lrh:form-control-checkbox($map){
+ <div class="{$map?col} form-group ui-widget" id="{$map?id}-group" style="{if (string-length($map?value) = -1) then 'display:None;' else () }">
+ <input id="{$map?id}" type="checkbox" class="form-control" value="{$map?value}"/>
+ <label for="{$map?id}">{$map?label}</label>
+ {$map?extra-elements}
+ </div>
+};
+
 declare function lrh:form-control-select($map){
  <div class="{$map?col} form-group ui-widget" id="{$map?id}-group" style="{$map?style}" >
  <b>{$map?label}</b>

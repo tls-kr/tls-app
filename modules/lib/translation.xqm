@@ -531,7 +531,8 @@ let $keys := for $k in map:keys($tr)
         }
         {if (lu:can-create-translation-file()) then
         (<a class="dropdown-item" onclick="new_translation('{$slot}')" href="#"> <button class="btn btn-warning" type="button">New translation / comments</button></a>,
-        <a class="dropdown-item" onclick="show_dialog('new-ai-trans-dialog', {{'textid': '{$textid}', 'slot': '{$slot}'}})" href="#"> <button class="btn btn-warning" type="button">Request new AI translation</button></a>
+(:        <a class="dropdown-item" onclick="show_dialog('new-ai-trans-dialog', {{'textid': '{$textid}', 'slot': '{$slot}'}})" href="#"> <button class="btn btn-warning" type="button">Request new AI translation</button></a>, :)
+        <a class="dropdown-item" onclick="show_dialog('export-trans-dialog', {{'textid': '{$textid}', 'slot': '{$slot}'}})" href="#"> <button class="btn btn-warning" type="button">Export translation</button></a>
         )
          else ()
         }
