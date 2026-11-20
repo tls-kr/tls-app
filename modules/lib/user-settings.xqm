@@ -17,6 +17,7 @@ import module namespace lmd="http://hxwd.org/lib/metadata" at "metadata.xqm";
 import module namespace lu="http://hxwd.org/lib/utils" at "utils.xqm";
 (:import module namespace lrh="http://hxwd.org/lib/render-html" at "render-html.xqm";:)
 import module namespace lsi="http://hxwd.org/special-interest" at "special-interest.xqm";
+import module namespace orcid="http://hxwd.org/orcid" at "../orcid-link.xql";
 
 
 import module namespace templates="http://exist-db.org/xquery/templates" ;
@@ -74,17 +75,17 @@ declare function lus:user-name($node as node()*, $model as map(*)){ $model?px };
 
 
 declare %templates:wrap function lus:settings($node as node()*, $model as map(*)) {
+let $oid := orcid:current-id()
+return
 <div>
 <h2>Customizable settings for {$model?px}</h2>
 <p>
- 
+
 </p>
         <div class="col-md-12">
-          <h3>ORCID sign-in</h3>
-          <p>Connect your ORCID iD to sign in to this TLS account with ORCID.</p>
-          <p><a href="modules/orcid-works.xql">Publish monthly research outputs and download BibTeX for ORCID</a></p>
-          <a class="btn btn-outline-primary" href="modules/orcid-connect.xql">Connect ORCID</a>
-          {lus:orcid-unlink-form($model)}
+          {if ($oid) then <p>ORCID: {$oid}<br/><a href="modules/orcid-works.xql">Publish monthly research outputs and download BibTeX for ORCID</a><br/> {(:lus:orcid-unlink-form($model) :)}</p> else
+          <p>Connect your ORCID ID to sign in to this TLS account with ORCID and publish research outputs.<br/><a class="btn btn-outline-primary" href="modules/orcid-connect.xql">Connect ORCID</a></p>}
+          <p></p>
         </div>
 
 </div>
