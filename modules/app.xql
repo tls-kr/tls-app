@@ -1612,6 +1612,7 @@ function app:dialogs($node as node()*, $model as map(*))
                             </div>
                         </div>
                         <div class="modal-footer" id="login-footer">
+                            <a class="btn btn-outline-secondary" href="orcid/start">Sign in with ORCID</a>
                             <button id="send-mail-button" name="send-mail-button" style="display: none;" class="btn btn-primary" onclick="sendLoginMail()" >Send mail</button>
                             <button name="login-button" class="btn btn-primary" onclick="dologin()">Login</button>
                         </div>

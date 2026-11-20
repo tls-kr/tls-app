@@ -1,5 +1,6 @@
 modules/signup.xql
 build/
+server-extension/build/
 node_modules/
 .existdb.json
 *.code-workspace
