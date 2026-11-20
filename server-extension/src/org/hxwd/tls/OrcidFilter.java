@@ -28,6 +28,7 @@ import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
@@ -194,11 +195,16 @@ public final class OrcidFilter implements Filter {
             String username = links.getProperty(orcid);
             if (linkedUser != null) {
                 if (username != null && !username.equals(linkedUser)) {
-                    res.sendError(409, "ORCID iD already connected to another TLS account"); return;
+                    linkConflict(req, res, "This ORCID iD is already connected to TLS account " + username + ".",
+                            "Sign in to that account to use this ORCID iD. To move the connection, "
+                            + "disconnect it in that account's Settings first, then connect it here.");
+                    return;
                 }
                 for (String id : links.stringPropertyNames()) {
                     if (linkedUser.equals(links.getProperty(id)) && !id.equals(orcid)) {
-                        res.sendError(409, "TLS account already connected to another ORCID iD"); return;
+                        linkConflict(req, res, "This TLS account is already connected to a different ORCID iD.",
+                                "Open Settings and disconnect the existing ORCID iD before connecting another one.");
+                        return;
                     }
                 }
                 username = linkedUser;
@@ -235,6 +241,30 @@ public final class OrcidFilter implements Filter {
         session.setAttribute("org.hxwd.tls.user", account.getName());
         session.setAttribute(ORCID, orcid);
         res.sendRedirect(req.getContextPath() + "/apps/tls-app/index.html");
+    }
+
+    private void linkConflict(HttpServletRequest req, HttpServletResponse res, String heading, String guidance)
+            throws IOException {
+        res.setStatus(HttpServletResponse.SC_CONFLICT);
+        res.setCharacterEncoding(StandardCharsets.UTF_8.name());
+        res.setContentType("text/html");
+        String app = req.getContextPath() + "/apps/tls-app/";
+        try (PrintWriter out = res.getWriter()) {
+            out.print("<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">"
+                    + "<title>ORCID connection already exists</title>"
+                    + "<style>body{font:1rem/1.5 sans-serif;max-width:42rem;margin:3rem auto;padding:0 1rem}"
+                    + "a{margin-right:1.5rem}</style></head><body><main>"
+                    + "<h1>ORCID connection already exists</h1><p>" + escapeHtml(heading)
+                    + "</p><p>" + escapeHtml(guidance) + "</p>"
+                    + "<p>Your existing account connections were not changed.</p>"
+                    + "<p><a href=\"" + app + "settings.html\">TLS Settings</a>"
+                    + "<a href=\"" + app + "index.html\">TLS home</a></p></main></body></html>");
+        }
+    }
+
+    private static String escapeHtml(String value) {
+        return value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+                .replace("\"", "&quot;").replace("'", "&#39;");
     }
 
     private void createAccount(SecurityManager sm, String username) throws Exception {
