@@ -55,8 +55,10 @@ or <br/>
               Login</a>
               </b> or <br/>
             <br/>
+            <!--
             <a href="signup.html">
                 <b>Apply</b> for membership in the TLS project.</a>
+                -->
           </p>
         </div>
         <div xml:id="for-users">

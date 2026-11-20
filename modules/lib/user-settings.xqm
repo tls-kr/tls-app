@@ -63,7 +63,7 @@ if ($user != 'guest') then
 else map{'user' : $user, 'settings': $settings, 'px' : $px}
 };
 
-declare function lus:orcid-unlink-form($node as node()*, $model as map(*)) {
+declare function lus:orcid-unlink-form($model as map(*)) {
     <form action="orcid/unlink" method="post" class="mt-2">
         <input type="hidden" name="csrf" value="{$model?orcid-token}"/>
         <button class="btn btn-outline-secondary" type="submit">Disconnect ORCID</button>
@@ -79,6 +79,12 @@ declare %templates:wrap function lus:settings($node as node()*, $model as map(*)
 <p>
  
 </p>
+        <div class="col-md-12">
+          <h3>ORCID sign-in</h3>
+          <p>Connect your ORCID iD to sign in to this TLS account with ORCID.</p>
+          <a class="btn btn-outline-primary" href="modules/orcid-connect.xql">Connect ORCID</a>
+          {lus:orcid-unlink-form($model)}
+        </div>
 
 </div>
 };
