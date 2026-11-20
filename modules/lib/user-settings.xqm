@@ -82,6 +82,7 @@ declare %templates:wrap function lus:settings($node as node()*, $model as map(*)
         <div class="col-md-12">
           <h3>ORCID sign-in</h3>
           <p>Connect your ORCID iD to sign in to this TLS account with ORCID.</p>
+          <p><a href="modules/orcid-works.xql">Publish monthly research outputs and download BibTeX for ORCID</a></p>
           <a class="btn btn-outline-primary" href="modules/orcid-connect.xql">Connect ORCID</a>
           {lus:orcid-unlink-form($model)}
         </div>
