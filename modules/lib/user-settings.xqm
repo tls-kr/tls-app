@@ -45,9 +45,29 @@ let $user := sm:id()//sm:real/sm:username/text()
 , $settings := lus:get-settings()
 , $px := sm:get-account-metadata($user, xs:anyURI("http://axschema.org/namePerson"))
 return
-map{'user' : $user,
-    'settings': $settings,
-    'px' : $px}
+if ($user != 'guest') then
+    (
+        if (request:get-attribute('xquery.password')) then
+            if (xmldb:login('/db', string($user),
+                            string(request:get-attribute('xquery.password')), true())) then ()
+            else error(xs:QName('lus:LOGIN'), 'Could not establish TLS session')
+        else (),
+        session:create(),
+        let $saved := string(session:get-attribute('tls.orcid.unlink-token'))
+        let $token := if (matches($saved, '^[0-9a-f-]{36}$')) then $saved else util:uuid()
+        return (
+            session:set-attribute('tls.orcid.unlink-token', $token),
+            map{'user' : $user, 'settings': $settings, 'px' : $px, 'orcid-token': $token}
+        )
+    )
+else map{'user' : $user, 'settings': $settings, 'px' : $px}
+};
+
+declare function lus:orcid-unlink-form($model as map(*)) {
+    <form action="orcid/unlink" method="post" class="mt-2">
+        <input type="hidden" name="csrf" value="{$model?orcid-token}"/>
+        <button class="btn btn-outline-secondary" type="submit">Disconnect ORCID</button>
+    </form>
 };
 
 declare function lus:user-name($node as node()*, $model as map(*)){ $model?px };
@@ -59,6 +79,13 @@ declare %templates:wrap function lus:settings($node as node()*, $model as map(*)
 <p>
  
 </p>
+        <div class="col-md-12">
+          <h3>ORCID sign-in</h3>
+          <p>Connect your ORCID iD to sign in to this TLS account with ORCID.</p>
+          <p><a href="modules/orcid-works.xql">Publish monthly research outputs and download BibTeX for ORCID</a></p>
+          <a class="btn btn-outline-primary" href="modules/orcid-connect.xql">Connect ORCID</a>
+          {lus:orcid-unlink-form($model)}
+        </div>
 
 </div>
 };

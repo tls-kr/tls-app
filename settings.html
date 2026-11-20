@@ -12,6 +12,15 @@
       <h2>Customizable settings for <span data-template="lus:user-name"/>
                             </h2>
         </div>    
+        <div class="col-md-12">
+          <h3>ORCID sign-in</h3>
+          <p>Connect your ORCID iD to sign in to this TLS account with ORCID.</p>
+          <p><a href="modules/orcid-works.xql">Publish monthly research outputs and download BibTeX for ORCID</a></p>
+          <a class="btn btn-outline-primary" href="modules/orcid-connect.xql">Connect ORCID</a>
+          <form action="orcid/unlink" method="post" class="mt-2" data-template="lus:orcid-unlink-form">
+            <button class="btn btn-outline-secondary" type="submit">Disconnect ORCID</button>
+          </form>
+        </div>
      </div> <!-- end first row -->
 
    <div class="row" id="test">

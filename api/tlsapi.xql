@@ -27,7 +27,7 @@ import module namespace lmd="http://hxwd.org/lib/metadata" at "../modules/lib/me
 import module namespace ltr="http://hxwd.org/lib/translation" at "../modules/lib/translation.xqm";
 import module namespace lu="http://hxwd.org/lib/utils" at "../modules/lib/utils.xqm";
 import module namespace lrh="http://hxwd.org/lib/render-html" at "../modules/lib/render-html.xqm";
-import module namespace lv="http://hxwd.org/lib/vault" at "vault.xqm";
+import module namespace lv="http://hxwd.org/lib/vault" at "../modules/lib/vault.xqm";
 import module namespace lpm="http://hxwd.org/lib/permissions" at "../modules/lib/permissions.xqm";
 import module namespace ltp="http://hxwd.org/lib/textpanel" at "../modules/lib/textpanel.xqm";
 import module namespace lsf="http://hxwd.org/lib/syn-func" at "../modules/lib/syn-func.xqm";
@@ -1931,6 +1931,7 @@ let  $seg := collection($config:tls-texts-root)//tei:seg[@xml:id=$map?line_id]
 , $new-seg :=  $map?body
 , $res := string-join(for $r at $pos in tokenize($new-seg, '\$') return $r || "$" || $pos || "$", '')
 , $str := analyze-string ($res, $config:seg-split-tokens)
+, $audit := <change xmlns="http://www.tei-c.org/ns/1.0" type="text-edit" who="#{sm:id()//sm:real/sm:username/text()}" when="{current-dateTime()}" target="#{$map?line_id}">{normalize-space($new-seg)}</change>
 return
 if (not($txtid and lpm:has-edit-permission($txtid))) then "Error: You do not have permission to update edit this text."
 else if (not(tlslib:check-edited-seg-valid($new-seg, $seg))) then "Error: Text integrity check failed. Can not save edited text."
@@ -1949,7 +1950,7 @@ else
     if ($map?action = "no_split") then 
         let $tx := tlslib:reinsert-nodes-after-edit($res, $seg-with-new-type)
         , $segs := <seg xmlns="http://www.tei-c.org/ns/1.0" xml:id="{$map?line_id}" type="{$map?type}">{$tx}</seg>
-        return update replace $seg with $segs
+        return (update replace $seg with $segs, update insert $audit into lv:get-crypt-file('text-edits')//tei:p[last()])
     else 
         let $segs := for $m at $pos in $str//fn:non-match
             let $nm := $m/following-sibling::fn:*[1]
@@ -1969,6 +1970,7 @@ else
                 , update replace $seg-with-new-type with $segs[1])
         else
             update replace $seg-with-new-type with $segs
+        , update insert $audit into lv:get-crypt-file('text-edits')//tei:p[last()]
         , $segs[last()]/@xml:id)
 };
 

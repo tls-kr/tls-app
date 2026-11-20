@@ -24,6 +24,13 @@ import module namespace dbu="http://exist-db.org/xquery/utility/db" at "../db-ut
 declare namespace tei= "http://www.tei-c.org/ns/1.0";
 declare namespace tls="http://hxwd.org/ns/1.0";
 
+(:~
+ The $map needs to contain a format function, eg
+ $format := function($seg, $tr, $map) {
+    "|" || $seg || "|" || $tr || "|&#10;"
+    }
+:)
+
 declare function lxp:process-segs($map){
  let $segs := lu:get-seg-sequence-by-id($map?start-seg-id, $map?end-seg-id)
  return
